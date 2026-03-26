@@ -89,12 +89,20 @@ export interface ScorecardResponse {
   scorecard: InningsScorecard[];
 }
 
+export interface FallOfWicket {
+  batsman: PlayerRef;
+  wkt_nbr: number;
+  score_at_dismissal: number;
+  overs_at_dismissal: number;
+}
+
 export interface InningsScorecard {
   batting: BattingEntry[];
   bowling: BowlingEntry[];
   extras: ExtrasInfo;
   totals: TotalsInfo;
   inning: string;
+  fow?: FallOfWicket[];
 }
 
 export interface BattingEntry {
