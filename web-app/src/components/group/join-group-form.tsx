@@ -46,32 +46,34 @@ export function JoinGroupForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2">
-      <Input
-        type="text"
-        placeholder="Enter invite code"
-        value={code}
-        onChange={(e) => {
-          setCode(e.target.value);
-          if (error) setError("");
-        }}
-        className="flex-1 bg-[var(--bg-input)] border-[var(--border-medium)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)]"
-      />
-      <Button
-        type="submit"
-        disabled={loading || !code.trim()}
-        variant="outline"
-        className="border-[var(--cyan)] text-[var(--cyan)] hover:bg-[var(--cyan-soft)] font-display font-semibold text-sm shrink-0"
-      >
-        {loading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <UserPlus className="h-4 w-4" />
-        )}
-      </Button>
+    <div className="space-y-2">
+      <form onSubmit={handleSubmit} className="flex gap-2">
+        <Input
+          type="text"
+          placeholder="Enter invite code"
+          value={code}
+          onChange={(e) => {
+            setCode(e.target.value);
+            if (error) setError("");
+          }}
+          className="flex-1 bg-[var(--bg-input)] border-[var(--border-medium)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)]"
+        />
+        <Button
+          type="submit"
+          disabled={loading || !code.trim()}
+          variant="outline"
+          className="border-[var(--cyan)] text-[var(--cyan)] hover:bg-[var(--cyan-soft)] font-display font-semibold text-sm shrink-0"
+        >
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <UserPlus className="h-4 w-4" />
+          )}
+        </Button>
+      </form>
       {error && (
-        <p className="absolute -bottom-5 left-0 text-xs text-[var(--danger)]">{error}</p>
+        <p className="text-xs text-[var(--danger)]" role="alert">{error}</p>
       )}
-    </form>
+    </div>
   );
 }

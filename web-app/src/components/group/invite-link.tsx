@@ -19,15 +19,8 @@ export function InviteLink({ inviteCode }: InviteLinkProps) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback for browsers that don't support clipboard API
-      const input = document.createElement("input");
-      input.value = link;
-      document.body.appendChild(input);
-      input.select();
-      document.execCommand("copy");
-      document.body.removeChild(input);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      // Clipboard API not available — show link as text for manual copy
+      window.prompt("Copy this link:", link);
     }
   }
 

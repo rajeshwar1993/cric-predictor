@@ -14,7 +14,7 @@ interface GroupCardProps {
 }
 
 export function GroupCard({ group }: GroupCardProps) {
-  const role = ROLE_CONFIG[group.user_role];
+  const role = ROLE_CONFIG[group.user_role] || ROLE_CONFIG.member;
   const RoleIcon = role.icon;
 
   return (
