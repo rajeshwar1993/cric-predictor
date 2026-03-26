@@ -142,7 +142,7 @@ export function computeTrackStatus(
       const maxWickets = Math.max(...allBowling.map((b) => b.w), 0);
       if (predictedValue === "Yes") {
         if (maxWickets >= 3) return "on_track";
-        if (maxWickets >= 2) return "on_track";
+        if (maxWickets >= 2) return "pending"; // Close but not confirmed
         return totalOvers > 30 ? "in_danger" : "pending";
       } else {
         if (maxWickets >= 3) return "in_danger";

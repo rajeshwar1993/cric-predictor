@@ -17,11 +17,19 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 // Activation window: 2 PM IST to 1 AM IST
 // = 08:30 UTC to 19:30 UTC
 // ──────────────────────────────────────────────
-function shouldActivate(): boolean {
+function isInMatchWindow(): boolean {
   const now = new Date();
   const utcDecimal = now.getUTCHours() + now.getUTCMinutes() / 60;
-  const isInactive = utcDecimal >= 19.5 || utcDecimal < 8.5;
-  return !isInactive;
+  // Active: 08:30 UTC to 19:30 UTC (2 PM IST to 1 AM IST)
+  return !(utcDecimal >= 19.5 || utcDecimal < 8.5);
+}
+
+async function hasLiveMatches(): Promise<boolean> {
+  const { count } = await supabase
+    .from("matches")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "live");
+  return (count || 0) > 0;
 }
 
 // ──────────────────────────────────────────────
@@ -73,7 +81,8 @@ function toCode(name: string | undefined): string | null {
 // Main handler
 // ──────────────────────────────────────────────
 Deno.serve(async () => {
-  if (!shouldActivate()) {
+  // Run inside match window OR if any match is currently live (handles rain delays)
+  if (!isInMatchWindow() && !(await hasLiveMatches())) {
     return new Response(JSON.stringify({ status: "inactive", reason: "outside match hours" }));
   }
 
@@ -266,10 +275,13 @@ async function progressiveResolve(matchId: number, scorecard: any) {
     await resolveScenariosByCategory(matchId, "bowler_three_wkt", "Yes");
   }
 
-  // Phase 5: Innings break
-  if (secondInnings) {
+  // Phase 5: Innings break — only resolve when first innings is actually complete
+  // (all out or 20 overs bowled, confirmed by second innings having started)
+  const firstInningsOvers = firstInnings.totals.o || firstInnings.totals.O || 0;
+  const firstInningsComplete = secondInnings && (firstInningsOvers >= 20 || (firstInnings.totals.w || firstInnings.totals.W || 0) >= 10);
+  if (firstInningsComplete) {
     const firstInningsScore = firstInnings.totals.r || firstInnings.totals.R;
-    if (firstInningsScore != null) {
+    if (firstInningsScore != null && firstInningsScore > 0) {
       let bracket: string;
       if (firstInningsScore < 150) bracket = "<150";
       else if (firstInningsScore >= 190) bracket = "190+";
@@ -365,35 +377,23 @@ async function resolveScenariosByCategory(
 ) {
   if (!correctAnswer) return;
 
-  // Get all unresolved scenarios for this match + category across all groups
-  const { data: scenarios } = await supabase
+  // Atomic update: only updates rows that are still unresolved (race-safe)
+  const { data: resolved } = await supabase
     .from("scenarios")
-    .select("id")
+    .update({ correct_answer: correctAnswer, is_resolved: true })
     .eq("match_id", matchId)
     .eq("system_category", category)
     .eq("is_resolved", false)
-    .eq("is_removed", false);
+    .eq("is_removed", false)
+    .select("id, points");
 
-  if (!scenarios || scenarios.length === 0) return;
+  if (!resolved || resolved.length === 0) return;
 
-  for (const scenario of scenarios) {
-    await supabase
-      .from("scenarios")
-      .update({ correct_answer: correctAnswer, is_resolved: true })
-      .eq("id", scenario.id);
-
-    // Score predictions
-    const { data: points } = await supabase
-      .from("scenarios")
-      .select("points")
-      .eq("id", scenario.id)
-      .single();
-
-    const scenarioPoints = points?.points || 10;
-
+  // Score predictions for each resolved scenario
+  for (const scenario of resolved) {
     await supabase
       .from("predictions")
-      .update({ is_correct: true, points_earned: scenarioPoints })
+      .update({ is_correct: true, points_earned: scenario.points })
       .eq("scenario_id", scenario.id)
       .eq("value", correctAnswer);
 

@@ -44,7 +44,7 @@ interface PredictionStatusPillProps {
 }
 
 export function PredictionStatusPill({ status, compact = false }: PredictionStatusPillProps) {
-  const config = STATUS_CONFIG[status];
+  const config = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
 
   return (
     <span
