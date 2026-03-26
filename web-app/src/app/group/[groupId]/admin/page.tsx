@@ -3,8 +3,10 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import * as groupsDal from "@/lib/dal/groups";
 import * as membersDal from "@/lib/dal/members";
+import * as matchesDal from "@/lib/dal/matches";
 import { PendingApprovals } from "@/components/admin/pending-approvals";
 import { AdminMemberList } from "@/components/admin/admin-member-list";
+import { ResultEntryForm } from "@/components/admin/result-entry-form";
 import { ROUTES } from "@/lib/constants";
 
 export const metadata: Metadata = {
@@ -30,11 +32,16 @@ export default async function AdminPage({ params }: AdminPageProps) {
     redirect(ROUTES.GROUP(groupId));
   }
 
-  const [group, pending, members] = await Promise.all([
+  const [group, pending, members, recentMatches] = await Promise.all([
     groupsDal.getGroupById(groupId),
     membersDal.getPendingRequests(groupId),
     membersDal.getMembers(groupId),
+    matchesDal.getUpcomingMatches(3),
   ]);
+
+  // Find matches that need manual result entry (completed/live without resolved_at)
+  // For now show the last completed match or any live match
+  const lastCompleted = await matchesDal.getLastCompletedMatch();
 
   if (!group) redirect("/dashboard");
 
@@ -63,6 +70,30 @@ export default async function AdminPage({ params }: AdminPageProps) {
           <PendingApprovals groupId={groupId} requests={pending} />
         )}
       </section>
+
+      {/* Result Entry */}
+      {recentMatches.length > 0 && (
+        <section className="space-y-4">
+          <h2 className="font-display text-lg font-semibold text-[var(--text-primary)]">
+            Enter Results
+          </h2>
+          <div className="rounded-[14px] border border-[var(--border-light)] bg-[var(--bg-card)] p-5">
+            {recentMatches.map((match) => (
+              <div key={match.id} className="mb-4 last:mb-0">
+                <p className="text-sm text-[var(--text-secondary)] mb-3">
+                  Match {match.match_number}: {match.team_a} vs {match.team_b}
+                </p>
+                <ResultEntryForm
+                  groupId={groupId}
+                  matchId={match.id}
+                  teamA={match.team_a}
+                  teamB={match.team_b}
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Member Management */}
       <section className="space-y-4">
