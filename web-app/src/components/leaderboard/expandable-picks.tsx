@@ -29,35 +29,39 @@ export function ExpandablePicks({ userId, groupId, matchId }: ExpandablePicksPro
 
     async function fetchPicks() {
       setLoading(true);
-
-      const [{ data: scenarios }, { data: predictions }] = await Promise.all([
-        supabase
+      try {
+        // Fetch scenarios for this group+match only
+        const { data: scenarios } = await supabase
           .from("scenarios")
           .select("*")
           .eq("group_id", groupId)
           .eq("match_id", matchId)
           .eq("is_removed", false)
           .in("approval_status", ["auto_approved", "approved"])
-          .order("points", { ascending: false }),
-        supabase
-          .from("predictions")
-          .select("*")
-          .eq("user_id", userId),
-      ]);
+          .order("points", { ascending: false });
 
-      if (scenarios) {
-        const predMap = new Map(
-          (predictions || []).map((p: any) => [p.scenario_id, p])
-        );
-        setData(
-          (scenarios as unknown as Scenario[]).map((s) => ({
-            scenario: s,
-            prediction: (predMap.get(s.id) as Prediction) || null,
-          }))
-        );
+        if (scenarios && scenarios.length > 0) {
+          // Fetch predictions scoped to these specific scenarios only
+          const scenarioIds = scenarios.map((s: any) => s.id);
+          const { data: predictions } = await supabase
+            .from("predictions")
+            .select("*")
+            .eq("user_id", userId)
+            .in("scenario_id", scenarioIds);
+
+          const predMap = new Map(
+            (predictions || []).map((p: any) => [p.scenario_id, p])
+          );
+          setData(
+            (scenarios as unknown as Scenario[]).map((s) => ({
+              scenario: s,
+              prediction: (predMap.get(s.id) as Prediction) || null,
+            }))
+          );
+        }
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
     }
 
     fetchPicks();
