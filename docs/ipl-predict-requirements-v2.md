@@ -1,8 +1,10 @@
-# IPL Predict — Product Requirements Document v2
+# Bragg — Product Requirements Document v2
 
 ## Overview
 
-A social prediction game for IPL 2026 where friends create private groups, submit structured + custom match predictions, and compete on live leaderboards throughout the season.
+**Bragg** is a social prediction game for IPL 2026 where friends create private groups, submit structured + custom match predictions, and compete on live leaderboards throughout the season. The name says it all — predict right, climb the leaderboard, and earn your bragging rights.
+
+**Brand essence:** Every correct prediction is ammunition. Every leaderboard #1 is a screenshot for the group chat. Bragg is the app that turns "I told you so" into a sport.
 
 **Goal:** Ship fast, keep it fun, proper auth, admin-controlled groups.
 
@@ -95,7 +97,7 @@ When the IPL season ends, each group gets a Season Summary card with:
 - **Consistency King** — most matches where the user scored above group average
 - **Participation Award** — who predicted the most matches (engagement metric)
 
-This card is shareable as an image for WhatsApp/Instagram stories — end-of-season virality moment.
+This card is shareable as an image for WhatsApp/Instagram stories — the ultimate bragging rights moment. "I called 67% of the season. What did you get?"
 
 ---
 
@@ -248,7 +250,7 @@ The headline feature: during a live match, users see a group leaderboard that up
 | Final ball (~10:30 PM) | Match Winner → ✅/❌, Total Match Runs → ✅/❌, Total 6s → ✅/❌, Total Wickets → ✅/❌, Most Sixes → ✅/❌ | Big points swing at the end |
 | Post-match ceremony | Player of the Match → ✅/❌ | Final scenario resolves |
 
-**Post-Match:** Full leaderboard with all scenarios resolved. Each user's picks shown side-by-side with actual results. Shareable as image card.
+**Post-Match:** Full leaderboard with all scenarios resolved. Each user's picks shown side-by-side with actual results. Shareable as image card — the post-match bragging rights receipt.
 
 ### Three Leaderboard Views
 
@@ -283,7 +285,7 @@ Cron (every 1 min)
 ## Onboarding (First-Time User)
 
 **New user, no groups (empty dashboard):**
-- Hero message: "Welcome to IPL Predict! Create your first group and invite friends."
+- Hero message: "Welcome to Bragg! Create your first group and start earning bragging rights."
 - Two prominent CTAs: "Create a Group" (primary) and "Have an invite code?" (secondary input field)
 - Brief "How it works" — 3 steps: Create → Predict → Compete (reused from landing page)
 

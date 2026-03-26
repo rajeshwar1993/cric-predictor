@@ -1,4 +1,4 @@
-# IPL Predict — Launch Checklist
+# Bragg — Launch Checklist
 
 **IPL 2026 starts:** March 28, 2026 (RCB vs SRH, 7:30 PM IST)
 **Target:** MVP live for Match 1. Full feature set by Match 5-7.
@@ -8,7 +8,7 @@
 ## Phase 0 — Infrastructure & Accounts (Do FIRST)
 
 ### Accounts & Services
-- [ ] Register domain name (avoid "IPL" in the domain for trademark safety — e.g., predictcricket.in, matchpredict.app)
+- [ ] Register domain name (avoid "IPL" in the domain for trademark safety — e.g., bragg.cricket, bragg.app, getbragg.in, braggapp.in)
 - [ ] Create GitHub repository
 - [ ] Create Vercel account → connect to GitHub repo
 - [ ] Create Supabase project (free tier)

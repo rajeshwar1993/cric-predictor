@@ -1,4 +1,4 @@
-# IPL Predict — Technical Architecture Document
+# Bragg — Technical Architecture Document
 
 **For:** Developer handoff
 **Last updated:** March 26, 2026
@@ -878,7 +878,7 @@ CRICKET_API_BASE_URL=https://api.cricapi.com/v1
 
 # App
 NEXT_PUBLIC_APP_URL=https://your-domain.com
-NEXT_PUBLIC_APP_NAME=IPL Predict
+NEXT_PUBLIC_APP_NAME=Bragg
 ```
 
 ---

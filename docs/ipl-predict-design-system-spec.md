@@ -1,4 +1,4 @@
-# IPL Predict — Design System Specification
+# Bragg — Design System Specification
 
 **Theme:** Stadium Nightscape
 **Last updated:** March 26, 2026
@@ -285,8 +285,8 @@ Team colors are used for team badges (44×44px circles), match card accents, and
 
 ### 6.1 Landing Page (/)
 - Full viewport hero with gradient background (`--bg-primary` → `--bg-deep`)
-- App logo + name (Chakra Petch 48-72px, gradient text cyan→gold)
-- Tagline (DM Sans 18px, `--text-secondary`)
+- App logo + "Bragg" wordmark (Chakra Petch 48-72px, gradient text cyan→gold)
+- Tagline: "Predict. Compete. Bragg." (DM Sans 18px, `--text-secondary`)
 - Two CTAs: "Create a Group" (primary gradient) + "Join with Code" (glass card)
 - "How it works" section: 3 glass cards with step numbers in `--accent`
 - Footer: disclaimer text in `--text-muted`

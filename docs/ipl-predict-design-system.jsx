@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 // ============================================================
-// IPL PREDICT — DESIGN SYSTEM
+// BRAGG — DESIGN SYSTEM
 // "Stadium Nightscape" — Dark sports energy, floodlight accents
 // ============================================================
 
@@ -145,12 +145,12 @@ export default function DesignSystem() {
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 16, fontWeight: 700, color: tokens.colors.bg.deep,
             fontFamily: tokens.fonts.display,
-          }}>IP</div>
+          }}>B</div>
           <div>
             <h1 style={{
               fontFamily: tokens.fonts.display, fontSize: 18, fontWeight: 700,
               letterSpacing: "-0.02em",
-            }}>IPL Predict</h1>
+            }}>Bragg</h1>
             <span style={{
               fontFamily: tokens.fonts.mono, fontSize: 10,
               color: tokens.colors.text.muted,
