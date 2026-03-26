@@ -1,0 +1,86 @@
+flowchart TD
+    %% Entry Points
+    A[🏠 Landing Page] --> B{Has Account?}
+    B -->|No| C[📧 Sign Up: Name + Email]
+    B -->|Yes| D[📧 Sign In: Email]
+    C --> E[✉️ Magic Link Sent]
+    D --> E
+    E --> F[📬 Click Magic Link in Email]
+    F --> G[✅ Authenticated]
+
+    %% Dashboard
+    G --> H[📋 Dashboard]
+    H --> I[Create New Group]
+    H --> J[View My Groups]
+    H --> K[Join via Invite Code]
+
+    %% Group Creation
+    I --> L[Enter Group Name]
+    L --> M[🎉 Group Created]
+    M --> N[📎 Copy Invite Link]
+    N --> O[Share via WhatsApp / SMS]
+
+    %% Join Flow - Invite Link
+    O --> P[👤 Friend Opens Invite Link]
+    P --> Q{Authenticated?}
+    Q -->|No| R[Sign Up / Sign In]
+    R --> F
+    Q -->|Yes| S[⏳ Request Sent - Pending]
+    S --> T{Admin Decision}
+    T -->|Approve| U[✅ Member Approved]
+    T -->|Reject| V[❌ Rejected - Can Re-request]
+
+    %% Inside Group
+    U --> W[🏏 Group Home]
+    J --> W
+    W --> X[📊 Season Standings]
+    W --> Y[👥 Members List]
+    W --> Z[🗓️ Upcoming Matches]
+    W --> AA[🔔 Pending Requests\n👑 Admin Only]
+
+    %% Admin Actions
+    AA --> T
+
+    %% Match Prediction Flow
+    Z --> AB[Select Match]
+    AB --> AC[📝 Prediction Page]
+    AC --> AD[System Scenarios\nauto-seeded]
+    AC --> AE[➕ Add Custom Scenario\nany approved member]
+    AC --> AF[🗑️ Remove Scenario\n👑 Admin Only]
+    AC --> AG[⏰ Set Deadline Override\n👑 Admin Only]
+
+    %% Submitting Predictions
+    AD --> AH[Pick Options for Each Scenario]
+    AE --> AH
+    AH --> AI{Before Deadline?}
+    AI -->|Yes| AJ[✅ Predictions Submitted]
+    AI -->|No| AK[🔒 Locked - Too Late]
+
+    %% Post Match
+    AJ --> AL[🏏 Match Happens]
+    AK --> AL
+    AL --> AM[Match Completed]
+    AM --> AN[🤖 Auto-Resolve\nSystem Scenarios via API]
+    AM --> AO[✍️ Manual Resolve\nCustom Scenarios\n👑 Admin Only]
+    AN --> AP[🏆 Match Leaderboard]
+    AO --> AP
+    AP --> AQ[📊 Season Standings Updated]
+    AQ --> AR[📸 Share Leaderboard Card\nWhatsApp / Instagram]
+
+    %% Loop Back
+    AQ --> Z
+
+    %% Styling
+    classDef entry fill:#0ea5e9,stroke:#0284c7,color:#fff
+    classDef auth fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    classDef admin fill:#f59e0b,stroke:#d97706,color:#fff
+    classDef action fill:#10b981,stroke:#059669,color:#fff
+    classDef locked fill:#ef4444,stroke:#dc2626,color:#fff
+    classDef result fill:#06b6d4,stroke:#0891b2,color:#fff
+
+    class A,P entry
+    class C,D,E,F,G,R auth
+    class AA,AF,AG,AO admin
+    class AJ,M,U action
+    class AK,V locked
+    class AP,AQ,AR result
