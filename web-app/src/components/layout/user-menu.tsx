@@ -29,23 +29,22 @@ export function UserMenu({ displayName, email }: UserMenuProps) {
 
   async function handleSignOut() {
     setSigningOut(true);
-    await signOut();
+    try {
+      await signOut();
+    } catch {
+      setSigningOut(false);
+    }
   }
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        className="flex items-center gap-2 rounded-full p-1 transition-colors hover:bg-[var(--bg-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--border-focus)]"
-        render={
-          <button>
-            <Avatar className="h-8 w-8 border border-[var(--border-light)]">
-              <AvatarFallback className="bg-[var(--bg-elevated)] text-xs font-display font-semibold text-[var(--text-secondary)]">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-          </button>
-        }
-      />
+      <DropdownMenuTrigger className="flex items-center gap-2 rounded-full p-1 transition-colors hover:bg-[var(--bg-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--border-focus)]">
+        <Avatar className="h-8 w-8 border border-[var(--border-light)]">
+          <AvatarFallback className="bg-[var(--bg-elevated)] text-xs font-display font-semibold text-[var(--text-secondary)]">
+            {initials}
+          </AvatarFallback>
+        </Avatar>
+      </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
         className="w-56 bg-[var(--bg-elevated)] border-[var(--border-light)]"
