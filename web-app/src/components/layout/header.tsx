@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
 import { UserMenu } from "@/components/layout/user-menu";
+import { NotificationBell } from "@/components/layout/notification-bell";
 
 export function Header() {
   const { user, profile, loading } = useAuth();
@@ -16,14 +17,17 @@ export function Header() {
           </span>
         </Link>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {loading ? (
             <div className="h-8 w-8 animate-pulse rounded-full bg-[var(--bg-elevated)]" />
           ) : user ? (
-            <UserMenu
-              displayName={profile?.display_name || user.email?.split("@")[0] || "User"}
-              email={user.email || ""}
-            />
+            <>
+              <NotificationBell userId={user.id} />
+              <UserMenu
+                displayName={profile?.display_name || user.email?.split("@")[0] || "User"}
+                email={user.email || ""}
+              />
+            </>
           ) : (
             <Link
               href="/login"

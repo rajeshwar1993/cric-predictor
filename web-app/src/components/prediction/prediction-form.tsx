@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ScenarioCard } from "./scenario-card";
+import { CustomScenarioForm } from "./custom-scenario-form";
 import { submitPredictions } from "@/lib/actions/predictions";
 import { Loader2, Check } from "lucide-react";
 import type { Scenario, Prediction, Player } from "@/types";
@@ -179,6 +180,11 @@ export function PredictionForm({
           </div>
         );
       })}
+
+      {/* Custom scenario proposal */}
+      {!isLocked && (
+        <CustomScenarioForm groupId={groupId} matchId={matchId} />
+      )}
 
       {/* Sticky submit bar */}
       <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[var(--border-light)] bg-[var(--bg-deep)]/95 backdrop-blur px-4 py-3">
