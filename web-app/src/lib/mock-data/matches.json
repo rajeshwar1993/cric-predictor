@@ -1,0 +1,92 @@
+[
+  {
+    "id": "mock-match-1",
+    "name": "Royal Challengers Bengaluru vs Sunrisers Hyderabad, 1st Match",
+    "matchType": "t20",
+    "status": "Match not started",
+    "venue": "M. Chinnaswamy Stadium, Bengaluru",
+    "date": "2026-03-28",
+    "dateTimeGMT": "2026-03-28T14:00:00",
+    "teams": ["Royal Challengers Bengaluru", "Sunrisers Hyderabad"],
+    "teamInfo": [
+      { "name": "Royal Challengers Bengaluru", "shortname": "RCB", "img": "" },
+      { "name": "Sunrisers Hyderabad", "shortname": "SRH", "img": "" }
+    ],
+    "score": [],
+    "fantasyEnabled": true,
+    "bbbEnabled": true,
+    "hasSquad": true
+  },
+  {
+    "id": "mock-match-2",
+    "name": "Chennai Super Kings vs Mumbai Indians, 2nd Match",
+    "matchType": "t20",
+    "status": "Match not started",
+    "venue": "MA Chidambaram Stadium, Chennai",
+    "date": "2026-03-29",
+    "dateTimeGMT": "2026-03-29T14:00:00",
+    "teams": ["Chennai Super Kings", "Mumbai Indians"],
+    "teamInfo": [
+      { "name": "Chennai Super Kings", "shortname": "CSK", "img": "" },
+      { "name": "Mumbai Indians", "shortname": "MI", "img": "" }
+    ],
+    "score": [],
+    "fantasyEnabled": true,
+    "bbbEnabled": true,
+    "hasSquad": true
+  },
+  {
+    "id": "mock-match-3",
+    "name": "Kolkata Knight Riders vs Delhi Capitals, 3rd Match",
+    "matchType": "t20",
+    "status": "Match not started",
+    "venue": "Eden Gardens, Kolkata",
+    "date": "2026-03-30",
+    "dateTimeGMT": "2026-03-30T14:00:00",
+    "teams": ["Kolkata Knight Riders", "Delhi Capitals"],
+    "teamInfo": [
+      { "name": "Kolkata Knight Riders", "shortname": "KKR", "img": "" },
+      { "name": "Delhi Capitals", "shortname": "DC", "img": "" }
+    ],
+    "score": [],
+    "fantasyEnabled": true,
+    "bbbEnabled": true,
+    "hasSquad": true
+  },
+  {
+    "id": "mock-match-4",
+    "name": "Rajasthan Royals vs Punjab Kings, 4th Match",
+    "matchType": "t20",
+    "status": "Match not started",
+    "venue": "Sawai Mansingh Stadium, Jaipur",
+    "date": "2026-03-31",
+    "dateTimeGMT": "2026-03-31T14:00:00",
+    "teams": ["Rajasthan Royals", "Punjab Kings"],
+    "teamInfo": [
+      { "name": "Rajasthan Royals", "shortname": "RR", "img": "" },
+      { "name": "Punjab Kings", "shortname": "PBKS", "img": "" }
+    ],
+    "score": [],
+    "fantasyEnabled": true,
+    "bbbEnabled": true,
+    "hasSquad": true
+  },
+  {
+    "id": "mock-match-5",
+    "name": "Gujarat Titans vs Lucknow Super Giants, 5th Match",
+    "matchType": "t20",
+    "status": "Match not started",
+    "venue": "Narendra Modi Stadium, Ahmedabad",
+    "date": "2026-04-01",
+    "dateTimeGMT": "2026-04-01T14:00:00",
+    "teams": ["Gujarat Titans", "Lucknow Super Giants"],
+    "teamInfo": [
+      { "name": "Gujarat Titans", "shortname": "GT", "img": "" },
+      { "name": "Lucknow Super Giants", "shortname": "LSG", "img": "" }
+    ],
+    "score": [],
+    "fantasyEnabled": true,
+    "bbbEnabled": true,
+    "hasSquad": true
+  }
+]

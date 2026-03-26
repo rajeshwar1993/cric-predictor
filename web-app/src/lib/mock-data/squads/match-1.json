@@ -1,0 +1,50 @@
+{
+  "id": "mock-match-1",
+  "name": "Royal Challengers Bengaluru vs Sunrisers Hyderabad, 1st Match",
+  "matchType": "t20",
+  "status": "",
+  "venue": "M. Chinnaswamy Stadium, Bengaluru",
+  "date": "2026-03-28",
+  "dateTimeGMT": "2026-03-28T14:00:00",
+  "teams": ["Royal Challengers Bengaluru", "Sunrisers Hyderabad"],
+  "teamInfo": [
+    { "name": "Royal Challengers Bengaluru", "shortname": "RCB", "img": "" },
+    { "name": "Sunrisers Hyderabad", "shortname": "SRH", "img": "" }
+  ],
+  "players": [
+    {
+      "teamName": "Royal Challengers Bengaluru",
+      "shortname": "RCB",
+      "players": [
+        { "id": "p1", "name": "Virat Kohli", "battingStyle": "Right-hand bat", "bowlingStyle": "Right-arm medium" },
+        { "id": "p2", "name": "Faf du Plessis", "battingStyle": "Right-hand bat" },
+        { "id": "p3", "name": "Rajat Patidar", "battingStyle": "Right-hand bat" },
+        { "id": "p7", "name": "Glenn Maxwell", "battingStyle": "Right-hand bat", "bowlingStyle": "Right-arm off-break" },
+        { "id": "p8", "name": "Dinesh Karthik", "battingStyle": "Right-hand bat" },
+        { "id": "b4", "name": "Mohammed Siraj", "battingStyle": "Right-hand bat", "bowlingStyle": "Right-arm fast-medium" },
+        { "id": "b5", "name": "Josh Hazlewood", "battingStyle": "Left-hand bat", "bowlingStyle": "Right-arm fast" },
+        { "id": "p9", "name": "Wanindu Hasaranga", "battingStyle": "Right-hand bat", "bowlingStyle": "Right-arm leg-break" },
+        { "id": "p10", "name": "Harshal Patel", "battingStyle": "Right-hand bat", "bowlingStyle": "Right-arm medium" },
+        { "id": "p11", "name": "Cameron Green", "battingStyle": "Right-hand bat", "bowlingStyle": "Right-arm fast-medium" },
+        { "id": "p12", "name": "Anuj Rawat", "battingStyle": "Left-hand bat" }
+      ]
+    },
+    {
+      "teamName": "Sunrisers Hyderabad",
+      "shortname": "SRH",
+      "players": [
+        { "id": "p4", "name": "Travis Head", "battingStyle": "Left-hand bat", "bowlingStyle": "Right-arm off-break" },
+        { "id": "p5", "name": "Abhishek Sharma", "battingStyle": "Left-hand bat", "bowlingStyle": "Left-arm orthodox" },
+        { "id": "p6", "name": "Heinrich Klaasen", "battingStyle": "Right-hand bat" },
+        { "id": "b1", "name": "Bhuvneshwar Kumar", "battingStyle": "Right-hand bat", "bowlingStyle": "Right-arm medium" },
+        { "id": "b2", "name": "T Natarajan", "battingStyle": "Left-hand bat", "bowlingStyle": "Left-arm fast-medium" },
+        { "id": "b3", "name": "Pat Cummins", "battingStyle": "Right-hand bat", "bowlingStyle": "Right-arm fast" },
+        { "id": "p13", "name": "Aiden Markram", "battingStyle": "Right-hand bat", "bowlingStyle": "Right-arm off-break" },
+        { "id": "p14", "name": "Marco Jansen", "battingStyle": "Left-hand bat", "bowlingStyle": "Left-arm fast-medium" },
+        { "id": "p15", "name": "Rahul Tripathi", "battingStyle": "Right-hand bat" },
+        { "id": "p16", "name": "Washington Sundar", "battingStyle": "Left-hand bat", "bowlingStyle": "Right-arm off-break" },
+        { "id": "p17", "name": "Umran Malik", "battingStyle": "Right-hand bat", "bowlingStyle": "Right-arm fast" }
+      ]
+    }
+  ]
+}
