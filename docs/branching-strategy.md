@@ -288,17 +288,22 @@ When multiple developers are working (or when using parallel agents), these epic
 
 The initial project setup. Cut from `main`, merged to `main` first:
 
-- Next.js 16.2 scaffold
-- Tailwind v4 + shadcn/ui setup
+- Next.js 16.2 scaffold with TypeScript, Tailwind v4, App Router
+- shadcn/ui setup with Stadium Nightscape theme
 - Supabase client setup (browser + server)
-- `proxy.ts` skeleton
+- `proxy.ts` skeleton (auth session management)
 - `globals.css` with design tokens
-- Font loading
-- Base layout
-- Supabase migration files
-- Type definitions
-- Constants file
-- `.env.local.example`
+- Font loading (Chakra Petch, DM Sans, JetBrains Mono)
+- Base root layout
+- Data Access Layer stubs (`src/lib/dal/` — all 9 modules)
+- Cricket API abstraction (`src/lib/cricket-api/` — index, client, mock, types)
+- Mock data fixtures (`src/lib/mock-data/` — matches, squads, scorecards)
+- Supabase migration files (001-005)
+- `supabase/seed.sql` (test users, groups, matches, predictions)
+- Type definitions (`src/types/`)
+- Constants file, validators, utils
+- `.env.local.example` (with `NEXT_PUBLIC_MOCK_MODE` flag)
+- Local dev environment verified (`supabase start` + `supabase db reset`)
 
 This is the foundation all epic branches depend on. **Must merge to main before any epic branch is created.**
 

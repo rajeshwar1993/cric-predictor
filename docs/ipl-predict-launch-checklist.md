@@ -16,7 +16,7 @@
 - [ ] Note down all API keys → create `.env.local`
 
 ### Supabase Configuration
-- [ ] Run full database migration SQL (from Technical Architecture doc)
+- [ ] Run full database migration SQL (from `tech_plan.md` — authoritative schema reference, NOT the Technical Architecture doc)
 - [ ] Enable Magic Link auth: Dashboard → Authentication → Providers → Email → enable Magic Link
 - [ ] Customize email template: Dashboard → Authentication → Email Templates → Magic Link (brand it — default template looks spammy)
 - [ ] Configure redirect URLs: Dashboard → Authentication → URL Configuration → add production domain + localhost
@@ -236,11 +236,14 @@ Realistic scope: Auth + groups + manual prediction form + manual scoring. No API
 | Document | Purpose |
 |----------|---------|
 | `ipl-predict-requirements-v2.md` | Product Requirements Document — all product decisions, scenarios, flows |
-| `ipl-predict-technical-architecture.md` | Database schema, API integration, cron logic, Realtime setup, route structure |
+| `ipl-predict-technical-architecture.md` | Original technical architecture (superseded by tech_plan.md for schema + RLS) |
 | `ipl-predict-design-system-spec.md` | Color tokens, typography, spacing, component specs, page layouts |
 | `ipl-predict-design-system.jsx` | Interactive design system preview (run as React artifact) |
 | `ipl-predict-user-flow.mermaid` | Visual user flow diagram |
-| `ipl-predict-scaffold.tar.gz` | Starter code (auth, join page, Supabase clients, types) — NOTE: schema in this file is outdated, use the Technical Architecture doc SQL instead |
+| **`tech_plan.md`** | **Authoritative technical plan — file structure, DB schema, API specs, DAL, mock mode, local dev setup** |
+| `plan.md` | Development plan — phased build with tasks and exit criteria |
+| `stories.md` | User stories (73 stories across 14 epics with acceptance criteria) |
+| `branching-strategy.md` | Git branching strategy — epic/story hierarchy, merge order, conventions |
 
 ---
 

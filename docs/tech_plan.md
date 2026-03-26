@@ -1782,23 +1782,37 @@ Since the underlying tables (`predictions`, `scenarios`, `profiles`) all have `S
 
 ## 14. Prediction Upsert Pattern
 
-Predictions use `UNIQUE (user_id, scenario_id)`. Submitting and editing use the same upsert:
+Predictions use `UNIQUE (user_id, scenario_id)`. Submitting and editing use the same upsert. This logic lives in the DAL (`src/lib/dal/predictions.ts`), not in Server Actions:
 
 ```typescript
-// In Server Action: submitPredictions
-for (const pick of predictions) {
+// src/lib/dal/predictions.ts
+import { createClient } from '@/lib/supabase/server';
+
+export async function upsertPrediction(
+  userId: string,
+  scenarioId: string,
+  value: string
+) {
+  const supabase = await createClient();
   const { error } = await supabase
     .from('predictions')
     .upsert(
       {
-        user_id: user.id,
-        scenario_id: pick.scenarioId,
-        value: pick.value,
+        user_id: userId,
+        scenario_id: scenarioId,
+        value,
         submitted_at: new Date().toISOString(), // Always update for tiebreaking
       },
       { onConflict: 'user_id,scenario_id' }
     );
+  if (error) throw error;
 }
+
+// Called from Server Action: actions/predictions.ts
+// The action validates input, checks auth, checks deadline, then calls:
+//   for (const pick of picks) {
+//     await upsertPrediction(user.id, pick.scenarioId, pick.value);
+//   }
 ```
 
 **Key behavior:** `submitted_at` is always set to `now()` on both insert and update. This means editing a prediction resets the tiebreaker timestamp — intentional per PRD ("All edits update `submitted_at` timestamp").
