@@ -1,9 +1,6 @@
 # Bragg — Supabase Local Config
 # See: https://supabase.com/docs/guides/cli/config
 
-[project]
-id = "bragg-local"
-
 [api]
 enabled = true
 port = 54321
@@ -14,7 +11,7 @@ max_rows = 1000
 [db]
 port = 54322
 shadow_port = 54320
-major_version = 15
+major_version = 17
 
 [db.pooler]
 enabled = false
@@ -48,7 +45,7 @@ enable_confirmations = false
 
 [auth.email.template.magic_link]
 subject = "Your Bragg login link"
-content_path = "./templates/magic_link.html"
+content_path = "./supabase/templates/magic_link.html"
 
 [auth.external.apple]
 enabled = false

@@ -2,7 +2,7 @@
 -- Tables, enums, extensions, indexes
 
 -- Extensions
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto" SCHEMA extensions;
 
 -- Enums
 CREATE TYPE match_status AS ENUM ('upcoming', 'live', 'completed', 'abandoned', 'no_result');
@@ -24,7 +24,7 @@ CREATE TABLE profiles (
 CREATE TABLE groups (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
-  invite_code TEXT NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(6), 'hex'),
+  invite_code TEXT NOT NULL UNIQUE DEFAULT encode(extensions.gen_random_bytes(6), 'hex'),
   created_by UUID NOT NULL REFERENCES profiles(id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -141,7 +141,7 @@ CREATE TABLE scenarios (
   is_removed BOOLEAN NOT NULL DEFAULT false,
   removed_by UUID REFERENCES profiles(id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (group_id, match_id, system_category) NULLS NOT DISTINCT
+  UNIQUE NULLS NOT DISTINCT (group_id, match_id, system_category)
 );
 
 -- predictions
