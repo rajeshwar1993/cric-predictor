@@ -150,16 +150,48 @@ web-app/
 │   │   │   ├── server.ts           # Server Supabase client (createServerClient + cookies)
 │   │   │   └── middleware.ts        # Session update utility for proxy.ts
 │   │   │
-│   │   ├── actions/
-│   │   │   ├── auth.ts             # Server actions: signIn, signOut
-│   │   │   ├── groups.ts           # Server actions: createGroup, joinGroup, approveJoin, etc.
-│   │   │   ├── predictions.ts      # Server actions: submitPredictions, editPredictions
-│   │   │   ├── scenarios.ts        # Server actions: createCustomScenario, approveScenario, removeScenario
-│   │   │   ├── admin.ts            # Server actions: enterResults, resolveScenario, setDeadline, lockPredictions
-│   │   │   └── notifications.ts    # Server actions: markRead, markAllRead
+│   │   ├── actions/                 # Server Actions (thin layer — validate, auth, delegate to DAL)
+│   │   │   ├── auth.ts             # signIn, signOut
+│   │   │   ├── groups.ts           # createGroup, joinGroup, approveJoin, etc.
+│   │   │   ├── predictions.ts      # submitPredictions, editPredictions
+│   │   │   ├── scenarios.ts        # createCustomScenario, approveScenario, removeScenario
+│   │   │   ├── admin.ts            # enterResults, resolveScenario, setDeadline, lockPredictions
+│   │   │   └── notifications.ts    # markRead, markAllRead
 │   │   │
-│   │   ├── cricket-api.ts          # CricketData.org API client
-│   │   ├── scorecard-parser.ts     # Parse scorecard → match result fields
+│   │   ├── dal/                     # Data Access Layer — ALL DB reads/writes go through here
+│   │   │   ├── groups.ts           # getGroupById, getGroupsByUser, createGroup, etc.
+│   │   │   ├── members.ts          # getMembers, getPendingRequests, updateMemberStatus, etc.
+│   │   │   ├── matches.ts          # getUpcomingMatches, getMatchById, updateMatchResults, etc.
+│   │   │   ├── scenarios.ts        # getScenariosForMatch, seedSystemScenarios, resolveScenario, etc.
+│   │   │   ├── predictions.ts      # getPredictions, upsertPrediction, getLeaderboard, etc.
+│   │   │   ├── standings.ts        # getSeasonStandings, getMatchLeaderboard
+│   │   │   ├── notifications.ts    # getUnreadCount, getNotifications, markRead, etc.
+│   │   │   ├── players.ts          # getPlayersForTeam, getMatchSquad, upsertPlayers, etc.
+│   │   │   └── teams.ts            # getAllTeams, getTeamByCode
+│   │   │
+│   │   ├── cricket-api/             # CricketData.org API — abstracted with mock support
+│   │   │   ├── client.ts           # Real API client (HTTP calls to api.cricapi.com)
+│   │   │   ├── mock.ts             # Mock client (reads from local JSON fixtures)
+│   │   │   ├── index.ts            # Exports the active client based on MOCK_MODE env
+│   │   │   └── types.ts            # Shared request/response types for both clients
+│   │   │
+│   │   ├── mock-data/               # Static JSON fixtures for mock cricket API
+│   │   │   ├── matches.json        # IPL 2026 fixture list (series_info + matches response)
+│   │   │   ├── squads/             # Per-match squad responses
+│   │   │   │   ├── match-1.json
+│   │   │   │   └── match-2.json
+│   │   │   ├── scorecards/         # Per-match scorecard snapshots (multiple phases per match)
+│   │   │   │   ├── match-1/
+│   │   │   │   │   ├── toss.json           # After toss — tossWinner populated
+│   │   │   │   │   ├── powerplay.json      # After 6 overs — batting/bowling/FOW data
+│   │   │   │   │   ├── innings-break.json  # End of first innings
+│   │   │   │   │   ├── mid-match.json      # During second innings
+│   │   │   │   │   └── completed.json      # Final scorecard — all results
+│   │   │   │   └── match-2/
+│   │   │   │       └── ...
+│   │   │   └── README.md           # How to use and extend mock data
+│   │   │
+│   │   ├── scorecard-parser.ts     # Parse scorecard → match result fields (works with both real + mock)
 │   │   ├── on-track-logic.ts       # "On track" / "In danger" computation
 │   │   ├── constants.ts            # Teams, routes, app config, scenario categories
 │   │   ├── utils.ts                # Shared utilities
@@ -176,8 +208,9 @@ web-app/
     │   ├── 001_initial_schema.sql   # Tables, enums, extensions
     │   ├── 002_views_functions.sql  # Views + DB functions
     │   ├── 003_rls_policies.sql     # All RLS policies
-    │   ├── 004_seed_data.sql        # Points config, teams, fixtures
+    │   ├── 004_seed_data.sql        # Points config, teams, fixtures, players
     │   └── 005_realtime.sql         # Realtime publication config
+    ├── seed.sql                     # Dev-only seed: test users, groups, predictions (loaded by `supabase db reset`)
     └── functions/
         └── match-cron/
             └── index.ts             # Edge Function for match polling + resolution
@@ -251,57 +284,16 @@ export const config = {
 
 ### 1.4 Server Actions Architecture
 
-All mutations go through Server Actions in `/lib/actions/`. Each action:
+Server Actions are thin wrappers that validate, authenticate, authorize, and **delegate to the DAL** (see Section 9). They never contain Supabase queries directly.
+
+Each action:
 1. Validates input with Zod schemas
 2. Checks authentication via `supabase.auth.getUser()`
-3. Checks authorization (role, membership)
-4. Performs the mutation
+3. Checks authorization (role, membership) via DAL
+4. Delegates the mutation to a DAL function
 5. Returns `{ success, error, data }` — never throws
 
-**Example pattern:**
-```typescript
-'use server';
-
-import { z } from 'zod';
-import { createClient } from '@/lib/supabase/server';
-
-const schema = z.object({ name: z.string().min(2).max(50) });
-
-export async function createGroup(formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: 'Unauthorized' };
-
-  const parsed = schema.safeParse({ name: formData.get('name') });
-  if (!parsed.success) return { error: parsed.error.flatten() };
-
-  // Check rate limit: max 10 groups per user
-  const { count } = await supabase
-    .from('groups')
-    .select('*', { count: 'exact', head: true })
-    .eq('created_by', user.id);
-  if ((count ?? 0) >= 10) return { error: 'Max 10 groups per user' };
-
-  // Create group
-  const { data: group, error } = await supabase
-    .from('groups')
-    .insert({ name: parsed.data.name, created_by: user.id })
-    .select()
-    .single();
-  if (error) return { error: error.message };
-
-  // Auto-add creator as owner + approved
-  await supabase.from('group_members').insert({
-    group_id: group.id,
-    user_id: user.id,
-    role: 'owner',
-    status: 'approved',
-    approved_at: new Date().toISOString(),
-  });
-
-  return { success: true, data: group };
-}
-```
+See Section 9.2 for the full Server Action + DAL example pattern.
 
 ---
 
@@ -532,14 +524,14 @@ CREATE INDEX idx_match_squads_match ON public.match_squads(match_id);
 ### 2.4 Views
 
 **`season_standings`** — Aggregated season standings per group
-- **Must be created with `WITH (security_invoker = true)`** — see Section 11
+- **Must be created with `WITH (security_invoker = true)`** — see Section 13
 - Joins: predictions → scenarios → profiles → group_members
 - Computes: total_points, matches_predicted, correct_predictions, total_resolved, accuracy_pct, points_per_match, rank
 - Filters: only approved scenarios, only approved members, excludes removed scenarios
 - Partitioned rank by group_id, ordered by total_points DESC
 
 **`match_leaderboard`** — Per-match leaderboard
-- **Must be created with `WITH (security_invoker = true)`** — see Section 11
+- **Must be created with `WITH (security_invoker = true)`** — see Section 13
 - Joins: predictions → scenarios → profiles
 - Computes: match_points, correct_count, resolved_count, predicted_count, rank
 - Rank tiebreaker: earliest `submitted_at` wins
@@ -981,7 +973,7 @@ const TEAM_NAME_TO_CODE: Record<string, string> = {
 ### 4.2 Activation Window
 
 ```typescript
-// See Section 9 (Timezone Strategy) for full derivation.
+// See Section 11 (Timezone Strategy) for full derivation.
 // Active window: 2 PM IST to 1 AM IST = 08:30 UTC to 19:30 UTC
 function shouldActivate(): boolean {
   const now = new Date();
@@ -1241,19 +1233,44 @@ All components will be customized with the Stadium Nightscape tokens via the CSS
 
 ## 7. Environment Variables
 
+### 7.1 Production (`.env.local` on Vercel)
+
 ```env
-# Supabase
+# Supabase (cloud)
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
-# Cricket API
+# Cricket API (real)
 CRICKET_API_KEY=your-cricketdata-api-key
 CRICKET_API_BASE_URL=https://api.cricapi.com/v1
 
 # App
 NEXT_PUBLIC_APP_URL=https://your-domain.com
 NEXT_PUBLIC_APP_NAME=Bragg
+
+# Mock mode — OFF in production
+NEXT_PUBLIC_MOCK_MODE=false
+```
+
+### 7.2 Local Development (`.env.local` on dev machine)
+
+```env
+# Supabase (local — started via `supabase start`)
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<local-anon-key-from-supabase-start-output>
+SUPABASE_SERVICE_ROLE_KEY=<local-service-role-key-from-supabase-start-output>
+
+# Cricket API — not needed when mock mode is on
+CRICKET_API_KEY=
+CRICKET_API_BASE_URL=https://api.cricapi.com/v1
+
+# App
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_APP_NAME=Bragg
+
+# Mock mode — ON for local dev (mocks only the cricket API, DB/Auth/Realtime use Supabase local)
+NEXT_PUBLIC_MOCK_MODE=true
 ```
 
 ---
@@ -1279,7 +1296,401 @@ GitHub (main branch)
 
 ---
 
-## 9. Timezone Strategy
+## 9. Data Access Layer (DAL)
+
+### 9.1 Architecture Overview
+
+**Rule: No component or Server Action touches Supabase or any external API directly.** All data access goes through the DAL (`src/lib/dal/`) and the cricket API abstraction (`src/lib/cricket-api/`).
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     COMPONENTS (React)                          │
+│   Client Components (hooks) ←→ Server Components (async)       │
+└────────────────┬──────────────────────┬─────────────────────────┘
+                 │                      │
+                 ▼                      ▼
+┌─────────────────────────┐  ┌─────────────────────────┐
+│     SERVER ACTIONS       │  │    SERVER COMPONENTS     │
+│   src/lib/actions/       │  │    (direct DAL calls)    │
+│   Validate → Auth →     │  │                          │
+│   Authorize → DAL call  │  │                          │
+└────────────┬────────────┘  └────────────┬────────────┘
+             │                            │
+             ▼                            ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    DATA ACCESS LAYER (DAL)                       │
+│                    src/lib/dal/                                   │
+│                                                                  │
+│   groups.ts │ members.ts │ matches.ts │ scenarios.ts │ ...      │
+│                                                                  │
+│   • All Supabase queries live here                               │
+│   • Typed inputs and outputs                                     │
+│   • Handles error wrapping                                       │
+│   • Single source of truth for query logic                       │
+└────────────────────────────┬────────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    SUPABASE CLIENT                               │
+│   src/lib/supabase/server.ts (server) / client.ts (browser)     │
+│                                                                  │
+│   Connects to Supabase Cloud (prod) or Supabase Local (dev)     │
+│   — determined by NEXT_PUBLIC_SUPABASE_URL env var               │
+└─────────────────────────────────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│                    CRON EDGE FUNCTION                            │
+│                    supabase/functions/match-cron/                │
+└────────────────────────────┬────────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    CRICKET API ABSTRACTION                       │
+│                    src/lib/cricket-api/                           │
+│                                                                  │
+│   index.ts ── checks NEXT_PUBLIC_MOCK_MODE                      │
+│       ├── MOCK_MODE=false → client.ts (real HTTP to cricapi.com)│
+│       └── MOCK_MODE=true  → mock.ts (reads from mock-data/)    │
+│                                                                  │
+│   Both implement the same CricketApiClient interface             │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 9.2 DAL Pattern
+
+Every DAL function:
+1. Accepts typed parameters
+2. Creates the Supabase client (server or browser depending on context)
+3. Executes the query
+4. Returns typed results or null/error
+
+```typescript
+// src/lib/dal/groups.ts
+import { createClient } from '@/lib/supabase/server';
+import type { Group, GroupWithMembers } from '@/types';
+
+export async function getGroupsByUser(userId: string): Promise<Group[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('group_members')
+    .select('group:groups(*), role, status')
+    .eq('user_id', userId)
+    .eq('status', 'approved');
+
+  if (error) throw error;
+  return data.map(row => ({ ...row.group, role: row.role }));
+}
+
+export async function getGroupByInviteCode(code: string): Promise<Group | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('groups')
+    .select('*')
+    .eq('invite_code', code)
+    .single();
+
+  if (error) return null;
+  return data;
+}
+
+export async function createGroup(name: string, userId: string): Promise<Group> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('groups')
+    .insert({ name, created_by: userId })
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  // Auto-add creator as owner
+  await supabase.from('group_members').insert({
+    group_id: data.id,
+    user_id: userId,
+    role: 'owner',
+    status: 'approved',
+    approved_at: new Date().toISOString(),
+  });
+
+  return data;
+}
+```
+
+Server Actions become thin wrappers that validate, authenticate, authorize, and delegate:
+
+```typescript
+// src/lib/actions/groups.ts
+'use server';
+
+import { z } from 'zod';
+import { createClient } from '@/lib/supabase/server';
+import * as groupsDal from '@/lib/dal/groups';
+
+const createGroupSchema = z.object({ name: z.string().min(2).max(50) });
+
+export async function createGroupAction(formData: FormData) {
+  // 1. Auth
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Unauthorized' };
+
+  // 2. Validate
+  const parsed = createGroupSchema.safeParse({ name: formData.get('name') });
+  if (!parsed.success) return { error: parsed.error.flatten() };
+
+  // 3. Rate limit check (via DAL)
+  const existingGroups = await groupsDal.getGroupsByUser(user.id);
+  if (existingGroups.length >= 10) return { error: 'Max 10 groups per user' };
+
+  // 4. Delegate to DAL
+  try {
+    const group = await groupsDal.createGroup(parsed.data.name, user.id);
+    return { success: true, data: group };
+  } catch (err) {
+    return { error: 'Failed to create group' };
+  }
+}
+```
+
+### 9.3 DAL Module Responsibilities
+
+| DAL Module | Key Functions | Used By |
+|-----------|---------------|---------|
+| `groups.ts` | getGroupById, getGroupsByUser, getGroupByInviteCode, createGroup | actions/groups, dashboard page, join page |
+| `members.ts` | getMembers, getPendingRequests, updateMemberStatus, updateMemberRole | actions/groups, admin panel, group home |
+| `matches.ts` | getUpcomingMatches, getMatchById, getMatchesForDate, updateMatchResults, updateLiveSnapshot | actions/admin, group home, prediction page, cron |
+| `scenarios.ts` | getScenariosForMatch, seedSystemScenarios, createCustomScenario, resolveScenario, removeScenario | actions/scenarios, actions/admin, prediction page, cron |
+| `predictions.ts` | getPredictionsForUser, getPredictionsForScenario, upsertPrediction, isDeadlinePassed | actions/predictions, prediction page, leaderboard |
+| `standings.ts` | getSeasonStandings, getMatchLeaderboard | standings page, match leaderboard page |
+| `notifications.ts` | getNotifications, getUnreadCount, markRead, markAllRead, createNotification | actions/notifications, notification bell, actions/* |
+| `players.ts` | getPlayersForTeam, getMatchSquad, upsertPlayersFromApi | prediction page (dropdowns), cron |
+| `teams.ts` | getAllTeams, getTeamByCode | constants, match card, team badges |
+
+### 9.4 Cricket API Abstraction (Mock Mode)
+
+The cricket API uses an interface pattern. Both the real and mock clients implement the same contract:
+
+```typescript
+// src/lib/cricket-api/types.ts
+export interface CricketApiClient {
+  getMatches(offset?: number): Promise<MatchesResponse | null>;
+  getMatchInfo(matchId: string): Promise<MatchInfoResponse | null>;
+  getScorecard(matchId: string): Promise<ScorecardResponse | null>;
+  getSquad(matchId: string): Promise<SquadResponse | null>;
+  getSeriesInfo(seriesId: string): Promise<SeriesInfoResponse | null>;
+}
+```
+
+```typescript
+// src/lib/cricket-api/index.ts
+import { RealCricketApiClient } from './client';
+import { MockCricketApiClient } from './mock';
+import type { CricketApiClient } from './types';
+
+const isMockMode = process.env.NEXT_PUBLIC_MOCK_MODE === 'true';
+
+export const cricketApi: CricketApiClient = isMockMode
+  ? new MockCricketApiClient()
+  : new RealCricketApiClient();
+```
+
+```typescript
+// src/lib/cricket-api/client.ts — Real API
+export class RealCricketApiClient implements CricketApiClient {
+  private baseUrl = process.env.CRICKET_API_BASE_URL!;
+  private apiKey = process.env.CRICKET_API_KEY!;
+
+  async getScorecard(matchId: string): Promise<ScorecardResponse | null> {
+    try {
+      const res = await fetch(
+        `${this.baseUrl}/match_scorecard?apikey=${this.apiKey}&id=${matchId}`
+      );
+      if (!res.ok) return null;
+      const json = await res.json();
+      return json.status === 'success' ? json : null;
+    } catch {
+      return null;
+    }
+  }
+  // ... other methods follow the same pattern
+}
+```
+
+```typescript
+// src/lib/cricket-api/mock.ts — Mock API (reads local JSON)
+import type { CricketApiClient, ScorecardResponse } from './types';
+import matchesData from '@/lib/mock-data/matches.json';
+
+export class MockCricketApiClient implements CricketApiClient {
+  // Track simulated match phase for progressive resolution testing
+  private matchPhase: Record<string, string> = {};
+
+  async getScorecard(matchId: string): Promise<ScorecardResponse | null> {
+    const phase = this.matchPhase[matchId] || 'completed';
+    try {
+      // Dynamic import from mock-data/scorecards/match-{N}/{phase}.json
+      const data = await import(`@/lib/mock-data/scorecards/${matchId}/${phase}.json`);
+      return data.default;
+    } catch {
+      return null;
+    }
+  }
+
+  // Advance the simulated match phase (called by mock cron or test harness)
+  advancePhase(matchId: string, phase: string) {
+    this.matchPhase[matchId] = phase;
+  }
+
+  async getMatches(): Promise<MatchesResponse | null> {
+    return matchesData as MatchesResponse;
+  }
+
+  // ... other methods read from corresponding mock-data/ files
+}
+```
+
+### 9.5 Mock Data Structure
+
+Mock data files simulate real CricketData.org API responses, recorded from actual matches or hand-crafted:
+
+```
+src/lib/mock-data/
+├── matches.json              # /matches response — 5-10 IPL fixtures
+├── squads/
+│   ├── match-1.json          # /match_squad response — CSK vs MI playing XI
+│   └── match-2.json          # /match_squad response — RCB vs SRH
+├── scorecards/
+│   ├── match-1/
+│   │   ├── toss.json         # Scorecard after toss (tossWinner set, no batting data)
+│   │   ├── powerplay.json    # After 6 overs (partial batting/bowling, FOW data)
+│   │   ├── innings-break.json # End of first innings (full 1st innings data)
+│   │   ├── mid-match.json    # During 2nd innings (partial 2nd innings)
+│   │   └── completed.json    # Match complete (full scorecard, winner, POTM)
+│   └── match-2/
+│       └── completed.json    # Simpler — just the final result
+└── README.md                 # How to add new mock matches
+```
+
+Each scorecard JSON is a full `ScorecardResponse` matching the types in `src/lib/cricket-api/types.ts`. The `scorecard-parser.ts` processes these identically to real API responses — no special mock parsing needed.
+
+**Creating mock data:** Record real API responses during a live non-IPL T20 match using the CricketData.org free tier (100 calls/day). Save the JSON at each match phase. This gives us realistic test data.
+
+---
+
+## 10. Local Development Setup
+
+### 10.1 Prerequisites
+
+- Node.js 20+
+- Docker (required for Supabase local)
+- Supabase CLI (`npm install -g supabase`)
+
+### 10.2 First-Time Setup
+
+```bash
+# 1. Clone and install
+git clone <repo-url>
+cd cric-predictor/web-app
+npm install
+
+# 2. Start Supabase local (Docker must be running)
+cd ../supabase
+supabase start
+# Output shows: API URL, anon key, service_role key — copy these
+
+# 3. Create .env.local from template
+cd ../web-app
+cp .env.local.example .env.local
+# Edit .env.local — paste the Supabase local keys, set MOCK_MODE=true
+
+# 4. Reset DB with migrations + seed data
+cd ../supabase
+supabase db reset
+# This runs all migrations (001-005) + seed.sql (test data)
+
+# 5. Start dev server
+cd ../web-app
+npm run dev
+# App runs at http://localhost:3000
+```
+
+### 10.3 What Supabase Local Gives You
+
+| Feature | Local Behavior |
+|---------|---------------|
+| **Postgres** | Full local database, same as cloud. All tables, views, functions, RLS. |
+| **Auth** | Works locally. Magic link emails are captured by Inbucket at `http://127.0.0.1:54324` — no real email sent. |
+| **Realtime** | Full WebSocket support locally. Live leaderboard works. |
+| **Edge Functions** | Can be run locally with `supabase functions serve`. |
+| **Studio** | Supabase dashboard at `http://127.0.0.1:54323` for browsing tables, running SQL. |
+
+### 10.4 Seed Data (`supabase/seed.sql`)
+
+The seed file creates a complete local test environment:
+
+```sql
+-- Test users (created via auth.users, triggers auto-create profiles)
+-- User 1: "Test Admin" — testadmin@bragg.local
+-- User 2: "Test Member" — testmember@bragg.local
+-- User 3: "Test Member 2" — testmember2@bragg.local
+
+-- Test group: "Office Cricket Gang"
+-- Test Admin is owner, both Test Members are approved
+
+-- First 3 IPL matches seeded with api_match_id pointing to mock data files
+-- Match 1: CSK vs MI (upcoming, tomorrow)
+-- Match 2: RCB vs SRH (upcoming, day after)
+-- Match 3: KKR vs DC (completed, with results populated)
+
+-- System scenarios seeded for all 3 matches in the test group
+-- Sample predictions for Match 3 (the completed match) for all 3 users
+-- Sample resolved predictions with points — leaderboard shows real data
+```
+
+This means after `supabase db reset`, you can:
+- Log in as any test user (check Inbucket for magic link)
+- See the test group with members
+- See upcoming matches with prediction forms
+- See a completed match with a populated leaderboard and standings
+
+### 10.5 Mock Mode vs Production — What Changes
+
+| Component | `MOCK_MODE=true` (local dev) | `MOCK_MODE=false` (production) |
+|-----------|------------------------------|-------------------------------|
+| **DB queries (DAL)** | Supabase Local (real Postgres) | Supabase Cloud (real Postgres) |
+| **Auth** | Supabase Local (Inbucket for emails) | Supabase Cloud (real email delivery) |
+| **Realtime** | Supabase Local (real WebSocket) | Supabase Cloud (real WebSocket) |
+| **RLS policies** | Same policies, fully enforced | Same policies, fully enforced |
+| **CricketData.org API** | Mock client → reads local JSON | Real client → HTTP to cricapi.com |
+| **Cron Edge Function** | Can run locally via `supabase functions serve`, uses mock API | Runs on Supabase cloud, uses real API |
+
+**Key point:** The DAL code is identical in both modes. Only the cricket API client is swapped. This means any bug found in local dev exists in production too — high test fidelity.
+
+### 10.6 Testing a Full Match Lifecycle Locally
+
+To simulate a live match from start to finish using mock data:
+
+```bash
+# 1. Ensure mock data exists for match-1 (all phases: toss → completed)
+# 2. Start the app with MOCK_MODE=true
+# 3. Log in as Test Admin, navigate to the test group
+# 4. Submit predictions for Match 1
+
+# 5. Simulate the cron manually (or run the Edge Function locally):
+#    - Update match status to 'live' in Supabase Studio
+#    - The mock cricket API will return toss.json, then powerplay.json, etc.
+#    - Each call to the scorecard parser triggers progressive resolution
+#    - The leaderboard updates in real-time via Supabase Local Realtime
+
+# 6. To advance the match phase, either:
+#    a. Call the mock client's advancePhase() from a test script
+#    b. Or manually update the match status in Supabase Studio and re-run cron
+```
+
+---
+
+## 11. Timezone Strategy
 
 All match scheduling is in IST (Indian Standard Time, UTC+5:30). Strategy:
 
@@ -1324,7 +1735,7 @@ if (isInactive) return; // Skip — outside match hours
 
 ---
 
-## 10. Notification Creation Mechanism
+## 12. Notification Creation Mechanism
 
 Notifications are created at specific application events. Each mechanism:
 
@@ -1348,7 +1759,7 @@ Notifications are created at specific application events. Each mechanism:
 
 ---
 
-## 11. View Security
+## 13. View Security
 
 The `season_standings` and `match_leaderboard` views bypass RLS by default in Postgres. Fix:
 
@@ -1369,7 +1780,7 @@ Since the underlying tables (`predictions`, `scenarios`, `profiles`) all have `S
 
 ---
 
-## 12. Prediction Upsert Pattern
+## 14. Prediction Upsert Pattern
 
 Predictions use `UNIQUE (user_id, scenario_id)`. Submitting and editing use the same upsert:
 
@@ -1394,7 +1805,7 @@ for (const pick of predictions) {
 
 ---
 
-## 13. Known Limitations & Fallbacks
+## 15. Known Limitations & Fallbacks
 
 ### Powerplay Score Extraction
 The CricketData.org scorecard API provides fall-of-wickets (FOW) data with over numbers, but does NOT provide a direct "score at end of over 6" field. Options:
@@ -1424,9 +1835,9 @@ The `handle_new_user()` trigger reads `raw_user_meta_data->>'display_name'` to p
 
 ---
 
-## 14. Testing Strategy
+## 16. Testing Strategy
 
-### 14.1 Critical Path Tests (Manual for MVP)
+### 16.1 Critical Path Tests (Manual for MVP)
 
 1. **Auth flow:** Sign up → magic link → login → session persist → sign out
 2. **Group flow:** Create → share link → join in incognito → pending → approve → access
@@ -1434,7 +1845,7 @@ The `handle_new_user()` trigger reads `raw_user_meta_data->>'display_name'` to p
 4. **Results flow:** Admin enters results → leaderboard scores correctly → standings update
 5. **Live flow (once API is integrated):** Match goes live → cron polls → scenarios resolve → leaderboard updates
 
-### 14.2 Edge Cases to Test
+### 16.2 Edge Cases to Test
 
 - User in 3 groups predicting the same match with different picks
 - Double-header day (two matches, both showing correctly)

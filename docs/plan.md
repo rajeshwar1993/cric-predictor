@@ -21,9 +21,21 @@
 - [ ] Configure shadcn/ui with dark theme (Stadium Nightscape as default/only theme)
 - [ ] Set up design tokens in `globals.css` matching the design system spec
 - [ ] Load Google Fonts: Chakra Petch, DM Sans, JetBrains Mono
-- [ ] Set up project structure (see tech_plan.md for full structure)
+- [ ] Set up project structure with Data Access Layer (see tech_plan.md sections 1 and 9)
+- [ ] Set up DAL modules: `src/lib/dal/` (groups, members, matches, scenarios, predictions, standings, notifications, players, teams)
+- [ ] Set up cricket API abstraction: `src/lib/cricket-api/` (index.ts, client.ts, mock.ts, types.ts)
+- [ ] Create mock data fixtures: `src/lib/mock-data/` (matches, squads, scorecards with phase snapshots)
 - [ ] Configure `proxy.ts` (Next.js 16 middleware replacement) for auth session management
 - [ ] Set up Supabase clients (browser + server)
+- [ ] Set up `.env.local` with `NEXT_PUBLIC_MOCK_MODE=true` for local dev
+
+### 0.2.1 Local Dev Environment
+- [ ] Install Supabase CLI + Docker
+- [ ] Run `supabase init` in `/supabase` directory
+- [ ] Run `supabase start` — verify local Postgres, Auth (Inbucket), Realtime, Studio all work
+- [ ] Create `supabase/seed.sql` with test users, test group, sample matches, sample predictions
+- [ ] Run `supabase db reset` — verify all migrations + seed data load correctly
+- [ ] Verify `npm run dev` connects to Supabase local and mock cricket API
 
 ### 0.3 Database Setup
 - [ ] Run full database migration SQL in Supabase (all tables, enums, views, functions)
