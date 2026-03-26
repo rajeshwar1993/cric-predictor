@@ -102,13 +102,16 @@ export async function manageMember(
       ok = await membersDal.updateMemberRole(groupId, userId, "member");
       break;
     case "remove": {
-      // Prevent removing the owner or self
       const targetMembership = await membersDal.getMembershipStatus(groupId, userId);
       if (targetMembership?.role === "owner") {
         return { success: false, error: "Cannot remove the group owner" };
       }
       if (userId === user.id) {
         return { success: false, error: "Cannot remove yourself" };
+      }
+      // Only owner can remove admins
+      if (targetMembership?.role === "admin" && callerMembership.role !== "owner") {
+        return { success: false, error: "Only the owner can remove admins" };
       }
       ok = await membersDal.removeMember(groupId, userId);
       break;

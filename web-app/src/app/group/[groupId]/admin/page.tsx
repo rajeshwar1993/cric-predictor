@@ -26,7 +26,7 @@ export default async function AdminPage({ params }: AdminPageProps) {
   if (!user) redirect("/login");
 
   const membership = await membersDal.getMembershipStatus(groupId, user.id);
-  if (!membership || !["owner", "admin"].includes(membership.role)) {
+  if (!membership || membership.status !== "approved" || !["owner", "admin"].includes(membership.role)) {
     redirect(ROUTES.GROUP(groupId));
   }
 

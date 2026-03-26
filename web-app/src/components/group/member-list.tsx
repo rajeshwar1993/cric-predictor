@@ -43,8 +43,8 @@ export function MemberList({ members }: MemberListProps) {
                 <p className="text-sm font-medium text-[var(--text-primary)]">
                   {member.profile?.display_name || "Unknown"}
                 </p>
-                <p className="text-xs text-[var(--text-muted)]">
-                  {member.profile?.email}
+                <p className="text-xs text-[var(--text-muted)] capitalize">
+                  {member.role}
                 </p>
               </div>
             </div>

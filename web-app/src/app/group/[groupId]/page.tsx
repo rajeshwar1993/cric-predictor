@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import * as groupsDal from "@/lib/dal/groups";
 import * as membersDal from "@/lib/dal/members";
@@ -28,10 +29,12 @@ export default async function GroupHomePage({ params }: GroupPageProps) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  if (!user) redirect("/login");
+
   const [group, members, membership, nextMatch] = await Promise.all([
     groupsDal.getGroupById(groupId),
     membersDal.getMembers(groupId),
-    membersDal.getMembershipStatus(groupId, user!.id),
+    membersDal.getMembershipStatus(groupId, user.id),
     matchesDal.getNextMatch(),
   ]);
 
