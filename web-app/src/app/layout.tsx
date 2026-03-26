@@ -38,6 +38,10 @@ export const metadata: Metadata = {
     description:
       "The social cricket prediction game. Predict IPL match outcomes with friends and earn bragging rights.",
   },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({
