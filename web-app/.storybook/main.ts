@@ -70,6 +70,16 @@ const config: StorybookConfig = {
     config.css = config.css || {};
     config.css.postcss = path.resolve(__dirname, "../postcss.config.mjs");
 
+    // Polyfill process.env for browser (Next.js does this automatically, Vite does not)
+    config.define = {
+      ...config.define,
+      "process.env.NEXT_PUBLIC_APP_NAME": JSON.stringify("Bragg"),
+      "process.env.NEXT_PUBLIC_APP_URL": JSON.stringify("http://localhost:3000"),
+      "process.env.NEXT_PUBLIC_MOCK_MODE": JSON.stringify("true"),
+      "process.env.NEXT_PUBLIC_SUPABASE_URL": JSON.stringify("http://localhost:54321"),
+      "process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY": JSON.stringify("mock-anon-key"),
+    };
+
     return config;
   },
 };
