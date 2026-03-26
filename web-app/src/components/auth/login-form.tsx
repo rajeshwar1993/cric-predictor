@@ -127,7 +127,8 @@ export function LoginForm() {
           htmlFor="displayName"
           className="text-sm font-medium text-[var(--text-secondary)]"
         >
-          Display Name
+          Display Name{" "}
+          <span className="text-[var(--text-muted)] font-normal">(optional)</span>
         </Label>
         <Input
           id="displayName"
@@ -136,12 +137,12 @@ export function LoginForm() {
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
           className="bg-[var(--bg-input)] border-[var(--border-medium)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--border-focus)] focus:ring-[var(--border-focus)]"
-          minLength={2}
-          maxLength={50}
+          maxLength={30}
           autoComplete="name"
+          autoFocus
         />
         <p className="text-xs text-[var(--text-muted)]">
-          Shown on leaderboards. You can skip this for returning users.
+          Shown on leaderboards. Uses your email prefix if left blank.
         </p>
       </div>
 
@@ -164,18 +165,19 @@ export function LoginForm() {
           className="bg-[var(--bg-input)] border-[var(--border-medium)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--border-focus)] focus:ring-[var(--border-focus)]"
           required
           autoComplete="email"
-          autoFocus
         />
       </div>
 
       {(state === "error" && errorMessage) && (
-        <p className="text-sm text-[var(--danger)]">{errorMessage}</p>
+        <p className="text-sm text-[var(--danger)]" role="alert" aria-live="polite">
+          {errorMessage}
+        </p>
       )}
 
       <Button
         type="submit"
         disabled={loading || !email}
-        className="w-full font-display font-semibold text-sm bg-gradient-to-r from-[var(--cyan)] to-[#00B8D4] text-[var(--bg-deep)] hover:opacity-90 shadow-[var(--cyan-glow)]"
+        className="w-full font-display font-semibold text-sm bg-gradient-to-br from-[var(--cyan)] to-[color-mix(in_srgb,var(--cyan),#000_20%)] text-[var(--bg-deep)] hover:opacity-90 btn-glow"
       >
         {loading ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
