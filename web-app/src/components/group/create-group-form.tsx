@@ -23,7 +23,7 @@ export function CreateGroupForm() {
     setError("");
 
     const result = await createGroup(name.trim());
-
+    console.log(result);
     if (result.success && result.data) {
       router.push(ROUTES.GROUP(result.data.id));
     } else {
@@ -35,7 +35,10 @@ export function CreateGroupForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="groupName" className="text-sm text-[var(--text-secondary)]">
+        <Label
+          htmlFor="groupName"
+          className="text-sm text-[var(--text-secondary)]"
+        >
           Group Name
         </Label>
         <Input
@@ -56,7 +59,9 @@ export function CreateGroupForm() {
       </div>
 
       {error && (
-        <p className="text-sm text-[var(--danger)]" role="alert">{error}</p>
+        <p className="text-sm text-[var(--danger)]" role="alert">
+          {error}
+        </p>
       )}
 
       <Button
