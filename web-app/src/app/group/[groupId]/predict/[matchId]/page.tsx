@@ -28,7 +28,7 @@ export default async function PredictPage({ params }: PredictPageProps) {
   const { groupId, matchId: matchIdStr } = await params;
   const matchId = Number(matchIdStr);
 
-  if (isNaN(matchId)) notFound();
+  if (!matchIdStr || isNaN(matchId) || matchId <= 0) notFound();
 
   const supabase = await createClient();
   const {
@@ -45,8 +45,10 @@ export default async function PredictPage({ params }: PredictPageProps) {
   const match = await matchesDal.getMatchById(matchId);
   if (!match) notFound();
 
-  // Auto-seed system scenarios (US-4.2)
-  await scenariosDal.seedSystemScenarios(groupId, matchId);
+  // Auto-seed system scenarios only for upcoming matches (US-4.2)
+  if (match.status === "upcoming") {
+    await scenariosDal.seedSystemScenarios(groupId, matchId);
+  }
 
   // Fetch scenarios, existing predictions, and players in parallel
   const [scenarios, players, settings] = await Promise.all([

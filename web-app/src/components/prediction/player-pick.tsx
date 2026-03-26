@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Search, X } from "lucide-react";
 import type { Player } from "@/types";
@@ -15,6 +15,20 @@ interface PlayerPickProps {
 export function PlayerPick({ players, value, onChange, disabled }: PlayerPickProps) {
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [isOpen]);
 
   const filtered = useMemo(() => {
     if (!search) return players;
@@ -55,7 +69,7 @@ export function PlayerPick({ players, value, onChange, disabled }: PlayerPickPro
   }
 
   return (
-    <div className="relative">
+    <div className="relative" ref={containerRef}>
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
         <Input
