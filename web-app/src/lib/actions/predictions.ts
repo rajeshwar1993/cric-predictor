@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { logError } from "@/lib/logger";
 import { captureServerEvent, ANALYTICS_EVENTS } from "@/lib/posthog";
@@ -69,5 +70,7 @@ export async function submitPredictions(
   }
 
   captureServerEvent(user.id, ANALYTICS_EVENTS.PREDICTION_SUBMITTED, { group_id: groupId, match_id: matchId, prediction_count: validPredictions.length, total_scenarios: scenarios.length });
+  revalidatePath(`/group/${groupId}/predict/${matchId}`);
+  revalidatePath(`/group/${groupId}/match/${matchId}`);
   return { success: true };
 }

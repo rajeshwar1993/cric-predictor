@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { logError } from "@/lib/logger";
 import { captureServerEvent, ANALYTICS_EVENTS } from "@/lib/posthog";
@@ -67,6 +68,7 @@ export async function enterResults(
   }
 
   captureServerEvent(user.id, ANALYTICS_EVENTS.ADMIN_RESULTS_ENTERED, { group_id: groupId, match_id: matchId });
+  revalidatePath(`/group/${groupId}`, "layout");
   return { success: true };
 }
 
@@ -96,5 +98,6 @@ export async function updateGroupSettings(
     return { success: false, error: "Failed to update settings" };
   }
   captureServerEvent(user.id, ANALYTICS_EVENTS.ADMIN_SETTINGS_UPDATED, { group_id: groupId, match_id: matchId, is_locked: settings.isLocked, has_deadline: !!settings.predictionDeadline });
+  revalidatePath(`/group/${groupId}`, "layout");
   return { success: true };
 }

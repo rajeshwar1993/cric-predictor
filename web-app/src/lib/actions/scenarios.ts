@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { logError } from "@/lib/logger";
 import { captureServerEvent, ANALYTICS_EVENTS } from "@/lib/posthog";
@@ -52,6 +53,7 @@ export async function createCustomScenario(
     return { success: false, error: "Couldn't submit your wild card — try again" };
   }
   captureServerEvent(user.id, ANALYTICS_EVENTS.SCENARIO_CUSTOM_CREATED, { group_id: groupId, match_id: matchId, title: parsed.data.title, option_count: parsed.data.options.length, points: parsed.data.points });
+  revalidatePath(`/group/${groupId}/scenarios/${matchId}`);
   return { success: true, data: scenario };
 }
 
@@ -82,6 +84,7 @@ export async function approveScenario(
     return { success: false, error: "Failed to approve scenario" };
   }
   captureServerEvent(user.id, ANALYTICS_EVENTS.SCENARIO_APPROVED, { group_id: groupId, scenario_id: scenarioId });
+  revalidatePath(`/group/${groupId}`, "layout");
   return { success: true };
 }
 
@@ -106,6 +109,7 @@ export async function rejectScenario(
     return { success: false, error: "Failed to reject scenario" };
   }
   captureServerEvent(user.id, ANALYTICS_EVENTS.SCENARIO_REJECTED, { group_id: groupId, scenario_id: scenarioId });
+  revalidatePath(`/group/${groupId}`, "layout");
   return { success: true };
 }
 
@@ -144,6 +148,7 @@ export async function removeScenario(
     return { success: false, error: "Failed to remove scenario" };
   }
   captureServerEvent(user.id, ANALYTICS_EVENTS.SCENARIO_REMOVED, { group_id: groupId, scenario_id: scenarioId });
+  revalidatePath(`/group/${groupId}`, "layout");
   return { success: true };
 }
 
@@ -176,6 +181,7 @@ export async function publishScenarios(
   }
 
   captureServerEvent(user.id, ANALYTICS_EVENTS.SCENARIO_PUBLISHED, { group_id: groupId, match_id: matchId, scenario_count: count });
+  revalidatePath(`/group/${groupId}`, "layout");
   return { success: true };
 }
 
@@ -231,5 +237,6 @@ export async function addCustomScenarioAsAdmin(
   await scenariosDal.updateScenarioApproval(scenario.id, "approved");
 
   captureServerEvent(user.id, ANALYTICS_EVENTS.SCENARIO_CUSTOM_CREATED_BY_ADMIN, { group_id: groupId, match_id: matchId, title: parsed.data.title });
+  revalidatePath(`/group/${groupId}/scenarios/${matchId}`);
   return { success: true, data: scenario };
 }

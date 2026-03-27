@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { logError } from "@/lib/logger";
 import { captureServerEvent, ANALYTICS_EVENTS } from "@/lib/posthog";
@@ -37,6 +38,7 @@ export async function createGroup(name: string): Promise<ActionResponse<Group>> 
   }
 
   captureServerEvent(user.id, ANALYTICS_EVENTS.GROUP_CREATED, { group_id: group.id, group_name: parsed.data.name });
+  revalidatePath("/dashboard");
   return { success: true, data: group };
 }
 
@@ -72,6 +74,7 @@ export async function joinGroup(inviteCode: string): Promise<ActionResponse> {
   }
 
   captureServerEvent(user.id, ANALYTICS_EVENTS.GROUP_JOIN_REQUESTED, { group_id: group.id });
+  revalidatePath(`/group/${group.id}`, "layout");
   return { success: true };
 }
 
@@ -158,5 +161,6 @@ export async function manageMember(
     remove: ANALYTICS_EVENTS.GROUP_MEMBER_REMOVED,
   };
   captureServerEvent(user.id, eventMap[action], { group_id: groupId, target_user_id: userId });
+  revalidatePath(`/group/${groupId}`, "layout");
   return { success: true };
 }

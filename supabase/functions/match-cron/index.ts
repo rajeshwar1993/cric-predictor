@@ -15,7 +15,9 @@ const CRICKET_API_BASE =
   Deno.env.get("CRICKET_API_BASE_URL") || "https://apiv2.api-cricket.com/cricket/";
 const CRICKET_API_LEAGUE_KEY = Deno.env.get("CRICKET_API_LEAGUE_KEY") || "";
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+function getSupabase() {
+  return createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+}
 
 // ── Parsing utilities (duplicated from web-app/src/lib/cricket-api/parsers.ts
 //    because Deno edge functions can't import from the Next.js module tree) ──
@@ -168,7 +170,7 @@ function isInMatchWindow(): boolean {
 }
 
 async function hasLiveMatches(): Promise<boolean> {
-  const { count } = await supabase
+  const { count } = await getSupabase()
     .from("matches")
     .select("id", { count: "exact", head: true })
     .eq("status", "live");
@@ -192,11 +194,18 @@ async function fetchCricketApi(
 
   try {
     const res = await fetch(url.toString());
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error(`Cricket API HTTP ${res.status}: ${method}`, await res.text().catch(() => ""));
+      return null;
+    }
     const json = await res.json();
-    if (json.success !== 1) return null;
+    if (json.success !== 1) {
+      console.error(`Cricket API error: ${method}`, JSON.stringify(json).slice(0, 200));
+      return null;
+    }
     return json.result as any[];
-  } catch {
+  } catch (err) {
+    console.error(`Cricket API fetch failed: ${method}`, String(err));
     return null;
   }
 }
@@ -209,7 +218,7 @@ Deno.serve(async () => {
   }
 
   const today = new Date().toISOString().split("T")[0];
-  const { data: matches, error } = await supabase
+  const { data: matches, error } = await getSupabase()
     .from("matches")
     .select("*")
     .eq("date", today)
@@ -266,7 +275,7 @@ async function processUpcoming(match: any) {
   const hasStarted = isLive || tossWinner !== null;
 
   if (hasStarted) {
-    await supabase
+    await getSupabase()
       .from("matches")
       .update({
         status: "live",
@@ -276,7 +285,7 @@ async function processUpcoming(match: any) {
       .eq("id", match.id);
 
     // Auto-lock predictions for all groups
-    await supabase
+    await getSupabase()
       .from("match_group_settings")
       .update({ is_locked: true })
       .eq("match_id", match.id);
@@ -286,7 +295,7 @@ async function processUpcoming(match: any) {
     return;
   }
 
-  await supabase
+  await getSupabase()
     .from("matches")
     .update({ last_polled_at: new Date().toISOString() })
     .eq("id", match.id);
@@ -335,15 +344,15 @@ async function processLive(match: any) {
       Object.assign(snapshot, parseFullResults(event));
     }
 
-    await supabase.from("matches").update(snapshot).eq("id", match.id);
+    await getSupabase().from("matches").update(snapshot).eq("id", match.id);
 
     // Run full resolution
-    await supabase.rpc("resolve_match_predictions", { p_match_id: match.id });
+    await getSupabase().rpc("resolve_match_predictions", { p_match_id: match.id });
     return;
   }
 
   // Still live — write snapshot and do progressive resolution
-  await supabase.from("matches").update(snapshot).eq("id", match.id);
+  await getSupabase().from("matches").update(snapshot).eq("id", match.id);
   await progressiveResolve(match.id, event);
 }
 
@@ -570,7 +579,7 @@ async function resolveScenariosByCategory(
 ) {
   if (!correctAnswer) return;
 
-  const { error } = await supabase.rpc("resolve_scenarios_by_category", {
+  const { error } = await getSupabase().rpc("resolve_scenarios_by_category", {
     p_match_id: matchId,
     p_category: category,
     p_correct_answer: correctAnswer,

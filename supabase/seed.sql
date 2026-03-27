@@ -1,6 +1,19 @@
--- Bragg — Dev Seed Data
+-- Bragg — Dev Seed Data (LOCAL DEVELOPMENT ONLY)
 -- Creates test users, a test group, and sample predictions.
 -- Loaded by `supabase db reset` (after all migrations).
+--
+-- ⚠️  NEVER run this against a production database.
+-- ⚠️  NEVER run `supabase db reset` in production — use migrations only.
+
+-- Safety guard: abort if this is running against a non-local database.
+-- Supabase local dev always runs on 127.0.0.1:54322.
+DO $$
+BEGIN
+  IF current_setting('port') != '54322' THEN
+    RAISE EXCEPTION 'SAFETY GUARD: seed.sql is for local development only. Aborting.';
+  END IF;
+END;
+$$;
 
 -- Test Users (Supabase local auth creates users via gotrue, but we can
 -- insert directly into auth.users for seeding. The handle_new_user trigger
