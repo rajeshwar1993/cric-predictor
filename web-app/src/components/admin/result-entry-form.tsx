@@ -58,7 +58,7 @@ export function ResultEntryForm({ groupId, matchId, teamA, teamB }: ResultEntryF
     setLoading(true);
     setError("");
 
-    const results: Record<string, unknown> = {
+    const results = {
       matchWinner: form.matchWinner,
       tossWinner: form.tossWinner,
       topScorer: form.topScorer || undefined,

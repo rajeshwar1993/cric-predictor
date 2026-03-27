@@ -6,13 +6,13 @@ import { logError } from "@/lib/logger";
 import { captureServerEvent, ANALYTICS_EVENTS } from "@/lib/posthog";
 import * as matchesDal from "@/lib/dal/matches";
 import * as membersDal from "@/lib/dal/members";
-import { enterResultSchema } from "@/lib/validators";
+import { enterResultSchema, type EnterResultInput } from "@/lib/validators";
 import type { ActionResponse } from "@/types";
 
 export async function enterResults(
   groupId: string,
   matchId: number,
-  results: Record<string, unknown>
+  results: Omit<EnterResultInput, "matchId">
 ): Promise<ActionResponse> {
   const parsed = enterResultSchema.safeParse({ matchId, ...results });
   if (!parsed.success) {
