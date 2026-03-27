@@ -34,6 +34,9 @@ export const metadata: Metadata = {
   keywords: ["cricket", "prediction", "IPL", "IPL 2026", "social", "game", "bragging rights", "leaderboard", "compete"],
   authors: [{ name: "Bragg" }],
   metadataBase: new URL("https://bragg-lemon.vercel.app"),
+  icons: {
+    icon: "/favicon.ico",
+  },
   openGraph: {
     type: "website",
     locale: "en_IN",
@@ -42,6 +45,20 @@ export const metadata: Metadata = {
     title: "Bragg — Call It. Prove It. Bragg.",
     description:
       "The IPL prediction game built for bragging rights. Make your calls, compete with your crew, own the leaderboard.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 512,
+        height: 512,
+        alt: "Bragg logo",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title: "Bragg — Call It. Prove It. Bragg.",
+    description: "The IPL prediction game built for bragging rights.",
+    images: ["/og-image.png"],
   },
   robots: {
     index: true,

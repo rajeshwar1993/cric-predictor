@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { OnboardingForm } from "@/components/auth/onboarding-form";
@@ -28,6 +29,7 @@ export default async function OnboardingPage() {
     <main className="flex min-h-dvh flex-col items-center justify-center px-4">
       <div className="w-full max-w-[440px] space-y-8">
         <div className="text-center">
+          <Image src="/logo.png" alt="Bragg" width={64} height={64} className="mx-auto mb-3 rounded-lg" />
           <h1 className="font-display text-4xl font-bold text-gradient">
             Bragg
           </h1>

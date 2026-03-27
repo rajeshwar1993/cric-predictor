@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
 import { LoginForm } from "@/components/auth/login-form";
 
@@ -15,6 +16,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center">
           <Link href="/" className="inline-block">
+            <Image src="/logo.png" alt="Bragg" width={64} height={64} className="mx-auto mb-3 rounded-lg" />
             <h1 className="font-display text-4xl font-bold text-gradient">
               Bragg
             </h1>

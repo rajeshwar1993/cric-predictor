@@ -9,6 +9,7 @@ import { Footer } from "@/components/layout/footer";
 import { JoinGroupClient } from "@/components/group/join-group-client";
 import { LoginForm } from "@/components/auth/login-form";
 import { Suspense } from "react";
+import Image from "next/image";
 
 interface JoinPageProps {
   params: Promise<{ code: string }>;
@@ -106,6 +107,7 @@ export default async function JoinPage({ params }: JoinPageProps) {
 function InviteHeader({ groupName }: { groupName: string }) {
   return (
     <div>
+      <Image src="/logo.png" alt="Bragg" width={56} height={56} className="mb-3 rounded-lg" />
       <h1 className="font-display text-3xl font-bold text-gradient">Bragg</h1>
       <p className="mt-4 text-lg text-[var(--text-primary)]">
         You&apos;ve been called up to

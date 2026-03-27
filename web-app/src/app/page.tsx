@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Footer } from "@/components/layout/footer";
 import { Zap, Users, Trophy, ArrowRight } from "lucide-react";
 
@@ -7,6 +8,7 @@ export default function HomePage() {
     <div className="flex min-h-dvh flex-col">
       {/* Hero */}
       <main className="flex flex-1 flex-col items-center justify-center px-4 py-20 text-center bg-gradient-to-b from-[var(--bg-primary)] to-[var(--bg-deep)]">
+        <Image src="/logo.png" alt="Bragg" width={96} height={96} className="mx-auto mb-4 rounded-xl" priority />
         <h1 className="font-display text-6xl font-bold tracking-tight text-gradient sm:text-7xl">
           Bragg
         </h1>
