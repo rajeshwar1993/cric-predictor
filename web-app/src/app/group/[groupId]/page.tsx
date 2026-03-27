@@ -42,6 +42,8 @@ export default async function GroupHomePage({ params }: GroupPageProps) {
   if (!group) return null;
 
   const isAdmin = membership?.role === "owner" || membership?.role === "admin";
+  const currentMember = members.find((m: any) => m.user_id === user.id);
+  const currentUserDisplayName = currentMember?.profile?.display_name ?? "Someone";
 
   const [pendingRequests, settings] = await Promise.all([
     isAdmin ? membersDal.getPendingRequests(groupId) : Promise.resolve([]),
@@ -64,7 +66,11 @@ export default async function GroupHomePage({ params }: GroupPageProps) {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <InviteLink inviteCode={group.invite_code} />
+          <InviteLink
+            inviteCode={group.invite_code}
+            groupName={group.name}
+            inviterName={currentUserDisplayName}
+          />
           {isAdmin && (
             <Link
               href={ROUTES.ADMIN(groupId)}

@@ -15,6 +15,7 @@ export const ANALYTICS_EVENTS = {
   GROUP_CREATED: "group_created",
   GROUP_JOIN_REQUESTED: "group_join_requested",
   GROUP_INVITE_COPIED: "group_invite_copied",
+  GROUP_INVITE_SHARED: "group_invite_shared",
   GROUP_MEMBER_APPROVED: "group_member_approved",
   GROUP_MEMBER_REJECTED: "group_member_rejected",
   GROUP_MEMBER_PROMOTED: "group_member_promoted",

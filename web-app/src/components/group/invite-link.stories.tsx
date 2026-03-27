@@ -13,5 +13,7 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {
     inviteCode: "a1b2c3d4e5f6",
+    groupName: "The Legends",
+    inviterName: "Rajesh",
   },
 };
