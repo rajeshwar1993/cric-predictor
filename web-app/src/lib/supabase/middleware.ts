@@ -86,5 +86,12 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Redirect authenticated users away from landing page
+  if (user && pathname === "/") {
+    const url = request.nextUrl.clone();
+    url.pathname = isOnboarded ? "/dashboard" : "/onboarding";
+    return NextResponse.redirect(url);
+  }
+
   return supabaseResponse;
 }
