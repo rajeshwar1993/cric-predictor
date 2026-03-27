@@ -59,6 +59,10 @@ CREATE POLICY "read_approved_scenarios" ON scenarios FOR SELECT USING (
 CREATE POLICY "create_scenario" ON scenarios FOR INSERT WITH CHECK (
   is_group_member(scenarios.group_id, auth.uid())
 );
+-- Admins can see all scenarios (including removed/pending) for management
+CREATE POLICY "admin_read_all_scenarios" ON scenarios FOR SELECT USING (
+  is_group_admin(scenarios.group_id, auth.uid())
+);
 CREATE POLICY "admin_manage_scenarios" ON scenarios FOR UPDATE USING (
   is_group_admin(scenarios.group_id, auth.uid())
 );
