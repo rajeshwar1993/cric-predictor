@@ -105,17 +105,21 @@ export async function updateMemberStatus(
     updateData.approved_at = new Date().toISOString();
   }
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("group_members")
     .update(updateData)
     .eq("group_id", groupId)
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .select("user_id");
 
   if (error) {
     logError({ layer: "dal", operation: "updateMemberStatus", metadata: { groupId, userId, status } }, error);
-    // DB trigger raises check_violation when group is full
     const isCapacity = error.message?.includes("Group capacity exceeded");
     return { ok: false, capacityExceeded: isCapacity };
+  }
+  if (!data || data.length === 0) {
+    logError({ layer: "dal", operation: "updateMemberStatus", metadata: { groupId, userId, status, reason: "no rows affected" } });
+    return { ok: false };
   }
   return { ok: true };
 }
@@ -126,24 +130,40 @@ export async function updateMemberRole(
   role: MemberRole
 ): Promise<boolean> {
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("group_members")
     .update({ role })
     .eq("group_id", groupId)
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .select("user_id");
 
-  if (error) logError({ layer: "dal", operation: "updateMemberRole", metadata: { groupId, userId, role } }, error);
-  return !error;
+  if (error) {
+    logError({ layer: "dal", operation: "updateMemberRole", metadata: { groupId, userId, role } }, error);
+    return false;
+  }
+  if (!data || data.length === 0) {
+    logError({ layer: "dal", operation: "updateMemberRole", metadata: { groupId, userId, role, reason: "no rows affected" } });
+    return false;
+  }
+  return true;
 }
 
 export async function removeMember(groupId: string, userId: string): Promise<boolean> {
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("group_members")
     .update({ status: "removed" as MemberStatus })
     .eq("group_id", groupId)
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .select("user_id");
 
-  if (error) logError({ layer: "dal", operation: "removeMember", metadata: { groupId, userId } }, error);
-  return !error;
+  if (error) {
+    logError({ layer: "dal", operation: "removeMember", metadata: { groupId, userId } }, error);
+    return false;
+  }
+  if (!data || data.length === 0) {
+    logError({ layer: "dal", operation: "removeMember", metadata: { groupId, userId, reason: "no rows affected" } });
+    return false;
+  }
+  return true;
 }

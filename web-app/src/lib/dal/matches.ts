@@ -110,13 +110,21 @@ export async function updateMatchResults(
   results: MatchUpdate
 ): Promise<boolean> {
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("matches")
     .update({ ...results, status: "completed", resolved_at: new Date().toISOString() })
-    .eq("id", matchId);
+    .eq("id", matchId)
+    .select("id");
 
-  if (error) logError({ layer: "dal", operation: "updateMatchResults", metadata: { matchId } }, error);
-  return !error;
+  if (error) {
+    logError({ layer: "dal", operation: "updateMatchResults", metadata: { matchId } }, error);
+    return false;
+  }
+  if (!data || data.length === 0) {
+    logError({ layer: "dal", operation: "updateMatchResults", metadata: { matchId, reason: "no rows affected" } });
+    return false;
+  }
+  return true;
 }
 
 export async function getMatchDeadlineInfo(matchId: number): Promise<MatchDeadlineInfo | null> {

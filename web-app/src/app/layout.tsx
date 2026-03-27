@@ -3,6 +3,7 @@ import { Chakra_Petch, DM_Sans, JetBrains_Mono } from "next/font/google";
 import { Suspense } from "react";
 import { ThemeProvider } from "@/components/shared/theme-provider";
 import { PostHogProvider } from "@/components/shared/posthog-provider";
+import "@/lib/env"; // Validate env vars at startup — fail fast if missing
 import "./globals.css";
 
 const chakraPetch = Chakra_Petch({

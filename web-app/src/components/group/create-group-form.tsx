@@ -23,7 +23,6 @@ export function CreateGroupForm() {
     setError("");
 
     const result = await createGroup(name.trim());
-    console.log(result);
     if (result.success && result.data) {
       router.push(ROUTES.GROUP(result.data.id));
     } else {

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import * as groupsDal from "@/lib/dal/groups";
 import * as membersDal from "@/lib/dal/members";
@@ -39,7 +39,7 @@ export default async function GroupHomePage({ params }: GroupPageProps) {
     matchesDal.getNextMatch(),
   ]);
 
-  if (!group) return null;
+  if (!group) notFound();
 
   const isAdmin = membership?.role === "owner" || membership?.role === "admin";
   const currentMember = members.find((m: any) => m.user_id === user.id);
