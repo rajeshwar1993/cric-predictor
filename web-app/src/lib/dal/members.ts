@@ -23,10 +23,12 @@ export async function getMembers(groupId: string): Promise<GroupMember[]> {
     if (error) logError({ layer: "dal", operation: "getMembers", metadata: { groupId } }, error);
     return [];
   }
-  return data.map((d) => ({
-    ...d,
-    profile: d.profile as unknown as GroupMember["profile"],
-  }));
+  return data
+    .filter((d) => d.profile != null)
+    .map((d) => ({
+      ...d,
+      profile: d.profile as unknown as GroupMember["profile"],
+    }));
 }
 
 export async function getPendingRequests(groupId: string): Promise<GroupMember[]> {
@@ -50,10 +52,12 @@ export async function getPendingRequests(groupId: string): Promise<GroupMember[]
     if (error) logError({ layer: "dal", operation: "getPendingRequests", metadata: { groupId } }, error);
     return [];
   }
-  return data.map((d) => ({
-    ...d,
-    profile: d.profile as unknown as GroupMember["profile"],
-  }));
+  return data
+    .filter((d) => d.profile != null)
+    .map((d) => ({
+      ...d,
+      profile: d.profile as unknown as GroupMember["profile"],
+    }));
 }
 
 export async function getMembershipStatus(
