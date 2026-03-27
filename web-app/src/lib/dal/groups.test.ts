@@ -90,17 +90,15 @@ describe("getGroupsByUser", () => {
 // ---------------------------------------------------------------------------
 describe("getGroupByInviteCode", () => {
   it("returns the group matching the invite code", async () => {
-    const builder = createMockQueryBuilder([MOCK_GROUP_OWNER]);
-    mockClient.from.mockReturnValue(builder);
+    mockClient.rpc.mockResolvedValue({ data: [MOCK_GROUP_OWNER], error: null });
 
     const result = await getGroupByInviteCode("a1b2c3d4e5f6");
     expect(result).toEqual(MOCK_GROUP_OWNER);
-    expect(builder.eq).toHaveBeenCalledWith("invite_code", "a1b2c3d4e5f6");
+    expect(mockClient.rpc).toHaveBeenCalledWith("get_group_by_invite_code", { p_invite_code: "a1b2c3d4e5f6" });
   });
 
   it("returns null for invalid invite code", async () => {
-    const builder = createMockQueryBuilder([], { message: "Not found" });
-    mockClient.from.mockReturnValue(builder);
+    mockClient.rpc.mockResolvedValue({ data: [], error: null });
 
     const result = await getGroupByInviteCode("bad_code");
     expect(result).toBeNull();
