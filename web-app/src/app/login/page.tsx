@@ -35,8 +35,11 @@ export default function LoginPage() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-xs text-[var(--text-muted)]">
+        <p className="text-center text-xs leading-relaxed text-[var(--text-muted)]">
           Not affiliated with BCCI, IPL, or any franchise.
+          Bragg is a free prediction game for entertainment only &mdash; no real
+          money, no gambling, no betting. We do not encourage or support
+          gambling in any form.
         </p>
       </div>
     </main>

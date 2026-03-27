@@ -35,7 +35,10 @@ export default function HomePage() {
         </div>
 
         {/* How it works */}
-        <div className="mt-20 grid w-full max-w-[720px] gap-4 sm:grid-cols-3">
+        <h2 className="mt-20 font-display text-lg font-semibold text-[var(--text-primary)]">
+          How It Works
+        </h2>
+        <div className="mt-6 grid w-full max-w-[720px] gap-4 sm:grid-cols-3">
           {[
             {
               icon: Users,
