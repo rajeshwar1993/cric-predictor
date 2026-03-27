@@ -87,33 +87,18 @@ export async function createGroup(
 ): Promise<Group | null> {
   const supabase = await createClient();
 
-  // Create the group
-  const { data: group, error: groupError } = await supabase
-    .from("groups")
-    .insert({ name, created_by: createdBy })
-    .select()
-    .single();
+  // Atomic: creates group + adds creator as owner in a single transaction.
+  // If either fails, both roll back — no orphaned groups.
+  const { data, error } = await supabase.rpc("create_group_with_owner", {
+    p_name: name,
+    p_created_by: createdBy,
+  });
 
-  if (groupError || !group) {
-    if (groupError) logError({ layer: "dal", operation: "createGroup", metadata: { name, createdBy } }, groupError);
+  if (error) {
+    logError({ layer: "dal", operation: "createGroup", metadata: { name, createdBy } }, error);
     return null;
   }
 
-  // Add creator as owner
-  const { error: memberError } = await supabase
-    .from("group_members")
-    .insert({
-      group_id: group.id,
-      user_id: createdBy,
-      status: "approved",
-      role: "owner",
-      approved_at: new Date().toISOString(),
-    });
-
-  if (memberError) {
-    logError({ layer: "dal", operation: "createGroup", metadata: { groupId: group.id, createdBy } }, memberError);
-    return null;
-  }
-
-  return group;
+  const row = Array.isArray(data) ? data[0] : data;
+  return row ?? null;
 }
