@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: JoinPageProps): Promise<Metad
 
   return {
     title: `Join ${group.name}`,
-    description: `You've been invited to join ${group.name} on Bragg — the social cricket prediction game.`,
+    description: `You've been called up to ${group.name} on Bragg — the IPL prediction game built for bragging rights.`,
     openGraph: {
       title: `Join ${group.name} on Bragg`,
       description: "Think you know cricket? Prove it. Predict IPL match outcomes with friends.",

@@ -66,7 +66,7 @@ describe("createCustomScenario", () => {
     mockedMembersDal.getMembershipStatus.mockResolvedValue(null);
 
     const result = await createCustomScenario(groupId, 2, "Will it rain today?", ["Yes", "No"], 10);
-    expect(result).toEqual({ success: false, error: "You are not a member of this group" });
+    expect(result).toEqual({ success: false, error: "You're not in this squad" });
   });
 
   it("creates a custom scenario successfully", async () => {
@@ -90,7 +90,7 @@ describe("createCustomScenario", () => {
     mockedScenDal.createCustomScenario.mockResolvedValue(null);
 
     const result = await createCustomScenario(groupId, 2, "Will it rain today?", ["Yes", "No"], 10);
-    expect(result).toEqual({ success: false, error: "Failed to create scenario" });
+    expect(result).toEqual({ success: false, error: "Couldn't submit your wild card — try again" });
   });
 });
 

@@ -29,24 +29,24 @@ export async function submitPredictions(
   // Check group membership
   const membership = await membersDal.getMembershipStatus(groupId, user.id);
   if (!membership || membership.status !== "approved") {
-    return { success: false, error: "You are not a member of this group" };
+    return { success: false, error: "You're not in this squad" };
   }
 
   // Check deadline via DAL
   const match = await matchesDal.getMatchDeadlineInfo(matchId);
   if (!match) return { success: false, error: "Match not found" };
   if (match.status !== "upcoming") {
-    return { success: false, error: "Predictions are closed for this match" };
+    return { success: false, error: "Picks are closed for this match" };
   }
 
   // Check group-level settings via DAL
   const settings = await matchesDal.getMatchGroupSettings(groupId, matchId);
   if (settings?.is_locked) {
-    return { success: false, error: "Predictions are locked for this match" };
+    return { success: false, error: "Picks are locked for this match" };
   }
 
   if (isDeadlinePassed(match.date, match.time_ist, settings?.prediction_deadline)) {
-    return { success: false, error: "Prediction deadline has passed" };
+    return { success: false, error: "Too late — the deadline has passed" };
   }
 
   // Verify scenarios belong to this group+match
@@ -58,13 +58,13 @@ export async function submitPredictions(
   );
 
   if (validPredictions.length === 0) {
-    return { success: false, error: "No valid predictions to submit" };
+    return { success: false, error: "No valid picks to lock in" };
   }
 
   const ok = await predictionsDal.upsertPredictions(user.id, validPredictions);
   if (!ok) {
     logError({ layer: "action", operation: "submitPredictions", metadata: { userId: user.id, groupId, matchId } });
-    return { success: false, error: "Failed to save predictions" };
+    return { success: false, error: "Couldn't lock those in — try again" };
   }
 
   return { success: true };

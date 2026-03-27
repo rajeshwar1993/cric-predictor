@@ -85,7 +85,7 @@ export function ResultEntryForm({ groupId, matchId, teamA, teamB }: ResultEntryF
       setSuccess(true);
       router.refresh();
     } else {
-      setError(result.error || "Failed to enter results");
+      setError(result.error || "Couldn't log the scorecard — try again");
     }
     setLoading(false);
   }

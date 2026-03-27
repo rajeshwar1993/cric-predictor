@@ -27,7 +27,7 @@ export function JoinGroupForm() {
     if (result.success) {
       setSuccess(true);
     } else {
-      setError(result.error || "Failed to join group");
+      setError(result.error || "Couldn't join — check your code and try again");
     }
     setLoading(false);
   }

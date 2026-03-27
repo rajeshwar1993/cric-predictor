@@ -54,7 +54,7 @@ export function LoginForm() {
       setState("sent");
       setLastSentAt(Date.now());
     } else {
-      setErrorMessage(result.error || "Something went wrong");
+      setErrorMessage(result.error || "Couldn't send that — try again");
       setState("error");
     }
   }
@@ -74,7 +74,7 @@ export function LoginForm() {
     if (result.success) {
       setLastSentAt(Date.now());
     } else {
-      setErrorMessage(result.error || "Failed to resend");
+      setErrorMessage(result.error || "Couldn't resend — try again");
     }
   }
 

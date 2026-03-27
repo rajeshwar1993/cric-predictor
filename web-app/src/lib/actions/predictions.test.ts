@@ -94,14 +94,14 @@ describe("submitPredictions", () => {
     mockedMembersDal.getMembershipStatus.mockResolvedValue(null);
 
     const result = await submitPredictions(groupId, matchId, validPredictions);
-    expect(result).toEqual({ success: false, error: "You are not a member of this group" });
+    expect(result).toEqual({ success: false, error: "You're not in this squad" });
   });
 
   it("returns error when membership is pending", async () => {
     mockedMembersDal.getMembershipStatus.mockResolvedValue({ status: "pending", role: "member" });
 
     const result = await submitPredictions(groupId, matchId, validPredictions);
-    expect(result).toEqual({ success: false, error: "You are not a member of this group" });
+    expect(result).toEqual({ success: false, error: "You're not in this squad" });
   });
 
   // --- match checks ---
@@ -116,14 +116,14 @@ describe("submitPredictions", () => {
     mockedMatchesDal.getMatchDeadlineInfo.mockResolvedValue({ date: "2026-03-28", time_ist: "19:30", status: "live" });
 
     const result = await submitPredictions(groupId, matchId, validPredictions);
-    expect(result).toEqual({ success: false, error: "Predictions are closed for this match" });
+    expect(result).toEqual({ success: false, error: "Picks are closed for this match" });
   });
 
   it("returns error when match is completed", async () => {
     mockedMatchesDal.getMatchDeadlineInfo.mockResolvedValue({ date: "2026-03-28", time_ist: "19:30", status: "completed" });
 
     const result = await submitPredictions(groupId, matchId, validPredictions);
-    expect(result).toEqual({ success: false, error: "Predictions are closed for this match" });
+    expect(result).toEqual({ success: false, error: "Picks are closed for this match" });
   });
 
   // --- locked ---
@@ -134,7 +134,7 @@ describe("submitPredictions", () => {
     });
 
     const result = await submitPredictions(groupId, matchId, validPredictions);
-    expect(result).toEqual({ success: false, error: "Predictions are locked for this match" });
+    expect(result).toEqual({ success: false, error: "Picks are locked for this match" });
   });
 
   // --- deadline ---
@@ -142,7 +142,7 @@ describe("submitPredictions", () => {
     mockedIsDeadlinePassed.mockReturnValue(true);
 
     const result = await submitPredictions(groupId, matchId, validPredictions);
-    expect(result).toEqual({ success: false, error: "Prediction deadline has passed" });
+    expect(result).toEqual({ success: false, error: "Too late — the deadline has passed" });
   });
 
   // --- scenario filtering ---
@@ -167,7 +167,7 @@ describe("submitPredictions", () => {
     ];
 
     const result = await submitPredictions(groupId, matchId, predictions);
-    expect(result).toEqual({ success: false, error: "No valid predictions to submit" });
+    expect(result).toEqual({ success: false, error: "No valid picks to lock in" });
   });
 
   // --- happy path ---
@@ -181,6 +181,6 @@ describe("submitPredictions", () => {
     mockedPredDal.upsertPredictions.mockResolvedValue(false);
 
     const result = await submitPredictions(groupId, matchId, validPredictions);
-    expect(result).toEqual({ success: false, error: "Failed to save predictions" });
+    expect(result).toEqual({ success: false, error: "Couldn't lock those in — try again" });
   });
 });

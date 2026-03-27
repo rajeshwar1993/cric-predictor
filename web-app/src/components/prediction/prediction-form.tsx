@@ -120,7 +120,7 @@ export function PredictionForm({
       setSuccess(true);
       router.refresh();
     } else {
-      setError(result.error || "Failed to submit predictions");
+      setError(result.error || "Couldn't lock those in — try again");
     }
     setLoading(false);
   }

@@ -84,7 +84,7 @@ describe("enterResults", () => {
     mockedMatchesDal.updateMatchResults.mockResolvedValue(false);
 
     const result = await enterResults(groupId, matchId, validResults);
-    expect(result).toEqual({ success: false, error: "Failed to update match results" });
+    expect(result).toEqual({ success: false, error: "Couldn't log the scorecard — try again" });
   });
 
   it("returns partial error when resolution fails", async () => {
@@ -92,7 +92,7 @@ describe("enterResults", () => {
     mockedMatchesDal.resolveMatchPredictions.mockResolvedValue(false);
 
     const result = await enterResults(groupId, matchId, validResults);
-    expect(result).toEqual({ success: false, error: "Results saved but resolution failed" });
+    expect(result).toEqual({ success: false, error: "Scorecard saved but resolution hit a snag" });
   });
 });
 

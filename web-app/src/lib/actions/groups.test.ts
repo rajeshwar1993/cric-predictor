@@ -57,7 +57,7 @@ describe("createGroup", () => {
 
     const result = await createGroup("New Group");
     expect(result.success).toBe(false);
-    expect(result.error).toContain("at most 10 groups");
+    expect(result.error).toContain("at most 10 squads");
   });
 
   it("creates a group successfully", async () => {
@@ -75,7 +75,7 @@ describe("createGroup", () => {
     mockedGroupsDal.createGroup.mockResolvedValue(null);
 
     const result = await createGroup("New Group");
-    expect(result).toEqual({ success: false, error: "Failed to create group" });
+    expect(result).toEqual({ success: false, error: "Couldn't create your squad — try again" });
   });
 });
 
@@ -101,7 +101,7 @@ describe("joinGroup", () => {
     mockedMembersDal.getMembershipStatus.mockResolvedValue({ status: "approved", role: "member" });
 
     const result = await joinGroup("a1b2c3d4e5f6");
-    expect(result).toEqual({ success: false, error: "You are already a member" });
+    expect(result).toEqual({ success: false, error: "You're already in this squad" });
   });
 
   it("returns error when request is pending", async () => {
@@ -109,7 +109,7 @@ describe("joinGroup", () => {
     mockedMembersDal.getMembershipStatus.mockResolvedValue({ status: "pending", role: "member" });
 
     const result = await joinGroup("a1b2c3d4e5f6");
-    expect(result).toEqual({ success: false, error: "Your request is pending approval" });
+    expect(result).toEqual({ success: false, error: "Your request is already pending — hang tight" });
   });
 
   it("submits join request successfully", async () => {
@@ -128,7 +128,7 @@ describe("joinGroup", () => {
     mockedMembersDal.requestToJoin.mockResolvedValue(false);
 
     const result = await joinGroup("a1b2c3d4e5f6");
-    expect(result).toEqual({ success: false, error: "Failed to submit join request" });
+    expect(result).toEqual({ success: false, error: "Couldn't get you in — try again" });
   });
 });
 
@@ -229,7 +229,7 @@ describe("manageMember", () => {
       .mockResolvedValueOnce({ status: "approved", role: "owner" });
 
     const result = await manageMember(groupId, targetId, "remove");
-    expect(result).toEqual({ success: false, error: "Cannot remove the group owner" });
+    expect(result).toEqual({ success: false, error: "Can't remove the squad owner" });
   });
 
   it("blocks self-removal", async () => {

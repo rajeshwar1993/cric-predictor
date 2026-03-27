@@ -55,7 +55,7 @@ export default async function GroupHomePage({ params }: GroupPageProps) {
           </h1>
           <div className="mt-1 flex items-center gap-2 text-sm text-[var(--text-muted)]">
             <Users className="h-4 w-4" />
-            {members.length} {members.length === 1 ? "member" : "members"}
+            {members.length} in the squad
           </div>
         </div>
         <div className="flex items-center gap-3">

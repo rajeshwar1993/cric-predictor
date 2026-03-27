@@ -33,7 +33,7 @@ export async function createCustomScenario(
 
   const membership = await membersDal.getMembershipStatus(groupId, user.id);
   if (!membership || membership.status !== "approved") {
-    return { success: false, error: "You are not a member of this group" };
+    return { success: false, error: "You're not in this squad" };
   }
 
   const scenario = await scenariosDal.createCustomScenario({
@@ -47,7 +47,7 @@ export async function createCustomScenario(
 
   if (!scenario) {
     logError({ layer: "action", operation: "createCustomScenario", metadata: { userId: user.id, groupId, matchId } });
-    return { success: false, error: "Failed to create scenario" };
+    return { success: false, error: "Couldn't submit your wild card — try again" };
   }
   return { success: true, data: scenario };
 }

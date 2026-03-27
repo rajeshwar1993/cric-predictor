@@ -35,7 +35,7 @@ export function JoinGroupClient({
     if (result.success) {
       setStatus("pending");
     } else {
-      setError(result.error || "Failed to submit request");
+      setError(result.error || "Couldn't get you in — try again");
     }
     setLoading(false);
   }

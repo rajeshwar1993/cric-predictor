@@ -55,14 +55,14 @@ export async function enterResults(
 
   if (!ok) {
     logError({ layer: "action", operation: "enterResults", metadata: { userId: user.id, matchId } });
-    return { success: false, error: "Failed to update match results" };
+    return { success: false, error: "Couldn't log the scorecard — try again" };
   }
 
   // Trigger resolution via DAL
   const resolved = await matchesDal.resolveMatchPredictions(matchId);
   if (!resolved) {
     logError({ layer: "action", operation: "enterResults", metadata: { userId: user.id, matchId } });
-    return { success: false, error: "Results saved but resolution failed" };
+    return { success: false, error: "Scorecard saved but resolution hit a snag" };
   }
 
   return { success: true };

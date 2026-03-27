@@ -25,14 +25,14 @@ export async function createGroup(name: string): Promise<ActionResponse<Group>> 
   if (existingGroups.length >= LIMITS.MAX_GROUPS_PER_USER) {
     return {
       success: false,
-      error: `You can create at most ${LIMITS.MAX_GROUPS_PER_USER} groups`,
+      error: `You can create at most ${LIMITS.MAX_GROUPS_PER_USER} squads`,
     };
   }
 
   const group = await groupsDal.createGroup(parsed.data.name, user.id);
   if (!group) {
     logError({ layer: "action", operation: "createGroup", metadata: { userId: user.id, name: parsed.data.name } });
-    return { success: false, error: "Failed to create group" };
+    return { success: false, error: "Couldn't create your squad — try again" };
   }
 
   return { success: true, data: group };
@@ -51,16 +51,16 @@ export async function joinGroup(inviteCode: string): Promise<ActionResponse> {
   // Check existing membership
   const existing = await membersDal.getMembershipStatus(group.id, user.id);
   if (existing?.status === "approved") {
-    return { success: false, error: "You are already a member" };
+    return { success: false, error: "You're already in this squad" };
   }
   if (existing?.status === "pending") {
-    return { success: false, error: "Your request is pending approval" };
+    return { success: false, error: "Your request is already pending — hang tight" };
   }
 
   const ok = await membersDal.requestToJoin(group.id, user.id);
   if (!ok) {
     logError({ layer: "action", operation: "joinGroup", metadata: { userId: user.id, inviteCode } });
-    return { success: false, error: "Failed to submit join request" };
+    return { success: false, error: "Couldn't get you in — try again" };
   }
 
   return { success: true };
@@ -111,7 +111,7 @@ export async function manageMember(
     case "remove": {
       const targetMembership = await membersDal.getMembershipStatus(groupId, userId);
       if (targetMembership?.role === "owner") {
-        return { success: false, error: "Cannot remove the group owner" };
+        return { success: false, error: "Can't remove the squad owner" };
       }
       if (userId === user.id) {
         return { success: false, error: "Cannot remove yourself" };
