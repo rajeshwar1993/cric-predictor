@@ -7,6 +7,7 @@ export const IS_MOCK_MODE = process.env.NEXT_PUBLIC_MOCK_MODE === "true";
 export const ROUTES = {
   HOME: "/",
   LOGIN: "/login",
+  ONBOARDING: "/onboarding",
   DASHBOARD: "/dashboard",
   JOIN: (code: string) => `/join/${code}`,
   GROUP: (groupId: string) => `/group/${groupId}`,

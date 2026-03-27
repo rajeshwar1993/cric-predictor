@@ -14,53 +14,19 @@ import {
 const uuid = () => "550e8400-e29b-41d4-a716-446655440000";
 
 describe("loginSchema", () => {
-  it("accepts valid input", () => {
-    const result = loginSchema.safeParse({
-      email: "test@example.com",
-      displayName: "John Doe",
-    });
+  it("accepts valid email", () => {
+    const result = loginSchema.safeParse({ email: "test@example.com" });
     expect(result.success).toBe(true);
   });
 
   it("rejects invalid email", () => {
-    const result = loginSchema.safeParse({
-      email: "not-an-email",
-      displayName: "John Doe",
-    });
+    const result = loginSchema.safeParse({ email: "not-an-email" });
     expect(result.success).toBe(false);
   });
 
   it("rejects empty email", () => {
-    const result = loginSchema.safeParse({
-      email: "",
-      displayName: "John",
-    });
+    const result = loginSchema.safeParse({ email: "" });
     expect(result.success).toBe(false);
-  });
-
-  it("rejects displayName shorter than 2 characters", () => {
-    const result = loginSchema.safeParse({
-      email: "test@example.com",
-      displayName: "A",
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it("rejects displayName longer than 50 characters", () => {
-    const result = loginSchema.safeParse({
-      email: "test@example.com",
-      displayName: "A".repeat(51),
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it("accepts displayName at boundary lengths (2 and 50)", () => {
-    expect(
-      loginSchema.safeParse({ email: "a@b.com", displayName: "AB" }).success
-    ).toBe(true);
-    expect(
-      loginSchema.safeParse({ email: "a@b.com", displayName: "A".repeat(50) }).success
-    ).toBe(true);
   });
 });
 

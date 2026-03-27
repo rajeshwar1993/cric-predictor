@@ -41,6 +41,8 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
+  const isOnboarded = !!request.cookies.get("bragg_onboarded")?.value;
+
   // Redirect unauthenticated users away from protected routes
   if (
     !user &&
@@ -52,10 +54,35 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Redirect authenticated users away from auth routes
-  if (user && AUTH_ROUTES.some((route) => pathname.startsWith(route))) {
+  // Redirect unauthenticated users away from onboarding
+  if (!user && pathname === "/onboarding") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    return NextResponse.redirect(url);
+  }
+
+  // Authenticated but not onboarded — gate protected routes
+  if (
+    user &&
+    !isOnboarded &&
+    PROTECTED_ROUTES.some((route) => pathname.startsWith(route))
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/onboarding";
+    return NextResponse.redirect(url);
+  }
+
+  // Already onboarded — redirect away from onboarding page
+  if (user && isOnboarded && pathname === "/onboarding") {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
+    return NextResponse.redirect(url);
+  }
+
+  // Redirect authenticated users away from login
+  if (user && AUTH_ROUTES.some((route) => pathname.startsWith(route))) {
+    const url = request.nextUrl.clone();
+    url.pathname = isOnboarded ? "/dashboard" : "/onboarding";
     return NextResponse.redirect(url);
   }
 

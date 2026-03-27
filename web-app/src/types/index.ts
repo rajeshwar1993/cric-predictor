@@ -21,6 +21,9 @@ export interface Profile {
   display_name: string;
   email: string;
   avatar_url: string | null;
+  date_of_birth: string | null;
+  accepted_terms_at: string | null;
+  onboarding_completed: boolean;
 }
 
 export interface Group {

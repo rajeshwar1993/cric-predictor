@@ -5,6 +5,9 @@ export const MOCK_USER: Profile = {
   display_name: "Rajesh Kumar",
   email: "rajesh@example.com",
   avatar_url: null,
+  date_of_birth: "1995-01-15",
+  accepted_terms_at: "2026-03-20T10:00:00Z",
+  onboarding_completed: true,
 };
 
 export const MOCK_USER_2: Profile = {
@@ -12,6 +15,9 @@ export const MOCK_USER_2: Profile = {
   display_name: "Priya Sharma",
   email: "priya@example.com",
   avatar_url: null,
+  date_of_birth: "1995-01-15",
+  accepted_terms_at: "2026-03-20T10:00:00Z",
+  onboarding_completed: true,
 };
 
 export const MOCK_USER_3: Profile = {
@@ -19,6 +25,9 @@ export const MOCK_USER_3: Profile = {
   display_name: "Arjun Patel",
   email: "arjun@example.com",
   avatar_url: null,
+  date_of_birth: "1995-01-15",
+  accepted_terms_at: "2026-03-20T10:00:00Z",
+  onboarding_completed: true,
 };
 
 export const MOCK_USER_4: Profile = {
@@ -26,6 +35,9 @@ export const MOCK_USER_4: Profile = {
   display_name: "Sneha Iyer",
   email: "sneha@example.com",
   avatar_url: null,
+  date_of_birth: "1995-01-15",
+  accepted_terms_at: "2026-03-20T10:00:00Z",
+  onboarding_completed: true,
 };
 
 export const MOCK_USER_5: Profile = {
@@ -33,6 +45,9 @@ export const MOCK_USER_5: Profile = {
   display_name: "Vikram Singh",
   email: "vikram@example.com",
   avatar_url: null,
+  date_of_birth: "1995-01-15",
+  accepted_terms_at: "2026-03-20T10:00:00Z",
+  onboarding_completed: true,
 };
 
 export const MOCK_USER_6: Profile = {
@@ -40,6 +55,9 @@ export const MOCK_USER_6: Profile = {
   display_name: "Meera Nair",
   email: "meera@example.com",
   avatar_url: null,
+  date_of_birth: "1995-01-15",
+  accepted_terms_at: "2026-03-20T10:00:00Z",
+  onboarding_completed: true,
 };
 
 export const ALL_MOCK_PROFILES = [

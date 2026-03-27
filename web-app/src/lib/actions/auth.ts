@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { logError } from "@/lib/logger";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { APP_URL } from "@/lib/constants";
 import type { ActionResponse } from "@/types";
 
@@ -12,7 +13,6 @@ import type { ActionResponse } from "@/types";
  */
 function sanitizeRedirect(redirectTo?: string): string | undefined {
   if (!redirectTo) return undefined;
-  // Must start with / and not start with // (protocol-relative URL)
   if (redirectTo.startsWith("/") && !redirectTo.startsWith("//")) {
     return redirectTo;
   }
@@ -27,23 +27,18 @@ const KNOWN_ERRORS: Record<string, string> = {
 
 export async function signInWithMagicLink(
   email: string,
-  displayName: string,
   redirectTo?: string
 ): Promise<ActionResponse> {
-  // Server-side validation
   if (!email || !email.includes("@") || email.length > 254) {
     return { success: false, error: "Please enter a valid email address" };
   }
 
-  const trimmedName = (displayName || email.split("@")[0]).slice(0, 30);
   const safeRedirect = sanitizeRedirect(redirectTo);
-
   const supabase = await createClient();
 
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      data: { display_name: trimmedName },
       emailRedirectTo: `${APP_URL}/auth/callback${
         safeRedirect ? `?redirectTo=${encodeURIComponent(safeRedirect)}` : ""
       }`,
@@ -62,5 +57,10 @@ export async function signInWithMagicLink(
 export async function signOut(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
+
+  const cookieStore = await cookies();
+  cookieStore.delete("bragg_onboarded");
+  cookieStore.delete("bragg_post_onboard_redirect");
+
   redirect("/");
 }

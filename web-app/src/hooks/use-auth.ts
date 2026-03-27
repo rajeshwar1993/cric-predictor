@@ -21,7 +21,7 @@ export function useAuth() {
       if (user) {
         const { data } = await supabase
           .from("profiles")
-          .select("id, display_name, email, avatar_url")
+          .select("id, display_name, email, avatar_url, date_of_birth, accepted_terms_at, onboarding_completed")
           .eq("id", user.id)
           .single();
         setProfile(data);
@@ -44,5 +44,5 @@ export function useAuth() {
     return () => subscription.unsubscribe();
   }, [supabase]);
 
-  return { user, profile, loading };
+  return { user, profile, loading, isOnboarded: profile?.onboarding_completed ?? false };
 }

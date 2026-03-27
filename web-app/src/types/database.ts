@@ -20,6 +20,9 @@ export interface Database {
           display_name: string;
           email: string;
           avatar_url: string | null;
+          date_of_birth: string | null;
+          accepted_terms_at: string | null;
+          onboarding_completed: boolean;
           created_at: string;
         };
         Insert: {
@@ -27,6 +30,9 @@ export interface Database {
           display_name: string;
           email: string;
           avatar_url?: string | null;
+          date_of_birth?: string | null;
+          accepted_terms_at?: string | null;
+          onboarding_completed?: boolean;
           created_at?: string;
         };
         Update: {
@@ -34,6 +40,9 @@ export interface Database {
           display_name?: string;
           email?: string;
           avatar_url?: string | null;
+          date_of_birth?: string | null;
+          accepted_terms_at?: string | null;
+          onboarding_completed?: boolean;
         };
       };
       groups: {

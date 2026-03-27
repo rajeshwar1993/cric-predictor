@@ -1,10 +1,35 @@
 import { z } from "zod/v4";
 import { LIMITS, CUSTOM_SCENARIO_POINTS } from "./constants";
 
-// Auth
+// Auth — email only (display name collected in onboarding)
 export const loginSchema = z.object({
   email: z.email("Please enter a valid email address"),
-  displayName: z.string().min(2, "Name must be at least 2 characters").max(50),
+});
+
+// Onboarding — collected after first sign-in
+export const onboardingSchema = z.object({
+  displayName: z
+    .string()
+    .min(2, "Name must be at least 2 characters")
+    .max(30, "Name must be at most 30 characters"),
+  dateOfBirth: z
+    .string()
+    .min(1, "Date of birth is required")
+    .refine(
+      (val) => {
+        const dob = new Date(val);
+        if (isNaN(dob.getTime())) return false;
+        const today = new Date();
+        let age = today.getFullYear() - dob.getFullYear();
+        const m = today.getMonth() - dob.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+        return age >= 18;
+      },
+      "You must be 18 or older to use Bragg"
+    ),
+  acceptedTerms: z.literal(true, {
+    errorMap: () => ({ message: "You must accept the terms to continue" }),
+  }),
 });
 
 // Groups
@@ -91,6 +116,7 @@ export const updateMemberSchema = z.object({
 
 // Types inferred from schemas
 export type LoginInput = z.infer<typeof loginSchema>;
+export type OnboardingInput = z.infer<typeof onboardingSchema>;
 export type CreateGroupInput = z.infer<typeof createGroupSchema>;
 export type JoinGroupInput = z.infer<typeof joinGroupSchema>;
 export type SubmitPredictionInput = z.infer<typeof submitPredictionSchema>;

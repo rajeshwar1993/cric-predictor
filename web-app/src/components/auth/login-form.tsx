@@ -16,7 +16,6 @@ export function LoginForm() {
   const authError = searchParams.get("error");
 
   const [email, setEmail] = useState("");
-  const [displayName, setDisplayName] = useState("");
   const [state, setState] = useState<FormState>(authError ? "error" : "input");
   const [errorMessage, setErrorMessage] = useState(
     authError === "auth_callback_failed"
@@ -32,7 +31,6 @@ export function LoginForm() {
     e.preventDefault();
     if (loading) return;
 
-    // Basic validation
     if (!email.includes("@")) {
       setErrorMessage("Please enter a valid email address");
       setState("error");
@@ -42,11 +40,7 @@ export function LoginForm() {
     setLoading(true);
     setErrorMessage("");
 
-    const result = await signInWithMagicLink(
-      email,
-      displayName || email.split("@")[0],
-      redirectTo
-    );
+    const result = await signInWithMagicLink(email, redirectTo);
 
     setLoading(false);
 
@@ -63,11 +57,7 @@ export function LoginForm() {
     if (!canResend || loading) return;
     setLoading(true);
 
-    const result = await signInWithMagicLink(
-      email,
-      displayName || email.split("@")[0],
-      redirectTo
-    );
+    const result = await signInWithMagicLink(email, redirectTo);
 
     setLoading(false);
 
@@ -124,30 +114,6 @@ export function LoginForm() {
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="space-y-2">
         <Label
-          htmlFor="displayName"
-          className="text-sm font-medium text-[var(--text-secondary)]"
-        >
-          Display Name{" "}
-          <span className="text-[var(--text-muted)] font-normal">(optional)</span>
-        </Label>
-        <Input
-          id="displayName"
-          type="text"
-          placeholder="Your leaderboard name"
-          value={displayName}
-          onChange={(e) => setDisplayName(e.target.value)}
-          className="bg-[var(--bg-input)] border-[var(--border-medium)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--border-focus)] focus:ring-[var(--border-focus)]"
-          maxLength={30}
-          autoComplete="name"
-          autoFocus
-        />
-        <p className="text-xs text-[var(--text-muted)]">
-          This is how you show up on the leaderboard.
-        </p>
-      </div>
-
-      <div className="space-y-2">
-        <Label
           htmlFor="email"
           className="text-sm font-medium text-[var(--text-secondary)]"
         >
@@ -165,6 +131,7 @@ export function LoginForm() {
           className="bg-[var(--bg-input)] border-[var(--border-medium)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--border-focus)] focus:ring-[var(--border-focus)]"
           required
           autoComplete="email"
+          autoFocus
         />
       </div>
 

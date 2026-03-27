@@ -18,10 +18,11 @@ describe("LoginForm", () => {
     vi.clearAllMocks();
   });
 
-  it("renders the email input and display name input", () => {
+  it("renders the email input (no display name field)", () => {
     render(<LoginForm />);
     expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/display name/i)).toBeInTheDocument();
+    // Display name should NOT be present (moved to onboarding)
+    expect(screen.queryByLabelText(/display name/i)).not.toBeInTheDocument();
   });
 
   it("renders the submit button", () => {
@@ -29,7 +30,7 @@ describe("LoginForm", () => {
     expect(screen.getByText("Send Magic Link")).toBeInTheDocument();
   });
 
-  it("calls signInWithMagicLink on form submit", async () => {
+  it("calls signInWithMagicLink with email only on submit", async () => {
     const user = userEvent.setup();
     mockSignIn.mockResolvedValue({ success: true });
 
@@ -38,7 +39,7 @@ describe("LoginForm", () => {
     await user.type(screen.getByLabelText(/email address/i), "test@example.com");
     await user.click(screen.getByText("Send Magic Link"));
 
-    expect(mockSignIn).toHaveBeenCalledWith("test@example.com", "test", undefined);
+    expect(mockSignIn).toHaveBeenCalledWith("test@example.com", undefined);
   });
 
   it("shows 'Magic link sent!' after successful submit", async () => {

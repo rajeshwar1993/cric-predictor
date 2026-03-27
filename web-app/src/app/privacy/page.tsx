@@ -32,6 +32,7 @@ export default function PrivacyPage() {
               <ul className="list-disc pl-5 space-y-1">
                 <li><strong>Display name</strong> — shown on leaderboards</li>
                 <li><strong>Email address</strong> — used for magic link authentication</li>
+                <li><strong>Date of birth</strong> — used for age verification only, never shared with other users</li>
                 <li><strong>Predictions</strong> — your picks for each match scenario</li>
               </ul>
               <p>We do not collect passwords (magic link auth), payment information, location data, or device identifiers.</p>
