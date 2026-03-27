@@ -25,6 +25,6 @@ export const WithAction: Story = {
     icon: Users,
     title: "No groups yet",
     description: "Create or join a group to start predicting with friends.",
-    action: <Button>Create Group</Button>,
+    action: <Button>Create Squad</Button>,
   },
 };

@@ -64,6 +64,16 @@ const config: StorybookConfig = {
         __dirname,
         "../src/__mocks__/handlers/use-realtime.ts"
       ),
+      // Mock PostHog server (posthog-node is Node.js-only)
+      "@/lib/posthog/server": path.resolve(
+        __dirname,
+        "../src/__mocks__/handlers/posthog-server.ts"
+      ),
+      // Prevent posthog-node from bundling in Storybook (Node.js-only)
+      "posthog-node": path.resolve(
+        __dirname,
+        "../src/__mocks__/handlers/posthog-node.ts"
+      ),
     };
 
     // Add PostCSS plugin for Tailwind v4
@@ -78,6 +88,8 @@ const config: StorybookConfig = {
       "process.env.NEXT_PUBLIC_MOCK_MODE": JSON.stringify("true"),
       "process.env.NEXT_PUBLIC_SUPABASE_URL": JSON.stringify("http://localhost:54321"),
       "process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY": JSON.stringify("mock-anon-key"),
+      "process.env.NEXT_PUBLIC_POSTHOG_KEY": JSON.stringify(""),
+      "process.env.NEXT_PUBLIC_POSTHOG_HOST": JSON.stringify(""),
     };
 
     return config;

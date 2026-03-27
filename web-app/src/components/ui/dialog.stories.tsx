@@ -30,15 +30,15 @@ export const Default: Story = {
     <Dialog open>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create Group</DialogTitle>
+          <DialogTitle>Create Squad</DialogTitle>
           <DialogDescription>
-            Give your prediction group a name to get started.
+            Give your prediction squad a name to get started.
           </DialogDescription>
         </DialogHeader>
         <div className="py-2">
           <input
             className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm"
-            placeholder="Group name"
+            placeholder="Squad name"
           />
         </div>
         <DialogFooter>

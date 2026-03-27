@@ -10,7 +10,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Shows the collapsed "Propose a Scenario" button by default */
+/** Shows the collapsed "Drop a Wild Card" button by default */
 export const Default: Story = {
   args: {
     groupId: "group-001",
