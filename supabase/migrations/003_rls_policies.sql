@@ -20,6 +20,7 @@ CREATE POLICY "read_groups" ON groups FOR SELECT USING (
 );
 -- Invite code lookup: handled by get_group_by_invite_code() SECURITY DEFINER function
 -- No blanket SELECT policy needed — non-members use the RPC function to find groups
+CREATE POLICY "read_own_created_groups" ON groups FOR SELECT USING (auth.uid() = created_by);
 CREATE POLICY "create_groups" ON groups FOR INSERT WITH CHECK (auth.uid() = created_by);
 
 -- Group Members
