@@ -13,7 +13,7 @@ Bragg is a **free entertainment platform** that allows users to make predictions
 
 **The App does not involve real money in any form.** There are no entry fees, cash prizes, monetary stakes, wagering, or betting of any kind. Points and leaderboard positions carry no monetary value and cannot be exchanged, transferred, redeemed, or converted into cash, credits, or any other form of consideration.
 
-The App is **not a gambling, betting, or wagering platform.** It is not a fantasy sports platform. It is a social game of skill and knowledge where users demonstrate their understanding of cricket by making predictions within private groups.
+The App is **not a gambling, betting, or wagering platform.** It is not a fantasy sports platform. It is a social game of skill and knowledge where users demonstrate their understanding of cricket by making predictions within private squads.
 
 ---
 
@@ -38,9 +38,11 @@ Team names, team codes, match schedules, and cricket data referenced in the App 
 
 ---
 
-## 4. Accounts
+## 4. Accounts and Consent
 
-To use the App, you must create an account by providing an email address and completing the onboarding process (display name, date of birth, and acceptance of these Terms). Authentication is handled via a magic link sent to your email — no password is created or stored.
+To use the App, you must create an account by providing an email address and completing the onboarding process (display name, date of birth, and explicit acceptance of these Terms and our Privacy Policy by checking the consent checkbox).
+
+By completing onboarding, you confirm that you have read, understood, and agree to both these Terms and our [Privacy Policy](/privacy). This constitutes your informed consent under the Digital Personal Data Protection Act, 2023 for the collection and processing of your personal data as described in the Privacy Policy.
 
 You are responsible for:
 - Maintaining the security of the email account associated with your Bragg account
@@ -78,8 +80,7 @@ We reserve the right to remove any user-generated content (including custom scen
 ### Creating and Joining Squads
 - Users can create squads (prediction groups) and invite others via invite codes or links
 - Joining a squad requires admin approval
-- Each user may be a member of up to 10 squads simultaneously
-- Each squad may have up to 50 members
+- Squad size limits and per-user squad limits are as specified in the App and may be updated from time to time
 
 ### Squad Administrators
 Squad creators ("owners") and designated administrators have the ability to:
@@ -102,7 +103,7 @@ If you disagree with an admin's decisions, your recourse is to leave the squad.
 
 ### How Scoring Works
 - Before each match, users submit predictions on various scenarios (e.g., match winner, top scorer, total sixes)
-- Predictions must be submitted before the deadline (default: 45 minutes before match start)
+- Predictions must be submitted before the deadline (as shown in the App, typically 45 minutes before match start, adjustable by squad admins)
 - After the deadline, predictions are locked and visible to all squad members
 - Outcomes are resolved based on match data from third-party cricket APIs, or manually by squad administrators
 - Points are awarded for correct predictions
@@ -144,11 +145,12 @@ Users retain ownership of their display names and custom scenario text, but gran
 
 ## 10. Privacy and Data
 
-Your use of the App is also governed by our [Privacy Policy](/privacy), which describes how we collect, use, store, and protect your personal data. By using the App, you consent to the practices described in the Privacy Policy.
+Your use of the App is also governed by our [Privacy Policy](/privacy), which describes how we collect, use, store, and protect your personal data. By completing onboarding and consenting to the Privacy Policy, you agree to the practices described therein.
 
 Key points:
 - We collect display name, email, date of birth, and prediction data
 - We use PostHog for product analytics (usage events, error tracking)
+- Analytics data, including your email and user ID, is transferred to PostHog's servers in the United States
 - We do not sell your data
 - You can request account deletion at any time
 
@@ -158,7 +160,7 @@ Key points:
 
 The App is provided on an **"as is" and "as available" basis**. We make no warranties of any kind, express or implied, including but not limited to warranties of merchantability, fitness for a particular purpose, or non-infringement.
 
-To the maximum extent permitted by applicable law, we shall not be liable for:
+To the maximum extent permitted by applicable law, including the Consumer Protection Act, 2019, we shall not be liable for:
 
 - Any loss of data, including predictions, leaderboard history, or account information
 - Any downtime, service interruptions, or unavailability of the App
@@ -168,69 +170,89 @@ To the maximum extent permitted by applicable law, we shall not be liable for:
 - Any emotional distress, reputational harm, or other non-monetary loss arising from leaderboard positions, prediction outcomes, or squad interactions
 - Any unauthorised access to your account resulting from your failure to secure your email
 
-**Since the App is a free service with no monetary transactions, our maximum aggregate liability to you for any claim arising from your use of the App is zero (INR 0).**
+**Since the App is a free service with no monetary transactions, our maximum aggregate liability to you for any claim arising from your use of the App shall not exceed INR 100 (Indian Rupees One Hundred).** Nothing in this section excludes or limits liability for fraud, wilful misconduct, or any liability that cannot be excluded under applicable Indian law.
 
 ---
 
 ## 12. Indemnification
 
 You agree to indemnify and hold us harmless from any claims, damages, losses, or expenses (including reasonable legal fees) arising from:
-- Your use of the App
 - Your violation of these Terms
-- Your user-generated content (custom scenarios, display names)
-- Your interactions with other users
+- Your user-generated content (custom scenarios, display names) that infringes third-party rights or violates applicable law
+- Any misrepresentation by you (including regarding your age or identity)
 
 ---
 
 ## 13. Account Termination
 
 ### By Us
-We reserve the right to suspend or terminate your account at any time, with or without notice, for any violation of these Terms or for any other reason at our sole discretion. Reasons for termination may include but are not limited to: abusive behaviour, fake accounts, manipulation of leaderboards, or inappropriate content.
+We reserve the right to suspend or terminate your account for violation of these Terms, suspected fraud, abusive behaviour, manipulation of leaderboards, inappropriate content, or as required by applicable law. Where practicable, we will provide reasonable notice before termination, except in cases of serious or repeated violations where immediate action is warranted.
 
 ### By You
-You may request deletion of your account at any time by contacting us at the email address provided below. Upon deletion, your personal data will be removed in accordance with our Privacy Policy.
+You may request deletion of your account at any time by contacting us at the email address provided in Section 19. Upon deletion, your personal data will be removed in accordance with our Privacy Policy.
 
 ---
 
-## 14. Availability and Modifications
+## 14. Force Majeure
+
+We shall not be liable for any failure or delay in performing our obligations under these Terms where such failure or delay arises from circumstances beyond our reasonable control, including but not limited to: natural disasters, acts of government, internet or telecommunications failures, third-party API outages (including cricket data providers), power failures, cyberattacks, pandemics, or any other force majeure event.
+
+---
+
+## 15. Availability and Modifications
 
 We do not guarantee that the App will be available at all times. We may modify, suspend, or discontinue the App (or any part of it) at any time, with or without notice.
 
-We may update these Terms and Conditions at any time. The "Last updated" date at the top of this page indicates when the latest revision was made. Your continued use of the App after changes are posted constitutes your acceptance of the revised terms.
-
-For significant changes, we will make reasonable efforts to notify you via an in-app notification.
+We may update these Terms and Conditions at any time. The "Last updated" date at the top of this page indicates when the latest revision was made. For significant changes, we will make reasonable efforts to notify you via an in-app notification and may request renewed consent where applicable. Your continued use of the App after changes are posted constitutes your acceptance of the revised terms.
 
 ---
 
-## 15. Governing Law and Jurisdiction
+## 16. Dispute Resolution
+
+### Informal Resolution
+In the event of any dispute arising from or relating to these Terms or your use of the App, you agree to first attempt to resolve the dispute informally by contacting us at the email address in Section 19. We will attempt to resolve the matter within 30 days.
+
+### Arbitration
+If the dispute is not resolved informally within 30 days, either party may refer the dispute to binding arbitration under the Arbitration and Conciliation Act, 1996. The arbitration shall be conducted by a sole arbitrator mutually agreed upon by both parties, in New Delhi, India. The language of arbitration shall be English. The arbitrator's decision shall be final and binding.
+
+### Jurisdiction
+Notwithstanding the above, either party may seek injunctive or equitable relief from the courts of New Delhi, India, for matters that require immediate judicial intervention.
+
+---
+
+## 17. Governing Law
 
 These Terms are governed by and construed in accordance with the laws of India, including but not limited to:
 - The Information Technology Act, 2000 and its amendments
+- The Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021
 - The Digital Personal Data Protection Act, 2023
 - The Indian Contract Act, 1872
-
-Any disputes arising from or related to these Terms or the use of the App shall be subject to the exclusive jurisdiction of the courts of **New Delhi, India**.
+- The Consumer Protection Act, 2019
 
 ---
 
-## 16. Severability
+## 18. General Provisions
 
+### Severability
 If any provision of these Terms is found to be invalid, illegal, or unenforceable by a court of competent jurisdiction, the remaining provisions shall continue in full force and effect.
 
+### Waiver
+Our failure to enforce any right or provision of these Terms shall not constitute a waiver of that right or provision. Any waiver must be in writing and signed by us.
+
+### Entire Agreement
+These Terms, together with the Privacy Policy, constitute the entire agreement between you and us regarding the use of the App. They supersede any prior agreements, communications, or understandings, whether oral or written.
+
+### Assignment
+You may not assign or transfer your rights or obligations under these Terms without our prior written consent. We may assign our rights and obligations without restriction.
+
 ---
 
-## 17. Entire Agreement
-
-These Terms, together with the Privacy Policy, constitute the entire agreement between you and us regarding the use of the App. They supersede any prior agreements or understandings.
-
----
-
-## 18. Contact
+## 19. Contact
 
 If you have any questions about these Terms, please contact us at:
 
-**Email:** legal@bragg.app
+**Email:** [INSERT_CONTACT_EMAIL]
 
 ---
 
-*By using Bragg, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions.*
+*By completing the onboarding process and checking the consent box, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions.*
