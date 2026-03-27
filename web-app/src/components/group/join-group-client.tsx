@@ -13,6 +13,7 @@ interface JoinGroupClientProps {
   groupName: string;
   inviteCode: string;
   currentStatus: MemberStatus | null;
+  isFull?: boolean;
 }
 
 export function JoinGroupClient({
@@ -20,6 +21,7 @@ export function JoinGroupClient({
   groupName,
   inviteCode,
   currentStatus,
+  isFull = false,
 }: JoinGroupClientProps) {
   const router = useRouter();
   const [status, setStatus] = useState<MemberStatus | null>(currentStatus);
@@ -78,6 +80,23 @@ export function JoinGroupClient({
           {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
           Try Again
         </Button>
+      </div>
+    );
+  }
+
+  // Group is full
+  if (isFull) {
+    return (
+      <div className="rounded-[20px] border border-[var(--border-light)] bg-[var(--bg-card)] p-8 space-y-4">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--warning)_10%,transparent)]">
+          <UserPlus className="h-7 w-7 text-[var(--warning)]" />
+        </div>
+        <h2 className="font-display text-lg font-semibold text-[var(--text-primary)]">
+          Group is full
+        </h2>
+        <p className="text-sm text-[var(--text-secondary)]">
+          <span className="font-medium">{groupName}</span> has reached its maximum of 10 members.
+        </p>
       </div>
     );
   }

@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import * as groupsDal from "@/lib/dal/groups";
 import * as membersDal from "@/lib/dal/members";
-import { APP_URL, ROUTES } from "@/lib/constants";
+import { APP_URL, ROUTES, LIMITS } from "@/lib/constants";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { JoinGroupClient } from "@/components/group/join-group-client";
@@ -50,11 +50,16 @@ export default async function JoinPage({ params }: JoinPageProps) {
 
   // If authenticated, check existing membership
   if (user) {
-    const membership = await membersDal.getMembershipStatus(group.id, user.id);
+    const [membership, members] = await Promise.all([
+      membersDal.getMembershipStatus(group.id, user.id),
+      membersDal.getMembers(group.id),
+    ]);
 
     if (membership?.status === "approved") {
       redirect(ROUTES.GROUP(group.id));
     }
+
+    const isFull = members.length >= LIMITS.MAX_MEMBERS_PER_GROUP;
 
     return (
       <div className="flex min-h-dvh flex-col">
@@ -67,6 +72,7 @@ export default async function JoinPage({ params }: JoinPageProps) {
               groupName={group.name}
               inviteCode={code}
               currentStatus={membership?.status || null}
+              isFull={isFull}
             />
           </div>
         </main>

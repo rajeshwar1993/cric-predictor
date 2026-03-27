@@ -8,6 +8,7 @@ import { InviteLink } from "@/components/group/invite-link";
 import { MemberList } from "@/components/group/member-list";
 import { Users, Calendar } from "lucide-react";
 import Link from "next/link";
+import { LIMITS } from "@/lib/constants";
 import { ROUTES } from "@/lib/constants";
 import { formatMatchDate, formatMatchTime } from "@/lib/utils";
 
@@ -59,7 +60,7 @@ export default async function GroupHomePage({ params }: GroupPageProps) {
           </h1>
           <div className="mt-1 flex items-center gap-2 text-sm text-[var(--text-muted)]">
             <Users className="h-4 w-4" />
-            {members.length} in the squad
+            {members.length}/{LIMITS.MAX_MEMBERS_PER_GROUP} in the squad
           </div>
         </div>
         <div className="flex items-center gap-3">

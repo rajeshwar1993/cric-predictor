@@ -7,7 +7,7 @@ import * as matchesDal from "@/lib/dal/matches";
 import { PendingApprovals } from "@/components/admin/pending-approvals";
 import { AdminMemberList } from "@/components/admin/admin-member-list";
 import { ResultEntryForm } from "@/components/admin/result-entry-form";
-import { ROUTES } from "@/lib/constants";
+import { ROUTES, LIMITS } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "Admin HQ",
@@ -98,7 +98,7 @@ export default async function AdminPage({ params }: AdminPageProps) {
       {/* Member Management */}
       <section className="space-y-4">
         <h2 className="font-display text-lg font-semibold text-[var(--text-primary)]">
-          Squad ({members.length})
+          Squad ({members.length}/{LIMITS.MAX_MEMBERS_PER_GROUP})
         </h2>
         <AdminMemberList
           groupId={groupId}

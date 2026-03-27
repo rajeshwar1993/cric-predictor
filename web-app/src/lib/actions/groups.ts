@@ -48,6 +48,12 @@ export async function joinGroup(inviteCode: string): Promise<ActionResponse> {
   const group = await groupsDal.getGroupByInviteCode(inviteCode);
   if (!group) return { success: false, error: "Invalid invite code" };
 
+  // Check if group is full
+  const members = await membersDal.getMembers(group.id);
+  if (members.length >= LIMITS.MAX_MEMBERS_PER_GROUP) {
+    return { success: false, error: `This group is full (max ${LIMITS.MAX_MEMBERS_PER_GROUP} members)` };
+  }
+
   // Check existing membership
   const existing = await membersDal.getMembershipStatus(group.id, user.id);
   if (existing?.status === "approved") {
@@ -90,9 +96,14 @@ export async function manageMember(
 
   let ok = false;
   switch (action) {
-    case "approve":
+    case "approve": {
+      const currentMembers = await membersDal.getMembers(groupId);
+      if (currentMembers.length >= LIMITS.MAX_MEMBERS_PER_GROUP) {
+        return { success: false, error: `Group is full — max ${LIMITS.MAX_MEMBERS_PER_GROUP} members` };
+      }
       ok = await membersDal.updateMemberStatus(groupId, userId, "approved");
       break;
+    }
     case "reject":
       ok = await membersDal.updateMemberStatus(groupId, userId, "rejected");
       break;

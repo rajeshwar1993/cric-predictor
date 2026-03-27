@@ -23,6 +23,8 @@ const mockedMembersDal = vi.mocked(membersDal);
 beforeEach(() => {
   vi.clearAllMocks();
   mockAuthenticatedUser(mockClient, "user-001");
+  // Default: group has fewer than 10 members (not full)
+  mockedMembersDal.getMembers.mockResolvedValue([]);
 });
 
 // ---------------------------------------------------------------------------

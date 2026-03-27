@@ -193,7 +193,7 @@ describe("RANGE_OPTIONS", () => {
 describe("LIMITS", () => {
   it("has expected values", () => {
     expect(LIMITS.MAX_GROUPS_PER_USER).toBe(10);
-    expect(LIMITS.MAX_MEMBERS_PER_GROUP).toBe(50);
+    expect(LIMITS.MAX_MEMBERS_PER_GROUP).toBe(10);
     expect(LIMITS.MAX_CUSTOM_SCENARIOS_PER_MEMBER_PER_MATCH).toBe(10);
     expect(LIMITS.MAX_CUSTOM_SCENARIOS_PER_GROUP_PER_MATCH).toBe(30);
     expect(LIMITS.MAGIC_LINK_RESEND_SECONDS).toBe(60);
