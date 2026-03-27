@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { logError } from "@/lib/logger";
+import { captureServerEvent, ANALYTICS_EVENTS } from "@/lib/posthog";
 import * as notificationsDal from "@/lib/dal/notifications";
 import type { ActionResponse } from "@/types";
 
@@ -21,6 +22,7 @@ export async function markNotificationRead(
     logError({ layer: "action", operation: "markNotificationRead", metadata: { userId: user.id, notificationId } });
     return { success: false, error: "Failed to mark as read" };
   }
+  captureServerEvent(user.id, ANALYTICS_EVENTS.NOTIFICATION_MARKED_READ, { notification_id: notificationId });
   return { success: true };
 }
 
@@ -36,5 +38,6 @@ export async function markAllNotificationsRead(): Promise<ActionResponse> {
     logError({ layer: "action", operation: "markAllNotificationsRead", metadata: { userId: user.id } });
     return { success: false, error: "Failed to mark all as read" };
   }
+  captureServerEvent(user.id, ANALYTICS_EVENTS.NOTIFICATION_ALL_CLEARED);
   return { success: true };
 }

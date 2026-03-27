@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { APP_URL } from "@/lib/constants";
 import { Copy, Check } from "lucide-react";
+import { getPostHogClient } from "@/lib/posthog/client";
+import { ANALYTICS_EVENTS } from "@/lib/posthog/events";
 
 interface InviteLinkProps {
   inviteCode: string;
@@ -17,6 +19,7 @@ export function InviteLink({ inviteCode }: InviteLinkProps) {
     try {
       await navigator.clipboard.writeText(link);
       setCopied(true);
+      getPostHogClient()?.capture(ANALYTICS_EVENTS.GROUP_INVITE_COPIED, { invite_code: inviteCode });
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // Clipboard API not available — show link as text for manual copy

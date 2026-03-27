@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
+import { usePostHogIdentify } from "@/hooks/use-posthog-identify";
 import { UserMenu } from "@/components/layout/user-menu";
 import { NotificationBell } from "@/components/layout/notification-bell";
 
 export function Header() {
   const { user, profile, loading } = useAuth();
+  usePostHogIdentify(user, profile);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[var(--border-subtle)] bg-[var(--bg-deep)]/95 backdrop-blur supports-[backdrop-filter]:bg-[var(--bg-deep)]/80">

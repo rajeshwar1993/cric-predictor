@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { logError } from "@/lib/logger";
+import { captureServerEvent, ANALYTICS_EVENTS } from "@/lib/posthog";
 import { onboardingSchema } from "@/lib/validators";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -58,6 +59,8 @@ export async function completeOnboarding(
     );
     return { success: false, error: "Something went wrong. Please try again." };
   }
+
+  captureServerEvent(user.id, ANALYTICS_EVENTS.AUTH_ONBOARDING_COMPLETED, { display_name: parsed.data.displayName });
 
   // Set the onboarded cookie
   const cookieStore = await cookies();

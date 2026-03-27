@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { logError } from "@/lib/logger";
+import { captureServerEvent, ANALYTICS_EVENTS } from "@/lib/posthog";
 import * as predictionsDal from "@/lib/dal/predictions";
 import * as scenariosDal from "@/lib/dal/scenarios";
 import * as membersDal from "@/lib/dal/members";
@@ -67,5 +68,6 @@ export async function submitPredictions(
     return { success: false, error: "Couldn't lock those in — try again" };
   }
 
+  captureServerEvent(user.id, ANALYTICS_EVENTS.PREDICTION_SUBMITTED, { group_id: groupId, match_id: matchId, prediction_count: validPredictions.length, total_scenarios: scenarios.length });
   return { success: true };
 }

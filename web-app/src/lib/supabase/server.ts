@@ -1,5 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { ensureServerTransport } from "@/lib/posthog/register-server-transport";
+
+ensureServerTransport();
 
 // TODO: Add Database generic once types are generated from running Supabase local
 export async function createClient() {

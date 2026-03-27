@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { logError } from "@/lib/logger";
+import { captureServerEvent, ANALYTICS_EVENTS } from "@/lib/posthog";
 import * as scenariosDal from "@/lib/dal/scenarios";
 import * as membersDal from "@/lib/dal/members";
 import * as matchesDal from "@/lib/dal/matches";
@@ -50,6 +51,7 @@ export async function createCustomScenario(
     logError({ layer: "action", operation: "createCustomScenario", metadata: { userId: user.id, groupId, matchId } });
     return { success: false, error: "Couldn't submit your wild card — try again" };
   }
+  captureServerEvent(user.id, ANALYTICS_EVENTS.SCENARIO_CUSTOM_CREATED, { group_id: groupId, match_id: matchId, title: parsed.data.title, option_count: parsed.data.options.length, points: parsed.data.points });
   return { success: true, data: scenario };
 }
 
@@ -79,6 +81,7 @@ export async function approveScenario(
     logError({ layer: "action", operation: "approveScenario", metadata: { userId: user.id, scenarioId } });
     return { success: false, error: "Failed to approve scenario" };
   }
+  captureServerEvent(user.id, ANALYTICS_EVENTS.SCENARIO_APPROVED, { group_id: groupId, scenario_id: scenarioId });
   return { success: true };
 }
 
@@ -102,6 +105,7 @@ export async function rejectScenario(
     logError({ layer: "action", operation: "rejectScenario", metadata: { userId: user.id, scenarioId } });
     return { success: false, error: "Failed to reject scenario" };
   }
+  captureServerEvent(user.id, ANALYTICS_EVENTS.SCENARIO_REJECTED, { group_id: groupId, scenario_id: scenarioId });
   return { success: true };
 }
 
@@ -139,6 +143,7 @@ export async function removeScenario(
     logError({ layer: "action", operation: "removeScenario", metadata: { userId: user.id, scenarioId } });
     return { success: false, error: "Failed to remove scenario" };
   }
+  captureServerEvent(user.id, ANALYTICS_EVENTS.SCENARIO_REMOVED, { group_id: groupId, scenario_id: scenarioId });
   return { success: true };
 }
 
@@ -170,6 +175,7 @@ export async function publishScenarios(
     return { success: false, error: "Failed to publish scenarios" };
   }
 
+  captureServerEvent(user.id, ANALYTICS_EVENTS.SCENARIO_PUBLISHED, { group_id: groupId, match_id: matchId, scenario_count: count });
   return { success: true };
 }
 
@@ -224,5 +230,6 @@ export async function addCustomScenarioAsAdmin(
   // Auto-approve since admin created it
   await scenariosDal.updateScenarioApproval(scenario.id, "approved");
 
+  captureServerEvent(user.id, ANALYTICS_EVENTS.SCENARIO_CUSTOM_CREATED_BY_ADMIN, { group_id: groupId, match_id: matchId, title: parsed.data.title });
   return { success: true, data: scenario };
 }

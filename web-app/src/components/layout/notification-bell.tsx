@@ -8,6 +8,8 @@ import {
   markAllNotificationsRead,
 } from "@/lib/actions/notifications";
 import { Bell, Check, CheckCheck } from "lucide-react";
+import { getPostHogClient } from "@/lib/posthog/client";
+import { ANALYTICS_EVENTS } from "@/lib/posthog/events";
 import type { Notification } from "@/types";
 
 interface NotificationBellProps {
@@ -73,7 +75,13 @@ export function NotificationBell({ userId }: NotificationBellProps) {
   return (
     <div className="relative">
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          const opening = !isOpen;
+          setIsOpen(opening);
+          if (opening) {
+            getPostHogClient()?.capture(ANALYTICS_EVENTS.NOTIFICATION_BELL_OPENED, { unread_count: unreadCount });
+          }
+        }}
         className="relative flex h-10 w-10 items-center justify-center rounded-[10px] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] transition-colors"
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
       >

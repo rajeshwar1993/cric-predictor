@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { logError } from "@/lib/logger";
+import { captureServerEvent, ANALYTICS_EVENTS } from "@/lib/posthog";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { APP_URL } from "@/lib/constants";
@@ -51,11 +52,14 @@ export async function signInWithMagicLink(
     return { success: false, error: userMessage };
   }
 
+  captureServerEvent(email, ANALYTICS_EVENTS.AUTH_MAGIC_LINK_REQUESTED, { has_redirect: !!safeRedirect });
   return { success: true };
 }
 
 export async function signOut(): Promise<void> {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) captureServerEvent(user.id, ANALYTICS_EVENTS.AUTH_SIGNED_OUT);
   await supabase.auth.signOut();
 
   const cookieStore = await cookies();

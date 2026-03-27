@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Chakra_Petch, DM_Sans, JetBrains_Mono } from "next/font/google";
+import { Suspense } from "react";
 import { ThemeProvider } from "@/components/shared/theme-provider";
+import { PostHogProvider } from "@/components/shared/posthog-provider";
 import "./globals.css";
 
 const chakraPetch = Chakra_Petch({
@@ -58,7 +60,11 @@ export default function RootLayout({
       className={`${chakraPetch.variable} ${dmSans.variable} ${jetbrainsMono.variable}`}
     >
       <body className="min-h-dvh bg-[var(--bg-deep)] antialiased">
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <Suspense fallback={null}>
+            <PostHogProvider>{children}</PostHogProvider>
+          </Suspense>
+        </ThemeProvider>
       </body>
     </html>
   );

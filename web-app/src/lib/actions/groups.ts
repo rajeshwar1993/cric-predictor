@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { logError } from "@/lib/logger";
+import { captureServerEvent, ANALYTICS_EVENTS } from "@/lib/posthog";
 import * as groupsDal from "@/lib/dal/groups";
 import * as membersDal from "@/lib/dal/members";
 import { createGroupSchema, updateMemberSchema } from "@/lib/validators";
@@ -35,6 +36,7 @@ export async function createGroup(name: string): Promise<ActionResponse<Group>> 
     return { success: false, error: "Couldn't create your squad — try again" };
   }
 
+  captureServerEvent(user.id, ANALYTICS_EVENTS.GROUP_CREATED, { group_id: group.id, group_name: parsed.data.name });
   return { success: true, data: group };
 }
 
@@ -69,6 +71,7 @@ export async function joinGroup(inviteCode: string): Promise<ActionResponse> {
     return { success: false, error: "Couldn't get you in — try again" };
   }
 
+  captureServerEvent(user.id, ANALYTICS_EVENTS.GROUP_JOIN_REQUESTED, { group_id: group.id });
   return { success: true };
 }
 
@@ -140,5 +143,13 @@ export async function manageMember(
     logError({ layer: "action", operation: "manageMember", metadata: { callerId: user.id, groupId, targetUserId: userId, action } });
     return { success: false, error: `Failed to ${action} member` };
   }
+  const eventMap: Record<string, string> = {
+    approve: ANALYTICS_EVENTS.GROUP_MEMBER_APPROVED,
+    reject: ANALYTICS_EVENTS.GROUP_MEMBER_REJECTED,
+    promote: ANALYTICS_EVENTS.GROUP_MEMBER_PROMOTED,
+    demote: ANALYTICS_EVENTS.GROUP_MEMBER_DEMOTED,
+    remove: ANALYTICS_EVENTS.GROUP_MEMBER_REMOVED,
+  };
+  captureServerEvent(user.id, eventMap[action], { group_id: groupId, target_user_id: userId });
   return { success: true };
 }

@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { logError } from "@/lib/logger";
+import { captureServerEvent, ANALYTICS_EVENTS } from "@/lib/posthog";
 import * as matchesDal from "@/lib/dal/matches";
 import * as membersDal from "@/lib/dal/members";
 import { enterResultSchema } from "@/lib/validators";
@@ -65,6 +66,7 @@ export async function enterResults(
     return { success: false, error: "Scorecard saved but resolution hit a snag" };
   }
 
+  captureServerEvent(user.id, ANALYTICS_EVENTS.ADMIN_RESULTS_ENTERED, { group_id: groupId, match_id: matchId });
   return { success: true };
 }
 
@@ -93,5 +95,6 @@ export async function updateGroupSettings(
     logError({ layer: "action", operation: "updateGroupSettings", metadata: { userId: user.id, groupId, matchId } });
     return { success: false, error: "Failed to update settings" };
   }
+  captureServerEvent(user.id, ANALYTICS_EVENTS.ADMIN_SETTINGS_UPDATED, { group_id: groupId, match_id: matchId, is_locked: settings.isLocked, has_deadline: !!settings.predictionDeadline });
   return { success: true };
 }

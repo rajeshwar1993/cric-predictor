@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { ScenarioCard } from "./scenario-card";
 import { submitPredictions } from "@/lib/actions/predictions";
 import { Loader2, Check } from "lucide-react";
+import { getPostHogClient } from "@/lib/posthog/client";
+import { ANALYTICS_EVENTS } from "@/lib/posthog/events";
 import type { Scenario, Prediction, Player } from "@/types";
 
 interface PredictionFormProps {
@@ -97,7 +99,12 @@ export function PredictionForm({
     setPicks((prev) => ({ ...prev, [scenarioId]: value }));
     setSuccess(false);
     setError("");
-  }, []);
+    getPostHogClient()?.capture(ANALYTICS_EVENTS.PREDICTION_PICK_CHANGED, {
+      group_id: groupId,
+      match_id: matchId,
+      scenario_id: scenarioId,
+    });
+  }, [groupId, matchId]);
 
   async function handleSubmit() {
     setLoading(true);
