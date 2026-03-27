@@ -71,19 +71,32 @@ export async function createCustomScenario(params: {
 export async function updateScenarioApproval(
   scenarioId: string,
   status: ScenarioApproval,
-  points?: number
+  points?: number,
+  groupId?: string
 ): Promise<boolean> {
   const supabase = await createClient();
   const updateData: Record<string, unknown> = { approval_status: status };
   if (points !== undefined) updateData.points = points;
 
-  const { error } = await supabase
+  let query = supabase
     .from("scenarios")
     .update(updateData)
     .eq("id", scenarioId);
 
-  if (error) logError({ layer: "dal", operation: "updateScenarioApproval", metadata: { scenarioId, status } }, error);
-  return !error;
+  // Defense-in-depth: ensure scenario belongs to the specified group
+  if (groupId) query = query.eq("group_id", groupId);
+
+  const { data, error } = await query.select("id");
+
+  if (error) {
+    logError({ layer: "dal", operation: "updateScenarioApproval", metadata: { scenarioId, status, groupId } }, error);
+    return false;
+  }
+  if (!data || data.length === 0) {
+    logError({ layer: "dal", operation: "updateScenarioApproval", metadata: { scenarioId, status, groupId, reason: "no rows affected" } });
+    return false;
+  }
+  return true;
 }
 
 export async function resolveScenario(
@@ -105,16 +118,29 @@ export async function resolveScenario(
 
 export async function removeScenario(
   scenarioId: string,
-  removedBy: string
+  removedBy: string,
+  groupId?: string
 ): Promise<boolean> {
   const supabase = await createClient();
-  const { error } = await supabase
+
+  let query = supabase
     .from("scenarios")
     .update({ is_removed: true, removed_by: removedBy })
     .eq("id", scenarioId);
 
-  if (error) logError({ layer: "dal", operation: "removeScenario", metadata: { scenarioId, removedBy } }, error);
-  return !error;
+  if (groupId) query = query.eq("group_id", groupId);
+
+  const { data, error } = await query.select("id");
+
+  if (error) {
+    logError({ layer: "dal", operation: "removeScenario", metadata: { scenarioId, removedBy, groupId } }, error);
+    return false;
+  }
+  if (!data || data.length === 0) {
+    logError({ layer: "dal", operation: "removeScenario", metadata: { scenarioId, removedBy, groupId, reason: "no rows affected" } });
+    return false;
+  }
+  return true;
 }
 
 export async function getScenarioCountForMatch(groupId: string, matchId: number): Promise<number> {

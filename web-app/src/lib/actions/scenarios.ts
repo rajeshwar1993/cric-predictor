@@ -77,10 +77,11 @@ export async function approveScenario(
   const ok = await scenariosDal.updateScenarioApproval(
     scenarioId,
     "approved",
-    points
+    points,
+    groupId
   );
   if (!ok) {
-    logError({ layer: "action", operation: "approveScenario", metadata: { userId: user.id, scenarioId } });
+    logError({ layer: "action", operation: "approveScenario", metadata: { userId: user.id, scenarioId, groupId } });
     return { success: false, error: "Failed to approve scenario" };
   }
   captureServerEvent(user.id, ANALYTICS_EVENTS.SCENARIO_APPROVED, { group_id: groupId, scenario_id: scenarioId });
@@ -103,9 +104,9 @@ export async function rejectScenario(
     return { success: false, error: "Only admins can reject scenarios" };
   }
 
-  const ok = await scenariosDal.updateScenarioApproval(scenarioId, "rejected");
+  const ok = await scenariosDal.updateScenarioApproval(scenarioId, "rejected", undefined, groupId);
   if (!ok) {
-    logError({ layer: "action", operation: "rejectScenario", metadata: { userId: user.id, scenarioId } });
+    logError({ layer: "action", operation: "rejectScenario", metadata: { userId: user.id, scenarioId, groupId } });
     return { success: false, error: "Failed to reject scenario" };
   }
   captureServerEvent(user.id, ANALYTICS_EVENTS.SCENARIO_REJECTED, { group_id: groupId, scenario_id: scenarioId });
@@ -128,12 +129,17 @@ export async function removeScenario(
     return { success: false, error: "Only admins can remove scenarios" };
   }
 
-  // Get the scenario to find its matchId for prediction lock check
+  // Get the scenario — verify it belongs to this group (defense-in-depth)
   const { data: scenarioData } = await supabase
     .from("scenarios")
-    .select("match_id")
+    .select("match_id, group_id")
     .eq("id", scenarioId)
+    .eq("group_id", groupId)
     .single();
+
+  if (!scenarioData) {
+    return { success: false, error: "Scenario not found in this group" };
+  }
 
   if (scenarioData) {
     const hasPredictions = await scenariosDal.hasAnyPredictionsForMatch(groupId, scenarioData.match_id);
@@ -142,9 +148,9 @@ export async function removeScenario(
     }
   }
 
-  const ok = await scenariosDal.removeScenario(scenarioId, user.id);
+  const ok = await scenariosDal.removeScenario(scenarioId, user.id, groupId);
   if (!ok) {
-    logError({ layer: "action", operation: "removeScenario", metadata: { userId: user.id, scenarioId } });
+    logError({ layer: "action", operation: "removeScenario", metadata: { userId: user.id, scenarioId, groupId } });
     return { success: false, error: "Failed to remove scenario" };
   }
   captureServerEvent(user.id, ANALYTICS_EVENTS.SCENARIO_REMOVED, { group_id: groupId, scenario_id: scenarioId });
