@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -49,14 +50,16 @@ export function UserMenu({ displayName, email }: UserMenuProps) {
         align="end"
         className="w-56 bg-[var(--bg-elevated)] border-[var(--border-light)]"
       >
-        <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium text-[var(--text-primary)]">
-              {displayName}
-            </p>
-            <p className="text-xs text-[var(--text-muted)]">{email}</p>
-          </div>
-        </DropdownMenuLabel>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="font-normal">
+            <div className="flex flex-col space-y-1">
+              <p className="text-sm font-medium text-[var(--text-primary)]">
+                {displayName}
+              </p>
+              <p className="text-xs text-[var(--text-muted)]">{email}</p>
+            </div>
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator className="bg-[var(--border-light)]" />
         <DropdownMenuItem
           onClick={handleSignOut}
