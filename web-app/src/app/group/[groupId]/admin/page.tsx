@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/supabase/get-user-cached";
 import * as groupsDal from "@/lib/dal/groups";
 import * as membersDal from "@/lib/dal/members";
 import * as matchesDal from "@/lib/dal/matches";
@@ -20,12 +20,8 @@ interface AdminPageProps {
 export default async function AdminPage({ params }: AdminPageProps) {
   const { groupId } = await params;
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
+  // Auth already verified by layout — just need role check
+  const user = (await getAuthUser())!;
 
   const membership = await membersDal.getMembershipStatus(groupId, user.id);
   if (!membership || membership.status !== "approved" || !["owner", "admin"].includes(membership.role)) {
