@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { logError } from "@/lib/logger";
 import type { GroupMember, MemberRole, MemberStatus } from "@/types";
 
 export async function getMembers(groupId: string): Promise<GroupMember[]> {
@@ -18,7 +19,10 @@ export async function getMembers(groupId: string): Promise<GroupMember[]> {
     .eq("status", "approved")
     .order("role", { ascending: true });
 
-  if (error || !data) return [];
+  if (error || !data) {
+    if (error) logError({ layer: "dal", operation: "getMembers", metadata: { groupId } }, error);
+    return [];
+  }
   return data.map((d) => ({
     ...d,
     profile: d.profile as unknown as GroupMember["profile"],
@@ -42,7 +46,10 @@ export async function getPendingRequests(groupId: string): Promise<GroupMember[]
     .eq("status", "pending")
     .order("joined_at", { ascending: true });
 
-  if (error || !data) return [];
+  if (error || !data) {
+    if (error) logError({ layer: "dal", operation: "getPendingRequests", metadata: { groupId } }, error);
+    return [];
+  }
   return data.map((d) => ({
     ...d,
     profile: d.profile as unknown as GroupMember["profile"],
@@ -61,7 +68,10 @@ export async function getMembershipStatus(
     .eq("user_id", userId)
     .single();
 
-  if (error) return null;
+  if (error) {
+    logError({ layer: "dal", operation: "getMembershipStatus", metadata: { groupId, userId } }, error);
+    return null;
+  }
   return data;
 }
 
@@ -76,6 +86,7 @@ export async function requestToJoin(groupId: string, userId: string): Promise<bo
     },
     { onConflict: "group_id,user_id" }
   );
+  if (error) logError({ layer: "dal", operation: "requestToJoin", metadata: { groupId, userId } }, error);
   return !error;
 }
 
@@ -96,6 +107,7 @@ export async function updateMemberStatus(
     .eq("group_id", groupId)
     .eq("user_id", userId);
 
+  if (error) logError({ layer: "dal", operation: "updateMemberStatus", metadata: { groupId, userId, status } }, error);
   return !error;
 }
 
@@ -111,6 +123,7 @@ export async function updateMemberRole(
     .eq("group_id", groupId)
     .eq("user_id", userId);
 
+  if (error) logError({ layer: "dal", operation: "updateMemberRole", metadata: { groupId, userId, role } }, error);
   return !error;
 }
 
@@ -122,5 +135,6 @@ export async function removeMember(groupId: string, userId: string): Promise<boo
     .eq("group_id", groupId)
     .eq("user_id", userId);
 
+  if (error) logError({ layer: "dal", operation: "removeMember", metadata: { groupId, userId } }, error);
   return !error;
 }

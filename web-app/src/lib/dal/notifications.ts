@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { logError } from "@/lib/logger";
 import type { Notification } from "@/types";
 
 export async function getNotifications(
@@ -13,7 +14,10 @@ export async function getNotifications(
     .order("created_at", { ascending: false })
     .limit(limit);
 
-  if (error || !data) return [];
+  if (error || !data) {
+    if (error) logError({ layer: "dal", operation: "getNotifications", metadata: { userId, limit } }, error);
+    return [];
+  }
   return data;
 }
 
@@ -25,6 +29,7 @@ export async function getUnreadCount(userId: string): Promise<number> {
     .eq("user_id", userId)
     .eq("is_read", false);
 
+  if (error) logError({ layer: "dal", operation: "getUnreadCount", metadata: { userId } }, error);
   return count || 0;
 }
 
@@ -35,6 +40,7 @@ export async function markRead(notificationId: string): Promise<boolean> {
     .update({ is_read: true })
     .eq("id", notificationId);
 
+  if (error) logError({ layer: "dal", operation: "markRead", metadata: { notificationId } }, error);
   return !error;
 }
 
@@ -46,6 +52,7 @@ export async function markAllRead(userId: string): Promise<boolean> {
     .eq("user_id", userId)
     .eq("is_read", false);
 
+  if (error) logError({ layer: "dal", operation: "markAllRead", metadata: { userId } }, error);
   return !error;
 }
 
@@ -65,5 +72,6 @@ export async function createNotification(params: {
     match_id: params.matchId,
   });
 
+  if (error) logError({ layer: "dal", operation: "createNotification", metadata: { userId: params.userId, type: params.type } }, error);
   return !error;
 }

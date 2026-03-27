@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { logError } from "@/lib/logger";
 import type { Player } from "@/types";
 
 export async function getPlayersForTeam(teamCode: string): Promise<Player[]> {
@@ -10,7 +11,10 @@ export async function getPlayersForTeam(teamCode: string): Promise<Player[]> {
     .eq("is_active", true)
     .order("name", { ascending: true });
 
-  if (error || !data) return [];
+  if (error || !data) {
+    if (error) logError({ layer: "dal", operation: "getPlayersForTeam", metadata: { teamCode } }, error);
+    return [];
+  }
   return data;
 }
 
@@ -33,7 +37,10 @@ export async function getMatchSquad(
     .eq("team_code", teamCode)
     .order("is_playing_xi", { ascending: false });
 
-  if (error || !data) return [];
+  if (error || !data) {
+    if (error) logError({ layer: "dal", operation: "getMatchSquad", metadata: { matchId, teamCode } }, error);
+    return [];
+  }
   return data
     .filter((d) => d.player)
     .map((d) => d.player as unknown as Player);
@@ -78,7 +85,10 @@ export async function getPlayersForMatch(matchId: number): Promise<Player[]> {
     .order("team_code")
     .order("name");
 
-  if (error || !data) return [];
+  if (error || !data) {
+    if (error) logError({ layer: "dal", operation: "getPlayersForMatch", metadata: { matchId } }, error);
+    return [];
+  }
   return data;
 }
 
@@ -105,5 +115,6 @@ export async function upsertPlayersFromApi(
     .from("players")
     .upsert(rows, { onConflict: "api_player_id" });
 
+  if (error) logError({ layer: "dal", operation: "upsertPlayersFromApi", metadata: { playerCount: players.length } }, error);
   return !error;
 }

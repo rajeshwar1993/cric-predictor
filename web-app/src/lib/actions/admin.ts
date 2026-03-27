@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { logError } from "@/lib/logger";
 import * as matchesDal from "@/lib/dal/matches";
 import * as membersDal from "@/lib/dal/members";
 import { enterResultSchema } from "@/lib/validators";
@@ -52,11 +53,15 @@ export async function enterResults(
     bowler_took_three: rest.bowlerTookThree,
   });
 
-  if (!ok) return { success: false, error: "Failed to update match results" };
+  if (!ok) {
+    logError({ layer: "action", operation: "enterResults", metadata: { userId: user.id, matchId } });
+    return { success: false, error: "Failed to update match results" };
+  }
 
   // Trigger resolution via DAL
   const resolved = await matchesDal.resolveMatchPredictions(matchId);
   if (!resolved) {
+    logError({ layer: "action", operation: "enterResults", metadata: { userId: user.id, matchId } });
     return { success: false, error: "Results saved but resolution failed" };
   }
 
@@ -84,6 +89,9 @@ export async function updateGroupSettings(
     is_locked: settings.isLocked,
   });
 
-  if (!ok) return { success: false, error: "Failed to update settings" };
+  if (!ok) {
+    logError({ layer: "action", operation: "updateGroupSettings", metadata: { userId: user.id, groupId, matchId } });
+    return { success: false, error: "Failed to update settings" };
+  }
   return { success: true };
 }

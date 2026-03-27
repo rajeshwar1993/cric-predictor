@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { logError } from "@/lib/logger";
 import * as predictionsDal from "@/lib/dal/predictions";
 import * as scenariosDal from "@/lib/dal/scenarios";
 import * as membersDal from "@/lib/dal/members";
@@ -61,7 +62,10 @@ export async function submitPredictions(
   }
 
   const ok = await predictionsDal.upsertPredictions(user.id, validPredictions);
-  if (!ok) return { success: false, error: "Failed to save predictions" };
+  if (!ok) {
+    logError({ layer: "action", operation: "submitPredictions", metadata: { userId: user.id, groupId, matchId } });
+    return { success: false, error: "Failed to save predictions" };
+  }
 
   return { success: true };
 }

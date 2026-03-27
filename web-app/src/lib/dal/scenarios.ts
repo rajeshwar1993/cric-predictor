@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { logError } from "@/lib/logger";
 import type { Scenario, ScenarioApproval } from "@/types";
 
 export async function getScenariosForMatch(
@@ -16,7 +17,10 @@ export async function getScenariosForMatch(
     .order("type", { ascending: true })
     .order("points", { ascending: false });
 
-  if (error || !data) return [];
+  if (error || !data) {
+    if (error) logError({ layer: "dal", operation: "getScenariosForMatch", metadata: { groupId, matchId } }, error);
+    return [];
+  }
   return data as unknown as Scenario[];
 }
 
@@ -29,6 +33,7 @@ export async function seedSystemScenarios(
     p_group_id: groupId,
     p_match_id: matchId,
   });
+  if (error) logError({ layer: "dal", operation: "seedSystemScenarios", metadata: { groupId, matchId } }, error);
   return !error;
 }
 
@@ -56,7 +61,10 @@ export async function createCustomScenario(params: {
     .select()
     .single();
 
-  if (error) return null;
+  if (error) {
+    logError({ layer: "dal", operation: "createCustomScenario", metadata: { groupId: params.groupId, matchId: params.matchId } }, error);
+    return null;
+  }
   return data as unknown as Scenario;
 }
 
@@ -74,6 +82,7 @@ export async function updateScenarioApproval(
     .update(updateData)
     .eq("id", scenarioId);
 
+  if (error) logError({ layer: "dal", operation: "updateScenarioApproval", metadata: { scenarioId, status } }, error);
   return !error;
 }
 
@@ -90,6 +99,7 @@ export async function resolveScenario(
     })
     .eq("id", scenarioId);
 
+  if (error) logError({ layer: "dal", operation: "resolveScenario", metadata: { scenarioId } }, error);
   return !error;
 }
 
@@ -103,6 +113,7 @@ export async function removeScenario(
     .update({ is_removed: true, removed_by: removedBy })
     .eq("id", scenarioId);
 
+  if (error) logError({ layer: "dal", operation: "removeScenario", metadata: { scenarioId, removedBy } }, error);
   return !error;
 }
 
@@ -119,6 +130,9 @@ export async function getPendingCustomScenarios(
     .eq("is_removed", false)
     .order("created_at", { ascending: true });
 
-  if (error || !data) return [];
+  if (error || !data) {
+    if (error) logError({ layer: "dal", operation: "getPendingCustomScenarios", metadata: { groupId } }, error);
+    return [];
+  }
   return data as unknown as Scenario[];
 }

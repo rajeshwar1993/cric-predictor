@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { logError } from "@/lib/logger";
 import * as scenariosDal from "@/lib/dal/scenarios";
 import * as membersDal from "@/lib/dal/members";
 import { createCustomScenarioSchema } from "@/lib/validators";
@@ -44,7 +45,10 @@ export async function createCustomScenario(
     points: parsed.data.points,
   });
 
-  if (!scenario) return { success: false, error: "Failed to create scenario" };
+  if (!scenario) {
+    logError({ layer: "action", operation: "createCustomScenario", metadata: { userId: user.id, groupId, matchId } });
+    return { success: false, error: "Failed to create scenario" };
+  }
   return { success: true, data: scenario };
 }
 
@@ -70,7 +74,10 @@ export async function approveScenario(
     "approved",
     points
   );
-  if (!ok) return { success: false, error: "Failed to approve scenario" };
+  if (!ok) {
+    logError({ layer: "action", operation: "approveScenario", metadata: { userId: user.id, scenarioId } });
+    return { success: false, error: "Failed to approve scenario" };
+  }
   return { success: true };
 }
 
@@ -90,7 +97,10 @@ export async function rejectScenario(
   }
 
   const ok = await scenariosDal.updateScenarioApproval(scenarioId, "rejected");
-  if (!ok) return { success: false, error: "Failed to reject scenario" };
+  if (!ok) {
+    logError({ layer: "action", operation: "rejectScenario", metadata: { userId: user.id, scenarioId } });
+    return { success: false, error: "Failed to reject scenario" };
+  }
   return { success: true };
 }
 
@@ -110,6 +120,9 @@ export async function removeScenario(
   }
 
   const ok = await scenariosDal.removeScenario(scenarioId, user.id);
-  if (!ok) return { success: false, error: "Failed to remove scenario" };
+  if (!ok) {
+    logError({ layer: "action", operation: "removeScenario", metadata: { userId: user.id, scenarioId } });
+    return { success: false, error: "Failed to remove scenario" };
+  }
   return { success: true };
 }

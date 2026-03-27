@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { logError } from "@/lib/logger";
 import type { Group, GroupWithMeta } from "@/types";
 
 export async function getGroupById(groupId: string): Promise<Group | null> {
@@ -9,7 +10,10 @@ export async function getGroupById(groupId: string): Promise<Group | null> {
     .eq("id", groupId)
     .single();
 
-  if (error) return null;
+  if (error) {
+    logError({ layer: "dal", operation: "getGroupById", metadata: { groupId } }, error);
+    return null;
+  }
   return data;
 }
 
@@ -31,7 +35,10 @@ export async function getGroupsByUser(userId: string): Promise<GroupWithMeta[]> 
     .eq("user_id", userId)
     .eq("status", "approved");
 
-  if (error || !data) return [];
+  if (error || !data) {
+    if (error) logError({ layer: "dal", operation: "getGroupsByUser", metadata: { userId } }, error);
+    return [];
+  }
 
   // Get member counts per group
   const groupIds = data.map((d) => d.group_id);
@@ -61,11 +68,16 @@ export async function getGroupsByUser(userId: string): Promise<GroupWithMeta[]> 
 export async function getGroupByInviteCode(inviteCode: string): Promise<Group | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
-    .rpc("get_group_by_invite_code", { p_invite_code: inviteCode })
+    .from("groups")
+    .select("*")
+    .eq("invite_code", inviteCode)
     .single();
 
-  if (error) return null;
-  return data as Group;
+  if (error) {
+    logError({ layer: "dal", operation: "getGroupByInviteCode", metadata: { inviteCode } }, error);
+    return null;
+  }
+  return data;
 }
 
 export async function createGroup(
@@ -81,7 +93,10 @@ export async function createGroup(
     .select()
     .single();
 
-  if (groupError || !group) return null;
+  if (groupError || !group) {
+    if (groupError) logError({ layer: "dal", operation: "createGroup", metadata: { name, createdBy } }, groupError);
+    return null;
+  }
 
   // Add creator as owner
   const { error: memberError } = await supabase
@@ -94,7 +109,10 @@ export async function createGroup(
       approved_at: new Date().toISOString(),
     });
 
-  if (memberError) return null;
+  if (memberError) {
+    logError({ layer: "dal", operation: "createGroup", metadata: { groupId: group.id, createdBy } }, memberError);
+    return null;
+  }
 
   return group;
 }

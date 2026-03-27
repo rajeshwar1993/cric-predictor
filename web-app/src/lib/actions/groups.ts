@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { logError } from "@/lib/logger";
 import * as groupsDal from "@/lib/dal/groups";
 import * as membersDal from "@/lib/dal/members";
 import { createGroupSchema, updateMemberSchema } from "@/lib/validators";
@@ -29,7 +30,10 @@ export async function createGroup(name: string): Promise<ActionResponse<Group>> 
   }
 
   const group = await groupsDal.createGroup(parsed.data.name, user.id);
-  if (!group) return { success: false, error: "Failed to create group" };
+  if (!group) {
+    logError({ layer: "action", operation: "createGroup", metadata: { userId: user.id, name: parsed.data.name } });
+    return { success: false, error: "Failed to create group" };
+  }
 
   return { success: true, data: group };
 }
@@ -54,7 +58,10 @@ export async function joinGroup(inviteCode: string): Promise<ActionResponse> {
   }
 
   const ok = await membersDal.requestToJoin(group.id, user.id);
-  if (!ok) return { success: false, error: "Failed to submit join request" };
+  if (!ok) {
+    logError({ layer: "action", operation: "joinGroup", metadata: { userId: user.id, inviteCode } });
+    return { success: false, error: "Failed to submit join request" };
+  }
 
   return { success: true };
 }
@@ -118,6 +125,9 @@ export async function manageMember(
     }
   }
 
-  if (!ok) return { success: false, error: `Failed to ${action} member` };
+  if (!ok) {
+    logError({ layer: "action", operation: "manageMember", metadata: { callerId: user.id, groupId, targetUserId: userId, action } });
+    return { success: false, error: `Failed to ${action} member` };
+  }
   return { success: true };
 }

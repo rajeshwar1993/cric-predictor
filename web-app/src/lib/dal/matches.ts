@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { logError } from "@/lib/logger";
 import type { Database } from "@/types/database";
 
 type Match = Database["public"]["Tables"]["matches"]["Row"];
@@ -28,7 +29,10 @@ export async function getUpcomingMatches(limit = 5): Promise<Match[]> {
     .order("time_ist", { ascending: true })
     .limit(limit);
 
-  if (error || !data) return [];
+  if (error || !data) {
+    if (error) logError({ layer: "dal", operation: "getUpcomingMatches", metadata: { limit } }, error);
+    return [];
+  }
   return data;
 }
 
@@ -40,7 +44,10 @@ export async function getMatchById(matchId: number): Promise<Match | null> {
     .eq("id", matchId)
     .single();
 
-  if (error) return null;
+  if (error) {
+    logError({ layer: "dal", operation: "getMatchById", metadata: { matchId } }, error);
+    return null;
+  }
   return data;
 }
 
@@ -52,7 +59,10 @@ export async function getMatchesForDate(date: string): Promise<Match[]> {
     .eq("date", date)
     .order("time_ist", { ascending: true });
 
-  if (error || !data) return [];
+  if (error || !data) {
+    if (error) logError({ layer: "dal", operation: "getMatchesForDate", metadata: { date } }, error);
+    return [];
+  }
   return data;
 }
 
@@ -69,7 +79,10 @@ export async function getNextMatch(): Promise<Match | null> {
     .limit(1)
     .single();
 
-  if (error) return null;
+  if (error) {
+    logError({ layer: "dal", operation: "getNextMatch", metadata: {} }, error);
+    return null;
+  }
   return data;
 }
 
@@ -84,7 +97,10 @@ export async function getLastCompletedMatch(): Promise<Match | null> {
     .limit(1)
     .single();
 
-  if (error) return null;
+  if (error) {
+    logError({ layer: "dal", operation: "getLastCompletedMatch", metadata: {} }, error);
+    return null;
+  }
   return data;
 }
 
@@ -98,6 +114,7 @@ export async function updateMatchResults(
     .update({ ...results, status: "completed", resolved_at: new Date().toISOString() })
     .eq("id", matchId);
 
+  if (error) logError({ layer: "dal", operation: "updateMatchResults", metadata: { matchId } }, error);
   return !error;
 }
 
@@ -109,7 +126,10 @@ export async function getMatchDeadlineInfo(matchId: number): Promise<MatchDeadli
     .eq("id", matchId)
     .single();
 
-  if (error) return null;
+  if (error) {
+    logError({ layer: "dal", operation: "getMatchDeadlineInfo", metadata: { matchId } }, error);
+    return null;
+  }
   return data;
 }
 
@@ -125,7 +145,10 @@ export async function getMatchGroupSettings(
     .eq("match_id", matchId)
     .single();
 
-  if (error) return null;
+  if (error) {
+    logError({ layer: "dal", operation: "getMatchGroupSettings", metadata: { groupId, matchId } }, error);
+    return null;
+  }
   return data;
 }
 
@@ -146,6 +169,7 @@ export async function upsertMatchGroupSettings(
       },
       { onConflict: "group_id,match_id" }
     );
+  if (error) logError({ layer: "dal", operation: "upsertMatchGroupSettings", metadata: { groupId, matchId } }, error);
   return !error;
 }
 
@@ -154,6 +178,7 @@ export async function resolveMatchPredictions(matchId: number): Promise<boolean>
   const { error } = await supabase.rpc("resolve_match_predictions", {
     p_match_id: matchId,
   });
+  if (error) logError({ layer: "dal", operation: "resolveMatchPredictions", metadata: { matchId } }, error);
   return !error;
 }
 
@@ -176,5 +201,6 @@ export async function updateLiveSnapshot(
     .update({ ...snapshot, last_polled_at: new Date().toISOString() })
     .eq("id", matchId);
 
+  if (error) logError({ layer: "dal", operation: "updateLiveSnapshot", metadata: { matchId } }, error);
   return !error;
 }

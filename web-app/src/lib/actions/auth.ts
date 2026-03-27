@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { logError } from "@/lib/logger";
 import { redirect } from "next/navigation";
 import { APP_URL } from "@/lib/constants";
 import type { ActionResponse } from "@/types";
@@ -50,6 +51,7 @@ export async function signInWithMagicLink(
   });
 
   if (error) {
+    logError({ layer: "action", operation: "signInWithMagicLink", metadata: { email } }, error);
     const userMessage = KNOWN_ERRORS[error.message] || "Unable to send magic link. Please try again.";
     return { success: false, error: userMessage };
   }

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { logError } from "@/lib/logger";
 import type { Prediction } from "@/types";
 
 export async function getPredictionsForUser(
@@ -14,7 +15,10 @@ export async function getPredictionsForUser(
     .eq("user_id", userId)
     .in("scenario_id", scenarioIds);
 
-  if (error || !data) return [];
+  if (error || !data) {
+    if (error) logError({ layer: "dal", operation: "getPredictionsForUser", metadata: { userId, scenarioCount: scenarioIds.length } }, error);
+    return [];
+  }
   return data;
 }
 
@@ -28,7 +32,10 @@ export async function getPredictionsForScenario(
     .eq("scenario_id", scenarioId)
     .order("submitted_at", { ascending: true });
 
-  if (error || !data) return [];
+  if (error || !data) {
+    if (error) logError({ layer: "dal", operation: "getPredictionsForScenario", metadata: { scenarioId } }, error);
+    return [];
+  }
   return data;
 }
 
@@ -48,6 +55,7 @@ export async function upsertPrediction(
     { onConflict: "user_id,scenario_id" }
   );
 
+  if (error) logError({ layer: "dal", operation: "upsertPrediction", metadata: { userId, scenarioId } }, error);
   return !error;
 }
 
@@ -69,6 +77,7 @@ export async function upsertPredictions(
     .from("predictions")
     .upsert(rows, { onConflict: "user_id,scenario_id" });
 
+  if (error) logError({ layer: "dal", operation: "upsertPredictions", metadata: { userId, count: predictions.length } }, error);
   return !error;
 }
 
