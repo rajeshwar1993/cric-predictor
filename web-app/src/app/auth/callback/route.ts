@@ -24,8 +24,9 @@ export async function GET(request: Request) {
           .single();
 
         if (!profile?.onboarding_completed) {
-          // Not onboarded — redirect to onboarding, store intended destination
+          // Not onboarded — clear any stale cookie from a previous user, redirect to onboarding
           const response = NextResponse.redirect(`${origin}/onboarding`);
+          response.cookies.delete("bragg_onboarded");
           response.cookies.set("bragg_post_onboard_redirect", redirectTo, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
