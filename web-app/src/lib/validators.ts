@@ -1,6 +1,26 @@
 import { z } from "zod/v4";
 import { LIMITS, CUSTOM_SCENARIO_POINTS } from "./constants";
 
+/**
+ * Reject strings containing HTML-like characters.
+ * Defense-in-depth against stored XSS — React escapes by default,
+ * but this prevents dangerous payloads from ever reaching the DB.
+ */
+const noHtmlTags = (fieldName: string) =>
+  z.string().refine(
+    (val) => !/<|>/.test(val),
+    `${fieldName} cannot contain < or > characters`
+  );
+
+/** Plain text string: length-validated + HTML-rejected. */
+function safeText(fieldName: string, min: number, max: number) {
+  return z
+    .string()
+    .min(min, `${fieldName} must be at least ${min} characters`)
+    .max(max, `${fieldName} must be at most ${max} characters`)
+    .refine((val) => !/<|>/.test(val), `${fieldName} cannot contain < or > characters`);
+}
+
 // Auth — email only (display name collected in onboarding)
 export const loginSchema = z.object({
   email: z.email("Please enter a valid email address"),
@@ -8,10 +28,7 @@ export const loginSchema = z.object({
 
 // Onboarding — collected after first sign-in
 export const onboardingSchema = z.object({
-  displayName: z
-    .string()
-    .min(2, "Name must be at least 2 characters")
-    .max(30, "Name must be at most 30 characters"),
+  displayName: safeText("Name", 2, 30),
   dateOfBirth: z
     .string()
     .min(1, "Date of birth is required")
@@ -32,10 +49,7 @@ export const onboardingSchema = z.object({
 
 // Groups
 export const createGroupSchema = z.object({
-  name: z
-    .string()
-    .min(3, "Group name must be at least 3 characters")
-    .max(50, "Group name must be at most 50 characters"),
+  name: safeText("Group name", 3, 50),
 });
 
 export const joinGroupSchema = z.object({
@@ -58,12 +72,12 @@ export const submitPredictionsSchema = z.object({
 export const createCustomScenarioSchema = z.object({
   groupId: z.uuid(),
   matchId: z.number().int().positive(),
-  title: z
-    .string()
-    .min(5, "Scenario title must be at least 5 characters")
-    .max(120, "Scenario title must be at most 120 characters"),
+  title: safeText("Scenario title", 5, 120),
   options: z
-    .array(z.string().min(1).max(50))
+    .array(
+      z.string().min(1).max(50)
+        .refine((val) => !/<|>/.test(val), "Options cannot contain < or > characters")
+    )
     .min(2, "At least 2 options required")
     .max(6, "At most 6 options allowed"),
   points: z.literal(CUSTOM_SCENARIO_POINTS[0])
