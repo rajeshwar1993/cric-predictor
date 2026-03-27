@@ -9,12 +9,14 @@ import { AdminMemberList } from "@/components/admin/admin-member-list";
 import { ResultEntryForm } from "@/components/admin/result-entry-form";
 import { ROUTES, LIMITS } from "@/lib/constants";
 
-export const metadata: Metadata = {
-  title: "Admin HQ",
-};
-
 interface AdminPageProps {
   params: Promise<{ groupId: string }>;
+}
+
+export async function generateMetadata({ params }: AdminPageProps): Promise<Metadata> {
+  const { groupId } = await params;
+  const group = await groupsDal.getGroupById(groupId);
+  return { title: group ? `Admin — ${group.name}` : "Admin HQ" };
 }
 
 export default async function AdminPage({ params }: AdminPageProps) {

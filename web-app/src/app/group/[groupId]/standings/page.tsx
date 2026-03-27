@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { getAuthUser } from "@/lib/supabase/get-user-cached";
 import * as groupsDal from "@/lib/dal/groups";
 import * as standingsDal from "@/lib/dal/standings";
@@ -27,7 +27,7 @@ export default async function StandingsPage({ params }: StandingsPageProps) {
     standingsDal.getSeasonStandings(groupId),
   ]);
 
-  if (!group) redirect("/dashboard");
+  if (!group) notFound();
 
   return (
     <div className="space-y-6">

@@ -16,7 +16,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center">
           <Link href="/" className="inline-block">
-            <Image src="/logo.png" alt="Bragg" width={64} height={64} className="mx-auto mb-3 rounded-lg" />
+            <Image src="/logo.png" alt="Bragg" width={64} height={64} className="mx-auto mb-3 rounded-lg" placeholder="empty" />
             <h1 className="font-display text-4xl font-bold text-gradient">
               Bragg
             </h1>

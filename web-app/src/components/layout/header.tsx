@@ -15,7 +15,7 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-[var(--border-subtle)] bg-[var(--bg-deep)]/95 backdrop-blur supports-[backdrop-filter]:bg-[var(--bg-deep)]/80">
       <div className="mx-auto flex h-14 max-w-[960px] items-center justify-between px-4">
         <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-2">
-          <Image src="/logo.png" alt="Bragg" width={28} height={28} className="rounded-sm" />
+          <Image src="/logo.png" alt="Bragg" width={28} height={28} className="rounded-sm" placeholder="empty" />
           <span className="font-display text-xl font-bold text-gradient">
             Bragg
           </span>

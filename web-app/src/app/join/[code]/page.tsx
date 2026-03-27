@@ -107,7 +107,7 @@ export default async function JoinPage({ params }: JoinPageProps) {
 function InviteHeader({ groupName }: { groupName: string }) {
   return (
     <div>
-      <Image src="/logo.png" alt="Bragg" width={56} height={56} className="mb-3 rounded-lg" />
+      <Image src="/logo.png" alt="Bragg" width={56} height={56} className="mb-3 rounded-lg" placeholder="empty" />
       <h1 className="font-display text-3xl font-bold text-gradient">Bragg</h1>
       <p className="mt-4 text-lg text-[var(--text-primary)]">
         You&apos;ve been called up to

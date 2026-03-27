@@ -197,10 +197,10 @@ export function PredictionForm({
               /{totalCount} picked
             </span>
             {error && (
-              <span className="text-xs text-[var(--danger)]">{error}</span>
+              <span className="text-xs text-[var(--danger)]" role="alert">{error}</span>
             )}
             {success && (
-              <span className="flex items-center gap-1 text-xs text-[var(--success)]">
+              <span className="flex items-center gap-1 text-xs text-[var(--success)]" role="status" aria-live="polite">
                 <Check className="h-3 w-3" /> Locked in!
               </span>
             )}
