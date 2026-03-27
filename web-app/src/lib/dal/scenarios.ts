@@ -117,6 +117,41 @@ export async function removeScenario(
   return !error;
 }
 
+export async function getScenarioCountForMatch(groupId: string, matchId: number): Promise<number> {
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from("scenarios")
+    .select("id", { count: "exact", head: true })
+    .eq("group_id", groupId)
+    .eq("match_id", matchId)
+    .eq("is_removed", false)
+    .in("approval_status", ["auto_approved", "approved"]);
+  if (error) logError({ layer: "dal", operation: "getScenarioCountForMatch", metadata: { groupId, matchId } }, error);
+  return count || 0;
+}
+
+export async function hasAnyPredictionsForMatch(groupId: string, matchId: number): Promise<boolean> {
+  const supabase = await createClient();
+  // Get scenario IDs for this group+match, then check predictions
+  const { data: scenarios } = await supabase
+    .from("scenarios")
+    .select("id")
+    .eq("group_id", groupId)
+    .eq("match_id", matchId)
+    .eq("is_removed", false);
+
+  if (!scenarios || scenarios.length === 0) return false;
+
+  const ids = scenarios.map((s: { id: string }) => s.id);
+  const { count, error } = await supabase
+    .from("predictions")
+    .select("id", { count: "exact", head: true })
+    .in("scenario_id", ids);
+
+  if (error) logError({ layer: "dal", operation: "hasAnyPredictionsForMatch", metadata: { groupId, matchId } }, error);
+  return (count || 0) > 0;
+}
+
 export async function getPendingCustomScenarios(
   groupId: string
 ): Promise<Scenario[]> {

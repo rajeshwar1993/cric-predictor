@@ -131,6 +131,7 @@ describe("submitPredictions", () => {
     mockedMatchesDal.getMatchGroupSettings.mockResolvedValue({
       prediction_deadline: null,
       is_locked: true,
+      scenarios_published: true,
     });
 
     const result = await submitPredictions(groupId, matchId, validPredictions);

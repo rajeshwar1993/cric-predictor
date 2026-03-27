@@ -45,16 +45,51 @@ export default async function PredictPage({ params }: PredictPageProps) {
   const match = await matchesDal.getMatchById(matchId);
   if (!match) notFound();
 
-  // Auto-seed system scenarios only for upcoming matches (US-4.2)
-  if (match.status === "upcoming") {
-    await scenariosDal.seedSystemScenarios(groupId, matchId);
+  // Check if scenarios have been published
+  const settings = await matchesDal.getMatchGroupSettings(groupId, matchId);
+  const scenariosPublished = settings?.scenarios_published ?? false;
+
+  if (!scenariosPublished) {
+    return (
+      <div className="space-y-6">
+        <Link
+          href={ROUTES.GROUP(groupId)}
+          className="inline-flex items-center gap-1 text-sm text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to squad
+        </Link>
+        <div className="rounded-[20px] border border-[var(--border-light)] bg-card-gradient p-6">
+          <div className="flex items-center justify-between">
+            <span className="font-display text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+              Match {match.match_number}
+            </span>
+          </div>
+          <div className="mt-4 flex items-center justify-center gap-6">
+            <TeamBadge teamCode={match.team_a} size="lg" />
+            <span className="font-display text-lg font-bold text-[var(--text-muted)]">VS</span>
+            <TeamBadge teamCode={match.team_b} size="lg" />
+          </div>
+          <p className="mt-3 text-center text-sm text-[var(--text-secondary)]">
+            {formatMatchDate(match.date)} · {formatMatchTime(match.time_ist)} · {match.venue}
+          </p>
+        </div>
+        <div className="rounded-[14px] border border-[var(--border-light)] bg-[var(--bg-card)] p-8 text-center">
+          <p className="font-display text-sm font-semibold text-[var(--text-secondary)]">
+            Scenarios not published yet
+          </p>
+          <p className="mt-1 text-xs text-[var(--text-muted)]">
+            Your admin is still setting up predictions for this match. Check back soon!
+          </p>
+        </div>
+      </div>
+    );
   }
 
   // Fetch scenarios, existing predictions, and players in parallel
-  const [scenarios, players, settings] = await Promise.all([
+  const [scenarios, players] = await Promise.all([
     scenariosDal.getScenariosForMatch(groupId, matchId),
     playersDal.getPlayersForMatch(matchId),
-    matchesDal.getMatchGroupSettings(groupId, matchId),
   ]);
 
   // Fetch user's existing predictions

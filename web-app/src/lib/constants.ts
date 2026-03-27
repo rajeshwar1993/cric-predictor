@@ -15,6 +15,8 @@ export const ROUTES = {
     `/group/${groupId}/predict/${matchId}`,
   MATCH_LEADERBOARD: (groupId: string, matchId: number) =>
     `/group/${groupId}/match/${matchId}`,
+  SCENARIOS: (groupId: string, matchId: number) =>
+    `/group/${groupId}/scenarios/${matchId}`,
   STANDINGS: (groupId: string) => `/group/${groupId}/standings`,
   ADMIN: (groupId: string) => `/group/${groupId}/admin`,
   PRIVACY: "/privacy",

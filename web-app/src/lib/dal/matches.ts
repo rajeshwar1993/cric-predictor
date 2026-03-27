@@ -14,6 +14,7 @@ export interface MatchDeadlineInfo {
 export interface MatchGroupSettings {
   prediction_deadline: string | null;
   is_locked: boolean;
+  scenarios_published: boolean;
 }
 
 export async function getUpcomingMatches(limit = 5): Promise<Match[]> {
@@ -140,7 +141,7 @@ export async function getMatchGroupSettings(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("match_group_settings")
-    .select("prediction_deadline, is_locked")
+    .select("prediction_deadline, is_locked, scenarios_published")
     .eq("group_id", groupId)
     .eq("match_id", matchId)
     .single();
@@ -179,6 +180,21 @@ export async function resolveMatchPredictions(matchId: number): Promise<boolean>
     p_match_id: matchId,
   });
   if (error) logError({ layer: "dal", operation: "resolveMatchPredictions", metadata: { matchId } }, error);
+  return !error;
+}
+
+export async function publishMatchScenarios(
+  groupId: string,
+  matchId: number
+): Promise<boolean> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("match_group_settings")
+    .upsert(
+      { group_id: groupId, match_id: matchId, scenarios_published: true },
+      { onConflict: "group_id,match_id" }
+    );
+  if (error) logError({ layer: "dal", operation: "publishMatchScenarios", metadata: { groupId, matchId } }, error);
   return !error;
 }
 

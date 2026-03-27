@@ -175,16 +175,19 @@ export interface Database {
           match_id: number;
           prediction_deadline: string | null;
           is_locked: boolean;
+          scenarios_published: boolean;
         };
         Insert: {
           group_id: string;
           match_id: number;
           prediction_deadline?: string | null;
           is_locked?: boolean;
+          scenarios_published?: boolean;
         };
         Update: {
           prediction_deadline?: string | null;
           is_locked?: boolean;
+          scenarios_published?: boolean;
         };
       };
       teams: {
