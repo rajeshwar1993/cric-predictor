@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import { redirect, notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { notFound } from "next/navigation";
+import { getAuthUser } from "@/lib/supabase/get-user-cached";
 import * as matchesDal from "@/lib/dal/matches";
 import * as scenariosDal from "@/lib/dal/scenarios";
 import * as predictionsDal from "@/lib/dal/predictions";
 import * as playersDal from "@/lib/dal/players";
-import * as membersDal from "@/lib/dal/members";
 import { TeamBadge } from "@/components/shared/team-badge";
 import { PredictionForm } from "@/components/prediction/prediction-form";
 import { formatMatchDate, formatMatchTime, isDeadlinePassed } from "@/lib/utils";
@@ -30,23 +29,16 @@ export default async function PredictPage({ params }: PredictPageProps) {
 
   if (!matchIdStr || isNaN(matchId) || matchId <= 0) notFound();
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  // Auth + membership already verified by layout.tsx
+  const user = (await getAuthUser())!;
 
-  // Verify membership
-  const membership = await membersDal.getMembershipStatus(groupId, user.id);
-  if (!membership || membership.status !== "approved") {
-    redirect(ROUTES.GROUP(groupId));
-  }
-
-  const match = await matchesDal.getMatchById(matchId);
+  // Parallelize: fetch match + settings together
+  const [match, settings] = await Promise.all([
+    matchesDal.getMatchById(matchId),
+    matchesDal.getMatchGroupSettings(groupId, matchId),
+  ]);
   if (!match) notFound();
 
-  // Check if scenarios have been published
-  const settings = await matchesDal.getMatchGroupSettings(groupId, matchId);
   const scenariosPublished = settings?.scenarios_published ?? false;
 
   if (!scenariosPublished) {

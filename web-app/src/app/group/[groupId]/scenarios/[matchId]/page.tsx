@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect, notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/supabase/get-user-cached";
 import * as matchesDal from "@/lib/dal/matches";
 import * as scenariosDal from "@/lib/dal/scenarios";
 import * as membersDal from "@/lib/dal/members";
@@ -20,16 +20,18 @@ export default async function ScenarioEditorPage({ params }: ScenarioEditorPageP
   const matchId = Number(matchIdStr);
   if (!matchIdStr || isNaN(matchId) || matchId <= 0) notFound();
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  // Auth already verified by layout — just need role check
+  const user = (await getAuthUser())!;
 
-  const membership = await membersDal.getMembershipStatus(groupId, user.id);
+  // Parallelize role check + match fetch
+  const [membership, match] = await Promise.all([
+    membersDal.getMembershipStatus(groupId, user.id),
+    matchesDal.getMatchById(matchId),
+  ]);
+
   if (!membership || !["owner", "admin"].includes(membership.role)) {
     redirect(ROUTES.GROUP(groupId));
   }
-
-  const match = await matchesDal.getMatchById(matchId);
   if (!match) notFound();
 
   // Auto-seed system scenarios for this group+match

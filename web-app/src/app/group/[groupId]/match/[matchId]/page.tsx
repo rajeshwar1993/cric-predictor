@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
-import { redirect, notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { notFound } from "next/navigation";
 import * as matchesDal from "@/lib/dal/matches";
 import * as standingsDal from "@/lib/dal/standings";
-import * as membersDal from "@/lib/dal/members";
 import { MatchLeaderboard } from "@/components/leaderboard/match-leaderboard";
 import { TeamBadge } from "@/components/shared/team-badge";
 import { formatMatchDate, formatMatchTime } from "@/lib/utils";
@@ -28,17 +26,7 @@ export default async function MatchLeaderboardPage({ params }: MatchPageProps) {
 
   if (!matchIdStr || isNaN(matchId) || matchId <= 0) notFound();
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const membership = await membersDal.getMembershipStatus(groupId, user.id);
-  if (!membership || membership.status !== "approved") {
-    redirect(ROUTES.GROUP(groupId));
-  }
-
+  // Auth + membership already verified by layout.tsx
   const [match, leaderboard] = await Promise.all([
     matchesDal.getMatchById(matchId),
     standingsDal.getMatchLeaderboard(groupId, matchId),

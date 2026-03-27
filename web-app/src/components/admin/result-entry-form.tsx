@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ interface ResultEntryFormProps {
 
 export function ResultEntryForm({ groupId, matchId, teamA, teamB }: ResultEntryFormProps) {
   const router = useRouter();
+  const [, startTransition] = useTransition();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
@@ -83,7 +84,7 @@ export function ResultEntryForm({ groupId, matchId, teamA, teamB }: ResultEntryF
 
     if (result.success) {
       setSuccess(true);
-      router.refresh();
+      startTransition(() => { router.refresh(); });
     } else {
       setError(result.error || "Couldn't log the scorecard — try again");
     }

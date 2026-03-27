@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import * as groupsDal from "@/lib/dal/groups";
 import * as standingsDal from "@/lib/dal/standings";
-import * as membersDal from "@/lib/dal/members";
 import { SeasonStandings } from "@/components/leaderboard/season-standings";
 import { ROUTES } from "@/lib/constants";
 import { ArrowLeft } from "lucide-react";
@@ -20,17 +18,7 @@ interface StandingsPageProps {
 export default async function StandingsPage({ params }: StandingsPageProps) {
   const { groupId } = await params;
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const membership = await membersDal.getMembershipStatus(groupId, user.id);
-  if (!membership || membership.status !== "approved") {
-    redirect("/dashboard");
-  }
-
+  // Auth + membership already verified by layout.tsx
   const [group, standings] = await Promise.all([
     groupsDal.getGroupById(groupId),
     standingsDal.getSeasonStandings(groupId),

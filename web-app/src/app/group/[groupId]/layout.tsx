@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/supabase/get-user-cached";
 import * as groupsDal from "@/lib/dal/groups";
 import * as membersDal from "@/lib/dal/members";
 import { Header } from "@/components/layout/header";
@@ -13,11 +13,7 @@ interface GroupLayoutProps {
 export default async function GroupLayout({ children, params }: GroupLayoutProps) {
   const { groupId } = await params;
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const user = await getAuthUser();
   if (!user) redirect("/login");
 
   const group = await groupsDal.getGroupById(groupId);

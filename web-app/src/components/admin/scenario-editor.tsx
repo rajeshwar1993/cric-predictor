@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,7 @@ interface ScenarioEditorProps {
 
 export function ScenarioEditor({ groupId, matchId, initialScenarios, isPublished, isLocked }: ScenarioEditorProps) {
   const router = useRouter();
+  const [, startTransition] = useTransition();
   const [scenarios, setScenarios] = useState(initialScenarios);
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState("");
@@ -45,7 +46,7 @@ export function ScenarioEditor({ groupId, matchId, initialScenarios, isPublished
     setError("");
     const result = await publishScenarios(groupId, matchId);
     if (result.success) {
-      router.refresh();
+      startTransition(() => { router.refresh(); });
     } else {
       setError(result.error || "Failed to publish");
     }

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { redirect, notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { notFound } from "next/navigation";
+import { getAuthUser } from "@/lib/supabase/get-user-cached";
 import * as groupsDal from "@/lib/dal/groups";
 import * as membersDal from "@/lib/dal/members";
 import * as matchesDal from "@/lib/dal/matches";
@@ -25,12 +25,9 @@ export async function generateMetadata({ params }: GroupPageProps): Promise<Meta
 export default async function GroupHomePage({ params }: GroupPageProps) {
   const { groupId } = await params;
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
+  // Auth + membership already verified by layout.tsx
+  // getAuthUser() is React.cache()-wrapped — no duplicate Supabase call
+  const user = (await getAuthUser())!;
 
   const [group, members, membership, nextMatch] = await Promise.all([
     groupsDal.getGroupById(groupId),

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ScenarioCard } from "./scenario-card";
@@ -80,6 +80,7 @@ export function PredictionForm({
   lastUpdated,
 }: PredictionFormProps) {
   const router = useRouter();
+  const [, startTransition] = useTransition();
 
   // Initialize picks from existing predictions
   const initialPicks: Record<string, string> = {};
@@ -124,7 +125,7 @@ export function PredictionForm({
 
     if (result.success) {
       setSuccess(true);
-      router.refresh();
+      startTransition(() => { router.refresh(); });
     } else {
       setError(result.error || "Couldn't lock those in — try again");
     }

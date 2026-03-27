@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { Plus, Loader2 } from "lucide-react";
 
 export function CreateGroupForm() {
   const router = useRouter();
+  const [, startTransition] = useTransition();
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -24,7 +25,7 @@ export function CreateGroupForm() {
 
     const result = await createGroup(name.trim());
     if (result.success && result.data) {
-      router.push(ROUTES.GROUP(result.data.id));
+      startTransition(() => { router.push(ROUTES.GROUP(result.data!.id)); });
     } else {
       setError(result.error || "Couldn't create your squad — try again");
       setLoading(false);
