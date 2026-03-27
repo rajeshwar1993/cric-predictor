@@ -35,9 +35,17 @@ export async function updateSession(request: NextRequest) {
   // IMPORTANT: Do NOT call supabase.auth.getSession() here.
   // getUser() actually verifies the session with Supabase Auth,
   // while getSession() only reads from cookie and can be spoofed.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  //
+  // Wrapped in try-catch: if Supabase Auth is down or the cookie is
+  // corrupted, treat the user as unauthenticated (fail closed).
+  let user = null;
+  try {
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  } catch {
+    // Auth service unavailable or malformed cookie — fail closed.
+    // User will be redirected to /login by the checks below.
+  }
 
   const { pathname } = request.nextUrl;
 
