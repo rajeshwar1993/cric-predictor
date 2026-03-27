@@ -157,7 +157,29 @@ const TEAM_NAME_TO_CODE: Record<string, string> = {
 
 function toCode(name: string | undefined | null): string | null {
   if (!name) return null;
-  return TEAM_NAME_TO_CODE[name] || name;
+  const code = TEAM_NAME_TO_CODE[name];
+  if (!code) {
+    console.warn(`Unknown team name from API: "${name}"`);
+    return null; // Reject unknown teams — don't store raw API strings
+  }
+  return code;
+}
+
+// ── Input sanitization ──────────────────────────────────────────
+
+const SAFE_PLAYER_NAME = /^[a-zA-Z0-9\s.\-'()]+$/;
+const MAX_PLAYER_NAME_LENGTH = 100;
+
+/** Validate and sanitize a player name from the API. Returns null if invalid. */
+function safeName(name: string | undefined | null): string | null {
+  if (!name) return null;
+  const trimmed = name.trim().slice(0, MAX_PLAYER_NAME_LENGTH);
+  if (trimmed.length === 0) return null;
+  if (!SAFE_PLAYER_NAME.test(trimmed)) {
+    console.warn(`Invalid player name from API: "${trimmed.slice(0, 50)}"`);
+    return null;
+  }
+  return trimmed;
 }
 
 // ── Activation window ───────────────────────────────────────────
@@ -482,9 +504,10 @@ function parseFullResults(event: any): Record<string, any> {
     (s: number, b: any) => s + safeInt(b.W), 0
   );
 
-  // Player of match
-  if (event.event_man_of_match && event.event_man_of_match.trim() !== "") {
-    results.player_of_match = event.event_man_of_match.trim();
+  // Player of match — validate name before storing
+  const potm = safeName(event.event_man_of_match);
+  if (potm) {
+    results.player_of_match = potm;
   }
 
   // Total match stats
@@ -522,8 +545,11 @@ function parseFullResults(event: any): Record<string, any> {
     }
   }
   if (topRuns > 0) {
-    results.top_scorer = topScorerName;
-    results.top_scorer_runs = topRuns;
+    const validName = safeName(topScorerName);
+    if (validName) {
+      results.top_scorer = validName;
+      results.top_scorer_runs = topRuns;
+    }
   }
 
   // Most sixes player
@@ -537,7 +563,8 @@ function parseFullResults(event: any): Record<string, any> {
     }
   }
   if (mostSixes > 0) {
-    results.most_sixes_player = mostSixesName;
+    const validName = safeName(mostSixesName);
+    if (validName) results.most_sixes_player = validName;
   }
 
   // Top wicket taker
@@ -551,8 +578,11 @@ function parseFullResults(event: any): Record<string, any> {
     }
   }
   if (topW > 0) {
-    results.top_wicket_taker = topBowlerName;
-    results.top_wicket_taker_wickets = topW;
+    const validName = safeName(topBowlerName);
+    if (validName) {
+      results.top_wicket_taker = validName;
+      results.top_wicket_taker_wickets = topW;
+    }
   }
 
   // Booleans
