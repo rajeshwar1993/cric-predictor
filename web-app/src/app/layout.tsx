@@ -30,9 +30,11 @@ export const metadata: Metadata = {
     "The IPL prediction game built for bragging rights. Make your calls, compete with your crew, own the leaderboard.",
   keywords: ["cricket", "prediction", "IPL", "IPL 2026", "social", "game", "bragging rights", "leaderboard", "compete"],
   authors: [{ name: "Bragg" }],
+  metadataBase: new URL("https://bragg-lemon.vercel.app"),
   openGraph: {
     type: "website",
     locale: "en_IN",
+    url: "https://bragg-lemon.vercel.app",
     siteName: "Bragg",
     title: "Bragg — Call It. Prove It. Bragg.",
     description:
