@@ -92,7 +92,7 @@ export default async function JoinPage({ params }: JoinPageProps) {
             <p className="mb-6 text-center text-sm text-[var(--text-secondary)]">
               Sign in to join the squad
             </p>
-            <Suspense>
+            <Suspense fallback={<div className="space-y-4 animate-pulse"><div className="h-10 rounded-[10px] bg-[var(--bg-elevated)]" /><div className="h-10 rounded-[10px] bg-[var(--bg-elevated)]" /></div>}>
               <LoginForm />
             </Suspense>
           </div>

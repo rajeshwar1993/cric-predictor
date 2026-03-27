@@ -140,7 +140,7 @@ export function ScenarioEditor({ groupId, matchId, initialScenarios, isPublished
         <form onSubmit={handleAddCustom} className="rounded-[14px] border border-[var(--border-light)] bg-[var(--bg-card)] p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h4 className="font-display text-sm font-semibold text-[var(--text-primary)]">New Scenario</h4>
-            <button type="button" onClick={() => setShowAddForm(false)} className="text-[var(--text-muted)]"><X className="h-4 w-4" /></button>
+            <button type="button" onClick={() => setShowAddForm(false)} className="text-[var(--text-muted)]" aria-label="Close form"><X className="h-4 w-4" /></button>
           </div>
           <div className="space-y-2">
             <Label className="text-xs text-[var(--text-secondary)]">Question</Label>
@@ -151,7 +151,7 @@ export function ScenarioEditor({ groupId, matchId, initialScenarios, isPublished
             {newOptions.map((opt, i) => (
               <div key={i} className="flex gap-2">
                 <Input value={opt} onChange={e => { const opts = [...newOptions]; opts[i] = e.target.value; setNewOptions(opts); }} placeholder={`Option ${i + 1}`} className="flex-1 bg-[var(--bg-input)] border-[var(--border-medium)] text-[var(--text-primary)] text-sm" maxLength={50} />
-                {newOptions.length > 2 && <button type="button" onClick={() => setNewOptions(newOptions.filter((_, j) => j !== i))} className="text-[var(--text-muted)] hover:text-[var(--danger)]"><X className="h-4 w-4" /></button>}
+                {newOptions.length > 2 && <button type="button" onClick={() => setNewOptions(newOptions.filter((_, j) => j !== i))} className="text-[var(--text-muted)] hover:text-[var(--danger)]" aria-label={`Remove option ${i + 1}`}><X className="h-4 w-4" /></button>}
               </div>
             ))}
             {newOptions.length < 6 && <button type="button" onClick={() => setNewOptions([...newOptions, ""])} className="text-xs text-[var(--cyan)]">+ Add option</button>}

@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { parseScorecardToResults } from "./scorecard-parser";
 import type {
   EventResponse,

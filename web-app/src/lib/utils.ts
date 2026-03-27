@@ -17,10 +17,13 @@ export function computeDeadline(
   customDeadline?: string | null
 ): Date {
   if (customDeadline) {
-    return new Date(customDeadline);
+    const d = new Date(customDeadline);
+    if (isNaN(d.getTime())) return new Date(0); // Invalid → treat as already passed
+    return d;
   }
   // Construct IST datetime and subtract 45 minutes
   const istDatetime = new Date(`${matchDate}T${matchTimeIst}+05:30`);
+  if (isNaN(istDatetime.getTime())) return new Date(0); // Invalid → treat as already passed
   return new Date(
     istDatetime.getTime() - LIMITS.PREDICTION_DEADLINE_MINUTES_BEFORE_MATCH * 60 * 1000
   );
@@ -28,6 +31,7 @@ export function computeDeadline(
 
 /**
  * Check if the prediction deadline has passed.
+ * Returns true (deadline passed) if date/time inputs are malformed — fail closed.
  */
 export function isDeadlinePassed(
   matchDate: string,

@@ -19,6 +19,8 @@ export async function getGroupById(groupId: string): Promise<Group | null> {
 
 export async function getGroupsByUser(userId: string): Promise<GroupWithMeta[]> {
   const supabase = await createClient();
+
+  // Single query: fetch user's groups with nested member count
   const { data, error } = await supabase
     .from("group_members")
     .select(`
@@ -29,37 +31,30 @@ export async function getGroupsByUser(userId: string): Promise<GroupWithMeta[]> 
         name,
         invite_code,
         created_by,
-        created_at
+        created_at,
+        group_members ( count )
       )
     `)
     .eq("user_id", userId)
-    .eq("status", "approved");
+    .eq("status", "approved")
+    .eq("groups.group_members.status", "approved");
 
   if (error || !data) {
     if (error) logError({ layer: "dal", operation: "getGroupsByUser", metadata: { userId } }, error);
     return [];
   }
 
-  // Get member counts per group
-  const groupIds = data.map((d) => d.group_id);
-  const { data: countData } = await supabase
-    .from("group_members")
-    .select("group_id")
-    .in("group_id", groupIds)
-    .eq("status", "approved");
-
-  const memberCounts: Record<string, number> = {};
-  countData?.forEach((row) => {
-    memberCounts[row.group_id] = (memberCounts[row.group_id] || 0) + 1;
-  });
-
   return data
     .filter((d) => d.groups)
     .map((d) => {
-      const group = d.groups as unknown as Group;
+      const group = d.groups as unknown as Group & { group_members: [{ count: number }] };
       return {
-        ...group,
-        member_count: memberCounts[group.id] || 0,
+        id: group.id,
+        name: group.name,
+        invite_code: group.invite_code,
+        created_by: group.created_by,
+        created_at: group.created_at,
+        member_count: group.group_members?.[0]?.count ?? 0,
         user_role: d.role,
       };
     });

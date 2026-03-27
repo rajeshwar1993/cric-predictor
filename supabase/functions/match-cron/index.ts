@@ -360,75 +360,91 @@ async function progressiveResolve(matchId: number, event: any) {
 
   const firstOvers = getInningsOvers(event.extra, firstKey) ?? 0;
 
+  // Each phase is wrapped in try-catch so one failure doesn't block others.
+  // The cron runs every minute, so failed phases will be retried next tick.
+  // resolveScenariosByCategory is idempotent (skips already-resolved scenarios).
+
   // Phase 1: Toss (already handled in processUpcoming)
 
   // Phase 2: First wicket over
-  const fwo = deriveFirstWicketOver(event.wickets);
-  if (fwo !== null) {
-    let bracket: string;
-    if (fwo <= 2) bracket = "1-2";
-    else if (fwo <= 4) bracket = "3-4";
-    else if (fwo <= 6) bracket = "5-6";
-    else bracket = "7+";
-    await resolveScenariosByCategory(matchId, "first_wicket_over", bracket);
+  try {
+    const fwo = deriveFirstWicketOver(event.wickets);
+    if (fwo !== null) {
+      let bracket: string;
+      if (fwo <= 2) bracket = "1-2";
+      else if (fwo <= 4) bracket = "3-4";
+      else if (fwo <= 6) bracket = "5-6";
+      else bracket = "7+";
+      await resolveScenariosByCategory(matchId, "first_wicket_over", bracket);
+    }
+  } catch (err) {
+    console.error(`progressiveResolve phase 2 failed: match=${matchId}`, err);
   }
 
   // Phase 3: Powerplay (after 6 overs in first innings)
-  if (firstOvers >= 6) {
-    // Powerplay score from ball-by-ball
-    const ppScore = derivePowerplayScore(event.comments);
-    if (ppScore !== null) {
-      let bracket: string;
-      if (ppScore < 40) bracket = "<40";
-      else if (ppScore >= 71) bracket = "71+";
-      else if (ppScore >= 56) bracket = "56-70";
-      else bracket = "40-55";
-      await resolveScenariosByCategory(matchId, "powerplay_score", bracket);
-    }
+  try {
+    if (firstOvers >= 6) {
+      const ppScore = derivePowerplayScore(event.comments);
+      if (ppScore !== null) {
+        let bracket: string;
+        if (ppScore < 40) bracket = "<40";
+        else if (ppScore >= 71) bracket = "71+";
+        else if (ppScore >= 56) bracket = "56-70";
+        else bracket = "40-55";
+        await resolveScenariosByCategory(matchId, "powerplay_score", bracket);
+      }
 
-    // Powerplay wickets from fall-of-wickets
-    const ppWickets = derivePowerplayWickets(event.wickets);
-    if (ppWickets !== null) {
-      await resolveScenariosByCategory(
-        matchId,
-        "powerplay_wickets",
-        ppWickets >= 3 ? "3+" : String(ppWickets)
-      );
+      const ppWickets = derivePowerplayWickets(event.wickets);
+      if (ppWickets !== null) {
+        await resolveScenariosByCategory(
+          matchId,
+          "powerplay_wickets",
+          ppWickets >= 3 ? "3+" : String(ppWickets)
+        );
+      }
     }
+  } catch (err) {
+    console.error(`progressiveResolve phase 3 failed: match=${matchId}`, err);
   }
 
   // Phase 4: Mid-match milestones
-  const allBatsmen = [
-    ...filterBatsmen(firstEntries),
-    ...filterBatsmen(secondEntries),
-  ];
-  const allBowlers = [
-    ...filterBowlers(firstEntries),
-    ...filterBowlers(secondEntries),
-  ];
+  try {
+    const allBatsmen = [
+      ...filterBatsmen(firstEntries),
+      ...filterBatsmen(secondEntries),
+    ];
+    const allBowlers = [
+      ...filterBowlers(firstEntries),
+      ...filterBowlers(secondEntries),
+    ];
 
-  // Batsman 50+
-  if (allBatsmen.some((b: any) => safeInt(b.R) >= 50)) {
-    await resolveScenariosByCategory(matchId, "batsman_fifty", "Yes");
-  }
+    if (allBatsmen.some((b: any) => safeInt(b.R) >= 50)) {
+      await resolveScenariosByCategory(matchId, "batsman_fifty", "Yes");
+    }
 
-  // Bowler 3+ wickets
-  if (allBowlers.some((b: any) => safeInt(b.W) >= 3)) {
-    await resolveScenariosByCategory(matchId, "bowler_three_wkt", "Yes");
+    if (allBowlers.some((b: any) => safeInt(b.W) >= 3)) {
+      await resolveScenariosByCategory(matchId, "bowler_three_wkt", "Yes");
+    }
+  } catch (err) {
+    console.error(`progressiveResolve phase 4 failed: match=${matchId}`, err);
   }
 
   // Phase 5: Innings break — resolve first_innings_score
-  const firstRuns = getInningsRuns(event.extra, firstKey);
-  const firstInningsComplete =
-    secondKey !== null && (firstOvers >= 20 || filterBowlers(firstEntries).reduce((s: number, b: any) => s + safeInt(b.W), 0) >= 10);
+  try {
+    const firstRuns = getInningsRuns(event.extra, firstKey);
+    const firstInningsComplete =
+      secondKey !== null && (firstOvers >= 20 || filterBowlers(firstEntries).reduce((s: number, b: any) => s + safeInt(b.W), 0) >= 10);
 
-  if (firstInningsComplete && firstRuns !== null && firstRuns > 0) {
-    let bracket: string;
-    if (firstRuns < 150) bracket = "<150";
-    else if (firstRuns >= 190) bracket = "190+";
-    else if (firstRuns >= 170) bracket = "170-189";
-    else bracket = "150-169";
-    await resolveScenariosByCategory(matchId, "first_innings_score", bracket);
+    if (firstInningsComplete && firstRuns !== null && firstRuns > 0) {
+      let bracket: string;
+      if (firstRuns < 150) bracket = "<150";
+      else if (firstRuns >= 190) bracket = "190+";
+      else if (firstRuns >= 170) bracket = "170-189";
+      else bracket = "150-169";
+      await resolveScenariosByCategory(matchId, "first_innings_score", bracket);
+    }
+  } catch (err) {
+    console.error(`progressiveResolve phase 5 failed: match=${matchId}`, err);
   }
 }
 

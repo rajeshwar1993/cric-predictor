@@ -32,13 +32,20 @@ function isLoggingEnabled(): boolean {
   }
 }
 
+interface SupabaseError extends Error {
+  code?: string;
+  details?: string;
+  hint?: string;
+}
+
 function formatError(error: unknown): Record<string, unknown> | unknown {
   if (error instanceof Error) {
+    const supaErr = error as SupabaseError;
     return {
-      message: error.message,
-      code: (error as any).code,
-      details: (error as any).details,
-      hint: (error as any).hint,
+      message: supaErr.message,
+      ...(supaErr.code && { code: supaErr.code }),
+      ...(supaErr.details && { details: supaErr.details }),
+      ...(supaErr.hint && { hint: supaErr.hint }),
     };
   }
   if (error && typeof error === "object") {
