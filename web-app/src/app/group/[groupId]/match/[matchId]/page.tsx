@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { getAuthUser } from "@/lib/supabase/get-user-cached";
 import * as matchesDal from "@/lib/dal/matches";
 import * as standingsDal from "@/lib/dal/standings";
 import { MatchLeaderboard } from "@/components/leaderboard/match-leaderboard";
@@ -27,6 +28,8 @@ export default async function MatchLeaderboardPage({ params }: MatchPageProps) {
   if (!matchIdStr || isNaN(matchId) || matchId <= 0) notFound();
 
   // Auth + membership already verified by layout.tsx
+  const user = (await getAuthUser())!;
+
   const [match, leaderboard] = await Promise.all([
     matchesDal.getMatchById(matchId),
     standingsDal.getMatchLeaderboard(groupId, matchId),

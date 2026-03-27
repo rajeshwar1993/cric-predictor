@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { getAuthUser } from "@/lib/supabase/get-user-cached";
 import * as groupsDal from "@/lib/dal/groups";
 import * as standingsDal from "@/lib/dal/standings";
 import { SeasonStandings } from "@/components/leaderboard/season-standings";
@@ -19,6 +20,8 @@ export default async function StandingsPage({ params }: StandingsPageProps) {
   const { groupId } = await params;
 
   // Auth + membership already verified by layout.tsx
+  const user = (await getAuthUser())!;
+
   const [group, standings] = await Promise.all([
     groupsDal.getGroupById(groupId),
     standingsDal.getSeasonStandings(groupId),
