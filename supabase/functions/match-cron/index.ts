@@ -544,6 +544,8 @@ function parseFullResults(event: any): Record<string, any> {
 }
 
 // ── Resolve scenarios by category ───────────────────────────────
+// Uses a DB function to resolve scenario + score predictions atomically.
+// If the cron crashes, either all predictions for a scenario are scored or none.
 
 async function resolveScenariosByCategory(
   matchId: number,
@@ -552,28 +554,13 @@ async function resolveScenariosByCategory(
 ) {
   if (!correctAnswer) return;
 
-  const { data: resolved } = await supabase
-    .from("scenarios")
-    .update({ correct_answer: correctAnswer, is_resolved: true })
-    .eq("match_id", matchId)
-    .eq("system_category", category)
-    .eq("is_resolved", false)
-    .eq("is_removed", false)
-    .select("id, points");
+  const { error } = await supabase.rpc("resolve_scenarios_by_category", {
+    p_match_id: matchId,
+    p_category: category,
+    p_correct_answer: correctAnswer,
+  });
 
-  if (!resolved || resolved.length === 0) return;
-
-  for (const scenario of resolved) {
-    await supabase
-      .from("predictions")
-      .update({ is_correct: true, points_earned: scenario.points })
-      .eq("scenario_id", scenario.id)
-      .eq("value", correctAnswer);
-
-    await supabase
-      .from("predictions")
-      .update({ is_correct: false, points_earned: 0 })
-      .eq("scenario_id", scenario.id)
-      .neq("value", correctAnswer);
+  if (error) {
+    console.error(`resolveScenariosByCategory failed: match=${matchId} cat=${category}`, error.message);
   }
 }
