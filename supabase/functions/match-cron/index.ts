@@ -212,7 +212,14 @@ async function fetchCricketApi(
 
 // ── Main handler ────────────────────────────────────────────────
 
-Deno.serve(async () => {
+Deno.serve(async (req: Request) => {
+  // Verify request is from pg_cron or an authorized caller.
+  // pg_cron sends the service role key in the Authorization header (see 006_cron_schedule.sql).
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader || authHeader !== `Bearer ${SUPABASE_SERVICE_KEY}`) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+  }
+
   if (!isInMatchWindow() && !(await hasLiveMatches())) {
     return new Response(JSON.stringify({ status: "inactive", reason: "outside match hours" }));
   }
