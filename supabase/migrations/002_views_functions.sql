@@ -66,6 +66,38 @@ GROUP BY s.group_id, s.match_id, p.id, p.display_name;
 
 -- DB Functions
 
+-- 0. RLS helper: check group membership without triggering RLS (prevents infinite recursion)
+CREATE OR REPLACE FUNCTION is_group_member(p_group_id UUID, p_user_id UUID)
+RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.group_members
+    WHERE group_id = p_group_id
+      AND user_id = p_user_id
+      AND status = 'approved'
+  );
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+CREATE OR REPLACE FUNCTION is_group_admin(p_group_id UUID, p_user_id UUID)
+RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.group_members
+    WHERE group_id = p_group_id
+      AND user_id = p_user_id
+      AND role IN ('owner', 'admin')
+      AND status = 'approved'
+  );
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+
+-- 0b. Invite code lookup (bypasses RLS so non-members can find a group to join)
+CREATE OR REPLACE FUNCTION get_group_by_invite_code(p_invite_code TEXT)
+RETURNS TABLE(id UUID, name TEXT, invite_code TEXT, created_by UUID, created_at TIMESTAMPTZ) AS $$
+  SELECT g.id, g.name, g.invite_code, g.created_by, g.created_at
+  FROM public.groups g
+  WHERE g.invite_code = p_invite_code;
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+
 -- 1. Auto-create profile on signup
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
@@ -108,7 +140,7 @@ BEGIN
     (p_group_id, p_match_id, 'system', 'had_super_over', 'Will there be a Super Over?', '["Yes", "No"]'::jsonb, 20, 'auto_approved'),
     (p_group_id, p_match_id, 'system', 'most_sixes', 'Most Sixes Player?', '[]'::jsonb, 15, 'auto_approved'),
     (p_group_id, p_match_id, 'system', 'first_wicket_over', 'First Wicket in which Over?', '["1-2", "3-4", "5-6", "7+"]'::jsonb, 10, 'auto_approved')
-  ON CONFLICT (group_id, match_id, system_category) DO NOTHING;
+  ON CONFLICT (group_id, match_id, system_category) WHERE system_category IS NOT NULL DO NOTHING;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 

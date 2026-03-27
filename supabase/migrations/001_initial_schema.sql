@@ -140,8 +140,7 @@ CREATE TABLE scenarios (
   approval_status scenario_approval NOT NULL DEFAULT 'pending',
   is_removed BOOLEAN NOT NULL DEFAULT false,
   removed_by UUID REFERENCES profiles(id),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE NULLS NOT DISTINCT (group_id, match_id, system_category)
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- predictions
@@ -180,7 +179,7 @@ CREATE TABLE points_config (
 );
 
 -- Indexes
-CREATE INDEX idx_groups_invite_code ON groups(invite_code);
+-- Note: groups.invite_code already has a UNIQUE constraint index, no duplicate needed
 CREATE INDEX idx_group_members_status ON group_members(group_id, status);
 CREATE INDEX idx_group_members_user ON group_members(user_id, status);
 CREATE INDEX idx_matches_status ON matches(status);
@@ -193,3 +192,7 @@ CREATE INDEX idx_notifications_user ON notifications(user_id, is_read);
 CREATE INDEX idx_players_team ON players(team_code);
 CREATE INDEX idx_players_api_id ON players(api_player_id);
 CREATE INDEX idx_match_squads_match ON match_squads(match_id);
+
+-- Partial unique: one system scenario per category per group per match (allows multiple custom scenarios)
+CREATE UNIQUE INDEX uniq_system_scenario ON scenarios(group_id, match_id, system_category)
+  WHERE system_category IS NOT NULL;
