@@ -141,10 +141,14 @@ export function LoginForm() {
         </p>
       )}
 
-      <Button
+      <button
         type="submit"
         disabled={loading || !email}
-        className="w-full font-display font-semibold text-sm bg-gradient-to-br from-[var(--cyan)] to-[color-mix(in_srgb,var(--cyan),#000_20%)] text-[var(--bg-deep)] hover:opacity-90 btn-glow"
+        className={`w-full inline-flex items-center justify-center rounded-[10px] px-4 py-2.5 font-display font-semibold text-sm transition-all ${
+          loading || !email
+            ? "opacity-50 cursor-not-allowed bg-[var(--bg-elevated)] text-[var(--text-muted)]"
+            : "bg-gradient-to-br from-[var(--cyan)] to-[color-mix(in_srgb,var(--cyan),#000_20%)] text-[var(--bg-deep)] hover:opacity-90 btn-glow"
+        }`}
       >
         {loading ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -152,7 +156,7 @@ export function LoginForm() {
           <Mail className="mr-2 h-4 w-4" />
         )}
         Send Magic Link
-      </Button>
+      </button>
 
       <p className="text-center text-xs text-[var(--text-muted)]">
         No passwords. Just a quick magic link to your inbox.

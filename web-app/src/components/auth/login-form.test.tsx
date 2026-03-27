@@ -58,7 +58,7 @@ describe("LoginForm", () => {
     render(<LoginForm />);
 
     const submitButton = screen.getByText("Send Magic Link").closest("button")!;
-    expect(submitButton).toHaveAttribute("data-disabled");
+    expect(submitButton).toBeDisabled();
   });
 
   it("shows server error on failed submit", async () => {
