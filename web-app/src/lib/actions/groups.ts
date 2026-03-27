@@ -100,16 +100,23 @@ export async function manageMember(
   let ok = false;
   switch (action) {
     case "approve": {
+      // Fast-path rejection (non-authoritative — DB trigger is the real guard)
       const currentMembers = await membersDal.getMembers(groupId);
       if (currentMembers.length >= LIMITS.MAX_MEMBERS_PER_GROUP) {
         return { success: false, error: `Group is full — max ${LIMITS.MAX_MEMBERS_PER_GROUP} members` };
       }
-      ok = await membersDal.updateMemberStatus(groupId, userId, "approved");
+      const result = await membersDal.updateMemberStatus(groupId, userId, "approved");
+      if (result.capacityExceeded) {
+        return { success: false, error: `Group is full — max ${LIMITS.MAX_MEMBERS_PER_GROUP} members` };
+      }
+      ok = result.ok;
       break;
     }
-    case "reject":
-      ok = await membersDal.updateMemberStatus(groupId, userId, "rejected");
+    case "reject": {
+      const result = await membersDal.updateMemberStatus(groupId, userId, "rejected");
+      ok = result.ok;
       break;
+    }
     case "promote":
       if (callerMembership.role !== "owner") {
         return { success: false, error: "Only the owner can promote members" };

@@ -94,7 +94,7 @@ export async function updateMemberStatus(
   groupId: string,
   userId: string,
   status: MemberStatus
-): Promise<boolean> {
+): Promise<{ ok: boolean; capacityExceeded?: boolean }> {
   const supabase = await createClient();
   const updateData: Record<string, unknown> = { status };
   if (status === "approved") {
@@ -107,8 +107,13 @@ export async function updateMemberStatus(
     .eq("group_id", groupId)
     .eq("user_id", userId);
 
-  if (error) logError({ layer: "dal", operation: "updateMemberStatus", metadata: { groupId, userId, status } }, error);
-  return !error;
+  if (error) {
+    logError({ layer: "dal", operation: "updateMemberStatus", metadata: { groupId, userId, status } }, error);
+    // DB trigger raises check_violation when group is full
+    const isCapacity = error.message?.includes("Group capacity exceeded");
+    return { ok: false, capacityExceeded: isCapacity };
+  }
+  return { ok: true };
 }
 
 export async function updateMemberRole(
