@@ -10,6 +10,13 @@ export function cn(...inputs: ClassValue[]) {
  * Compute the prediction deadline for a match.
  * Default: 45 minutes before match start (IST).
  * Can be overridden via match_group_settings.prediction_deadline.
+ *
+ * TIMEZONE SEMANTICS:
+ *   matchTimeIst is always in IST (UTC+05:30). We construct the Date with
+ *   explicit "+05:30" offset so JavaScript converts to UTC internally.
+ *   This mirrors the SQL: (date + time) AT TIME ZONE 'Asia/Kolkata'.
+ *   India does NOT observe DST, so +05:30 is always correct.
+ *   See also: supabase/migrations/020_document_deadline_timezone.sql
  */
 export function computeDeadline(
   matchDate: string,
