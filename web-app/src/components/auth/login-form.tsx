@@ -20,7 +20,7 @@ export function LoginForm() {
   const [state, setState] = useState<FormState>(authError ? "error" : "input");
   const [errorMessage, setErrorMessage] = useState(
     authError === "auth_callback_failed"
-      ? "Magic link expired or invalid. Please try again."
+      ? "That link's expired. Let's get you a fresh one."
       : ""
   );
   const [loading, setLoading] = useState(false);
@@ -86,14 +86,14 @@ export function LoginForm() {
         </div>
         <div className="space-y-2">
           <h2 className="font-display text-xl font-bold text-[var(--text-primary)]">
-            Check your email
+            Magic link sent!
           </h2>
           <p className="text-sm text-[var(--text-secondary)]">
-            We sent a magic link to{" "}
+            We just fired a link to{" "}
             <span className="font-medium text-[var(--text-primary)]">{email}</span>
           </p>
           <p className="text-xs text-[var(--text-muted)]">
-            Click the link in the email to sign in. The link expires in 1 hour.
+            Tap the link in your inbox to get in. Expires in 1 hour.
           </p>
         </div>
         <div className="space-y-3">
@@ -106,14 +106,14 @@ export function LoginForm() {
             {loading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : null}
-            {canResend ? "Resend magic link" : "Resend available in 1 min"}
+            {canResend ? "Send another" : "Hold on — resend in 1 min"}
           </Button>
           <button
             className="flex items-center justify-center gap-1 mx-auto text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
             onClick={() => setState("input")}
           >
             <ArrowLeft className="h-3 w-3" />
-            Try a different email
+            Use a different email
           </button>
         </div>
       </div>
@@ -133,7 +133,7 @@ export function LoginForm() {
         <Input
           id="displayName"
           type="text"
-          placeholder="What should we call you?"
+          placeholder="Your leaderboard name"
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
           className="bg-[var(--bg-input)] border-[var(--border-medium)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--border-focus)] focus:ring-[var(--border-focus)]"
@@ -142,7 +142,7 @@ export function LoginForm() {
           autoFocus
         />
         <p className="text-xs text-[var(--text-muted)]">
-          Shown on leaderboards. Uses your email prefix if left blank.
+          This is how you show up on the leaderboard.
         </p>
       </div>
 
@@ -188,7 +188,7 @@ export function LoginForm() {
       </Button>
 
       <p className="text-center text-xs text-[var(--text-muted)]">
-        No password needed. We&apos;ll email you a sign-in link.
+        No passwords. Just a quick magic link to your inbox.
       </p>
     </form>
   );

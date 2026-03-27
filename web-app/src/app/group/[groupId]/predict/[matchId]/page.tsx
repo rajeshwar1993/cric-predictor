@@ -85,7 +85,7 @@ export default async function PredictPage({ params }: PredictPageProps) {
         className="inline-flex items-center gap-1 text-sm text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to group
+        Back to squad
       </Link>
 
       {/* Match header */}
@@ -95,7 +95,7 @@ export default async function PredictPage({ params }: PredictPageProps) {
             Match {match.match_number}
           </span>
           <span className={`font-stats text-xs ${locked ? "text-[var(--danger)]" : "text-[var(--text-muted)]"}`}>
-            {locked ? "Locked" : `Deadline: ${formatMatchTime(match.time_ist)}`}
+            {locked ? "Locked" : `Closes at ${formatMatchTime(match.time_ist)}`}
           </span>
         </div>
         <div className="mt-4 flex items-center justify-center gap-6">

@@ -21,7 +21,7 @@ describe("ResultEntryForm", () => {
         teamB="MI"
       />
     );
-    expect(screen.getByText("Enter Match Results")).toBeInTheDocument();
+    expect(screen.getByText("Enter Match Scorecard")).toBeInTheDocument();
   });
 
   it("renders team select options for Match Winner", () => {
@@ -63,7 +63,7 @@ describe("ResultEntryForm", () => {
       />
     );
     expect(
-      screen.getByText("Enter Results & Resolve Predictions")
+      screen.getByText("Resolve Match")
     ).toBeInTheDocument();
   });
 

@@ -53,7 +53,7 @@ export default async function MatchLeaderboardPage({ params }: MatchPageProps) {
         className="inline-flex items-center gap-1 text-sm text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to group
+        Back to squad
       </Link>
 
       {/* Match header */}

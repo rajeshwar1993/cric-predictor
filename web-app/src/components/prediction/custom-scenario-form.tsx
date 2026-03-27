@@ -38,7 +38,7 @@ export function CustomScenarioForm({ groupId, matchId }: CustomScenarioFormProps
     e.preventDefault();
     const validOptions = options.filter((o) => o.trim());
     if (validOptions.length < 2) {
-      setError("At least 2 options required");
+      setError("Need at least 2 options");
       return;
     }
 
@@ -63,7 +63,7 @@ export function CustomScenarioForm({ groupId, matchId }: CustomScenarioFormProps
         setIsOpen(false);
       }, 2000);
     } else {
-      setError(result.error || "Failed to create scenario");
+      setError(result.error || "Couldn't submit — try again");
     }
     setLoading(false);
   }
@@ -76,7 +76,7 @@ export function CustomScenarioForm({ groupId, matchId }: CustomScenarioFormProps
       >
         <Plus className="mx-auto h-5 w-5 text-[var(--text-muted)] group-hover:text-[var(--cyan)]" />
         <p className="mt-2 font-display text-xs font-semibold text-[var(--text-muted)] group-hover:text-[var(--cyan)]">
-          Propose a Scenario
+          Drop a Wild Card
         </p>
       </button>
     );
@@ -86,8 +86,8 @@ export function CustomScenarioForm({ groupId, matchId }: CustomScenarioFormProps
     return (
       <div className="rounded-[14px] border border-[var(--success)] bg-[color-mix(in_srgb,var(--success)_8%,transparent)] p-5 text-center space-y-2">
         <Check className="mx-auto h-6 w-6 text-[var(--success)]" />
-        <p className="text-sm font-medium text-[var(--success)]">Scenario proposed!</p>
-        <p className="text-xs text-[var(--text-muted)]">Waiting for admin approval.</p>
+        <p className="text-sm font-medium text-[var(--success)]">Wild card dropped!</p>
+        <p className="text-xs text-[var(--text-muted)]">Admin will review it shortly.</p>
       </div>
     );
   }
@@ -99,7 +99,7 @@ export function CustomScenarioForm({ groupId, matchId }: CustomScenarioFormProps
     >
       <div className="flex items-center justify-between">
         <h4 className="font-display text-sm font-semibold text-[var(--text-primary)]">
-          Propose a Scenario
+          Drop a Wild Card
         </h4>
         <button
           type="button"
@@ -115,7 +115,7 @@ export function CustomScenarioForm({ groupId, matchId }: CustomScenarioFormProps
         <Input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="e.g., Will Kohli score a century?"
+          placeholder="e.g., Kohli century? CSK 200+? First ball six?"
           className="bg-[var(--bg-input)] border-[var(--border-medium)] text-[var(--text-primary)] text-sm"
           minLength={5}
           maxLength={120}
@@ -153,7 +153,7 @@ export function CustomScenarioForm({ groupId, matchId }: CustomScenarioFormProps
             onClick={addOption}
             className="text-xs text-[var(--cyan)] hover:opacity-80"
           >
-            + Add option
+            + Add another
           </button>
         )}
       </div>
@@ -188,7 +188,7 @@ export function CustomScenarioForm({ groupId, matchId }: CustomScenarioFormProps
         className="w-full font-display font-semibold text-xs bg-gradient-to-br from-[var(--cyan)] to-[color-mix(in_srgb,var(--cyan),#000_20%)] text-[var(--bg-deep)] hover:opacity-90"
       >
         {loading ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : null}
-        Submit for Approval
+        Submit Wild Card
       </Button>
     </form>
   );

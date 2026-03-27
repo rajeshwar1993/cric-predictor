@@ -41,7 +41,7 @@ describe("LoginForm", () => {
     expect(mockSignIn).toHaveBeenCalledWith("test@example.com", "test", undefined);
   });
 
-  it("shows 'Check your email' after successful submit", async () => {
+  it("shows 'Magic link sent!' after successful submit", async () => {
     const user = userEvent.setup();
     mockSignIn.mockResolvedValue({ success: true });
 
@@ -50,7 +50,7 @@ describe("LoginForm", () => {
     await user.type(screen.getByLabelText(/email address/i), "test@example.com");
     await user.click(screen.getByText("Send Magic Link"));
 
-    expect(screen.getByText("Check your email")).toBeInTheDocument();
+    expect(screen.getByText("Magic link sent!")).toBeInTheDocument();
   });
 
   it("disables the submit button when email is empty", () => {

@@ -23,20 +23,20 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Bragg — Predict. Compete. Bragg.",
+    default: "Bragg — Call It. Prove It. Bragg.",
     template: "%s | Bragg",
   },
   description:
-    "The social cricket prediction game. Predict IPL match outcomes with friends and earn bragging rights.",
-  keywords: ["cricket", "prediction", "IPL", "social", "game", "bragging rights"],
+    "The IPL prediction game built for bragging rights. Make your calls, compete with your crew, own the leaderboard.",
+  keywords: ["cricket", "prediction", "IPL", "IPL 2026", "social", "game", "bragging rights", "leaderboard", "compete"],
   authors: [{ name: "Bragg" }],
   openGraph: {
     type: "website",
     locale: "en_IN",
     siteName: "Bragg",
-    title: "Bragg — Predict. Compete. Bragg.",
+    title: "Bragg — Call It. Prove It. Bragg.",
     description:
-      "The social cricket prediction game. Predict IPL match outcomes with friends and earn bragging rights.",
+      "The IPL prediction game built for bragging rights. Make your calls, compete with your crew, own the leaderboard.",
   },
   robots: {
     index: true,

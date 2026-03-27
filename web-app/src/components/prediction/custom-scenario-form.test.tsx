@@ -7,9 +7,9 @@ vi.mock("@/lib/actions/scenarios", () => ({
 }));
 
 describe("CustomScenarioForm", () => {
-  it("renders the collapsed 'Propose a Scenario' button by default", () => {
+  it("renders the collapsed 'Drop a Wild Card' button by default", () => {
     render(<CustomScenarioForm groupId="group-001" matchId={2} />);
-    expect(screen.getByText("Propose a Scenario")).toBeInTheDocument();
+    expect(screen.getByText("Drop a Wild Card")).toBeInTheDocument();
   });
 
   it("does not render the form fields in collapsed state", () => {
@@ -21,17 +21,17 @@ describe("CustomScenarioForm", () => {
     const user = userEvent.setup();
     render(<CustomScenarioForm groupId="group-001" matchId={2} />);
 
-    await user.click(screen.getByText("Propose a Scenario"));
+    await user.click(screen.getByText("Drop a Wild Card"));
 
     expect(screen.getByText("Question")).toBeInTheDocument();
-    expect(screen.getByText("Submit for Approval")).toBeInTheDocument();
+    expect(screen.getByText("Submit Wild Card")).toBeInTheDocument();
   });
 
   it("renders option inputs when expanded", async () => {
     const user = userEvent.setup();
     render(<CustomScenarioForm groupId="group-001" matchId={2} />);
 
-    await user.click(screen.getByText("Propose a Scenario"));
+    await user.click(screen.getByText("Drop a Wild Card"));
 
     expect(screen.getByPlaceholderText("Option 1")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Option 2")).toBeInTheDocument();
@@ -41,7 +41,7 @@ describe("CustomScenarioForm", () => {
     const user = userEvent.setup();
     render(<CustomScenarioForm groupId="group-001" matchId={2} />);
 
-    await user.click(screen.getByText("Propose a Scenario"));
+    await user.click(screen.getByText("Drop a Wild Card"));
 
     expect(screen.getByText("5")).toBeInTheDocument();
     expect(screen.getByText("10")).toBeInTheDocument();
@@ -55,11 +55,11 @@ describe("CustomScenarioForm", () => {
     render(<CustomScenarioForm groupId="group-001" matchId={2} />);
 
     // Expand
-    await user.click(screen.getByText("Propose a Scenario"));
+    await user.click(screen.getByText("Drop a Wild Card"));
     expect(screen.getByText("Question")).toBeInTheDocument();
 
     // The X close button is the second button with type="button" (first is inside the heading)
-    // Look for the Propose a Scenario heading's sibling close button
+    // Look for the Drop a Wild Card heading's sibling close button
     const closeButtons = screen
       .getAllByRole("button")
       .filter((btn) => btn.getAttribute("type") === "button");
@@ -67,7 +67,7 @@ describe("CustomScenarioForm", () => {
     await user.click(closeButtons[0]);
 
     // Back to collapsed
-    expect(screen.getByText("Propose a Scenario")).toBeInTheDocument();
+    expect(screen.getByText("Drop a Wild Card")).toBeInTheDocument();
     expect(screen.queryByText("Question")).not.toBeInTheDocument();
   });
 });

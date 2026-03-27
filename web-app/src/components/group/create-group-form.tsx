@@ -27,7 +27,7 @@ export function CreateGroupForm() {
     if (result.success && result.data) {
       router.push(ROUTES.GROUP(result.data.id));
     } else {
-      setError(result.error || "Failed to create group");
+      setError(result.error || "Couldn't create your squad — try again");
       setLoading(false);
     }
   }
@@ -39,12 +39,12 @@ export function CreateGroupForm() {
           htmlFor="groupName"
           className="text-sm text-[var(--text-secondary)]"
         >
-          Group Name
+          Squad Name
         </Label>
         <Input
           id="groupName"
           type="text"
-          placeholder="e.g., Office Cricket Gang"
+          placeholder="e.g., Office XI, The Dugout, Hostel Legends"
           value={name}
           onChange={(e) => {
             setName(e.target.value);
@@ -74,7 +74,7 @@ export function CreateGroupForm() {
         ) : (
           <Plus className="mr-2 h-4 w-4" />
         )}
-        Create Group
+        Create Squad
       </Button>
     </form>
   );

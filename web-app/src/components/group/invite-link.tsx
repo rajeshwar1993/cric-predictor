@@ -33,12 +33,12 @@ export function InviteLink({ inviteCode }: InviteLinkProps) {
       {copied ? (
         <>
           <Check className="h-4 w-4 text-[var(--success)]" />
-          <span className="text-[var(--success)]">Link copied!</span>
+          <span className="text-[var(--success)]">Copied! Drop it in the group chat.</span>
         </>
       ) : (
         <>
           <Copy className="h-4 w-4" />
-          Copy Invite Link
+          Share Invite
         </>
       )}
     </Button>

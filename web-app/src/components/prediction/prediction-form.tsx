@@ -35,12 +35,12 @@ const PHASE_ORDER = [
 
 const PHASE_LABELS: Record<string, string> = {
   toss: "Toss",
-  first_wicket: "First Wicket",
+  first_wicket: "First Strike",
   powerplay: "Powerplay",
-  mid_match: "Mid-Match",
+  mid_match: "Mid-Innings",
   innings_break: "Innings Break",
-  end: "End of Match",
-  post_match: "Post-Match",
+  end: "Final Ball",
+  post_match: "After Stumps",
 };
 
 function getPhase(scenario: Scenario): string | null {
@@ -109,7 +109,7 @@ export function PredictionForm({
       .map(([scenarioId, value]) => ({ scenarioId, value }));
 
     if (predictions.length === 0) {
-      setError("Select at least one prediction");
+      setError("Pick at least one scenario");
       setLoading(false);
       return;
     }
@@ -153,7 +153,7 @@ export function PredictionForm({
             Predictions Locked
           </p>
           <p className="mt-1 text-xs text-[var(--text-muted)]">
-            The deadline has passed or predictions have been locked by an admin.
+            Time&apos;s up! The deadline has passed or an admin locked predictions.
           </p>
         </div>
       )}
@@ -192,14 +192,14 @@ export function PredictionForm({
           <div className="flex items-center gap-3">
             <span className="font-stats text-sm text-[var(--text-secondary)]">
               <span className="text-[var(--cyan)] font-semibold">{answeredCount}</span>
-              /{totalCount} answered
+              /{totalCount} picked
             </span>
             {error && (
               <span className="text-xs text-[var(--danger)]">{error}</span>
             )}
             {success && (
               <span className="flex items-center gap-1 text-xs text-[var(--success)]">
-                <Check className="h-3 w-3" /> Saved
+                <Check className="h-3 w-3" /> Locked in!
               </span>
             )}
           </div>
@@ -211,7 +211,7 @@ export function PredictionForm({
             {loading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : null}
-            Submit Predictions
+            Lock It In
           </Button>
         </div>
       </div>

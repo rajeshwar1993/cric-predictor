@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: JoinPageProps): Promise<Metad
   const group = await groupsDal.getGroupByInviteCode(code);
 
   if (!group) {
-    return { title: "Invalid Invite" };
+    return { title: "Expired Invite" };
   }
 
   return {
@@ -84,7 +84,7 @@ export default async function JoinPage({ params }: JoinPageProps) {
           <InviteHeader groupName={group.name} />
           <div className="rounded-[20px] border border-[var(--border-light)] bg-[var(--bg-card)] p-8">
             <p className="mb-6 text-center text-sm text-[var(--text-secondary)]">
-              Sign in to join this group
+              Sign in to join the squad
             </p>
             <Suspense>
               <LoginForm />
@@ -102,7 +102,7 @@ function InviteHeader({ groupName }: { groupName: string }) {
     <div>
       <h1 className="font-display text-3xl font-bold text-gradient">Bragg</h1>
       <p className="mt-4 text-lg text-[var(--text-primary)]">
-        You&apos;ve been invited to join
+        You&apos;ve been called up to
       </p>
       <p className="mt-1 font-display text-2xl font-bold text-[var(--cyan)]">
         {groupName}

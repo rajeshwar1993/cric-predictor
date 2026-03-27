@@ -35,7 +35,7 @@ export default async function DashboardPage() {
               {/* Groups header */}
               <div className="flex items-center justify-between">
                 <h1 className="font-display text-2xl font-bold text-[var(--text-primary)]">
-                  My Groups
+                  Your Squads
                 </h1>
                 <div className="flex items-center gap-3">
                   <div className="relative w-48">
@@ -54,7 +54,7 @@ export default async function DashboardPage() {
               {/* Create new group */}
               <div className="rounded-[14px] border border-dashed border-[var(--border-medium)] bg-[var(--bg-card)]/50 p-6">
                 <h3 className="mb-4 font-display text-sm font-semibold text-[var(--text-secondary)]">
-                  Create a New Group
+                  Start a New Squad
                 </h3>
                 <CreateGroupForm />
               </div>
@@ -77,7 +77,7 @@ function EmptyState() {
         Welcome to Bragg!
       </h1>
       <p className="mt-3 max-w-md text-sm text-[var(--text-secondary)]">
-        Create your first prediction group and invite your cricket crew.
+        Get your crew together, make your calls, and fight for the top spot.
         Every correct prediction is ammunition. Every #1 is a screenshot for the group chat.
       </p>
       <div className="mt-8 w-full max-w-sm space-y-6">
@@ -88,7 +88,7 @@ function EmptyState() {
           </div>
           <div className="relative flex justify-center">
             <span className="bg-[var(--bg-deep)] px-3 text-xs text-[var(--text-muted)]">
-              or join an existing group
+              or jump into a squad
             </span>
           </div>
         </div>

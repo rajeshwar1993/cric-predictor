@@ -5,11 +5,11 @@ import type { TrackStatus } from "@/lib/on-track-logic";
 describe("PredictionStatusPill", () => {
   const statuses: TrackStatus[] = ["correct", "wrong", "on_track", "in_danger", "pending"];
   const expectedLabels: Record<TrackStatus, string> = {
-    correct: "Correct",
-    wrong: "Wrong",
+    correct: "Nailed It",
+    wrong: "Missed",
     on_track: "On Track",
-    in_danger: "In Danger",
-    pending: "Pending",
+    in_danger: "Sweating",
+    pending: "In Play",
   };
 
   it.each(statuses)("renders the label for status '%s'", (status) => {
@@ -19,7 +19,7 @@ describe("PredictionStatusPill", () => {
 
   it("does not render label text in compact mode", () => {
     render(<PredictionStatusPill status="correct" compact />);
-    expect(screen.queryByText("Correct")).not.toBeInTheDocument();
+    expect(screen.queryByText("Nailed It")).not.toBeInTheDocument();
   });
 
   it("renders the dot indicator for each status", () => {

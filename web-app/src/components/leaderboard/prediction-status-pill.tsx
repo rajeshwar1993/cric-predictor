@@ -2,14 +2,14 @@ import type { TrackStatus } from "@/lib/on-track-logic";
 
 const STATUS_CONFIG: Record<TrackStatus, { label: string; dotColor: string; bgColor: string; borderColor: string; textColor: string }> = {
   correct: {
-    label: "Correct",
+    label: "Nailed It",
     dotColor: "var(--success)",
     bgColor: "color-mix(in srgb, var(--success) 9%, transparent)",
     borderColor: "color-mix(in srgb, var(--success) 25%, transparent)",
     textColor: "var(--success)",
   },
   wrong: {
-    label: "Wrong",
+    label: "Missed",
     dotColor: "var(--danger)",
     bgColor: "color-mix(in srgb, var(--danger) 9%, transparent)",
     borderColor: "color-mix(in srgb, var(--danger) 25%, transparent)",
@@ -23,14 +23,14 @@ const STATUS_CONFIG: Record<TrackStatus, { label: string; dotColor: string; bgCo
     textColor: "var(--cyan)",
   },
   in_danger: {
-    label: "In Danger",
+    label: "Sweating",
     dotColor: "var(--warning)",
     bgColor: "color-mix(in srgb, var(--warning) 9%, transparent)",
     borderColor: "color-mix(in srgb, var(--warning) 25%, transparent)",
     textColor: "var(--warning)",
   },
   pending: {
-    label: "Pending",
+    label: "In Play",
     dotColor: "var(--pending)",
     bgColor: "color-mix(in srgb, var(--pending) 9%, transparent)",
     borderColor: "color-mix(in srgb, var(--pending) 25%, transparent)",

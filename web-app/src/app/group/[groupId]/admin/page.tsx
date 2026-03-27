@@ -10,7 +10,7 @@ import { ResultEntryForm } from "@/components/admin/result-entry-form";
 import { ROUTES } from "@/lib/constants";
 
 export const metadata: Metadata = {
-  title: "Admin Panel",
+  title: "Admin HQ",
 };
 
 interface AdminPageProps {
@@ -49,7 +49,7 @@ export default async function AdminPage({ params }: AdminPageProps) {
     <div className="space-y-8">
       <div>
         <h1 className="font-display text-2xl font-bold text-[var(--text-primary)]">
-          Admin Panel
+          Admin HQ
         </h1>
         <p className="mt-1 text-sm text-[var(--text-muted)]">{group.name}</p>
       </div>
@@ -57,7 +57,7 @@ export default async function AdminPage({ params }: AdminPageProps) {
       {/* Pending Approvals */}
       <section className="space-y-4">
         <h2 className="font-display text-lg font-semibold text-[var(--text-primary)]">
-          Pending Requests
+          Gate Requests
           {pending.length > 0 && (
             <span className="ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--danger)] px-1.5 text-[10px] font-stats font-bold text-white">
               {pending.length}
@@ -65,7 +65,7 @@ export default async function AdminPage({ params }: AdminPageProps) {
           )}
         </h2>
         {pending.length === 0 ? (
-          <p className="text-sm text-[var(--text-muted)]">No pending requests.</p>
+          <p className="text-sm text-[var(--text-muted)]">All clear — no one at the gate.</p>
         ) : (
           <PendingApprovals groupId={groupId} requests={pending} />
         )}
@@ -75,7 +75,7 @@ export default async function AdminPage({ params }: AdminPageProps) {
       {recentMatches.length > 0 && (
         <section className="space-y-4">
           <h2 className="font-display text-lg font-semibold text-[var(--text-primary)]">
-            Enter Results
+            Scorecard
           </h2>
           <div className="rounded-[14px] border border-[var(--border-light)] bg-[var(--bg-card)] p-5">
             {recentMatches.map((match) => (
@@ -98,7 +98,7 @@ export default async function AdminPage({ params }: AdminPageProps) {
       {/* Member Management */}
       <section className="space-y-4">
         <h2 className="font-display text-lg font-semibold text-[var(--text-primary)]">
-          Members ({members.length})
+          Squad ({members.length})
         </h2>
         <AdminMemberList
           groupId={groupId}

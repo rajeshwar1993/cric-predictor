@@ -82,7 +82,7 @@ describe("NotificationBell", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows 'Mark all read' when there are unread notifications", async () => {
+  it("shows 'Clear all' when there are unread notifications", async () => {
     const user = userEvent.setup();
     render(<NotificationBell userId="user-001" />);
 
@@ -92,6 +92,6 @@ describe("NotificationBell", () => {
 
     await user.click(screen.getByLabelText(/notifications/i));
 
-    expect(screen.getByText("Mark all read")).toBeInTheDocument();
+    expect(screen.getByText("Clear all")).toBeInTheDocument();
   });
 });

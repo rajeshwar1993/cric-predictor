@@ -20,7 +20,7 @@ describe("JoinGroupForm", () => {
 
   it("renders the invite code input", () => {
     render(<JoinGroupForm />);
-    expect(screen.getByPlaceholderText("Enter invite code")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Paste invite code")).toBeInTheDocument();
   });
 
   it("calls joinGroup on form submit", async () => {
@@ -29,7 +29,7 @@ describe("JoinGroupForm", () => {
 
     render(<JoinGroupForm />);
 
-    await user.type(screen.getByPlaceholderText("Enter invite code"), "abc123");
+    await user.type(screen.getByPlaceholderText("Paste invite code"), "abc123");
     // Click the submit button
     const submitBtn = screen.getByRole("button");
     await user.click(submitBtn);
@@ -43,11 +43,11 @@ describe("JoinGroupForm", () => {
 
     render(<JoinGroupForm />);
 
-    await user.type(screen.getByPlaceholderText("Enter invite code"), "abc123");
+    await user.type(screen.getByPlaceholderText("Paste invite code"), "abc123");
     await user.click(screen.getByRole("button"));
 
-    expect(screen.getByText("Request sent!")).toBeInTheDocument();
-    expect(screen.getByText("Waiting for admin approval.")).toBeInTheDocument();
+    expect(screen.getByText("You're in the queue!")).toBeInTheDocument();
+    expect(screen.getByText("Admin will let you in shortly.")).toBeInTheDocument();
   });
 
   it("shows an error on failed submit", async () => {
@@ -59,7 +59,7 @@ describe("JoinGroupForm", () => {
 
     render(<JoinGroupForm />);
 
-    await user.type(screen.getByPlaceholderText("Enter invite code"), "badcode");
+    await user.type(screen.getByPlaceholderText("Paste invite code"), "badcode");
     await user.click(screen.getByRole("button"));
 
     expect(screen.getByRole("alert")).toHaveTextContent("Invalid code");

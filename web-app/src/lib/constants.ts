@@ -56,22 +56,22 @@ export const TEAM_NAME_TO_CODE: Record<string, string> = Object.fromEntries([
 
 // System scenario categories with labels and points
 export const SYSTEM_SCENARIOS = [
-  { category: "match_winner", label: "Who will win?", points: 10, resolution_phase: "end" },
-  { category: "toss_winner", label: "Who wins the toss?", points: 5, resolution_phase: "toss" },
-  { category: "top_scorer", label: "Top Scorer?", points: 15, resolution_phase: "end" },
-  { category: "top_wicket_taker", label: "Top Wicket-Taker?", points: 15, resolution_phase: "end" },
-  { category: "player_of_match", label: "Player of the Match?", points: 20, resolution_phase: "post_match" },
-  { category: "first_innings_score", label: "First Innings Score?", points: 10, resolution_phase: "innings_break" },
-  { category: "total_match_runs", label: "Total Match Runs?", points: 10, resolution_phase: "end" },
-  { category: "powerplay_score", label: "Powerplay Score (First 6 Overs)?", points: 10, resolution_phase: "powerplay" },
-  { category: "powerplay_wickets", label: "Powerplay Wickets?", points: 10, resolution_phase: "powerplay" },
-  { category: "total_sixes", label: "Total Sixes?", points: 10, resolution_phase: "end" },
-  { category: "total_wickets", label: "Total Wickets?", points: 10, resolution_phase: "end" },
-  { category: "batsman_fifty", label: "Will any batsman score 50+?", points: 10, resolution_phase: "mid_match" },
-  { category: "bowler_three_wkt", label: "Will any bowler take 3+ wickets?", points: 10, resolution_phase: "mid_match" },
-  { category: "had_super_over", label: "Will there be a Super Over?", points: 20, resolution_phase: "end" },
-  { category: "most_sixes", label: "Most Sixes Player?", points: 15, resolution_phase: "end" },
-  { category: "first_wicket_over", label: "First Wicket in which Over?", points: 10, resolution_phase: "first_wicket" },
+  { category: "match_winner", label: "Who's winning this?", points: 10, resolution_phase: "end" },
+  { category: "toss_winner", label: "Who calls the toss?", points: 5, resolution_phase: "toss" },
+  { category: "top_scorer", label: "Who tops the run chart?", points: 15, resolution_phase: "end" },
+  { category: "top_wicket_taker", label: "Who's the top wicket-taker?", points: 15, resolution_phase: "end" },
+  { category: "player_of_match", label: "Who takes the award?", points: 20, resolution_phase: "post_match" },
+  { category: "first_innings_score", label: "First innings total?", points: 10, resolution_phase: "innings_break" },
+  { category: "total_match_runs", label: "How many runs in the match?", points: 10, resolution_phase: "end" },
+  { category: "powerplay_score", label: "Powerplay total (first 6)?", points: 10, resolution_phase: "powerplay" },
+  { category: "powerplay_wickets", label: "Wickets in the powerplay?", points: 10, resolution_phase: "powerplay" },
+  { category: "total_sixes", label: "How many sixes fly out?", points: 10, resolution_phase: "end" },
+  { category: "total_wickets", label: "Total wickets in the match?", points: 10, resolution_phase: "end" },
+  { category: "batsman_fifty", label: "Anyone hitting a fifty?", points: 10, resolution_phase: "mid_match" },
+  { category: "bowler_three_wkt", label: "Any bowler grabbing 3+ wickets?", points: 10, resolution_phase: "mid_match" },
+  { category: "had_super_over", label: "Super Over on the cards?", points: 20, resolution_phase: "end" },
+  { category: "most_sixes", label: "Who's the six-hitting machine?", points: 15, resolution_phase: "end" },
+  { category: "first_wicket_over", label: "When does the first wicket fall?", points: 10, resolution_phase: "first_wicket" },
 ] as const;
 
 // Range bracket options for system scenarios
@@ -100,9 +100,9 @@ export const LIMITS = {
 
 // Prediction status indicators
 export const PREDICTION_STATUS = {
-  CORRECT: { label: "Correct", color: "success", icon: "check-circle" },
-  WRONG: { label: "Wrong", color: "danger", icon: "x-circle" },
+  CORRECT: { label: "Nailed It", color: "success", icon: "check-circle" },
+  WRONG: { label: "Missed", color: "danger", icon: "x-circle" },
   ON_TRACK: { label: "On Track", color: "cyan", icon: "trending-up" },
-  IN_DANGER: { label: "In Danger", color: "warning", icon: "alert-triangle" },
-  PENDING: { label: "Pending", color: "pending", icon: "clock" },
+  IN_DANGER: { label: "Sweating", color: "warning", icon: "alert-triangle" },
+  PENDING: { label: "In Play", color: "pending", icon: "clock" },
 } as const;

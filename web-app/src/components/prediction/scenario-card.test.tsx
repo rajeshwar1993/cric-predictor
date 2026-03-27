@@ -77,17 +77,17 @@ describe("ScenarioCard", () => {
     expect(screen.getByText("No")).toBeInTheDocument();
   });
 
-  it("shows 'Predicted' indicator when value is set", () => {
+  it("shows 'Picked' indicator when value is set", () => {
     render(
       <ScenarioCard {...baseProps} scenario={MOCK_SCENARIOS[0]} value="CSK" />
     );
-    expect(screen.getByText("Predicted")).toBeInTheDocument();
+    expect(screen.getByText("Picked")).toBeInTheDocument();
   });
 
-  it("does not show 'Predicted' indicator when value is null", () => {
+  it("does not show 'Picked' indicator when value is null", () => {
     render(
       <ScenarioCard {...baseProps} scenario={MOCK_SCENARIOS[0]} />
     );
-    expect(screen.queryByText("Predicted")).not.toBeInTheDocument();
+    expect(screen.queryByText("Picked")).not.toBeInTheDocument();
   });
 });

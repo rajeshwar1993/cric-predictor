@@ -24,7 +24,7 @@ export function SeasonStandings({ entries, currentUserId }: SeasonStandingsProps
     return (
       <div className="rounded-[14px] border border-[var(--border-light)] bg-[var(--bg-card)] p-8 text-center">
         <p className="text-sm text-[var(--text-muted)]">
-          No standings yet. Predict a match to see the leaderboard!
+          The leaderboard&apos;s empty — make your first pick to get on the board!
         </p>
       </div>
     );

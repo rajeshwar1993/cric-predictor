@@ -47,11 +47,11 @@ export function JoinGroupClient({
           <Clock className="h-7 w-7 text-[var(--gold)]" />
         </div>
         <h2 className="font-display text-lg font-semibold text-[var(--text-primary)]">
-          Waiting for approval
+          Hang tight!
         </h2>
         <p className="text-sm text-[var(--text-secondary)]">
-          Your request to join <span className="font-medium">{groupName}</span> has been sent.
-          An admin will review it shortly.
+          You&apos;ve knocked on the door of <span className="font-medium">{groupName}</span>.
+          The admin will let you in shortly.
         </p>
       </div>
     );
@@ -64,10 +64,10 @@ export function JoinGroupClient({
           <XCircle className="h-7 w-7 text-[var(--danger)]" />
         </div>
         <h2 className="font-display text-lg font-semibold text-[var(--text-primary)]">
-          Request not approved
+          Didn&apos;t make the cut
         </h2>
         <p className="text-sm text-[var(--text-secondary)]">
-          Your request to join was not approved.
+          Your request wasn&apos;t approved this time.
         </p>
         <Button
           onClick={handleJoin}
@@ -76,7 +76,7 @@ export function JoinGroupClient({
           className="border-[var(--border-medium)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
         >
           {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          Request Again
+          Try Again
         </Button>
       </div>
     );
@@ -86,7 +86,7 @@ export function JoinGroupClient({
   return (
     <div className="rounded-[20px] border border-[var(--border-light)] bg-[var(--bg-card)] p-8 space-y-4">
       <p className="text-sm text-[var(--text-secondary)]">
-        Join to predict IPL match outcomes with this group and earn bragging rights.
+        Get in on the action — make your calls and compete for bragging rights.
       </p>
       {error && (
         <p className="text-sm text-[var(--danger)]" role="alert">{error}</p>
@@ -101,7 +101,7 @@ export function JoinGroupClient({
         ) : (
           <UserPlus className="mr-2 h-4 w-4" />
         )}
-        Request to Join
+        Let Me In
       </Button>
     </div>
   );

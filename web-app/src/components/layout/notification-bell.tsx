@@ -104,14 +104,14 @@ export function NotificationBell({ userId }: NotificationBellProps) {
                   className="flex items-center gap-1 text-xs text-[var(--cyan)] hover:opacity-80"
                 >
                   <CheckCheck className="h-3 w-3" />
-                  Mark all read
+                  Clear all
                 </button>
               )}
             </div>
             <div className="max-h-80 overflow-y-auto">
               {notifications.length === 0 ? (
                 <p className="p-4 text-center text-sm text-[var(--text-muted)]">
-                  No notifications yet
+                  All quiet — for now
                 </p>
               ) : (
                 notifications.map((n) => (

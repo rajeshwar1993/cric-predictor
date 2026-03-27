@@ -18,13 +18,13 @@ describe("GroupCard", () => {
 
   it("renders the member count", () => {
     render(<GroupCard group={MOCK_GROUP_OWNER} />);
-    expect(screen.getByText("8 members")).toBeInTheDocument();
+    expect(screen.getByText("8 in the squad")).toBeInTheDocument();
   });
 
-  it("renders singular 'member' for count of 1", () => {
+  it("renders singular form for count of 1", () => {
     const singleMemberGroup = { ...MOCK_GROUP_MEMBER, member_count: 1 };
     render(<GroupCard group={singleMemberGroup} />);
-    expect(screen.getByText("1 member")).toBeInTheDocument();
+    expect(screen.getByText("1 in the squad")).toBeInTheDocument();
   });
 
   it("renders the Owner role badge", () => {

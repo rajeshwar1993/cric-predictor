@@ -30,7 +30,7 @@ export function GroupCard({ group }: GroupCardProps) {
           <div className="flex items-center gap-3 text-xs text-[var(--text-muted)]">
             <span className="flex items-center gap-1">
               <Users className="h-3 w-3" />
-              {group.member_count} {group.member_count === 1 ? "member" : "members"}
+              {group.member_count} in the squad
             </span>
           </div>
         </div>

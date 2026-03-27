@@ -96,20 +96,20 @@ export default async function GroupHomePage({ params }: GroupPageProps) {
               href={ROUTES.PREDICT(groupId, nextMatch.id)}
               className="rounded-[10px] bg-gradient-to-br from-[var(--cyan)] to-[color-mix(in_srgb,var(--cyan),#000_20%)] px-5 py-2.5 font-display text-sm font-semibold text-[var(--bg-deep)] hover:opacity-90 btn-glow transition-opacity"
             >
-              Predict Now
+              Make Your Calls
             </Link>
           </div>
         </div>
       ) : (
         <div className="rounded-[20px] border border-[var(--border-light)] bg-[var(--bg-card)] p-8 text-center">
-          <p className="text-sm text-[var(--text-muted)]">No upcoming matches</p>
+          <p className="text-sm text-[var(--text-muted)]">No matches on the horizon — sit tight</p>
         </div>
       )}
 
       {/* Member list */}
       <div>
         <h2 className="mb-4 font-display text-lg font-semibold text-[var(--text-primary)]">
-          Members
+          The Squad
         </h2>
         <MemberList members={members} />
       </div>

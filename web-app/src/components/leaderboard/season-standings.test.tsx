@@ -30,7 +30,7 @@ describe("SeasonStandings", () => {
     render(<SeasonStandings entries={[]} currentUserId="user-001" />);
     expect(
       screen.getByText(
-        "No standings yet. Predict a match to see the leaderboard!"
+        "The leaderboard's empty — make your first pick to get on the board!"
       )
     ).toBeInTheDocument();
   });

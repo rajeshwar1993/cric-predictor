@@ -36,10 +36,10 @@ export function JoinGroupForm() {
     return (
       <div className="text-center space-y-2 py-2">
         <p className="text-sm font-medium text-[var(--success)]">
-          Request sent!
+          You&apos;re in the queue!
         </p>
         <p className="text-xs text-[var(--text-muted)]">
-          Waiting for admin approval.
+          Admin will let you in shortly.
         </p>
       </div>
     );
@@ -50,7 +50,7 @@ export function JoinGroupForm() {
       <form onSubmit={handleSubmit} className="flex gap-2">
         <Input
           type="text"
-          placeholder="Enter invite code"
+          placeholder="Paste invite code"
           value={code}
           onChange={(e) => {
             setCode(e.target.value);

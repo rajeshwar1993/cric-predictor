@@ -16,7 +16,7 @@ export function MatchLeaderboard({ entries, currentUserId }: MatchLeaderboardPro
     return (
       <div className="rounded-[14px] border border-[var(--border-light)] bg-[var(--bg-card)] p-8 text-center">
         <p className="text-sm text-[var(--text-muted)]">
-          No predictions yet. Be the first to predict!
+          Nobody&apos;s made a call yet — be the first one in!
         </p>
       </div>
     );

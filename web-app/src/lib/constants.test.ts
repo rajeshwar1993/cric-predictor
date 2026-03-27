@@ -213,10 +213,10 @@ describe("CUSTOM_SCENARIO_POINTS", () => {
 
 describe("PREDICTION_STATUS", () => {
   it("has CORRECT, WRONG, ON_TRACK, IN_DANGER, PENDING", () => {
-    expect(PREDICTION_STATUS.CORRECT.label).toBe("Correct");
-    expect(PREDICTION_STATUS.WRONG.label).toBe("Wrong");
+    expect(PREDICTION_STATUS.CORRECT.label).toBe("Nailed It");
+    expect(PREDICTION_STATUS.WRONG.label).toBe("Missed");
     expect(PREDICTION_STATUS.ON_TRACK.label).toBe("On Track");
-    expect(PREDICTION_STATUS.IN_DANGER.label).toBe("In Danger");
-    expect(PREDICTION_STATUS.PENDING.label).toBe("Pending");
+    expect(PREDICTION_STATUS.IN_DANGER.label).toBe("Sweating");
+    expect(PREDICTION_STATUS.PENDING.label).toBe("In Play");
   });
 });

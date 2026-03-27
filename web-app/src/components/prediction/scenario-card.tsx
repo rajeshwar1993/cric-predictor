@@ -92,7 +92,7 @@ export function ScenarioCard({
     }
 
     return (
-      <p className="text-xs text-[var(--text-muted)]">No options available</p>
+      <p className="text-xs text-[var(--text-muted)]">Options dropping soon</p>
     );
   }
 
@@ -110,7 +110,7 @@ export function ScenarioCard({
       {value && (
         <div className="flex items-center gap-1.5">
           <div className="h-1.5 w-1.5 rounded-full bg-[var(--cyan)]" />
-          <span className="text-xs text-[var(--cyan)]">Predicted</span>
+          <span className="text-xs text-[var(--cyan)]">Picked</span>
         </div>
       )}
     </div>

@@ -74,7 +74,7 @@ export function ExpandablePicks({ userId, groupId, matchId }: ExpandablePicksPro
         className="flex items-center gap-1 text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
       >
         {isOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-        {isOpen ? "Hide picks" : "View picks"}
+        {isOpen ? "Hide picks" : "Show picks"}
       </button>
 
       {isOpen && (
@@ -106,7 +106,7 @@ export function ExpandablePicks({ userId, groupId, matchId }: ExpandablePicksPro
                       </span>
                       {scenario.correct_answer && (
                         <span className="text-[10px] text-[var(--text-muted)]">
-                          Actual: {scenario.correct_answer}
+                          Result: {scenario.correct_answer}
                         </span>
                       )}
                     </div>
@@ -115,7 +115,7 @@ export function ExpandablePicks({ userId, groupId, matchId }: ExpandablePicksPro
                     {prediction ? (
                       <PredictionStatusPill status={status} compact />
                     ) : (
-                      <span className="text-[10px] text-[var(--text-muted)]">Not predicted</span>
+                      <span className="text-[10px] text-[var(--text-muted)]">No pick</span>
                     )}
                     {prediction && prediction.points_earned > 0 && (
                       <span className="font-stats text-xs font-semibold text-[var(--success)]">

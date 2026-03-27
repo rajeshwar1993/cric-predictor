@@ -49,7 +49,7 @@ describe("MatchLeaderboard", () => {
   it("renders empty state when entries is empty", () => {
     render(<MatchLeaderboard entries={[]} currentUserId="user-001" />);
     expect(
-      screen.getByText("No predictions yet. Be the first to predict!")
+      screen.getByText("Nobody's made a call yet — be the first one in!")
     ).toBeInTheDocument();
   });
 

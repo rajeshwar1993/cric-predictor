@@ -20,14 +20,14 @@ export default function LoginPage() {
             </h1>
           </Link>
           <p className="mt-2 text-sm text-[var(--text-secondary)]">
-            Predict. Compete. Bragg.
+            Call it. Prove it. Bragg.
           </p>
         </div>
 
         {/* Glass card */}
         <div className="rounded-[20px] border border-[var(--border-light)] bg-[var(--bg-card)] p-8 shadow-lg">
           <h2 className="mb-6 text-center font-display text-lg font-semibold text-[var(--text-primary)]">
-            Sign in to your account
+            Get in the game
           </h2>
           <Suspense fallback={<LoginFormSkeleton />}>
             <LoginForm />

@@ -21,8 +21,8 @@ describe("CreateGroupForm", () => {
 
   it("renders the group name input and submit button", () => {
     render(<CreateGroupForm />);
-    expect(screen.getByLabelText(/group name/i)).toBeInTheDocument();
-    expect(screen.getByText("Create Group")).toBeInTheDocument();
+    expect(screen.getByLabelText(/squad name/i)).toBeInTheDocument();
+    expect(screen.getByText("Create Squad")).toBeInTheDocument();
   });
 
   it("calls createGroup on form submit", async () => {
@@ -35,10 +35,10 @@ describe("CreateGroupForm", () => {
     render(<CreateGroupForm />);
 
     await user.type(
-      screen.getByLabelText(/group name/i),
+      screen.getByLabelText(/squad name/i),
       "Test Group"
     );
-    await user.click(screen.getByText("Create Group"));
+    await user.click(screen.getByText("Create Squad"));
 
     expect(mockCreateGroup).toHaveBeenCalledWith("Test Group");
   });
@@ -53,10 +53,10 @@ describe("CreateGroupForm", () => {
     render(<CreateGroupForm />);
 
     await user.type(
-      screen.getByLabelText(/group name/i),
+      screen.getByLabelText(/squad name/i),
       "Test Group"
     );
-    await user.click(screen.getByText("Create Group"));
+    await user.click(screen.getByText("Create Squad"));
 
     expect(mockPush).toHaveBeenCalledWith("/group/group-new");
   });
@@ -71,10 +71,10 @@ describe("CreateGroupForm", () => {
     render(<CreateGroupForm />);
 
     await user.type(
-      screen.getByLabelText(/group name/i),
+      screen.getByLabelText(/squad name/i),
       "Test Group"
     );
-    await user.click(screen.getByText("Create Group"));
+    await user.click(screen.getByText("Create Squad"));
 
     expect(screen.getByRole("alert")).toHaveTextContent("Group limit reached");
   });

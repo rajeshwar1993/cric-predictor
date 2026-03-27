@@ -50,7 +50,7 @@ export function ResultEntryForm({ groupId, matchId, teamA, teamB }: ResultEntryF
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.matchWinner || !form.tossWinner) {
-      setError("Match Winner and Toss Winner are required");
+      setError("Match winner and toss winner are must-haves");
       return;
     }
 
@@ -95,7 +95,7 @@ export function ResultEntryForm({ groupId, matchId, teamA, teamB }: ResultEntryF
       <div className="rounded-[14px] border border-[var(--success)] bg-[color-mix(in_srgb,var(--success)_8%,transparent)] p-6 text-center space-y-3">
         <Check className="h-8 w-8 text-[var(--success)] mx-auto" />
         <p className="font-display text-sm font-semibold text-[var(--success)]">
-          Results entered and predictions resolved!
+          Scorecard in! Predictions resolved.
         </p>
       </div>
     );
@@ -108,7 +108,7 @@ export function ResultEntryForm({ groupId, matchId, teamA, teamB }: ResultEntryF
       <div className="flex items-center gap-2 mb-4">
         <Trophy className="h-5 w-5 text-[var(--gold)]" />
         <h3 className="font-display text-lg font-semibold text-[var(--text-primary)]">
-          Enter Match Results
+          Enter Match Scorecard
         </h3>
       </div>
 
@@ -217,7 +217,7 @@ export function ResultEntryForm({ groupId, matchId, teamA, teamB }: ResultEntryF
         className="w-full font-display font-semibold text-sm bg-gradient-to-br from-[var(--gold)] to-[color-mix(in_srgb,var(--gold),#000_20%)] text-[var(--bg-deep)] hover:opacity-90"
       >
         {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-        Enter Results & Resolve Predictions
+        Resolve Match
       </Button>
     </form>
   );

@@ -45,7 +45,7 @@ export default async function StandingsPage({ params }: StandingsPageProps) {
         className="inline-flex items-center gap-1 text-sm text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to group
+        Back to squad
       </Link>
 
       <h1 className="font-display text-2xl font-bold text-[var(--text-primary)]">
