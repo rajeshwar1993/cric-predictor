@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signInWithMagicLink } from "@/lib/actions/auth";
@@ -87,17 +86,21 @@ export function LoginForm() {
           </p>
         </div>
         <div className="space-y-3">
-          <Button
-            variant="outline"
-            className="w-full border-[var(--border-medium)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+          <button
+            type="button"
             onClick={handleResend}
             disabled={!canResend || loading}
+            className={`w-full inline-flex items-center justify-center rounded-[10px] border px-4 py-2.5 text-sm font-medium transition-all ${
+              !canResend || loading
+                ? "opacity-50 cursor-not-allowed border-[var(--border-subtle)] text-[var(--text-muted)]"
+                : "border-[var(--border-medium)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+            }`}
           >
             {loading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : null}
             {canResend ? "Send another" : "Hold on — resend in 1 min"}
-          </Button>
+          </button>
           <button
             className="flex items-center justify-center gap-1 mx-auto text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
             onClick={() => setState("input")}
