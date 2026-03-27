@@ -38,7 +38,7 @@ export const IPL_TEAMS = [
   { code: "LSG", name: "Lucknow Super Giants", short_name: "Lucknow", color: "#A72056", text_on_color: "light" },
 ] as const;
 
-// CricketData.org API returns full team names; DB stores codes.
+// api-cricket.com returns full team names; DB stores codes.
 // This mapping converts API team names to codes for resolution.
 export const TEAM_NAME_TO_CODE: Record<string, string> = Object.fromEntries([
   ...IPL_TEAMS.map((t) => [t.name, t.code]),

@@ -68,16 +68,14 @@ export async function getGroupsByUser(userId: string): Promise<GroupWithMeta[]> 
 export async function getGroupByInviteCode(inviteCode: string): Promise<Group | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from("groups")
-    .select("*")
-    .eq("invite_code", inviteCode)
+    .rpc("get_group_by_invite_code", { p_invite_code: inviteCode })
     .single();
 
   if (error) {
     logError({ layer: "dal", operation: "getGroupByInviteCode", metadata: { inviteCode } }, error);
     return null;
   }
-  return data;
+  return data as Group;
 }
 
 export async function createGroup(

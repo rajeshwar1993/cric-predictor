@@ -11,7 +11,7 @@
 ### 0.1 Accounts & Services
 - [ ] Create Supabase project (free tier)
 - [ ] Create Vercel account + connect to GitHub repo
-- [ ] Sign up for CricketData.org (free tier for dev, upgrade to S plan before match day)
+- [ ] Sign up for api-cricket.com (Starter plan $20/mo, 8K req/day)
 - [ ] Register domain name (e.g., bragg.cricket, bragg.app, getbragg.in)
 - [ ] Collect all API keys → create `.env.local`
 

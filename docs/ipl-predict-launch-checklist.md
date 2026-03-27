@@ -12,7 +12,7 @@
 - [ ] Create GitHub repository
 - [ ] Create Vercel account → connect to GitHub repo
 - [ ] Create Supabase project (free tier)
-- [ ] Sign up for CricketData.org (free tier, 100 hits/day)
+- [ ] Sign up for api-cricket.com (Starter plan $20/mo, 8K req/day)
 - [ ] Note down all API keys → create `.env.local`
 
 ### Supabase Configuration
@@ -91,11 +91,11 @@ Realistic scope: Auth + groups + manual prediction form + manual scoring. No API
 ## Phase 3 — API Integration + Live Leaderboard (Match 5-7, April 3-8)
 
 ### API Setup
-- [ ] Test CricketData.org endpoints against a LIVE non-IPL match before using for IPL
-- [ ] Verify scorecard response contains: per-player runs, 4s, 6s, bowling wickets, fall of wickets with over numbers
-- [ ] Map CricketData.org match IDs to your seeded IPL matches
-- [ ] Build `/lib/cricket-api.ts` client with typed responses
-- [ ] Upgrade to S plan ($5.99/month)
+- [ ] Test api-cricket.com endpoints against a LIVE non-IPL match before using for IPL
+- [ ] Verify event response contains: scorecard, comments (ball-by-ball), wickets (FOW), extra (totals), lineups
+- [ ] Map api-cricket.com event_key IDs to your seeded IPL matches
+- [ ] Build `/lib/cricket-api/` client with typed responses
+- [ ] Confirm Starter plan ($20/mo) is active
 
 ### Cron Setup
 - [ ] Create Supabase Edge Function for cron
@@ -144,10 +144,10 @@ Realistic scope: Auth + groups + manual prediction form + manual scoring. No API
 - [ ] Format: match_number, team_a (code), team_b (code), date, time_ist, venue
 - [ ] Seed 10 IPL team records with codes, names, colors
 - [ ] Seed player lists per team (full squad, ~25 players each — for player-pick dropdowns before playing XI is announced)
-- [ ] Map at least the first week of matches to CricketData.org match IDs once they appear
+- [ ] Map at least the first week of matches to api-cricket.com event_key IDs once they appear
 
 ### Ongoing During Season
-- [ ] Check CricketData.org for new match IDs as schedule releases (they add 1-2 weeks ahead)
+- [ ] Check api-cricket.com for new match IDs as schedule releases (they add 1-2 weeks ahead)
 - [ ] Update fixture list if BCCI changes dates/venues (common during IPL)
 - [ ] Monitor for player transfers/injuries that affect squad lists
 
@@ -213,7 +213,7 @@ Realistic scope: Auth + groups + manual prediction form + manual scoring. No API
 - [ ] Watch Supabase Dashboard: connection count, Realtime subscriptions, Edge Function logs
 - [ ] Watch Vercel: function execution times, error logs
 - [ ] Manually verify cron is running: check `last_polled_at` on matches table every few minutes
-- [ ] Check API quota usage on CricketData.org dashboard
+- [ ] Check API quota usage on api-cricket.com dashboard
 - [ ] Have a fallback plan: if API fails, manually enter results via admin form
 - [ ] Keep Supabase SQL editor open — if anything breaks, you can fix data directly
 
@@ -225,7 +225,7 @@ Realistic scope: Auth + groups + manual prediction form + manual scoring. No API
 |---------|------|------|
 | Vercel | Free (Hobby) | $0 |
 | Supabase | Free tier (or Pro $25/month if Edge Function cron needs it) | $0 - $25 |
-| CricketData.org | S plan | $5.99 |
+| api-cricket.com | Starter plan | $20/mo |
 | Domain | .in or .app | $10-15/year |
 | **Total** | | **$6 - $31/month** |
 

@@ -1,6 +1,6 @@
 # Bragg — Technical Plan
 
-**Stack:** Next.js 16.2 + React 19.2 + TypeScript 5.8+ + Tailwind CSS v4 + Supabase + CricketData.org API
+**Stack:** Next.js 16.2 + React 19.2 + TypeScript 5.8+ + Tailwind CSS v4 + Supabase + api-cricket.com API
 **Hosting:** Vercel (free tier) + Supabase (free → Pro if needed)
 
 ---
