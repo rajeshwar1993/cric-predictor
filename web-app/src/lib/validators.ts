@@ -27,9 +27,7 @@ export const onboardingSchema = z.object({
       },
       "You must be 18 or older to use Bragg"
     ),
-  acceptedTerms: z.literal(true, {
-    errorMap: () => ({ message: "You must accept the terms to continue" }),
-  }),
+  acceptedTerms: z.literal(true, "You must accept the terms to continue"),
 });
 
 // Groups
