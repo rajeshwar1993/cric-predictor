@@ -1,25 +1,25 @@
 import type { Metadata } from "next";
-import { Chakra_Petch, DM_Sans, JetBrains_Mono } from "next/font/google";
+import { Space_Grotesk, Manrope, Lexend } from "next/font/google";
 import { Suspense } from "react";
 import { ThemeProvider } from "@/components/shared/theme-provider";
 import { PostHogProvider } from "@/components/shared/posthog-provider";
 import "@/lib/env"; // Validate env vars at startup — fail fast if missing
 import "./globals.css";
 
-const chakraPetch = Chakra_Petch({
-  variable: "--font-chakra-petch",
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
 
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
+const manrope = Manrope({
+  variable: "--font-manrope",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
 
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
+const lexend = Lexend({
+  variable: "--font-lexend",
   subsets: ["latin"],
   weight: ["400", "500", "600"],
 });
@@ -75,7 +75,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${chakraPetch.variable} ${dmSans.variable} ${jetbrainsMono.variable}`}
+      className={`${spaceGrotesk.variable} ${manrope.variable} ${lexend.variable}`}
     >
       <body className="min-h-dvh bg-[var(--bg-deep)] antialiased">
         <ThemeProvider>
