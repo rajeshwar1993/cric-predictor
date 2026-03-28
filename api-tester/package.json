@@ -1,0 +1,15 @@
+{
+  "name": "api-tester",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "tsx src/run-all.ts",
+    "spec": "tsx src/run-all.ts --spec"
+  },
+  "devDependencies": {
+    "dotenv": "^16.4.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.0"
+  }
+}
