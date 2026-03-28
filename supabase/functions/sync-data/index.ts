@@ -14,6 +14,33 @@ import {
   CRICKET_API_LEAGUE_KEY,
 } from "../_shared/deps.ts";
 
+/**
+ * api-cricket.com returns event_time ~3.5 hours behind IST.
+ * Add 3:30 to get the actual match time in IST.
+ */
+function adjustTimeIST(apiTime: string | undefined | null): string | null {
+  if (!apiTime) return null;
+  const parts = apiTime.split(":");
+  if (parts.length < 2) return null;
+
+  let hours = parseInt(parts[0], 10);
+  let minutes = parseInt(parts[1], 10);
+  if (isNaN(hours) || isNaN(minutes)) return null;
+
+  // Add 3 hours 30 minutes
+  minutes += 30;
+  hours += 3;
+  if (minutes >= 60) {
+    minutes -= 60;
+    hours += 1;
+  }
+  if (hours >= 24) {
+    hours -= 24; // Overflow past midnight
+  }
+
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
 Deno.serve(async (req: Request) => {
   const unauthorized = verifyAuth(req);
   if (unauthorized) return unauthorized;
@@ -83,7 +110,7 @@ Deno.serve(async (req: Request) => {
 
     const eventKey = event.event_key;
     const matchDate = event.event_date_start;
-    const matchTime = event.event_time || "19:30";
+    const matchTime = adjustTimeIST(event.event_time) || "19:30";
     const venue = event.event_stadium || "TBD";
     const matchNumber = parseInt(event.league_round || "0", 10);
 
