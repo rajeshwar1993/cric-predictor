@@ -75,20 +75,24 @@ export const TEAM_NAME_TO_CODE: Record<string, string> = {
   "Mumbai Indians": "MI",
   "Royal Challengers Bangalore": "RCB",
   "Royal Challengers Bengaluru": "RCB",
+  "Royal Challengers Bangalore ": "RCB", // trailing space variant
   "Kolkata Knight Riders": "KKR",
   "Delhi Capitals": "DC",
+  "Delhi Daredevils": "DC", // old name (pre-2019)
   "Sunrisers Hyderabad": "SRH",
   "Rajasthan Royals": "RR",
   "Punjab Kings": "PBKS",
+  "Kings XI Punjab": "PBKS", // old name (pre-2021)
   "Gujarat Titans": "GT",
   "Lucknow Super Giants": "LSG",
 };
 
 export function toCode(name: string | undefined | null): string | null {
   if (!name) return null;
-  const code = TEAM_NAME_TO_CODE[name];
+  const trimmed = name.trim();
+  const code = TEAM_NAME_TO_CODE[trimmed];
   if (!code) {
-    console.warn(`Unknown team name from API: "${name}"`);
+    console.warn(`Unknown team name from API: "${trimmed}"`);
     return null;
   }
   return code;
