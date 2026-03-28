@@ -4,13 +4,14 @@ import { getAuthUser } from "@/lib/supabase/get-user-cached";
 import * as groupsDal from "@/lib/dal/groups";
 import * as membersDal from "@/lib/dal/members";
 import * as matchesDal from "@/lib/dal/matches";
+import * as predictionsDal from "@/lib/dal/predictions";
 import { InviteLink } from "@/components/group/invite-link";
 import { MemberList } from "@/components/group/member-list";
 import { Users, Calendar } from "lucide-react";
 import Link from "next/link";
 import { LIMITS } from "@/lib/constants";
 import { ROUTES } from "@/lib/constants";
-import { formatMatchDate, formatMatchTime } from "@/lib/utils";
+import { formatMatchDate, formatMatchTime, computeDeadline } from "@/lib/utils";
 
 interface GroupPageProps {
   params: Promise<{ groupId: string }>;
@@ -29,11 +30,11 @@ export default async function GroupHomePage({ params }: GroupPageProps) {
   // getAuthUser() is React.cache()-wrapped — no duplicate Supabase call
   const user = (await getAuthUser())!;
 
-  const [group, members, membership, nextMatch] = await Promise.all([
+  const [group, members, membership, upcomingMatches] = await Promise.all([
     groupsDal.getGroupById(groupId),
     membersDal.getMembers(groupId),
     membersDal.getMembershipStatus(groupId, user.id),
-    matchesDal.getNextMatch(),
+    matchesDal.getUpcomingMatches(3),
   ]);
 
   if (!group) notFound();
@@ -44,6 +45,11 @@ export default async function GroupHomePage({ params }: GroupPageProps) {
 
   const pendingRequests = isAdmin ? await membersDal.getPendingRequests(groupId) : [];
   const pendingCount = pendingRequests.length;
+
+  // Get prediction status for first match
+  const predictedUserIds = upcomingMatches.length > 0
+    ? await predictionsDal.getMembersWhoPredicted(groupId, upcomingMatches[0].id)
+    : [];
 
   return (
     <div className="space-y-8">
@@ -80,32 +86,72 @@ export default async function GroupHomePage({ params }: GroupPageProps) {
         </div>
       </div>
 
-      {/* Next match card or empty state */}
-      {nextMatch ? (
-        <div className="rounded-[20px] border border-[var(--border-light)] bg-card-gradient p-6">
-          <div className="flex items-center gap-2 text-xs font-display font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-            <Calendar className="h-3.5 w-3.5" />
-            Next Match
-          </div>
-          <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="font-display text-lg font-bold text-[var(--text-primary)]">
-                {nextMatch.team_a} vs {nextMatch.team_b}
-              </p>
-              <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                Match {nextMatch.match_number} · {formatMatchDate(nextMatch.date)} · {formatMatchTime(nextMatch.time_ist)} · {nextMatch.venue}
-              </p>
-            </div>
-            <Link
-              href={ROUTES.PREDICT(groupId, nextMatch.id)}
-              className="w-full sm:w-auto text-center rounded-xl cta-gradient px-5 py-2.5 font-display text-sm font-semibold text-[var(--text-inverse)] hover:opacity-90 transition-opacity"
-            >
-              Make Your Calls
-            </Link>
-          </div>
+      {/* Upcoming Matches */}
+      {upcomingMatches.length > 0 ? (
+        <div className="space-y-4">
+          {upcomingMatches.map((match, index) => {
+            const deadline = computeDeadline(match.date, match.time_ist);
+            const deadlineStr = deadline.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" }) + " IST";
+            const isPrimary = index === 0;
+
+            return (
+              <div key={match.id} className={`rounded-xl bg-card-gradient p-5 ${isPrimary ? "" : "opacity-80"}`}>
+                <div className="flex items-center gap-2 text-xs font-display font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                  <Calendar className="h-3.5 w-3.5" />
+                  {isPrimary ? "Next Match" : `Match ${match.match_number}`}
+                </div>
+                <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-display text-lg font-bold text-[var(--text-primary)]">
+                      {match.team_a} vs {match.team_b}
+                    </p>
+                    <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                      Match {match.match_number} · {formatMatchDate(match.date)} · {formatMatchTime(match.time_ist)} · {match.venue}
+                    </p>
+                  </div>
+                  <Link
+                    href={ROUTES.PREDICT(groupId, match.id)}
+                    className={`w-full sm:w-auto text-center rounded-xl px-5 py-2.5 font-display text-sm font-semibold transition-opacity ${
+                      isPrimary
+                        ? "cta-gradient text-[var(--text-inverse)] hover:opacity-90"
+                        : "bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+                    }`}
+                  >
+                    {isPrimary ? "Make Your Calls" : "Predict Early"}
+                  </Link>
+                </div>
+
+                {/* Deadline warning */}
+                <p className="mt-3 text-xs text-[var(--danger)]">
+                  Predictions close at {deadlineStr}
+                </p>
+
+                {/* Prediction status — only for primary match */}
+                {isPrimary && predictedUserIds.length > 0 && (
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    {members.map((m) => {
+                      const hasPredicted = predictedUserIds.includes(m.user_id);
+                      return (
+                        <div
+                          key={m.user_id}
+                          className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-display ${
+                            hasPredicted
+                              ? "bg-[var(--cyan-soft)] text-[var(--cyan)]"
+                              : "bg-[var(--bg-elevated)] text-[var(--text-muted)]"
+                          }`}
+                        >
+                          {hasPredicted ? "\u2713" : "\u00b7"} {m.profile?.display_name?.split(" ")[0] || "?"}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       ) : (
-        <div className="rounded-[20px] border border-[var(--border-light)] bg-[var(--bg-card)] p-8 text-center">
+        <div className="rounded-xl bg-[var(--bg-card)] p-8 text-center">
           <p className="text-sm text-[var(--text-muted)]">No matches on the horizon — sit tight</p>
         </div>
       )}

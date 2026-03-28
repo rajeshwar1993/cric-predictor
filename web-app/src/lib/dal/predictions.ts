@@ -109,3 +109,35 @@ export async function getUserPredictionCount(
 
   return count || 0;
 }
+
+export async function getMembersWhoPredicted(
+  groupId: string,
+  matchId: number
+): Promise<string[]> {
+  const supabase = await createClient();
+
+  // Get scenario IDs for this group+match
+  const { data: scenarios } = await supabase
+    .from("scenarios")
+    .select("id")
+    .eq("group_id", groupId)
+    .eq("match_id", matchId)
+    .eq("is_removed", false)
+    .in("approval_status", ["auto_approved", "approved"]);
+
+  if (!scenarios || scenarios.length === 0) return [];
+
+  const scenarioIds = scenarios.map((s: { id: string }) => s.id);
+
+  // Get distinct user_ids who have predictions for these scenarios
+  const { data: predictions } = await supabase
+    .from("predictions")
+    .select("user_id")
+    .in("scenario_id", scenarioIds);
+
+  if (!predictions) return [];
+
+  // Deduplicate user IDs
+  const userIds = [...new Set(predictions.map((p: { user_id: string }) => p.user_id))];
+  return userIds;
+}

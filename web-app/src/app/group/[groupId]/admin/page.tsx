@@ -5,9 +5,8 @@ import * as groupsDal from "@/lib/dal/groups";
 import * as membersDal from "@/lib/dal/members";
 import * as matchesDal from "@/lib/dal/matches";
 import { PendingApprovals } from "@/components/admin/pending-approvals";
-import { AdminMemberList } from "@/components/admin/admin-member-list";
 import { ResultEntryForm } from "@/components/admin/result-entry-form";
-import { ROUTES, LIMITS } from "@/lib/constants";
+import { ROUTES } from "@/lib/constants";
 
 interface AdminPageProps {
   params: Promise<{ groupId: string }>;
@@ -30,10 +29,9 @@ export default async function AdminPage({ params }: AdminPageProps) {
     redirect(ROUTES.GROUP(groupId));
   }
 
-  const [group, pending, members, recentMatches] = await Promise.all([
+  const [group, pending, recentMatches] = await Promise.all([
     groupsDal.getGroupById(groupId),
     membersDal.getPendingRequests(groupId),
-    membersDal.getMembers(groupId),
     matchesDal.getUpcomingMatches(3),
   ]);
 
@@ -93,18 +91,6 @@ export default async function AdminPage({ params }: AdminPageProps) {
         </section>
       )}
 
-      {/* Member Management */}
-      <section className="space-y-4">
-        <h2 className="font-display text-lg font-semibold text-[var(--text-primary)]">
-          Squad ({members.length}/{LIMITS.MAX_MEMBERS_PER_GROUP})
-        </h2>
-        <AdminMemberList
-          groupId={groupId}
-          members={members}
-          callerRole={membership.role}
-          callerId={user.id}
-        />
-      </section>
     </div>
   );
 }

@@ -53,6 +53,7 @@ export function ScenarioCard({
           value={value}
           onChange={(v) => onChange(scenario.id, v)}
           disabled={disabled}
+          title={scenario.title}
         />
       );
     }
