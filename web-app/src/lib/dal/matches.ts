@@ -107,6 +107,29 @@ export async function getLastCompletedMatch(): Promise<Match | null> {
   return data;
 }
 
+/**
+ * Fetch the N most recently completed matches, ordered by date DESC, time DESC.
+ * Returns all match row fields (including result fields like match_winner, scores).
+ * Returns [] on error (fail-silent, matching existing DAL pattern).
+ */
+export async function getRecentCompletedMatches(limit = 3): Promise<Match[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("matches")
+    .select("*")
+    .eq("status", "completed")
+    .order("date", { ascending: false })
+    .order("time_ist", { ascending: false })
+    .limit(limit);
+
+  if (error || !data) {
+    if (error) logError({ layer: "dal", operation: "getRecentCompletedMatches", metadata: { limit } }, error);
+    return [];
+  }
+  return data;
+}
+
 export async function updateMatchResults(
   matchId: number,
   results: MatchUpdate

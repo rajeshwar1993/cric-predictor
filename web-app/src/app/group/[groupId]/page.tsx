@@ -5,12 +5,15 @@ import * as groupsDal from "@/lib/dal/groups";
 import * as membersDal from "@/lib/dal/members";
 import * as matchesDal from "@/lib/dal/matches";
 import * as predictionsDal from "@/lib/dal/predictions";
+import * as standingsDal from "@/lib/dal/standings";
 import { InviteLink } from "@/components/group/invite-link";
+import { CompletedMatchesSection } from "@/components/match/completed-matches-section";
 import { MemberList } from "@/components/group/member-list";
 import { Users, Calendar } from "lucide-react";
 import Link from "next/link";
 import { LIMITS } from "@/lib/constants";
 import { ROUTES } from "@/lib/constants";
+import type { MatchLeaderboardEntry } from "@/types";
 import { formatMatchDate, formatMatchTime, computeDeadline } from "@/lib/utils";
 import { MatchScorecard } from "@/components/match/match-scorecard";
 
@@ -31,11 +34,12 @@ export default async function GroupHomePage({ params }: GroupPageProps) {
   // getAuthUser() is React.cache()-wrapped — no duplicate Supabase call
   const user = (await getAuthUser())!;
 
-  const [group, members, membership, upcomingMatches] = await Promise.all([
+  const [group, members, membership, upcomingMatches, completedMatches] = await Promise.all([
     groupsDal.getGroupById(groupId),
     membersDal.getMembers(groupId),
     membersDal.getMembershipStatus(groupId, user.id),
     matchesDal.getUpcomingMatches(3),
+    matchesDal.getRecentCompletedMatches(3),
   ]);
 
   if (!group) notFound();
@@ -47,10 +51,18 @@ export default async function GroupHomePage({ params }: GroupPageProps) {
   const pendingRequests = isAdmin ? await membersDal.getPendingRequests(groupId) : [];
   const pendingCount = pendingRequests.length;
 
-  // Get prediction status for first match
-  const predictedUserIds = upcomingMatches.length > 0
-    ? await predictionsDal.getMembersWhoPredicted(groupId, upcomingMatches[0].id)
-    : [];
+  // Fetch prediction status + completed-match summaries in parallel
+  // (both depend on Phase 1 results but are independent of each other)
+  const completedMatchIds = completedMatches.map((m) => m.id);
+
+  const [predictedUserIds, predictionSummaries] = await Promise.all([
+    upcomingMatches.length > 0
+      ? predictionsDal.getMembersWhoPredicted(groupId, upcomingMatches[0].id)
+      : Promise.resolve([]),
+    completedMatchIds.length > 0
+      ? standingsDal.getUserMatchPredictionSummaries(groupId, user.id, completedMatchIds)
+      : Promise.resolve(new Map<number, MatchLeaderboardEntry>()),
+  ]);
 
   return (
     <div className="space-y-8">
@@ -203,6 +215,13 @@ export default async function GroupHomePage({ params }: GroupPageProps) {
           <p className="text-sm text-[var(--text-muted)]">No matches on the horizon — sit tight</p>
         </div>
       )}
+
+      {/* Completed matches — recent results */}
+      <CompletedMatchesSection
+        groupId={groupId}
+        matches={completedMatches}
+        predictionSummaries={predictionSummaries}
+      />
 
       {/* Member list */}
       <div>

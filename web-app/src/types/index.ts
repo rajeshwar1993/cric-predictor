@@ -151,3 +151,34 @@ export interface Notification {
   is_read: boolean;
   created_at: string;
 }
+
+/**
+ * Data shape for a completed match card.
+ * Derived from the full Match row but narrowed to only the fields
+ * the CompletedMatchCard component needs.
+ * Satisfied by the full matches Row type via structural typing.
+ */
+export interface CompletedMatchCardData {
+  id: number;
+  match_number: number;
+  team_a: string;
+  team_b: string;
+  date: string;
+  time_ist: string;
+  venue: string;
+  match_winner: string | null;
+  current_score_a: string | null;
+  current_score_b: string | null;
+  resolved_at: string | null;
+}
+
+/**
+ * User's prediction performance summary for a single match.
+ * Derived from MatchLeaderboardEntry but narrowed to display fields.
+ */
+export interface UserPredictionSummary {
+  predicted_count: number;
+  resolved_count: number;
+  correct_count: number;
+  points_earned: number;
+}
