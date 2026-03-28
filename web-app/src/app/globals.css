@@ -111,7 +111,7 @@
   /* Ghost Borders — 15% opacity outlines only */
   --border-subtle: transparent;
   --border-light: transparent;
-  --border-medium: transparent;
+  --border-medium: #9ba1b530;
   --border-focus: #f3ffca4D;
   --ghost-border: #9ba1b526;
 
