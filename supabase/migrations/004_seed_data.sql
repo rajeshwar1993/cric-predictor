@@ -35,20 +35,5 @@ INSERT INTO teams (code, name, short_name, color, text_on_color) VALUES
   ('LSG', 'Lucknow Super Giants', 'Lucknow', '#A72056', 'light')
 ON CONFLICT (code) DO NOTHING;
 
--- IPL 2026 Fixtures — First 2 weeks (14 matches)
-INSERT INTO matches (match_number, team_a, team_b, date, time_ist, venue) VALUES
-  (1,  'RCB',  'SRH',  '2026-03-28', '19:30', 'M. Chinnaswamy Stadium, Bengaluru'),
-  (2,  'CSK',  'MI',   '2026-03-29', '19:30', 'MA Chidambaram Stadium, Chennai'),
-  (3,  'KKR',  'DC',   '2026-03-30', '15:30', 'Eden Gardens, Kolkata'),
-  (4,  'RR',   'PBKS', '2026-03-30', '19:30', 'Sawai Mansingh Stadium, Jaipur'),
-  (5,  'GT',   'LSG',  '2026-03-31', '19:30', 'Narendra Modi Stadium, Ahmedabad'),
-  (6,  'MI',   'RCB',  '2026-04-01', '19:30', 'Wankhede Stadium, Mumbai'),
-  (7,  'SRH',  'KKR',  '2026-04-02', '19:30', 'Rajiv Gandhi Intl. Cricket Stadium, Hyderabad'),
-  (8,  'DC',   'CSK',  '2026-04-03', '19:30', 'Arun Jaitley Stadium, New Delhi'),
-  (9,  'PBKS', 'GT',   '2026-04-04', '19:30', 'IS Bindra Stadium, Mohali'),
-  (10, 'LSG',  'RR',   '2026-04-05', '15:30', 'BRSABV Ekana Cricket Stadium, Lucknow'),
-  (11, 'CSK',  'KKR',  '2026-04-05', '19:30', 'MA Chidambaram Stadium, Chennai'),
-  (12, 'MI',   'DC',   '2026-04-06', '15:30', 'Wankhede Stadium, Mumbai'),
-  (13, 'RCB',  'RR',   '2026-04-06', '19:30', 'M. Chinnaswamy Stadium, Bengaluru'),
-  (14, 'SRH',  'PBKS', '2026-04-07', '19:30', 'Rajiv Gandhi Intl. Cricket Stadium, Hyderabad')
-ON CONFLICT (match_number) DO NOTHING;
+-- Match fixtures are synced from the API via the sync-data edge function.
+-- No hardcoded fixtures here.

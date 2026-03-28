@@ -30,6 +30,8 @@ CREATE TABLE teams (
   short_name TEXT NOT NULL,
   color TEXT NOT NULL,
   text_on_color TEXT NOT NULL DEFAULT 'dark',
+  team_key TEXT,
+  team_logo TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
