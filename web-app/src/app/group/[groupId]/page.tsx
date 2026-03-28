@@ -42,12 +42,8 @@ export default async function GroupHomePage({ params }: GroupPageProps) {
   const currentMember = members.find((m: any) => m.user_id === user.id);
   const currentUserDisplayName = currentMember?.profile?.display_name ?? "Someone";
 
-  const [pendingRequests, settings] = await Promise.all([
-    isAdmin ? membersDal.getPendingRequests(groupId) : Promise.resolve([]),
-    nextMatch ? matchesDal.getMatchGroupSettings(groupId, nextMatch.id) : Promise.resolve(null),
-  ]);
+  const pendingRequests = isAdmin ? await membersDal.getPendingRequests(groupId) : [];
   const pendingCount = pendingRequests.length;
-  const scenariosPublished = settings?.scenarios_published ?? false;
 
   return (
     <div className="space-y-8">
@@ -100,32 +96,12 @@ export default async function GroupHomePage({ params }: GroupPageProps) {
                 Match {nextMatch.match_number} · {formatMatchDate(nextMatch.date)} · {formatMatchTime(nextMatch.time_ist)} · {nextMatch.venue}
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              {isAdmin && (
-                <Link
-                  href={ROUTES.SCENARIOS(groupId, nextMatch.id)}
-                  className={`rounded-[10px] border px-4 py-2.5 font-display text-sm font-semibold transition-opacity ${
-                    scenariosPublished
-                      ? "border-[var(--border-medium)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
-                      : "border-[var(--gold)] bg-gradient-to-br from-[var(--gold)] to-[color-mix(in_srgb,var(--gold),#000_20%)] text-[var(--bg-deep)] hover:opacity-90"
-                  }`}
-                >
-                  {scenariosPublished ? "Edit Scenarios" : "Set Up Scenarios"}
-                </Link>
-              )}
-              {scenariosPublished ? (
-                <Link
-                  href={ROUTES.PREDICT(groupId, nextMatch.id)}
-                  className="rounded-[10px] bg-gradient-to-br from-[var(--cyan)] to-[color-mix(in_srgb,var(--cyan),#000_20%)] px-5 py-2.5 font-display text-sm font-semibold text-[var(--bg-deep)] hover:opacity-90 btn-glow transition-opacity"
-                >
-                  Make Your Calls
-                </Link>
-              ) : !isAdmin ? (
-                <span className="rounded-[10px] border border-[var(--border-medium)] px-5 py-2.5 font-display text-sm font-semibold text-[var(--text-muted)] cursor-not-allowed opacity-60">
-                  Scenarios not published yet
-                </span>
-              ) : null}
-            </div>
+            <Link
+              href={ROUTES.PREDICT(groupId, nextMatch.id)}
+              className="rounded-xl cta-gradient px-5 py-2.5 font-display text-sm font-semibold text-[var(--text-inverse)] hover:opacity-90 transition-opacity"
+            >
+              Make Your Calls
+            </Link>
           </div>
         </div>
       ) : (
