@@ -86,45 +86,79 @@ export default async function GroupHomePage({ params }: GroupPageProps) {
         </div>
       </div>
 
-      {/* Upcoming Matches */}
+      {/* Matches (upcoming + live) */}
       {upcomingMatches.length > 0 ? (
         <div className="space-y-4">
           {upcomingMatches.map((match, index) => {
+            const isLive = match.status === "live";
             const deadline = computeDeadline(match.date, match.time_ist);
             const deadlineStr = deadline.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" }) + " IST";
             const isPrimary = index === 0;
 
             return (
-              <div key={match.id} className={`rounded-xl bg-card-gradient p-5 ${isPrimary ? "" : "opacity-80"}`}>
-                <div className="flex items-center gap-2 text-xs font-display font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                  <Calendar className="h-3.5 w-3.5" />
-                  {isPrimary ? "Next Match" : `Match ${match.match_number}`}
+              <div key={match.id} className={`rounded-xl ${isLive ? "bg-card-gradient ring-1 ring-[var(--success)]/30" : "bg-card-gradient"} p-5 ${isPrimary ? "" : "opacity-80"}`}>
+                <div className="flex items-center gap-2 text-xs font-display font-semibold uppercase tracking-wider">
+                  {isLive ? (
+                    <>
+                      <span className="relative flex h-2 w-2">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--success)] opacity-75" />
+                        <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--success)]" />
+                      </span>
+                      <span className="text-[var(--success)]">Live</span>
+                    </>
+                  ) : (
+                    <>
+                      <Calendar className="h-3.5 w-3.5 text-[var(--text-muted)]" />
+                      <span className="text-[var(--text-muted)]">{isPrimary ? "Next Match" : `Match ${match.match_number}`}</span>
+                    </>
+                  )}
                 </div>
                 <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="font-display text-lg font-bold text-[var(--text-primary)]">
                       {match.team_a} vs {match.team_b}
                     </p>
-                    <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                      Match {match.match_number} · {formatMatchDate(match.date)} · {formatMatchTime(match.time_ist)} · {match.venue}
-                    </p>
+                    {isLive && (match.current_score_a || match.current_score_b) ? (
+                      <p className="mt-1 text-sm font-semibold text-[var(--text-primary)]">
+                        {match.current_score_a || "—"} &middot; {match.current_score_b || "—"}
+                      </p>
+                    ) : (
+                      <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                        Match {match.match_number} · {formatMatchDate(match.date)} · {formatMatchTime(match.time_ist)} · {match.venue}
+                      </p>
+                    )}
                   </div>
-                  <Link
-                    href={ROUTES.PREDICT(groupId, match.id)}
-                    className={`w-full sm:w-auto text-center rounded-xl px-5 py-2.5 font-display text-sm font-semibold transition-opacity ${
-                      isPrimary
-                        ? "cta-gradient text-[var(--text-inverse)] hover:opacity-90"
-                        : "bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
-                    }`}
-                  >
-                    {isPrimary ? "Make Your Calls" : "Predict Early"}
-                  </Link>
+                  {isLive ? (
+                    <Link
+                      href={ROUTES.MATCH_LEADERBOARD(groupId, match.id)}
+                      className="w-full sm:w-auto text-center rounded-xl px-5 py-2.5 font-display text-sm font-semibold bg-[var(--success)]/10 text-[var(--success)] hover:bg-[var(--success)]/20 transition-colors"
+                    >
+                      View Leaderboard
+                    </Link>
+                  ) : (
+                    <Link
+                      href={ROUTES.PREDICT(groupId, match.id)}
+                      className={`w-full sm:w-auto text-center rounded-xl px-5 py-2.5 font-display text-sm font-semibold transition-opacity ${
+                        isPrimary
+                          ? "cta-gradient text-[var(--text-inverse)] hover:opacity-90"
+                          : "bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+                      }`}
+                    >
+                      {isPrimary ? "Make Your Calls" : "Predict Early"}
+                    </Link>
+                  )}
                 </div>
 
-                {/* Deadline warning */}
-                <p className="mt-3 text-xs text-[var(--danger)]">
-                  Predictions close at {deadlineStr}
-                </p>
+                {/* Deadline or live status */}
+                {isLive ? (
+                  <p className="mt-3 text-xs text-[var(--success)]">
+                    Match is live — predictions are locked
+                  </p>
+                ) : (
+                  <p className="mt-3 text-xs text-[var(--danger)]">
+                    Predictions close at {deadlineStr}
+                  </p>
+                )}
 
                 {/* Prediction status — only for primary match */}
                 {isPrimary && predictedUserIds.length > 0 && (

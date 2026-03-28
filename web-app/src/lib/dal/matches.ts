@@ -21,11 +21,13 @@ export async function getUpcomingMatches(limit = 5): Promise<Match[]> {
   const supabase = await createClient();
   const today = new Date().toISOString().split("T")[0];
 
+  // Include both upcoming and live matches — live matches should still
+  // appear on the squad page (with live scores instead of predict CTA).
   const { data, error } = await supabase
     .from("matches")
     .select("*")
     .gte("date", today)
-    .in("status", ["upcoming"])
+    .in("status", ["upcoming", "live"])
     .order("date", { ascending: true })
     .order("time_ist", { ascending: true })
     .limit(limit);

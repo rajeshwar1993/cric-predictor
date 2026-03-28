@@ -116,28 +116,18 @@ export async function getMembersWhoPredicted(
 ): Promise<string[]> {
   const supabase = await createClient();
 
-  // Get scenario IDs for this group+match
-  const { data: scenarios } = await supabase
-    .from("scenarios")
-    .select("id")
-    .eq("group_id", groupId)
-    .eq("match_id", matchId)
-    .eq("is_removed", false)
-    .in("approval_status", ["auto_approved", "approved"]);
+  // Uses SECURITY DEFINER function to bypass RLS —
+  // returns only user IDs, not prediction values (no data leak).
+  // This lets all group members see WHO has predicted, not WHAT.
+  const { data, error } = await supabase.rpc("get_members_who_predicted", {
+    p_group_id: groupId,
+    p_match_id: matchId,
+  });
 
-  if (!scenarios || scenarios.length === 0) return [];
+  if (error) {
+    logError({ layer: "dal", operation: "getMembersWhoPredicted", metadata: { groupId, matchId } }, error);
+    return [];
+  }
 
-  const scenarioIds = scenarios.map((s: { id: string }) => s.id);
-
-  // Get distinct user_ids who have predictions for these scenarios
-  const { data: predictions } = await supabase
-    .from("predictions")
-    .select("user_id")
-    .in("scenario_id", scenarioIds);
-
-  if (!predictions) return [];
-
-  // Deduplicate user IDs
-  const userIds = [...new Set(predictions.map((p: { user_id: string }) => p.user_id))];
-  return userIds;
+  return (data || []).map((row: { user_id: string }) => row.user_id);
 }

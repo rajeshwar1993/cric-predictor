@@ -125,7 +125,7 @@ export function PredictionForm({
 
     if (result.success) {
       setSuccess(true);
-      startTransition(() => { router.refresh(); });
+      startTransition(() => { router.push(`/group/${groupId}`); });
     } else {
       setError(result.error || "Couldn't lock those in — try again");
     }
