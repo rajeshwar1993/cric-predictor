@@ -114,6 +114,14 @@ export function safeName(name: string | undefined | null): string | null {
   return trimmed;
 }
 
+/**
+ * Extract team name from an innings key.
+ * e.g., "Sunrisers Hyderabad 1 INN" → "Sunrisers Hyderabad"
+ */
+export function teamNameFromInningsKey(key: string): string {
+  return key.replace(/\s+\d+\s+INN$/i, "").trim();
+}
+
 // ── Parsing utilities ───────────────────────────────────────────
 
 export function safeInt(val: string | undefined | null): number {

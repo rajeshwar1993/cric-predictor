@@ -12,6 +12,7 @@ import {
   toCode,
   safeName,
   safeInt,
+  teamNameFromInningsKey,
   getInningsKeys,
   getInningsOvers,
   getInningsRuns,
@@ -327,12 +328,47 @@ async function processLive(match: any) {
     live_scorecard_json: event,
   };
 
-  if (event.event_service_home) snapshot.current_score_a = event.event_service_home;
-  if (event.event_service_away) snapshot.current_score_b = event.event_service_away;
+  // Map scores to team_a/team_b by matching innings keys to team names.
+  // The API orders innings by batting order (not home/away), so we can't
+  // assume inningsKeys[0] = team_a. Instead, extract the team name from
+  // each innings key and match it to the match's team_a/team_b.
+  const scorecardKeys = getInningsKeys(event.scorecard);
+  const extraKeys = getInningsKeys(event.extra);
 
-  const inningsKeys = getInningsKeys(event.extra);
-  if (inningsKeys.length > 0) snapshot.current_overs_a = getInningsOvers(event.extra, inningsKeys[0]);
-  if (inningsKeys.length > 1) snapshot.current_overs_b = getInningsOvers(event.extra, inningsKeys[1]);
+  // Determine which team is currently batting (last innings in the scorecard)
+  if (scorecardKeys.length > 0) {
+    const lastInningsKey = scorecardKeys[scorecardKeys.length - 1];
+    const battingTeamName = teamNameFromInningsKey(lastInningsKey);
+    const battingCode = toCode(battingTeamName);
+    if (battingCode) snapshot.current_batting_team = battingCode;
+  }
+
+  // Map each innings' score + overs to the correct team (a or b)
+  for (const key of extraKeys) {
+    const teamName = teamNameFromInningsKey(key);
+    const teamCode = toCode(teamName);
+    const runs = getInningsRuns(event.extra, key);
+    const overs = getInningsOvers(event.extra, key);
+
+    // Build score string from extra total (more reliable than event_service_*)
+    const scoreStr = runs !== null && overs !== null ? `${runs}/${countWicketsForInnings(event.scorecard, key)}` : null;
+
+    if (teamCode === match.team_a) {
+      if (scoreStr) snapshot.current_score_a = scoreStr;
+      if (overs !== null) snapshot.current_overs_a = overs;
+    } else if (teamCode === match.team_b) {
+      if (scoreStr) snapshot.current_score_b = scoreStr;
+      if (overs !== null) snapshot.current_overs_b = overs;
+    }
+  }
+
+  // Fallback: use event_service_home/away if extra-based scores aren't available
+  if (!snapshot.current_score_a && event.event_home_final_result) {
+    snapshot.current_score_a = event.event_home_final_result;
+  }
+  if (!snapshot.current_score_b && event.event_away_final_result) {
+    snapshot.current_score_b = event.event_away_final_result;
+  }
 
   // Check if match completed
   if (event.event_status === "Finished") {
@@ -494,6 +530,19 @@ function parseFullResults(event: any): Record<string, any> {
   if (fwo !== null) results.first_wicket_over = fwo;
 
   return results;
+}
+
+// ── Helpers ─────────────────────────────────────────────────────
+
+/** Count wickets in an innings from scorecard bowling entries. */
+function countWicketsForInnings(
+  scorecard: Record<string, any[]> | undefined,
+  inningsKey: string
+): number {
+  if (!scorecard || !scorecard[inningsKey]) return 0;
+  return filterBowlers(scorecard[inningsKey]).reduce(
+    (sum: number, b: any) => sum + safeInt(b.W), 0
+  );
 }
 
 // ── Resolve scenarios by category ───────────────────────────────
