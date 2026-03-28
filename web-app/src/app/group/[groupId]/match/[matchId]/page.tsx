@@ -4,6 +4,7 @@ import { getAuthUser } from "@/lib/supabase/get-user-cached";
 import * as matchesDal from "@/lib/dal/matches";
 import * as standingsDal from "@/lib/dal/standings";
 import { MatchLeaderboard } from "@/components/leaderboard/match-leaderboard";
+import { MatchScorecard } from "@/components/match/match-scorecard";
 import { TeamBadge } from "@/components/shared/team-badge";
 import { formatMatchDate, formatMatchTime } from "@/lib/utils";
 import { ROUTES } from "@/lib/constants";
@@ -49,40 +50,28 @@ export default async function MatchLeaderboardPage({ params }: MatchPageProps) {
 
       {/* Match header */}
       <div className="rounded-[20px] border border-[var(--border-light)] bg-card-gradient p-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-4">
           <span className="font-display text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
             Match {match.match_number}
           </span>
-          <span className={`font-display text-xs font-semibold ${
-            match.status === "completed" ? "text-[var(--success)]" :
-            match.status === "live" ? "text-[var(--danger)]" :
-            "text-[var(--text-muted)]"
-          }`}>
-            {match.status === "completed" ? `${match.match_winner} Won` :
-             match.status === "live" ? "LIVE" :
-             "Upcoming"}
-          </span>
         </div>
-        <div className="mt-4 flex items-center justify-center gap-6">
-          <div className="text-center">
-            <TeamBadge teamCode={match.team_a} size="lg" />
-            {match.current_score_a && (
-              <p className="mt-1 font-stats text-sm text-[var(--text-primary)]">
-                {match.current_score_a}
-              </p>
-            )}
-          </div>
-          <span className="font-display text-lg font-bold text-[var(--text-muted)]">VS</span>
-          <div className="text-center">
-            <TeamBadge teamCode={match.team_b} size="lg" />
-            {match.current_score_b && (
-              <p className="mt-1 font-stats text-sm text-[var(--text-primary)]">
-                {match.current_score_b}
-              </p>
-            )}
-          </div>
-        </div>
-        <p className="mt-3 text-center text-sm text-[var(--text-secondary)]">
+
+        {/* Scorecard */}
+        <MatchScorecard
+          teamA={match.team_a}
+          teamB={match.team_b}
+          scoreA={match.current_score_a}
+          scoreB={match.current_score_b}
+          oversA={match.current_overs_a}
+          oversB={match.current_overs_b}
+          battingTeam={match.current_batting_team}
+          tossWinner={match.toss_winner}
+          matchWinner={match.match_winner}
+          statusInfo={null}
+          status={match.status}
+        />
+
+        <p className="mt-4 text-center text-sm text-[var(--text-secondary)]">
           {formatMatchDate(match.date)} · {formatMatchTime(match.time_ist)} · {match.venue}
         </p>
       </div>

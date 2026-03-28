@@ -12,6 +12,7 @@ import Link from "next/link";
 import { LIMITS } from "@/lib/constants";
 import { ROUTES } from "@/lib/constants";
 import { formatMatchDate, formatMatchTime, computeDeadline } from "@/lib/utils";
+import { MatchScorecard } from "@/components/match/match-scorecard";
 
 interface GroupPageProps {
   params: Promise<{ groupId: string }>;
@@ -114,18 +115,31 @@ export default async function GroupHomePage({ params }: GroupPageProps) {
                   )}
                 </div>
                 <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="font-display text-lg font-bold text-[var(--text-primary)]">
-                      {match.team_a} vs {match.team_b}
-                    </p>
-                    {isLive && (match.current_score_a || match.current_score_b) ? (
-                      <p className="mt-1 text-sm font-semibold text-[var(--text-primary)]">
-                        {match.current_score_a || "—"} &middot; {match.current_score_b || "—"}
-                      </p>
+                  <div className="flex-1">
+                    {isLive ? (
+                      <MatchScorecard
+                        compact
+                        teamA={match.team_a}
+                        teamB={match.team_b}
+                        scoreA={match.current_score_a}
+                        scoreB={match.current_score_b}
+                        oversA={match.current_overs_a}
+                        oversB={match.current_overs_b}
+                        battingTeam={match.current_batting_team}
+                        tossWinner={match.toss_winner}
+                        matchWinner={match.match_winner}
+                        statusInfo={null}
+                        status={match.status}
+                      />
                     ) : (
-                      <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                        Match {match.match_number} · {formatMatchDate(match.date)} · {formatMatchTime(match.time_ist)} · {match.venue}
-                      </p>
+                      <>
+                        <p className="font-display text-lg font-bold text-[var(--text-primary)]">
+                          {match.team_a} vs {match.team_b}
+                        </p>
+                        <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                          Match {match.match_number} · {formatMatchDate(match.date)} · {formatMatchTime(match.time_ist)} · {match.venue}
+                        </p>
+                      </>
                     )}
                   </div>
                   {isLive ? (
