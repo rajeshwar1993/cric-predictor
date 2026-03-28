@@ -42,7 +42,7 @@ export default async function DashboardPage() {
                   Your Squads
                 </h1>
                 <div className="flex items-center gap-3">
-                  <div className="relative w-48">
+                  <div className="relative w-full sm:w-48">
                     <JoinGroupForm />
                   </div>
                 </div>

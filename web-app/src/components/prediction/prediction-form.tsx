@@ -190,9 +190,9 @@ export function PredictionForm({
 
       {/* Sticky submit bar */}
       <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[var(--border-light)] bg-[var(--bg-deep)]/95 backdrop-blur px-4 py-3">
-        <div className="mx-auto flex max-w-[960px] items-center justify-between">
+        <div className="mx-auto flex max-w-[960px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <span className="font-stats text-sm text-[var(--text-secondary)]">
+            <span className="font-stats text-sm text-[var(--text-secondary)] text-center sm:text-left">
               <span className="text-[var(--cyan)] font-semibold">{answeredCount}</span>
               /{totalCount} picked
             </span>
@@ -208,7 +208,7 @@ export function PredictionForm({
           <Button
             onClick={handleSubmit}
             disabled={loading || isLocked || answeredCount === 0}
-            className="font-display font-semibold text-sm bg-gradient-to-br from-[var(--cyan)] to-[color-mix(in_srgb,var(--cyan),#000_20%)] text-[var(--bg-deep)] hover:opacity-90 btn-glow"
+            className="w-full sm:w-auto font-display font-semibold text-sm bg-gradient-to-br from-[var(--cyan)] to-[color-mix(in_srgb,var(--cyan),#000_20%)] text-[var(--bg-deep)] hover:opacity-90 btn-glow"
           >
             {loading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

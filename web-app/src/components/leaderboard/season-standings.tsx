@@ -33,12 +33,12 @@ export function SeasonStandings({ entries, currentUserId }: SeasonStandingsProps
   return (
     <div className="rounded-[14px] border border-[var(--border-light)] bg-[var(--bg-card)] overflow-hidden">
       {/* Header */}
-      <div className="grid grid-cols-[36px_1fr_60px_60px_60px_60px] items-center gap-2 border-b border-[var(--border-light)] px-4 py-2.5">
+      <div className="grid grid-cols-[36px_1fr_60px_60px] sm:grid-cols-[36px_1fr_60px_60px_60px_60px] items-center gap-2 border-b border-[var(--border-light)] px-4 py-2.5">
         <span className="text-[10px] font-display font-semibold uppercase tracking-wider text-[var(--text-muted)]">#</span>
         <span className="text-[10px] font-display font-semibold uppercase tracking-wider text-[var(--text-muted)]">Player</span>
         <span className="text-right text-[10px] font-display font-semibold uppercase tracking-wider text-[var(--text-muted)]">Pts</span>
-        <span className="text-right text-[10px] font-display font-semibold uppercase tracking-wider text-[var(--text-muted)]">Matches</span>
-        <span className="text-right text-[10px] font-display font-semibold uppercase tracking-wider text-[var(--text-muted)]">Avg</span>
+        <span className="hidden sm:block text-right text-[10px] font-display font-semibold uppercase tracking-wider text-[var(--text-muted)]">Matches</span>
+        <span className="hidden sm:block text-right text-[10px] font-display font-semibold uppercase tracking-wider text-[var(--text-muted)]">Avg</span>
         <span className="text-right text-[10px] font-display font-semibold uppercase tracking-wider text-[var(--text-muted)]">Acc%</span>
       </div>
 
@@ -51,7 +51,7 @@ export function SeasonStandings({ entries, currentUserId }: SeasonStandingsProps
         return (
           <div
             key={entry.user_id}
-            className={`grid grid-cols-[36px_1fr_60px_60px_60px_60px] items-center gap-2 px-4 py-3 transition-colors ${
+            className={`grid grid-cols-[36px_1fr_60px_60px] sm:grid-cols-[36px_1fr_60px_60px_60px_60px] items-center gap-2 px-4 py-3 transition-colors ${
               isCurrentUser
                 ? "bg-[var(--cyan-soft)] border-l-2 border-l-[var(--cyan)]"
                 : "border-l-2 border-l-transparent hover:bg-[var(--bg-hover)]"
@@ -78,10 +78,10 @@ export function SeasonStandings({ entries, currentUserId }: SeasonStandingsProps
             <span className="text-right font-stats text-sm font-semibold" style={{ color: rankColor }}>
               {entry.total_points}
             </span>
-            <span className="text-right font-stats text-sm text-[var(--text-muted)]">
+            <span className="hidden sm:block text-right font-stats text-sm text-[var(--text-muted)]">
               {entry.matches_predicted}
             </span>
-            <span className="text-right font-stats text-sm text-[var(--text-muted)]">
+            <span className="hidden sm:block text-right font-stats text-sm text-[var(--text-muted)]">
               {entry.points_per_match}
             </span>
             <span className="text-right font-stats text-sm text-[var(--text-muted)]">

@@ -72,7 +72,7 @@ function AdminMemberRow({
   }
 
   return (
-    <div className="flex items-center justify-between px-4 py-3">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between px-4 py-3">
       <div className="flex items-center gap-3">
         <Icon
           className="h-4 w-4"
@@ -97,14 +97,14 @@ function AdminMemberRow({
       </div>
 
       {!isSelf && member.role !== "owner" && (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-end sm:self-auto">
           {canPromote && (
             <Button
               size="sm"
               variant="outline"
               onClick={() => handleAction("promote")}
               disabled={loading}
-              className="h-7 px-2 text-[10px] font-display border-[var(--cyan)] text-[var(--cyan)] hover:bg-[var(--cyan-soft)]"
+              className="h-9 sm:h-7 px-2 text-[10px] font-display border-[var(--cyan)] text-[var(--cyan)] hover:bg-[var(--cyan-soft)]"
             >
               {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Promote"}
             </Button>
@@ -115,7 +115,7 @@ function AdminMemberRow({
               variant="outline"
               onClick={() => handleAction("demote")}
               disabled={loading}
-              className="h-7 px-2 text-[10px] font-display border-[var(--border-medium)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+              className="h-9 sm:h-7 px-2 text-[10px] font-display border-[var(--border-medium)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
             >
               {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Demote"}
             </Button>
@@ -126,7 +126,7 @@ function AdminMemberRow({
               variant="outline"
               onClick={() => handleAction("remove")}
               disabled={loading}
-              className="h-7 px-2 text-[10px] font-display border-[var(--danger)] text-[var(--danger)] hover:bg-[color-mix(in_srgb,var(--danger)_10%,transparent)]"
+              className="h-9 sm:h-7 px-2 text-[10px] font-display border-[var(--danger)] text-[var(--danger)] hover:bg-[color-mix(in_srgb,var(--danger)_10%,transparent)]"
             >
               {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Remove"}
             </Button>

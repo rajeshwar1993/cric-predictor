@@ -43,7 +43,7 @@ export function LiveScoreTicker({
   if (!isLive) return null;
 
   return (
-    <div className="flex items-center justify-center gap-4 rounded-[14px] border border-[var(--border-light)] bg-[var(--bg-card)] px-5 py-3">
+    <div className="flex items-center justify-center gap-2 sm:gap-4 rounded-[14px] border border-[var(--border-light)] bg-[var(--bg-card)] px-5 py-3">
       {/* LIVE badge */}
       <div className="flex items-center gap-1.5">
         <span className="relative flex h-2 w-2">
@@ -57,7 +57,7 @@ export function LiveScoreTicker({
 
       {/* Team A */}
       <div className="flex items-center gap-2">
-        <span className={`font-display text-[13px] font-semibold ${
+        <span className={`font-display text-[11px] sm:text-[13px] font-semibold ${
           initialBattingTeam === teamA ? "text-[var(--text-primary)]" : "text-[var(--text-secondary)]"
         }`}>
           {teamA}
@@ -77,7 +77,7 @@ export function LiveScoreTicker({
 
       {/* Team B */}
       <div className="flex items-center gap-2">
-        <span className={`font-display text-[13px] font-semibold ${
+        <span className={`font-display text-[11px] sm:text-[13px] font-semibold ${
           initialBattingTeam === teamB ? "text-[var(--text-primary)]" : "text-[var(--text-secondary)]"
         }`}>
           {teamB}

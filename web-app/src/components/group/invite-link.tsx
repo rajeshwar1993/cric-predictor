@@ -72,7 +72,7 @@ export function InviteLink({ inviteCode, groupName, inviterName }: InviteLinkPro
     "border-[var(--border-medium)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] font-body text-sm gap-2";
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-col sm:flex-row items-center gap-2">
       {!isMobile && (
         <Button variant="outline" onClick={handleCopy} className={buttonClass}>
           {copied ? (

@@ -114,7 +114,7 @@ export function ResultEntryForm({ groupId, matchId, teamA, teamB }: ResultEntryF
       </div>
 
       {/* Required fields */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label className="text-sm text-[var(--text-secondary)]">Match Winner *</Label>
           <select
@@ -142,7 +142,7 @@ export function ResultEntryForm({ groupId, matchId, teamA, teamB }: ResultEntryF
       </div>
 
       {/* Player fields */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {[
           { key: "topScorer", label: "Top Scorer" },
           { key: "topScorerRuns", label: "Top Scorer Runs", type: "number" },
@@ -164,7 +164,7 @@ export function ResultEntryForm({ groupId, matchId, teamA, teamB }: ResultEntryF
       </div>
 
       {/* Score fields */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         {[
           { key: "firstInningsScore", label: "1st Innings Score" },
           { key: "firstInningsWickets", label: "1st Inn. Wickets" },
@@ -188,7 +188,7 @@ export function ResultEntryForm({ groupId, matchId, teamA, teamB }: ResultEntryF
       </div>
 
       {/* Boolean fields */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         {[
           { key: "hadSuperOver", label: "Super Over?" },
           { key: "batsmanScoredFifty", label: "Batsman 50+?" },

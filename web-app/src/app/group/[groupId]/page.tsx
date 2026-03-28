@@ -87,7 +87,7 @@ export default async function GroupHomePage({ params }: GroupPageProps) {
             <Calendar className="h-3.5 w-3.5" />
             Next Match
           </div>
-          <div className="mt-4 flex items-center justify-between">
+          <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-display text-lg font-bold text-[var(--text-primary)]">
                 {nextMatch.team_a} vs {nextMatch.team_b}
@@ -98,7 +98,7 @@ export default async function GroupHomePage({ params }: GroupPageProps) {
             </div>
             <Link
               href={ROUTES.PREDICT(groupId, nextMatch.id)}
-              className="rounded-xl cta-gradient px-5 py-2.5 font-display text-sm font-semibold text-[var(--text-inverse)] hover:opacity-90 transition-opacity"
+              className="w-full sm:w-auto text-center rounded-xl cta-gradient px-5 py-2.5 font-display text-sm font-semibold text-[var(--text-inverse)] hover:opacity-90 transition-opacity"
             >
               Make Your Calls
             </Link>

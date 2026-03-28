@@ -18,7 +18,7 @@ export function RangePick({ options, value, onChange, disabled }: RangePickProps
             type="button"
             onClick={() => !disabled && onChange(option)}
             disabled={disabled}
-            className={`rounded-[10px] border px-4 py-2 font-stats text-sm font-medium transition-all ${
+            className={`min-w-[70px] rounded-[10px] border px-4 py-2 font-stats text-sm font-medium transition-all ${
               isSelected
                 ? "border-[var(--cyan)] bg-[var(--cyan-soft)] text-[var(--cyan)]"
                 : "border-[var(--border-medium)] text-[var(--text-secondary)] hover:border-[var(--border-light)] hover:bg-[var(--bg-hover)]"

@@ -99,7 +99,7 @@ export function ScenarioCard({
   return (
     <div className="rounded-[14px] border border-[var(--border-light)] bg-[var(--bg-card)] p-5 space-y-4">
       <div className="flex items-center justify-between">
-        <h4 className="font-display text-[13px] font-semibold text-[var(--text-primary)]">
+        <h4 className="min-w-0 font-display text-[13px] font-semibold text-[var(--text-primary)] truncate">
           {scenario.title}
         </h4>
         <span className="font-stats text-[11px] text-[var(--text-muted)]">

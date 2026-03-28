@@ -85,7 +85,7 @@ export function PlayerPick({ players, value, onChange, disabled }: PlayerPickPro
         />
       </div>
       {isOpen && (
-        <div className="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-[10px] border border-[var(--border-light)] bg-[var(--bg-elevated)] shadow-lg">
+        <div className="absolute z-10 mt-1 max-h-40 sm:max-h-48 w-full overflow-y-auto rounded-[10px] border border-[var(--border-light)] bg-[var(--bg-elevated)] shadow-lg">
           {filtered.length === 0 ? (
             <p className="p-3 text-sm text-[var(--text-muted)]">No players found</p>
           ) : (

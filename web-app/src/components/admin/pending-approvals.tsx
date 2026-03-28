@@ -47,21 +47,21 @@ function PendingCard({
   }
 
   return (
-    <div className="flex items-center justify-between rounded-[14px] border border-[var(--border-light)] bg-[var(--bg-card)] px-4 py-3">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-[14px] border border-[var(--border-light)] bg-[var(--bg-card)] px-4 py-3">
       <div>
         <p className="text-sm font-medium text-[var(--text-primary)]">
           {request.profile?.display_name || "Unknown"}
         </p>
-        <p className="text-xs text-[var(--text-muted)]">
+        <p className="text-xs text-[var(--text-muted)] truncate">
           {request.profile?.email}
         </p>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 self-end sm:self-auto">
         <Button
           size="sm"
           onClick={() => handleAction("approve")}
           disabled={loading !== null}
-          className="bg-[var(--success)] text-[var(--bg-deep)] hover:opacity-90 h-8 px-3 text-xs font-display font-semibold"
+          className="bg-[var(--success)] text-[var(--bg-deep)] hover:opacity-90 h-10 sm:h-8 px-3 text-xs font-display font-semibold"
         >
           {loading === "approve" ? (
             <Loader2 className="h-3 w-3 animate-spin" />
@@ -74,7 +74,7 @@ function PendingCard({
           variant="outline"
           onClick={() => handleAction("reject")}
           disabled={loading !== null}
-          className="border-[var(--danger)] text-[var(--danger)] hover:bg-[color-mix(in_srgb,var(--danger)_10%,transparent)] h-8 px-3 text-xs font-display font-semibold"
+          className="border-[var(--danger)] text-[var(--danger)] hover:bg-[color-mix(in_srgb,var(--danger)_10%,transparent)] h-10 sm:h-8 px-3 text-xs font-display font-semibold"
         >
           {loading === "reject" ? (
             <Loader2 className="h-3 w-3 animate-spin" />

@@ -101,7 +101,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
             onClick={() => setIsOpen(false)}
           />
           {/* Panel */}
-          <div className="absolute right-0 top-12 z-50 w-80 rounded-[14px] border border-[var(--border-light)] bg-[var(--bg-elevated)] shadow-xl">
+          <div className="absolute right-0 top-12 z-50 w-[calc(100vw-2rem)] sm:w-80 rounded-[14px] border border-[var(--border-light)] bg-[var(--bg-elevated)] shadow-xl">
             <div className="flex items-center justify-between border-b border-[var(--border-light)] px-4 py-3">
               <h3 className="font-display text-sm font-semibold text-[var(--text-primary)]">
                 Notifications
