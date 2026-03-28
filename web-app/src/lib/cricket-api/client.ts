@@ -73,7 +73,7 @@ export const realClient: CricketApiClient = {
 
   async getLivescore(params): Promise<EventResponse[]> {
     const queryParams: Record<string, string> = {};
-    if (params.matchKey) queryParams.match_key = params.matchKey;
+    if (params.matchKey) queryParams.event_key = params.matchKey;
     if (params.leagueKey) queryParams.league_key = params.leagueKey;
     return fetchApi<EventResponse[]>("get_livescore", queryParams);
   },

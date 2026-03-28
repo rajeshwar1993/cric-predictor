@@ -129,8 +129,8 @@ Deno.serve(async (req: Request) => {
         await processUpcoming(match);
         results.push({ match: match.match_number, action: "checked_upcoming" });
       } else if (match.status === "live") {
-        await processLive(match);
-        results.push({ match: match.match_number, action: "polled_live" });
+        const debug = await processLive(match);
+        results.push({ match: match.match_number, action: "polled_live", debug });
       }
     } catch (err) {
       results.push({ match: match.match_number, action: "error", error: String(err) });
@@ -308,9 +308,11 @@ async function processUpcoming(match: any) {
 
 // ── Process LIVE match ──────────────────────────────────────────
 
-async function processLive(match: any) {
-  const events = await fetchCricketApi("get_livescore", { match_key: match.api_match_id });
-  if (!events || events.length === 0) return;
+async function processLive(match: any): Promise<Record<string, any> | undefined> {
+  const debugInfo: Record<string, any> = { match_id: match.id, team_a: match.team_a, team_b: match.team_b };
+
+  const events = await fetchCricketApi("get_livescore", { event_key: match.api_match_id });
+  if (!events || events.length === 0) { debugInfo.error = "no events from API"; return debugInfo; }
 
   const event = events[0];
 
@@ -328,6 +330,12 @@ async function processLive(match: any) {
     live_scorecard_json: event,
   };
 
+  console.log(`[DEBUG] match ${match.id}: team_a=${match.team_a}, team_b=${match.team_b}`);
+  console.log(`[DEBUG] API event_home_team=${event.event_home_team}, event_away_team=${event.event_away_team}`);
+  console.log(`[DEBUG] API event_service_home="${event.event_service_home}", event_service_away="${event.event_service_away}"`);
+  console.log(`[DEBUG] API event_home_final_result="${event.event_home_final_result}", event_away_final_result="${event.event_away_final_result}"`);
+  console.log(`[DEBUG] API event_status="${event.event_status}", event_live="${event.event_live}"`);
+
   // Map scores to team_a/team_b by matching innings keys to team names.
   // The API orders innings by batting order (not home/away), so we can't
   // assume inningsKeys[0] = team_a. Instead, extract the team name from
@@ -335,12 +343,18 @@ async function processLive(match: any) {
   const scorecardKeys = getInningsKeys(event.scorecard);
   const extraKeys = getInningsKeys(event.extra);
 
+  console.log(`[DEBUG] scorecardKeys: ${JSON.stringify(scorecardKeys)}`);
+  console.log(`[DEBUG] extraKeys: ${JSON.stringify(extraKeys)}`);
+
   // Determine which team is currently batting (last innings in the scorecard)
   if (scorecardKeys.length > 0) {
     const lastInningsKey = scorecardKeys[scorecardKeys.length - 1];
     const battingTeamName = teamNameFromInningsKey(lastInningsKey);
     const battingCode = toCode(battingTeamName);
+    console.log(`[DEBUG] batting: lastInningsKey="${lastInningsKey}", teamName="${battingTeamName}", code=${battingCode}`);
     if (battingCode) snapshot.current_batting_team = battingCode;
+  } else {
+    console.log(`[DEBUG] No scorecard keys — cannot determine batting team`);
   }
 
   // Map each innings' score + overs to the correct team (a or b)
@@ -349,26 +363,59 @@ async function processLive(match: any) {
     const teamCode = toCode(teamName);
     const runs = getInningsRuns(event.extra, key);
     const overs = getInningsOvers(event.extra, key);
+    const wickets = countWicketsForInnings(event.scorecard, key);
+    const scoreStr = runs !== null && overs !== null ? `${runs}/${wickets}` : null;
 
-    // Build score string from extra total (more reliable than event_service_*)
-    const scoreStr = runs !== null && overs !== null ? `${runs}/${countWicketsForInnings(event.scorecard, key)}` : null;
+    console.log(`[DEBUG] innings "${key}": teamName="${teamName}", code=${teamCode}, runs=${runs}, overs=${overs}, wickets=${wickets}, scoreStr=${scoreStr}`);
 
     if (teamCode === match.team_a) {
       if (scoreStr) snapshot.current_score_a = scoreStr;
       if (overs !== null) snapshot.current_overs_a = overs;
+      console.log(`[DEBUG] → mapped to team_a (${match.team_a}): score=${scoreStr}, overs=${overs}`);
     } else if (teamCode === match.team_b) {
       if (scoreStr) snapshot.current_score_b = scoreStr;
       if (overs !== null) snapshot.current_overs_b = overs;
+      console.log(`[DEBUG] → mapped to team_b (${match.team_b}): score=${scoreStr}, overs=${overs}`);
+    } else {
+      console.log(`[DEBUG] → team code ${teamCode} does NOT match team_a=${match.team_a} or team_b=${match.team_b}`);
     }
   }
 
-  // Fallback: use event_service_home/away if extra-based scores aren't available
-  if (!snapshot.current_score_a && event.event_home_final_result) {
-    snapshot.current_score_a = event.event_home_final_result;
+  // Fallback: use event_home/away_final_result mapped by team name.
+  // API home/away doesn't always match our team_a/team_b ordering.
+  const homeCode = toCode(event.event_home_team);
+  const awayCode = toCode(event.event_away_team);
+
+  if (!snapshot.current_score_a || !snapshot.current_score_b) {
+    if (event.event_home_final_result) {
+      if (homeCode === match.team_a && !snapshot.current_score_a) snapshot.current_score_a = event.event_home_final_result;
+      else if (homeCode === match.team_b && !snapshot.current_score_b) snapshot.current_score_b = event.event_home_final_result;
+    }
+    if (event.event_away_final_result) {
+      if (awayCode === match.team_a && !snapshot.current_score_a) snapshot.current_score_a = event.event_away_final_result;
+      else if (awayCode === match.team_b && !snapshot.current_score_b) snapshot.current_score_b = event.event_away_final_result;
+    }
   }
-  if (!snapshot.current_score_b && event.event_away_final_result) {
-    snapshot.current_score_b = event.event_away_final_result;
-  }
+
+  debugInfo.final_snapshot = {
+    score_a: snapshot.current_score_a ?? null,
+    score_b: snapshot.current_score_b ?? null,
+    overs_a: snapshot.current_overs_a ?? null,
+    overs_b: snapshot.current_overs_b ?? null,
+    batting: snapshot.current_batting_team ?? null,
+  };
+  debugInfo.api_raw = {
+    event_home_team: event.event_home_team,
+    event_away_team: event.event_away_team,
+    event_service_home: event.event_service_home,
+    event_service_away: event.event_service_away,
+    event_home_final_result: event.event_home_final_result,
+    event_away_final_result: event.event_away_final_result,
+    event_status: event.event_status,
+    event_live: event.event_live,
+    scorecard_keys: scorecardKeys,
+    extra_keys: extraKeys,
+  };
 
   // Check if match completed
   if (event.event_status === "Finished") {
@@ -376,19 +423,20 @@ async function processLive(match: any) {
     snapshot.match_winner = toCode(parseMatchWinner(event.event_status_info));
     snapshot.resolved_at = new Date().toISOString();
 
-    const scorecardKeys = getInningsKeys(event.scorecard);
-    if (scorecardKeys.length > 0) {
+    const finishedScorecardKeys = getInningsKeys(event.scorecard);
+    if (finishedScorecardKeys.length > 0) {
       Object.assign(snapshot, parseFullResults(event));
     }
 
     await getSupabase().from("matches").update(snapshot).eq("id", match.id);
     await getSupabase().rpc("resolve_match_predictions", { p_match_id: match.id });
-    return;
+    return debugInfo;
   }
 
   // Still live — write snapshot and do progressive resolution
   await getSupabase().from("matches").update(snapshot).eq("id", match.id);
   await progressiveResolve(match.id, event);
+  return debugInfo;
 }
 
 // ── Progressive scenario resolution ─────────────────────────────

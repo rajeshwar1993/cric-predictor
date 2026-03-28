@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "test": "tsx src/run-all.ts",
-    "spec": "tsx src/run-all.ts --spec"
+    "spec": "tsx src/run-all.ts --spec",
+    "poll": "tsx src/poll.ts"
   },
   "devDependencies": {
     "dotenv": "^16.4.0",
