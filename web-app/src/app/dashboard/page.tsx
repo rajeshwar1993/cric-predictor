@@ -7,6 +7,7 @@ import { Footer } from "@/components/layout/footer";
 import { GroupCard } from "@/components/group/group-card";
 import { CreateGroupForm } from "@/components/group/create-group-form";
 import { JoinGroupForm } from "@/components/group/join-group-form";
+import { PendingInviteBanner } from "@/components/group/pending-invite-banner";
 import { Users, Zap } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -27,7 +28,10 @@ export default async function DashboardPage() {
     <div className="flex min-h-dvh flex-col">
       <Header />
       <main className="flex-1">
-        <div className="mx-auto max-w-[960px] px-4 py-8">
+        <div className="mx-auto max-w-[960px] px-4 py-8 space-y-8">
+          {/* Pending invite from localStorage */}
+          <PendingInviteBanner />
+
           {groups.length === 0 ? (
             <EmptyState />
           ) : (

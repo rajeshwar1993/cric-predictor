@@ -7,6 +7,7 @@ import { APP_URL, ROUTES, LIMITS } from "@/lib/constants";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { JoinGroupClient } from "@/components/group/join-group-client";
+import { StoreInviteCode } from "@/components/group/store-invite-code";
 import { LoginForm } from "@/components/auth/login-form";
 import { Suspense } from "react";
 import Image from "next/image";
@@ -82,10 +83,11 @@ export default async function JoinPage({ params }: JoinPageProps) {
     );
   }
 
-  // Not authenticated — show login form with redirect back
+  // Not authenticated — store invite code in localStorage, show login form
   return (
     <div className="flex min-h-dvh flex-col">
       <Header />
+      <StoreInviteCode code={code} groupName={group.name} />
       <main className="flex flex-1 items-center justify-center px-4">
         <div className="w-full max-w-[400px] space-y-8">
           <InviteHeader groupName={group.name} />
