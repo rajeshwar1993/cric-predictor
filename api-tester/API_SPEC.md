@@ -78,27 +78,27 @@ GET ?method=get_events&APIkey=***&league_key=745&date_start=2026-03-21&date_stop
 | `away_team_key` | string: 149 |
 | `event_service_home` | string:  |
 | `event_service_away` | string:  |
-| `event_home_final_result` | string:  |
+| `event_home_final_result` | string: 8/0 |
 | `event_away_final_result` | string:  |
-| `event_home_rr` | null |
+| `event_home_rr` | string: 7.27 |
 | `event_away_rr` | null |
 | `event_status` | string:  |
-| `event_status_info` | string: Match yet to begin |
+| `event_status_info` | string: Match starts in {{MATCH_START_HOURS}} {{MATCH_START_MINS}} |
 | `league_name` | string: Indian Premier League |
 | `league_key` | string: 745 |
-| `league_round` | string:  |
+| `league_round` | string: 1st Match |
 | `league_season` | string: 2026 |
-| `event_live` | string: 0 |
+| `event_live` | string: 1 |
 | `event_type` | string: T20 |
 | `event_toss` | string:  |
 | `event_man_of_match` | string:  |
 | `event_stadium` | string: M Chinnaswamy Stadium, Bengaluru |
 | `event_home_team_logo` | string: https://apiv2.api-cricket.com/logo/146_royal-challengers-ban |
 | `event_away_team_logo` | string: https://apiv2.api-cricket.com/logo/149_sunrisers-hyderabad.p |
-| `scorecard` | array (empty) |
-| `comments` | array (empty) |
+| `scorecard` | object {Sunrisers Hyderabad 1 INN} |
+| `comments` | object {Live} |
 | `wickets` | array (empty) |
-| `extra` | array (empty) |
+| `extra` | object {Sunrisers Hyderabad 1 INN} |
 | `lineups` | object {home_team, away_team} |
 
 ### Sample Response (first item)
@@ -111,7 +111,7 @@ GET ?method=get_events&APIkey=***&league_key=745&date_start=2026-03-21&date_stop
   "event_date_start": "2026-03-28",
   "event_time": "15:00",
   "event_status": "",
-  "event_live": "0",
+  "event_live": "1",
   "event_toss": "(empty)",
   "event_man_of_match": "(empty)"
 }
@@ -151,27 +151,27 @@ GET ?method=get_events&APIkey=***&event_key=22822
 | `away_team_key` | string: 149 |
 | `event_service_home` | string:  |
 | `event_service_away` | string:  |
-| `event_home_final_result` | string:  |
+| `event_home_final_result` | string: 8/0 |
 | `event_away_final_result` | string:  |
-| `event_home_rr` | null |
+| `event_home_rr` | string: 7.27 |
 | `event_away_rr` | null |
 | `event_status` | string:  |
-| `event_status_info` | string: Match yet to begin |
+| `event_status_info` | string: Match starts in {{MATCH_START_HOURS}} {{MATCH_START_MINS}} |
 | `league_name` | string: Indian Premier League |
 | `league_key` | string: 745 |
-| `league_round` | string:  |
+| `league_round` | string: 1st Match |
 | `league_season` | string: 2026 |
-| `event_live` | string: 0 |
+| `event_live` | string: 1 |
 | `event_type` | string: T20 |
 | `event_toss` | string:  |
 | `event_man_of_match` | string:  |
 | `event_stadium` | string: M Chinnaswamy Stadium, Bengaluru |
 | `event_home_team_logo` | string: https://apiv2.api-cricket.com/logo/146_royal-challengers-ban |
 | `event_away_team_logo` | string: https://apiv2.api-cricket.com/logo/149_sunrisers-hyderabad.p |
-| `scorecard` | array (empty) |
-| `comments` | array (empty) |
+| `scorecard` | object {Sunrisers Hyderabad 1 INN} |
+| `comments` | object {Live} |
 | `wickets` | array (empty) |
-| `extra` | array (empty) |
+| `extra` | object {Sunrisers Hyderabad 1 INN} |
 | `lineups` | object {home_team, away_team} |
 
 ### Sample Response (first item)
@@ -182,10 +182,10 @@ GET ?method=get_events&APIkey=***&event_key=22822
   "event_status": "",
   "event_toss": "(empty)",
   "event_man_of_match": "(empty)",
-  "scorecard_innings": 0,
-  "comments_innings": 0,
+  "scorecard_innings": 1,
+  "comments_innings": 1,
   "wickets_innings": 0,
-  "extra_innings": 0
+  "extra_innings": 1
 }
 ```
 
@@ -195,7 +195,7 @@ GET ?method=get_events&APIkey=***&event_key=22822
 
 **Description:** Fetch currently live matches. Used by the cron to poll live scores every minute. Returns same structure as get_events but with real-time data.
 
-**Status:** FAIL — Expected result to be an array
+**Status:** PASS
 
 ### Request
 
@@ -208,6 +208,56 @@ GET ?method=get_livescore&APIkey=***&league_key=745
 | `method` | API method name |
 | `APIkey` | Authentication key |
 | `league_key` | 745 |
+
+### Response Fields
+
+| Field | Type / Sample Value |
+|-------|---------------------|
+| `event_key` | string: 22822 |
+| `event_date_start` | string: 2026-03-28 |
+| `event_date_stop` | string: 2026-03-28 |
+| `event_time` | string: 15:00 |
+| `event_home_team` | string: Royal Challengers Bengaluru |
+| `home_team_key` | string: 146 |
+| `event_away_team` | string: Sunrisers Hyderabad |
+| `away_team_key` | string: 149 |
+| `event_service_home` | string:  |
+| `event_service_away` | string:  |
+| `event_home_final_result` | string: 8/0 |
+| `event_away_final_result` | string:  |
+| `event_home_rr` | string: 7.27 |
+| `event_away_rr` | null |
+| `event_status` | string:  |
+| `event_status_info` | string: Match starts in {{MATCH_START_HOURS}} {{MATCH_START_MINS}} |
+| `league_name` | string: Indian Premier League |
+| `league_key` | string: 745 |
+| `league_round` | string: 1st Match |
+| `league_season` | string: 2026 |
+| `event_live` | string: 1 |
+| `event_type` | string: T20 |
+| `event_toss` | string:  |
+| `event_man_of_match` | string:  |
+| `event_stadium` | string: M Chinnaswamy Stadium, Bengaluru |
+| `event_home_team_logo` | string: https://apiv2.api-cricket.com/logo/146_royal-challengers-ban |
+| `event_away_team_logo` | string: https://apiv2.api-cricket.com/logo/149_sunrisers-hyderabad.p |
+| `scorecard` | object {Sunrisers Hyderabad 1 INN} |
+| `comments` | object {Live} |
+| `wickets` | array (empty) |
+| `extra` | object {Sunrisers Hyderabad 1 INN} |
+| `lineups` | object {home_team, away_team} |
+
+### Sample Response (first item)
+
+```json
+{
+  "event_key": "22822",
+  "event_home_team": "Royal Challengers Bengaluru",
+  "event_away_team": "Sunrisers Hyderabad",
+  "event_live": "1",
+  "event_service_home": "",
+  "event_service_away": ""
+}
+```
 
 ---
 
