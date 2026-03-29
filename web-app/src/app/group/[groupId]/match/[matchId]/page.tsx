@@ -4,6 +4,7 @@ import { getAuthUser } from "@/lib/supabase/get-user-cached";
 import * as matchesDal from "@/lib/dal/matches";
 import * as standingsDal from "@/lib/dal/standings";
 import { MatchLeaderboard } from "@/components/leaderboard/match-leaderboard";
+import { PredictionRevealSection } from "@/components/leaderboard/prediction-reveal-section";
 import { LiveMatchScorecard } from "@/components/match/live-match-scorecard";
 import { formatMatchDate, formatMatchTime } from "@/lib/utils";
 import { ROUTES } from "@/lib/constants";
@@ -78,6 +79,20 @@ export default async function MatchLeaderboardPage({ params }: MatchPageProps) {
 
       {/* Leaderboard */}
       <MatchLeaderboard entries={leaderboard} currentUserId={user.id} />
+
+      {/* Prediction Reveal Table */}
+      <PredictionRevealSection
+        groupId={groupId}
+        matchId={matchId}
+        currentUserId={user.id}
+        matchStatus={match.status}
+        matchDate={match.date}
+        matchTimeIst={match.time_ist}
+        teamA={match.team_a}
+        teamB={match.team_b}
+        matchNumber={match.match_number}
+        leaderboard={leaderboard}
+      />
     </div>
   );
 }

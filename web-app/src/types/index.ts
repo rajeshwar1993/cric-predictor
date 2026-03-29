@@ -116,6 +116,44 @@ export interface Prediction {
   submitted_at: string;
 }
 
+/**
+ * Lightweight prediction data for the Prediction Reveal Table.
+ * Returned by getAllPredictionsForMatch() DAL function.
+ */
+export interface RevealPrediction {
+  user_id: string;
+  scenario_id: string;
+  value: string;
+  is_correct: boolean | null;
+  points_earned: number;
+}
+
+/**
+ * Cell data in the reveal table prediction matrix.
+ */
+export interface RevealCellData {
+  value: string;
+  isCorrect: boolean | null;
+}
+
+/**
+ * Member info for the reveal table rows.
+ */
+export interface RevealMember {
+  userId: string;
+  displayName: string;
+}
+
+/**
+ * Scenario info for the reveal table columns.
+ */
+export interface RevealScenario {
+  id: string;
+  title: string;
+  systemCategory: string | null;
+  points: number;
+}
+
 export interface SeasonStanding {
   group_id: string;
   user_id: string;

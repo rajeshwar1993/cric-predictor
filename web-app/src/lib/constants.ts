@@ -109,3 +109,45 @@ export const PREDICTION_STATUS = {
   IN_DANGER: { label: "Sweating", color: "warning", icon: "alert-triangle" },
   PENDING: { label: "In Play", color: "pending", icon: "clock" },
 } as const;
+
+// Prediction Reveal Table copy (from copy-spec.md)
+export const REVEAL_TABLE_COPY = {
+  SECTION_TITLE: "The Reveal",
+  PRE_LOCK_MESSAGE: "Picks stay under wraps until lock-in. Sit tight.",
+  PRE_LOCK_IMMINENT: "Almost time \u2014 picks drop soon.",
+  PRE_LOCK_GENERIC:
+    "Everyone's picks will appear here once predictions lock.",
+  EMPTY_NO_PREDICTIONS_TITLE: "No picks on the board",
+  EMPTY_NO_PREDICTIONS_BODY:
+    "Nobody made a call for this match. Next time, be the one to get things started.",
+  EMPTY_SOLO_TITLE: "Just you here",
+  EMPTY_SOLO_BODY:
+    "Bragging's better with rivals. Share your invite link to fill the squad.",
+  NO_PICK_CELL: "\u2014",
+  MATCH_ABANDONED:
+    "Match called off \u2014 unresolved picks stay as-is.",
+  LEGEND_CORRECT: "Nailed It",
+  LEGEND_INCORRECT: "Missed",
+  LEGEND_PENDING: "In Play",
+  LEGEND_NO_PICK: "No Pick",
+} as const;
+
+// Scenario column header abbreviations (keyed by system_category)
+export const SCENARIO_SHORT_LABELS: Record<string, string> = {
+  match_winner: "Winner",
+  toss_winner: "Toss",
+  top_scorer: "Top Bat",
+  top_wicket_taker: "Top Bowl",
+  player_of_match: "MoM",
+  first_innings_score: "1st Inn",
+  total_match_runs: "Runs",
+  powerplay_score: "PP Score",
+  powerplay_wickets: "PP Wkts",
+  total_sixes: "Sixes",
+  total_wickets: "Wkts",
+  batsman_fifty: "Fifty?",
+  bowler_three_wkt: "3-fer?",
+  had_super_over: "SO?",
+  most_sixes: "Six King",
+  first_wicket_over: "1st Wkt",
+};

@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { logError } from "@/lib/logger";
-import type { Prediction } from "@/types";
+import type { Prediction, RevealPrediction } from "@/types";
 
 export async function getPredictionsForUser(
   userId: string,
@@ -108,6 +108,38 @@ export async function getUserPredictionCount(
     .in("scenario_id", scenarioIds);
 
   return count || 0;
+}
+
+/**
+ * Fetch all predictions for the given scenario IDs (all users).
+ * Used by the Prediction Reveal Table to build the member x scenario matrix.
+ * RLS enforces visibility: returns only own predictions pre-deadline,
+ * all group members' predictions post-deadline.
+ */
+export async function getAllPredictionsForMatch(
+  scenarioIds: string[]
+): Promise<RevealPrediction[]> {
+  if (scenarioIds.length === 0) return [];
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("predictions")
+    .select("user_id, scenario_id, value, is_correct, points_earned")
+    .in("scenario_id", scenarioIds);
+
+  if (error || !data) {
+    if (error)
+      logError(
+        {
+          layer: "dal",
+          operation: "getAllPredictionsForMatch",
+          metadata: { scenarioCount: scenarioIds.length },
+        },
+        error
+      );
+    return [];
+  }
+  return data;
 }
 
 export async function getMembersWhoPredicted(
