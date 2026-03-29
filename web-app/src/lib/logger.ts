@@ -3,8 +3,12 @@
  *
  * - Console output gated by ENABLE_DEBUG_LOGS env var
  * - Transport system for future remote logging (Sentry, Axiom, etc.)
- * - Zero dependencies, Edge-compatible, mockable
+ * - Structured JSON output in production for log aggregation
+ * - PII sanitization on all metadata before output
+ * - Zero external dependencies (sanitize module is a pure utility), Edge-compatible, mockable
  */
+
+import { sanitizeProperties } from "@/lib/analytics/sanitize";
 
 export type LogLevel = "debug" | "info" | "warn" | "error";
 
@@ -32,6 +36,14 @@ function isLoggingEnabled(): boolean {
   }
 }
 
+function isProduction(): boolean {
+  try {
+    return process.env.NODE_ENV === "production";
+  } catch {
+    return false;
+  }
+}
+
 interface SupabaseError extends Error {
   code?: string;
   details?: string;
@@ -54,6 +66,55 @@ function formatError(error: unknown): Record<string, unknown> | unknown {
   return error;
 }
 
+/**
+ * Internal output helper. Handles structured JSON in production
+ * and human-readable output in development.
+ */
+function output(
+  level: LogLevel,
+  message: string,
+  context: LogContext,
+  error?: unknown
+): void {
+  if (!isLoggingEnabled()) return;
+
+  const consoleFn =
+    level === "error" ? console.error :
+    level === "warn" ? console.warn :
+    console.info;
+
+  if (isProduction()) {
+    // Structured JSON for log aggregation (Vercel logs, future Axiom/Datadog)
+    const entry: Record<string, unknown> = {
+      level,
+      message,
+      layer: context.layer,
+      operation: context.operation,
+      metadata: context.metadata ? sanitizeProperties(context.metadata) : undefined,
+      timestamp: new Date().toISOString(),
+    };
+    if (error instanceof Error) {
+      entry.error = {
+        message: error.message,
+        name: error.name,
+        stack: error.stack?.slice(0, 1000),
+      };
+    } else if (error) {
+      entry.error = error;
+    }
+    consoleFn(JSON.stringify(entry));
+  } else {
+    // Human-readable for development (original behavior)
+    const devData: Record<string, unknown> = {
+      ...(context.metadata ? sanitizeProperties(context.metadata) : {}),
+      ...(error ? { error: formatError(error) } : {}),
+    };
+    // Always pass sanitized data -- never fall back to raw metadata.
+    // When devData is empty (no metadata, no error), pass undefined.
+    consoleFn(message, Object.keys(devData).length > 0 ? devData : undefined);
+  }
+}
+
 // ── Public API ─────────────────────────────────────────────────────
 
 /**
@@ -74,8 +135,8 @@ export function clearTransports(): void {
 /**
  * Log an error. Called at every error-handling site in DAL and actions.
  *
- * - ENABLE_DEBUG_LOGS=true → console.error with structured output
- * - ENABLE_DEBUG_LOGS unset → console silent
+ * - ENABLE_DEBUG_LOGS=true -> console.error with structured output
+ * - ENABLE_DEBUG_LOGS unset -> console silent
  * - Transports ALWAYS fire (for production remote logging)
  */
 export function logError(context: LogContext, error?: unknown): void {
@@ -90,13 +151,7 @@ export function logError(context: LogContext, error?: unknown): void {
     }
   }
 
-  // Console logging gated by env var
-  if (isLoggingEnabled()) {
-    console.error(message, {
-      ...context.metadata,
-      error: formatError(error),
-    });
-  }
+  output("error", message, context, error);
 }
 
 /**
@@ -113,7 +168,23 @@ export function logWarn(context: LogContext, detail?: string): void {
     }
   }
 
-  if (isLoggingEnabled()) {
-    console.warn(message, context.metadata);
+  output("warn", message, context);
+}
+
+/**
+ * Log an informational message (non-error, non-warning).
+ * Useful for action entry points, important state transitions.
+ */
+export function logInfo(context: LogContext, detail?: string): void {
+  const message = `[${context.layer}] ${context.operation}${detail ? `: ${detail}` : ""}`;
+
+  for (const transport of _transports) {
+    try {
+      transport.send("info", message, context);
+    } catch {
+      // swallow
+    }
   }
+
+  output("info", message, context);
 }

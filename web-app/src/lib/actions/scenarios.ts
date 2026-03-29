@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { logError } from "@/lib/logger";
-import { captureServerEvent, ANALYTICS_EVENTS } from "@/lib/posthog";
+import { logError, logInfo } from "@/lib/logger";
+import { trackServerEvent, ANALYTICS_EVENTS } from "@/lib/analytics";
 import * as scenariosDal from "@/lib/dal/scenarios";
 import * as membersDal from "@/lib/dal/members";
 import * as matchesDal from "@/lib/dal/matches";
@@ -17,6 +17,8 @@ export async function createCustomScenario(
   options: string[],
   points: number
 ): Promise<ActionResponse<Scenario>> {
+  logInfo({ layer: "action", operation: "createCustomScenario", metadata: { groupId, matchId } });
+
   const parsed = createCustomScenarioSchema.safeParse({
     groupId,
     matchId,
@@ -52,7 +54,7 @@ export async function createCustomScenario(
     logError({ layer: "action", operation: "createCustomScenario", metadata: { userId: user.id, groupId, matchId } });
     return { success: false, error: "Couldn't submit your wild card — try again" };
   }
-  captureServerEvent(user.id, ANALYTICS_EVENTS.SCENARIO_CUSTOM_CREATED, { group_id: groupId, match_id: matchId, title: parsed.data.title, option_count: parsed.data.options.length, points: parsed.data.points });
+  trackServerEvent(user.id, ANALYTICS_EVENTS.SCENARIO_CUSTOM_CREATED, { group_id: groupId, match_id: matchId, title: parsed.data.title, option_count: parsed.data.options.length, points: parsed.data.points });
   revalidatePath(`/group/${groupId}/scenarios/${matchId}`);
   return { success: true, data: scenario };
 }
@@ -62,6 +64,8 @@ export async function approveScenario(
   scenarioId: string,
   points?: number
 ): Promise<ActionResponse> {
+  logInfo({ layer: "action", operation: "approveScenario", metadata: { groupId, scenarioId } });
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -84,7 +88,7 @@ export async function approveScenario(
     logError({ layer: "action", operation: "approveScenario", metadata: { userId: user.id, scenarioId, groupId } });
     return { success: false, error: "Failed to approve scenario" };
   }
-  captureServerEvent(user.id, ANALYTICS_EVENTS.SCENARIO_APPROVED, { group_id: groupId, scenario_id: scenarioId });
+  trackServerEvent(user.id, ANALYTICS_EVENTS.SCENARIO_APPROVED, { group_id: groupId, scenario_id: scenarioId });
   revalidatePath(`/group/${groupId}`, "layout");
   return { success: true };
 }
@@ -93,6 +97,8 @@ export async function rejectScenario(
   groupId: string,
   scenarioId: string
 ): Promise<ActionResponse> {
+  logInfo({ layer: "action", operation: "rejectScenario", metadata: { groupId, scenarioId } });
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -109,7 +115,7 @@ export async function rejectScenario(
     logError({ layer: "action", operation: "rejectScenario", metadata: { userId: user.id, scenarioId, groupId } });
     return { success: false, error: "Failed to reject scenario" };
   }
-  captureServerEvent(user.id, ANALYTICS_EVENTS.SCENARIO_REJECTED, { group_id: groupId, scenario_id: scenarioId });
+  trackServerEvent(user.id, ANALYTICS_EVENTS.SCENARIO_REJECTED, { group_id: groupId, scenario_id: scenarioId });
   revalidatePath(`/group/${groupId}`, "layout");
   return { success: true };
 }
@@ -118,6 +124,8 @@ export async function removeScenario(
   groupId: string,
   scenarioId: string
 ): Promise<ActionResponse> {
+  logInfo({ layer: "action", operation: "removeScenario", metadata: { groupId, scenarioId } });
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -153,7 +161,7 @@ export async function removeScenario(
     logError({ layer: "action", operation: "removeScenario", metadata: { userId: user.id, scenarioId, groupId } });
     return { success: false, error: "Failed to remove scenario" };
   }
-  captureServerEvent(user.id, ANALYTICS_EVENTS.SCENARIO_REMOVED, { group_id: groupId, scenario_id: scenarioId });
+  trackServerEvent(user.id, ANALYTICS_EVENTS.SCENARIO_REMOVED, { group_id: groupId, scenario_id: scenarioId });
   revalidatePath(`/group/${groupId}`, "layout");
   return { success: true };
 }
@@ -162,6 +170,8 @@ export async function publishScenarios(
   groupId: string,
   matchId: number
 ): Promise<ActionResponse> {
+  logInfo({ layer: "action", operation: "publishScenarios", metadata: { groupId, matchId } });
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "Not authenticated" };
@@ -186,7 +196,7 @@ export async function publishScenarios(
     return { success: false, error: "Failed to publish scenarios" };
   }
 
-  captureServerEvent(user.id, ANALYTICS_EVENTS.SCENARIO_PUBLISHED, { group_id: groupId, match_id: matchId, scenario_count: count });
+  trackServerEvent(user.id, ANALYTICS_EVENTS.SCENARIO_PUBLISHED, { group_id: groupId, match_id: matchId, scenario_count: count });
   revalidatePath(`/group/${groupId}`, "layout");
   return { success: true };
 }
@@ -198,6 +208,8 @@ export async function addCustomScenarioAsAdmin(
   options: string[],
   points: number
 ): Promise<ActionResponse<Scenario>> {
+  logInfo({ layer: "action", operation: "addCustomScenarioAsAdmin", metadata: { groupId, matchId } });
+
   const parsed = createCustomScenarioSchema.safeParse({ groupId, matchId, title, options, points });
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0].message };
@@ -242,7 +254,7 @@ export async function addCustomScenarioAsAdmin(
   // Auto-approve since admin created it
   await scenariosDal.updateScenarioApproval(scenario.id, "approved");
 
-  captureServerEvent(user.id, ANALYTICS_EVENTS.SCENARIO_CUSTOM_CREATED_BY_ADMIN, { group_id: groupId, match_id: matchId, title: parsed.data.title });
+  trackServerEvent(user.id, ANALYTICS_EVENTS.SCENARIO_CUSTOM_CREATED_BY_ADMIN, { group_id: groupId, match_id: matchId, title: parsed.data.title });
   revalidatePath(`/group/${groupId}/scenarios/${matchId}`);
   return { success: true, data: scenario };
 }

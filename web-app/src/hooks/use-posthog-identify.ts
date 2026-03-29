@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { getPostHogClient } from "@/lib/posthog/client";
+import { identifyUser, resetUser } from "@/lib/analytics";
 import type { User } from "@supabase/supabase-js";
 import type { Profile } from "@/types";
 
 /**
- * Identifies or resets the PostHog user when auth state changes.
+ * Identifies or resets the analytics user when auth state changes.
+ * Only non-PII properties are sent (no email, no display_name).
  */
 export function usePostHogIdentify(
   user: User | null,
@@ -15,18 +16,14 @@ export function usePostHogIdentify(
   const identifiedIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const posthog = getPostHogClient();
-    if (!posthog) return;
-
     if (user && user.id !== identifiedIdRef.current) {
-      posthog.identify(user.id, {
-        email: profile?.email ?? user.email,
-        display_name: profile?.display_name,
+      identifyUser(user.id, {
         onboarding_completed: profile?.onboarding_completed ?? false,
+        created_at: profile?.accepted_terms_at ?? undefined,
       });
       identifiedIdRef.current = user.id;
     } else if (!user && identifiedIdRef.current) {
-      posthog.reset();
+      resetUser();
       identifiedIdRef.current = null;
     }
   }, [user, profile]);

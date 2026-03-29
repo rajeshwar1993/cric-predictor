@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { logError } from "@/lib/logger";
-import { captureServerEvent, ANALYTICS_EVENTS } from "@/lib/posthog";
+import { logError, logInfo } from "@/lib/logger";
+import { trackServerEvent, ANALYTICS_EVENTS } from "@/lib/analytics";
 import * as groupsDal from "@/lib/dal/groups";
 import * as membersDal from "@/lib/dal/members";
 import { createGroupSchema, updateMemberSchema } from "@/lib/validators";
@@ -11,6 +11,8 @@ import { LIMITS } from "@/lib/constants";
 import type { ActionResponse, Group, MemberRole } from "@/types";
 
 export async function createGroup(name: string): Promise<ActionResponse<Group>> {
+  logInfo({ layer: "action", operation: "createGroup", metadata: { name } });
+
   const parsed = createGroupSchema.safeParse({ name });
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0].message };
@@ -37,12 +39,14 @@ export async function createGroup(name: string): Promise<ActionResponse<Group>> 
     return { success: false, error: "Couldn't create your squad — try again" };
   }
 
-  captureServerEvent(user.id, ANALYTICS_EVENTS.GROUP_CREATED, { group_id: group.id, group_name: parsed.data.name });
+  trackServerEvent(user.id, ANALYTICS_EVENTS.GROUP_CREATED, { group_id: group.id, group_name: parsed.data.name });
   revalidatePath("/dashboard");
   return { success: true, data: group };
 }
 
 export async function joinGroup(inviteCode: string): Promise<ActionResponse> {
+  logInfo({ layer: "action", operation: "joinGroup", metadata: { inviteCode } });
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -73,7 +77,7 @@ export async function joinGroup(inviteCode: string): Promise<ActionResponse> {
     return { success: false, error: "Couldn't get you in — try again" };
   }
 
-  captureServerEvent(user.id, ANALYTICS_EVENTS.GROUP_JOIN_REQUESTED, { group_id: group.id });
+  trackServerEvent(user.id, ANALYTICS_EVENTS.GROUP_JOIN_REQUESTED, { group_id: group.id });
   revalidatePath(`/group/${group.id}`, "layout");
   return { success: true };
 }
@@ -83,6 +87,8 @@ export async function manageMember(
   userId: string,
   action: "approve" | "reject" | "promote" | "demote" | "remove"
 ): Promise<ActionResponse> {
+  logInfo({ layer: "action", operation: "manageMember", metadata: { groupId, targetUserId: userId, action } });
+
   const parsed = updateMemberSchema.safeParse({ groupId, userId, action });
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0].message };
@@ -160,7 +166,7 @@ export async function manageMember(
     demote: ANALYTICS_EVENTS.GROUP_MEMBER_DEMOTED,
     remove: ANALYTICS_EVENTS.GROUP_MEMBER_REMOVED,
   };
-  captureServerEvent(user.id, eventMap[action], { group_id: groupId, target_user_id: userId });
+  trackServerEvent(user.id, eventMap[action], { group_id: groupId, target_user_id: userId });
   revalidatePath(`/group/${groupId}`, "layout");
   return { success: true };
 }

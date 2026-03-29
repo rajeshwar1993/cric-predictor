@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 export default function GlobalError({
   error,
   reset,
@@ -7,14 +9,79 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    // Use raw fetch to PostHog API instead of the SDK.
+    // This is intentional: global-error.tsx replaces the entire <html>,
+    // so the PostHog SDK (loaded by PostHogProvider) may not be available
+    // or may itself be the cause of the crash.
+    try {
+      const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
+      if (!key) return;
+
+      const host =
+        process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com";
+
+      fetch(`${host}/capture/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          api_key: key,
+          distinct_id: "anonymous",
+          event: "error_boundary_caught",
+          properties: {
+            error_message: error.message,
+            error_digest: error.digest,
+            error_stack: error.stack?.slice(0, 1000),
+            error_context: "global",
+            $current_url: window.location.href,
+          },
+          timestamp: new Date().toISOString(),
+        }),
+      }).catch(() => {
+        // Fire-and-forget. If PostHog is down, we lose this event.
+      });
+    } catch {
+      // Swallow everything. This boundary must never re-throw.
+    }
+  }, [error]);
+
   return (
     <html lang="en">
-      <body style={{ backgroundColor: "#06080F", color: "#F1F5F9", fontFamily: "system-ui, sans-serif" }}>
-        <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "1rem", textAlign: "center" }}>
-          <h1 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>
+      <body
+        style={{
+          backgroundColor: "#06080F",
+          color: "#F1F5F9",
+          fontFamily: "system-ui, sans-serif",
+        }}
+      >
+        <div
+          style={{
+            minHeight: "100dvh",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "1rem",
+            textAlign: "center",
+          }}
+        >
+          <h1
+            style={{
+              fontSize: "1.5rem",
+              fontWeight: 700,
+              marginBottom: "0.5rem",
+            }}
+          >
             Something went wrong
           </h1>
-          <p style={{ fontSize: "0.875rem", color: "#94A3B8", maxWidth: "400px", marginBottom: "1.5rem" }}>
+          <p
+            style={{
+              fontSize: "0.875rem",
+              color: "#94A3B8",
+              maxWidth: "400px",
+              marginBottom: "1.5rem",
+            }}
+          >
             An unexpected error occurred. Please try again.
           </p>
           <button
@@ -33,7 +100,13 @@ export default function GlobalError({
             Try Again
           </button>
           {error.digest && (
-            <p style={{ marginTop: "1rem", fontSize: "0.75rem", color: "#64748B" }}>
+            <p
+              style={{
+                marginTop: "1rem",
+                fontSize: "0.75rem",
+                color: "#64748B",
+              }}
+            >
               Error ID: {error.digest}
             </p>
           )}

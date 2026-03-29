@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { APP_URL } from "@/lib/constants";
 import { Link as LinkIcon, Check, Share2 } from "lucide-react";
-import { getPostHogClient } from "@/lib/posthog/client";
-import { ANALYTICS_EVENTS } from "@/lib/posthog/events";
+import { trackEvent, ANALYTICS_EVENTS } from "@/lib/analytics";
 
 interface InviteLinkProps {
   inviteCode: string;
@@ -29,7 +28,7 @@ export function InviteLink({ inviteCode, groupName, inviterName }: InviteLinkPro
     try {
       await navigator.clipboard.writeText(link);
       setCopied(true);
-      getPostHogClient()?.capture(ANALYTICS_EVENTS.GROUP_INVITE_COPIED, {
+      trackEvent(ANALYTICS_EVENTS.GROUP_INVITE_COPIED, {
         invite_code: inviteCode,
       });
       setTimeout(() => setCopied(false), 2000);
@@ -56,7 +55,7 @@ export function InviteLink({ inviteCode, groupName, inviterName }: InviteLinkPro
           text: shareMessage,
           url: link,
         });
-        getPostHogClient()?.capture(ANALYTICS_EVENTS.GROUP_INVITE_SHARED, {
+        trackEvent(ANALYTICS_EVENTS.GROUP_INVITE_SHARED, {
           invite_code: inviteCode,
         });
       } catch (err) {

@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { getPostHogClient } from "@/lib/posthog/client";
-import { ANALYTICS_EVENTS } from "@/lib/posthog/events";
+import { trackEvent, ANALYTICS_EVENTS } from "@/lib/analytics";
 import { ErrorState } from "@/components/shared/error-state";
 
 export default function GroupError({
@@ -13,10 +12,12 @@ export default function GroupError({
   reset: () => void;
 }) {
   useEffect(() => {
-    getPostHogClient()?.capture(ANALYTICS_EVENTS.ERROR_BOUNDARY_CAUGHT, {
+    trackEvent(ANALYTICS_EVENTS.ERROR_BOUNDARY_CAUGHT, {
       error_message: error.message,
       error_digest: error.digest,
-      context: "group",
+      error_stack: error.stack?.slice(0, 1000),
+      error_context: "group",
+      page_path: window.location.pathname,
     });
   }, [error]);
 

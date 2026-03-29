@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { captureServerEvent, ANALYTICS_EVENTS } from "@/lib/posthog";
+import { trackServerEvent, hashIdentifier, ANALYTICS_EVENTS } from "@/lib/analytics";
 
 /**
  * Validate that redirectTo is a safe relative path.
@@ -35,7 +35,7 @@ export async function GET(request: Request) {
           .eq("id", user.id)
           .single();
 
-        captureServerEvent(user.id, ANALYTICS_EVENTS.AUTH_CALLBACK_SUCCESS, { is_new_user: !profile?.onboarding_completed });
+        trackServerEvent(user.id, ANALYTICS_EVENTS.AUTH_CALLBACK_SUCCESS, { is_new_user: !profile?.onboarding_completed });
 
         if (!profile?.onboarding_completed) {
           // Not onboarded — clear any stale cookie from a previous user, redirect to onboarding
@@ -65,6 +65,9 @@ export async function GET(request: Request) {
     }
   }
 
-  captureServerEvent("anonymous", ANALYTICS_EVENTS.AUTH_CALLBACK_FAILED);
+  // Hash the request URL to create a unique but opaque distinctId for this
+  // failed callback. Avoids grouping all anonymous failures under one user.
+  const anonId = await hashIdentifier(`auth-callback-fail:${request.url}:${Date.now()}`);
+  trackServerEvent(anonId, ANALYTICS_EVENTS.AUTH_CALLBACK_FAILED);
   return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`);
 }

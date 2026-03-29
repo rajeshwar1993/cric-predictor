@@ -46,6 +46,18 @@ export function captureServerEvent(
 }
 
 /**
+ * Flush and shut down the server-side PostHog client.
+ * Call at the end of serverless function execution if needed.
+ * Safe to call multiple times.
+ */
+export async function shutdownPostHog(): Promise<void> {
+  if (serverPostHog) {
+    await serverPostHog.shutdown();
+    serverPostHog = null;
+  }
+}
+
+/**
  * Evaluate a feature flag server-side for a given user.
  */
 export async function getServerFeatureFlag(

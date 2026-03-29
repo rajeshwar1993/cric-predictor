@@ -74,6 +74,11 @@ const config: StorybookConfig = {
         __dirname,
         "../src/__mocks__/handlers/posthog-node.ts"
       ),
+      // Mock Firebase client (browser analytics not needed in Storybook)
+      "@/lib/firebase/client": path.resolve(
+        __dirname,
+        "../src/__mocks__/handlers/firebase-client.ts"
+      ),
     };
 
     // Add PostCSS plugin for Tailwind v4
@@ -90,6 +95,10 @@ const config: StorybookConfig = {
       "process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY": JSON.stringify("mock-anon-key"),
       "process.env.NEXT_PUBLIC_POSTHOG_KEY": JSON.stringify(""),
       "process.env.NEXT_PUBLIC_POSTHOG_HOST": JSON.stringify(""),
+      "process.env.NEXT_PUBLIC_FIREBASE_API_KEY": JSON.stringify(""),
+      "process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID": JSON.stringify(""),
+      "process.env.NEXT_PUBLIC_FIREBASE_APP_ID": JSON.stringify(""),
+      "process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID": JSON.stringify(""),
     };
 
     return config;

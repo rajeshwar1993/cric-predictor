@@ -46,6 +46,18 @@ export const ANALYTICS_EVENTS = {
   // Errors
   ERROR_BOUNDARY_CAUGHT: "error_boundary_caught",
   ERROR_LOGGED: "error_logged",
+  UNHANDLED_ERROR: "unhandled_error",
+
+  // Performance
+  WEB_VITALS_LCP: "web_vitals_lcp",
+  WEB_VITALS_INP: "web_vitals_inp",
+  WEB_VITALS_CLS: "web_vitals_cls",
+  PAGE_LOAD_TIME: "page_load_time",
+  SERVER_ACTION_DURATION: "server_action_duration",
+
+  // Behavior
+  PREDICT_PAGE_VIEWED: "predict_page_viewed",
+  PREDICT_PAGE_REVISITED: "predict_page_revisited",
 } as const;
 
 export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[keyof typeof ANALYTICS_EVENTS];

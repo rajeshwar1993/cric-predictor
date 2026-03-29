@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { logError } from "@/lib/logger";
-import { captureServerEvent, ANALYTICS_EVENTS } from "@/lib/posthog";
+import { logError, logInfo } from "@/lib/logger";
+import { trackServerEvent, ANALYTICS_EVENTS } from "@/lib/analytics";
 import * as predictionsDal from "@/lib/dal/predictions";
 import * as scenariosDal from "@/lib/dal/scenarios";
 import * as membersDal from "@/lib/dal/members";
@@ -17,6 +17,8 @@ export async function submitPredictions(
   matchId: number,
   predictions: Array<{ scenarioId: string; value: string }>
 ): Promise<ActionResponse> {
+  logInfo({ layer: "action", operation: "submitPredictions", metadata: { groupId, matchId, predictionCount: predictions.length } });
+
   const parsed = submitPredictionsSchema.safeParse({ predictions });
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0].message };
@@ -69,7 +71,7 @@ export async function submitPredictions(
     return { success: false, error: "Couldn't lock those in — try again" };
   }
 
-  captureServerEvent(user.id, ANALYTICS_EVENTS.PREDICTION_SUBMITTED, { group_id: groupId, match_id: matchId, prediction_count: validPredictions.length, total_scenarios: scenarios.length });
+  trackServerEvent(user.id, ANALYTICS_EVENTS.PREDICTION_SUBMITTED, { group_id: groupId, match_id: matchId, prediction_count: validPredictions.length, total_scenarios: scenarios.length });
   revalidatePath(`/group/${groupId}/predict/${matchId}`);
   revalidatePath(`/group/${groupId}/match/${matchId}`);
   return { success: true };

@@ -40,11 +40,14 @@ export function createPostHogTransport(): LogTransport {
           ph?.capture(ANALYTICS_EVENTS.ERROR_LOGGED, properties);
         });
       } else {
-        // Server-side
+        // Server-side -- use userId from context metadata if available
+        const userId =
+          (context.metadata?.userId as string) ?? "system";
+
         import("./server").then(({ getPostHogServer }) => {
           const ph = getPostHogServer();
           ph?.capture({
-            distinctId: "system",
+            distinctId: userId,
             event: ANALYTICS_EVENTS.ERROR_LOGGED,
             properties,
           });

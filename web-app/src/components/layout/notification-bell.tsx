@@ -8,8 +8,7 @@ import {
   markAllNotificationsRead,
 } from "@/lib/actions/notifications";
 import { Bell, Check, CheckCheck } from "lucide-react";
-import { getPostHogClient } from "@/lib/posthog/client";
-import { ANALYTICS_EVENTS } from "@/lib/posthog/events";
+import { trackEvent, ANALYTICS_EVENTS } from "@/lib/analytics";
 import { formatTimeAgo } from "@/lib/utils";
 import type { Notification } from "@/types";
 
@@ -80,7 +79,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
           const opening = !isOpen;
           setIsOpen(opening);
           if (opening) {
-            getPostHogClient()?.capture(ANALYTICS_EVENTS.NOTIFICATION_BELL_OPENED, { unread_count: unreadCount });
+            trackEvent(ANALYTICS_EVENTS.NOTIFICATION_BELL_OPENED, { unread_count: unreadCount });
           }
         }}
         className="relative flex h-10 w-10 items-center justify-center rounded-[10px] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] transition-colors"

@@ -1,8 +1,8 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { logError } from "@/lib/logger";
-import { captureServerEvent, ANALYTICS_EVENTS } from "@/lib/posthog";
+import { logError, logInfo } from "@/lib/logger";
+import { trackServerEvent, ANALYTICS_EVENTS } from "@/lib/analytics";
 import { onboardingSchema } from "@/lib/validators";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -13,6 +13,8 @@ export async function completeOnboarding(
   dateOfBirth: string,
   acceptedTerms: boolean
 ): Promise<ActionResponse> {
+  logInfo({ layer: "action", operation: "completeOnboarding" });
+
   const parsed = onboardingSchema.safeParse({
     displayName,
     dateOfBirth,
@@ -60,7 +62,8 @@ export async function completeOnboarding(
     return { success: false, error: "Something went wrong. Please try again." };
   }
 
-  captureServerEvent(user.id, ANALYTICS_EVENTS.AUTH_ONBOARDING_COMPLETED, { display_name: parsed.data.displayName });
+  // No PII: display_name removed from event properties
+  trackServerEvent(user.id, ANALYTICS_EVENTS.AUTH_ONBOARDING_COMPLETED);
 
   // Set the onboarded cookie
   const cookieStore = await cookies();

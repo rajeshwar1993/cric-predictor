@@ -23,3 +23,23 @@ vi.mock("posthog-node", () => ({
     shutdown: vi.fn(),
   })),
 }));
+
+// Mock Firebase to prevent analytics calls during tests
+vi.mock("firebase/app", () => ({
+  initializeApp: vi.fn(),
+}));
+
+vi.mock("firebase/analytics", () => ({
+  getAnalytics: vi.fn().mockReturnValue({}),
+  initializeAnalytics: vi.fn().mockReturnValue({}),
+  isSupported: vi.fn().mockResolvedValue(false), // disabled in tests
+  logEvent: vi.fn(),
+  setUserId: vi.fn(),
+}));
+
+// Mock web-vitals
+vi.mock("web-vitals", () => ({
+  onLCP: vi.fn(),
+  onINP: vi.fn(),
+  onCLS: vi.fn(),
+}));

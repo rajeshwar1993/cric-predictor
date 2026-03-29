@@ -4,8 +4,8 @@ import { ANALYTICS_EVENTS } from "./events";
 describe("ANALYTICS_EVENTS", () => {
   const entries = Object.entries(ANALYTICS_EVENTS);
 
-  it("has at least 30 events defined", () => {
-    expect(entries.length).toBeGreaterThanOrEqual(29);
+  it("has at least 37 events defined", () => {
+    expect(entries.length).toBeGreaterThanOrEqual(37);
   });
 
   it("all event names are unique", () => {

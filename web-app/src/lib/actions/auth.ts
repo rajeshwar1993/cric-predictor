@@ -1,8 +1,8 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { logError } from "@/lib/logger";
-import { captureServerEvent, ANALYTICS_EVENTS } from "@/lib/posthog";
+import { logError, logInfo } from "@/lib/logger";
+import { trackServerEvent, hashIdentifier, ANALYTICS_EVENTS } from "@/lib/analytics";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { APP_URL } from "@/lib/constants";
@@ -30,6 +30,8 @@ export async function signInWithMagicLink(
   email: string,
   redirectTo?: string
 ): Promise<ActionResponse> {
+  logInfo({ layer: "action", operation: "signInWithMagicLink", metadata: { has_redirect: !!redirectTo } });
+
   if (!email || !email.includes("@") || email.length > 254) {
     return { success: false, error: "Please enter a valid email address" };
   }
@@ -47,19 +49,23 @@ export async function signInWithMagicLink(
   });
 
   if (error) {
-    logError({ layer: "action", operation: "signInWithMagicLink", metadata: { email } }, error);
+    logError({ layer: "action", operation: "signInWithMagicLink" }, error);
     const userMessage = KNOWN_ERRORS[error.message] || "Unable to send magic link. Please try again.";
     return { success: false, error: userMessage };
   }
 
-  captureServerEvent(email, ANALYTICS_EVENTS.AUTH_MAGIC_LINK_REQUESTED, { has_redirect: !!safeRedirect });
+  // Use SHA-256 hash of the email as distinctId (opaque, no PII leak)
+  const hashedId = await hashIdentifier(email);
+  trackServerEvent(hashedId, ANALYTICS_EVENTS.AUTH_MAGIC_LINK_REQUESTED, { has_redirect: !!safeRedirect });
   return { success: true };
 }
 
 export async function signOut(): Promise<void> {
+  logInfo({ layer: "action", operation: "signOut" });
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (user) captureServerEvent(user.id, ANALYTICS_EVENTS.AUTH_SIGNED_OUT);
+  if (user) trackServerEvent(user.id, ANALYTICS_EVENTS.AUTH_SIGNED_OUT);
   await supabase.auth.signOut();
 
   const cookieStore = await cookies();
