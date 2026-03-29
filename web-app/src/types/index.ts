@@ -182,3 +182,20 @@ export interface UserPredictionSummary {
   correct_count: number;
   points_earned: number;
 }
+
+/**
+ * Lightweight match score data for client-side polling.
+ * Contains only the columns needed for live scorecard display.
+ * Excludes heavy fields like live_scorecard_json.
+ */
+export interface MatchScoreData {
+  id: number;
+  current_score_a: string | null;
+  current_score_b: string | null;
+  current_overs_a: number | null;
+  current_overs_b: number | null;
+  current_batting_team: string | null;
+  toss_winner: string | null;
+  match_winner: string | null;
+  status: import("./database").MatchStatus;
+}

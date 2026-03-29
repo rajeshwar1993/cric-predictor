@@ -4,8 +4,7 @@ import { getAuthUser } from "@/lib/supabase/get-user-cached";
 import * as matchesDal from "@/lib/dal/matches";
 import * as standingsDal from "@/lib/dal/standings";
 import { MatchLeaderboard } from "@/components/leaderboard/match-leaderboard";
-import { MatchScorecard } from "@/components/match/match-scorecard";
-import { TeamBadge } from "@/components/shared/team-badge";
+import { LiveMatchScorecard } from "@/components/match/live-match-scorecard";
 import { formatMatchDate, formatMatchTime } from "@/lib/utils";
 import { ROUTES } from "@/lib/constants";
 import { ArrowLeft } from "lucide-react";
@@ -57,7 +56,8 @@ export default async function MatchLeaderboardPage({ params }: MatchPageProps) {
         </div>
 
         {/* Scorecard */}
-        <MatchScorecard
+        <LiveMatchScorecard
+          matchId={match.id}
           teamA={match.team_a}
           teamB={match.team_b}
           scoreA={match.current_score_a}

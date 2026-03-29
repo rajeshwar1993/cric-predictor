@@ -15,7 +15,7 @@ import { LIMITS } from "@/lib/constants";
 import { ROUTES } from "@/lib/constants";
 import type { MatchLeaderboardEntry } from "@/types";
 import { formatMatchDate, formatMatchTime, computeDeadline } from "@/lib/utils";
-import { MatchScorecard } from "@/components/match/match-scorecard";
+import { LiveMatchCard } from "@/components/match/live-match-card";
 
 interface GroupPageProps {
   params: Promise<{ groupId: string }>;
@@ -129,8 +129,8 @@ export default async function GroupHomePage({ params }: GroupPageProps) {
                 <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex-1">
                     {isLive ? (
-                      <MatchScorecard
-                        compact
+                      <LiveMatchCard
+                        matchId={match.id}
                         teamA={match.team_a}
                         teamB={match.team_b}
                         scoreA={match.current_score_a}
@@ -140,7 +140,6 @@ export default async function GroupHomePage({ params }: GroupPageProps) {
                         battingTeam={match.current_batting_team}
                         tossWinner={match.toss_winner}
                         matchWinner={match.match_winner}
-                        statusInfo={null}
                         status={match.status}
                       />
                     ) : (
