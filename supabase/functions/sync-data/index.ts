@@ -194,8 +194,11 @@ Deno.serve(async (req: Request) => {
     }
 
     // ── Step 2: Attempt lineup sync for today's matches ─────────
-    const today = new Date().toISOString().split("T")[0];
-    if (matchDate === today && event.lineups) {
+    // Use IST (UTC+5:30) for "today" — the cron runs at 23:30 UTC (5 AM IST),
+    // so UTC date is still the previous day while matchDate from API is IST.
+    const nowIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+    const todayIST = nowIST.toISOString().split("T")[0];
+    if (matchDate === todayIST) {
       await syncLineups(sb, eventKey, event, teamA, teamB);
     }
   }
@@ -216,12 +219,16 @@ Deno.serve(async (req: Request) => {
 async function syncLineups(
   sb: ReturnType<typeof getSupabase>,
   eventKey: string,
-  event: any,
+  _event: any,
   teamA: string,
   teamB: string
 ) {
-  const homeLineup = event.lineups?.home_team?.starting_lineups;
-  const awayLineup = event.lineups?.away_team?.starting_lineups;
+  // Fetch single event by key — bulk get_events doesn't include lineup data.
+  const events = await fetchCricketApi("get_events", { event_key: eventKey });
+  const detail = events?.[0];
+
+  const homeLineup = detail?.lineups?.home_team?.starting_lineups;
+  const awayLineup = detail?.lineups?.away_team?.starting_lineups;
 
   if ((!homeLineup || homeLineup.length === 0) && (!awayLineup || awayLineup.length === 0)) {
     console.log(`sync-data: no lineups available for ${eventKey}`);
