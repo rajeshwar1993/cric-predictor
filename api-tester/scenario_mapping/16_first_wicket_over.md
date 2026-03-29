@@ -108,42 +108,57 @@ The stored value is the ceiled over number (e.g., `3` means "during the 3rd over
 
 ## API Response Examples
 
-### First wicket falls early (over 2)
+### During live play (wickets in roughly chronological order)
+
+During live play, the wickets array is in roughly chronological order, so `fow[0]` is typically an early wicket:
 
 ```json
 {
   "wickets": {
     "Sunrisers Hyderabad 1 INN": [
-      {
-        "innings": "Sunrisers Hyderabad 1 INN",
-        "fall": "2.1 ov",
-        "balwer": "Abhishek Sharma",
-        "batsman": " c ?",
-        "score": "18/1"
-      },
-      {
-        "innings": "Sunrisers Hyderabad 1 INN",
-        "fall": "2.6 ov",
-        "balwer": "TM Head",
-        "batsman": " c Salt b Duffy 11 ",
-        "score": "23/2"
-      }
+      { "fall": "2.6 ov", "score": "23/2", "balwer": "TM Head" },
+      { "fall": "2.1 ov", "score": "18/1", "balwer": "Abhishek Sharma" },
+      { "fall": "4.2 ov", "score": "29/3", "balwer": "K Nitish Kumar Reddy" }
     ]
   }
 }
 ```
 
-First entry: `fall = "2.1 ov"` → `parseFloat("2.1") = 2.1` → `Math.ceil(2.1) = 3` → bracket `"3-4"`
+Note: even during live play, `fow[0]` is the 2nd wicket (2.6 ov, score 23/2), not the 1st (2.1 ov, score 18/1). The `score` field reveals the wicket number (`18/1` = 1st wicket). In this case `Math.ceil(2.6) = 3` and `Math.ceil(2.1) = 3` produce the same bracket, but this is coincidental.
 
-Wait — let's trace this more carefully from the actual poll data:
+### Finished match — KNOWN BUG
 
-The wickets array shows the first entry has `fall: "2.1 ov"`. However, note that the wickets array may NOT be ordered by time. Looking at the real data:
-- Entry 0: `fall: "2.6 ov"`, score `"23/2"` (2nd wicket)
-- Entry 1: `fall: "2.1 ov"`, score `"18/1"` (1st wicket)
+For finished matches, the API returns wickets with **two problems**:
 
-The function takes `fow[0]` — the first array entry. In this sample data, entry 0 is actually the 2nd wicket (2.6 ov, 23/2). However, `score: "23/2"` means 2 wickets have fallen, while `score: "18/1"` means 1 wicket. So the `fow[0]` may not always be the actual first wicket.
+1. **Keys are in reverse innings order** (2nd innings first):
+```json
+{
+  "wickets": {
+    "Royal Challengers Bengaluru 2 INN": [...],
+    "Sunrisers Hyderabad 1 INN": [...]
+  }
+}
+```
+`getFirstInningsKey()` returns the **2nd innings** key, so the function looks at the wrong innings.
 
-**Caveat:** The `deriveFirstWicketOver` function assumes `fow[0]` is the first wicket, but the API may return wickets in non-chronological order. In practice, this works correctly if the API orders by time, which it typically does.
+2. **Entries are in reverse chronological order** (last wicket first):
+```json
+{
+  "wickets": {
+    "Sunrisers Hyderabad 1 INN": [
+      { "fall": "18.6 ov", "score": "192/9" },
+      { "fall": "17.5 ov", "score": "174/8" },
+      { "fall": "16.6 ov", "score": "167/7" },
+      "...",
+      { "fall": "2.1 ov", "score": "18/1" }
+    ]
+  }
+}
+```
+`fow[0]` is the **last wicket** (18.6 ov, 192/9), not the first (2.1 ov, 18/1).
+This gives `Math.ceil(18.6) = 19` → `"7+"` when the actual first wicket was at 2.1 ov → `"3-4"`.
+
+**Impact:** The `parseFullResults` fallback path produces **wrong first_wicket_over** for finished matches. Masked in practice because `progressiveResolve` resolves this during live play as soon as the first wicket falls.
 
 ### No wickets yet
 
@@ -155,7 +170,7 @@ The function takes `fow[0]` — the first array entry. In this sample data, entr
 }
 ```
 
-or
+or (pre-match):
 
 ```json
 {
@@ -173,4 +188,6 @@ Result: `null` → scenario not resolved yet.
 | Wicket on last ball of over 2 | `fall: "2.6 ov"` → `Math.ceil(2.6) = 3` → `"3-4"` (the .6 pushes it to next over) |
 | Wicket on over 6.0 exactly | `Math.ceil(6.0) = 6` → `"5-6"` |
 | No wickets all match | `deriveFirstWicketOver` returns `null` → scenario unresolved |
-| Wickets array not ordered | `fow[0]` taken as-is — may pick wrong entry if API doesn't sort chronologically |
+| Wickets reversed (finished) | `fow[0]` is the LAST wicket → **wrong over number** |
+| Wickets key reversed (finished) | Wrong innings used → **wrong first wicket** |
+| `fow[0]` not the 1st wicket (live) | `score` field can verify: `"18/1"` = 1st wicket. Function does NOT check this. |

@@ -132,6 +132,37 @@ Output: 2.6
 Wickets with `fall` <= 6.0 overs: 3 (at 2.1, 2.6, 4.2)
 Result: `powerplay_wickets = 3` → bracket = `"3+"`
 
+### Wickets in finished match — KNOWN BUG
+
+For finished matches, the API returns wickets with **two problems**:
+
+1. **Keys are in reverse innings order** (2nd innings first):
+```json
+{
+  "wickets": {
+    "Royal Challengers Bengaluru 2 INN": [...],
+    "Sunrisers Hyderabad 1 INN": [...]
+  }
+}
+```
+`getFirstInningsKey()` returns the **2nd innings** key, so `derivePowerplayWickets` would count the second innings powerplay wickets, not the first.
+
+2. **Entries are in reverse chronological order** (last wicket first):
+```json
+{
+  "wickets": {
+    "Sunrisers Hyderabad 1 INN": [
+      { "fall": "18.6 ov", "score": "192/9" },
+      { "fall": "17.5 ov", "score": "174/8" },
+      "...",
+      { "fall": "2.1 ov", "score": "18/1" }
+    ]
+  }
+}
+```
+
+**Impact:** The `filter` logic still counts correctly (it checks ALL entries, not just the first ones), but it counts the **wrong innings**. Masked in practice because `progressiveResolve` resolves this during live play.
+
 ### Edge Cases
 
 | Case | Behavior |

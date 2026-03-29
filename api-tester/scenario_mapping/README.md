@@ -33,6 +33,82 @@ Authoritative reference for all 16 prediction scenarios. Each file documents the
 6. **`end`** — Resolved when the match is marked "Finished"
 7. **`post_match`** — Resolved when post-match data (e.g., Man of the Match) is available
 
+## API Quirks (from poll data analysis)
+
+These were discovered by comparing live-play poll data vs finished-match poll data:
+
+### Key ordering differs between `scorecard`/`extra` and `comments`/`wickets`
+
+| Object | Finished Match Key Order | Live Match Key |
+|--------|--------------------------|----------------|
+| `scorecard` | 1st innings first (`"Team A 1 INN"`, `"Team B 2 INN"`) | Same |
+| `extra` | 1st innings first | Same |
+| `comments` | **2nd innings first** (`"Team B 2 INN"`, `"Team A 1 INN"`) | `"Live"` |
+| `wickets` | **2nd innings first** | 1st innings first (roughly) |
+
+This means `getFirstInningsKey(comments)` and `getFirstInningsKey(wickets)` return the **wrong innings** for finished matches. Affects: `powerplay_score`, `powerplay_wickets`, `first_wicket_over`.
+
+### Entry ordering within arrays
+
+| Object | Live Match Order | Finished Match Order |
+|--------|------------------|----------------------|
+| `comments[key][]` | Roughly chronological | **Reverse chronological** (latest ball first) |
+| `wickets[key][]` | Mixed/roughly chronological | **Reverse chronological** (last wicket first) |
+
+This means `wickets[key][0]` is the **last** wicket in finished matches, not the first. Affects: `first_wicket_over`.
+
+### `event_status_info` uses abbreviations
+
+The API uses short team codes in winner text: `"RCB won by 6 wickets"`, not full names. The `toCode()` mapping doesn't include abbreviations like `"RCB"` → `"RCB"`. Affects: `match_winner`.
+
+### Non-batting players in scorecard
+
+Finished match scorecards include all squad members (not just those who batted), with `R: "0"`, `B: "0"`, `status: ""`. Safe for calculations since `parseInt("0") = 0`.
+
+### These bugs are masked by progressive resolution
+
+Scenarios like `powerplay_score`, `powerplay_wickets`, and `first_wicket_over` are resolved **during live play** via `progressiveResolve()` (when data is in the right order). The `parseFullResults()` fallback runs at match end and would produce wrong results for these scenarios, but they're already resolved by then.
+
+## Resolution Reliability
+
+Based on analysis of poll data across pre-match, live, and finished match states.
+
+### Reliable — will resolve correctly
+
+| Scenario | Confidence | Why |
+|----------|------------|-----|
+| `toss_winner` | High | `event_toss` field is a simple, well-formatted string present as soon as the toss happens. Parsing is straightforward (split on `", elected to"`). Resolved progressively before the match starts. |
+| `first_innings_score` | High | `extra` keys are in correct innings order (1st innings first) in both live and finished states. `parseInningsTotal` regex is reliable. Resolved progressively at innings break. |
+| `total_match_runs` | High | Same `extra` source as `first_innings_score`, summing both innings. Key ordering is correct. Resolved at match end from `parseFullResults`. |
+| `total_sixes` | High | Reads `6s` field from scorecard batsman entries. Scorecard keys are in correct order. All values are simple string integers. Non-batting players have `"0"` which is safe. |
+| `total_wickets` | High | Reads `W` field from scorecard bowler entries. Same reliable scorecard structure. |
+| `batsman_fifty` | High | Simple check: any batsman `R >= 50`. Scorecard data is reliable. Progressive "Yes" resolution works; "No" resolved at match end. |
+| `bowler_three_wkt` | High | Simple check: any bowler `W >= 3`. Same reliable scorecard structure as above. |
+| `had_super_over` | High | Checks `Object.keys(scorecard).length > 2`. Structural check, no parsing needed. |
+| `top_scorer` | High | Finds max `R` across all batsmen. Scorecard is reliable. Only risk is tie-breaking (first in scorecard order wins — deterministic but arbitrary). |
+| `top_wicket_taker` | High | Finds max `W` across all bowlers. Same as top_scorer. Tie-breaking is first in scorecard order. |
+
+### Has known issues — works via progressive resolution but fallback path is broken
+
+| Scenario | Confidence | Issue | Mitigation |
+|----------|------------|-------|------------|
+| `powerplay_score` | Medium | In finished matches: (1) `comments` keys are in reverse innings order, so `getFirstInningsKey` picks the 2nd innings; (2) ball entries are in reverse chronological order, so the loop breaks immediately at `over > 6.0`. Returns 0 or wrong innings data. | Progressive resolution during live play works correctly (comments key is `"Live"`, entries are chronological). Fallback only fires if the live engine missed the powerplay phase. |
+| `powerplay_wickets` | Medium | In finished matches: `wickets` keys are in reverse innings order, so `getFirstInningsKey` picks the 2nd innings. The `filter` count itself works (checks all entries), but against the wrong innings. | Same as above — progressive resolution during live play uses correct key ordering. |
+| `first_wicket_over` | Medium | In finished matches: (1) `wickets` keys reversed → wrong innings; (2) entries reversed → `fow[0]` is the last wicket, not the first. Even during live play, `fow[0]` may not be the actual first wicket (array isn't strictly ordered by time). | Progressive resolution fires as soon as the first wicket is detected during live polling. The fallback is broken for finished matches. |
+
+### Has known bug — needs code fix
+
+| Scenario | Confidence | Issue | Impact |
+|----------|------------|-------|--------|
+| `match_winner` | Low | API uses abbreviations in `event_status_info` (e.g., `"RCB won by 6 wickets"`). `parseMatchWinner` extracts `"RCB"`, but `toCode("RCB")` returns `null` because `TEAM_NAME_TO_CODE` only maps full team names. | Match winner is NOT set when the API uses abbreviations. This scenario resolves only at match end (no progressive path), so there is no fallback. **Needs fix: add abbreviation entries to `TEAM_NAME_TO_CODE`.** |
+
+### Uncertain — depends on API behavior not yet observed
+
+| Scenario | Confidence | Concern |
+|----------|------------|---------|
+| `player_of_match` | Medium | Depends on `event_man_of_match` field being populated. In our finished match data it was present (`"Jacob Duffy"`), but there may be a delay between `event_status = "Finished"` and the field being populated. If `parseFullResults` runs before the API populates it, the scenario won't resolve. Subsequent polls would need to re-check. |
+| `most_sixes` | Medium | If no sixes are hit in the match (`mostSixes = 0`), the player name is not stored and the scenario is never resolved — all predictions would remain pending. Also, ties are broken by scorecard order (first found wins), which is deterministic but may not match official stats. |
+
 ## Source Files
 
 | File | Purpose |

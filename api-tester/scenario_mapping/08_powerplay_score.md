@@ -111,8 +111,11 @@ During a live match, the comments key is `"Live"` (not the innings name). The `d
 
 The function sums runs for all balls where `parseFloat(overs) <= 6.0`, stopping at `overs > 6.0`.
 
-### Comments after match (innings-keyed)
+### Comments after match (innings-keyed) — KNOWN BUG
 
+For finished matches, the API returns comments with **two problems**:
+
+1. **Keys are in reverse innings order** — the 2nd innings key appears first:
 ```json
 {
   "comments": {
@@ -121,6 +124,25 @@ The function sums runs for all balls where `parseFloat(overs) <= 6.0`, stopping 
   }
 }
 ```
+`getFirstInningsKey()` returns `"Royal Challengers Bengaluru 2 INN"` (the 2nd innings), so `derivePowerplayScore` would calculate the **second innings** powerplay, not the first.
+
+2. **Ball entries are in reverse chronological order** — highest over first:
+```json
+{
+  "comments": {
+    "Sunrisers Hyderabad 1 INN": [
+      { "overs": "19.6", "runs": "2", "post": "Bhuvneshwar to Unadkat" },
+      { "overs": "19.5", "runs": "0", "post": "Bhuvneshwar to Unadkat" },
+      "...",
+      { "overs": "0.2", "runs": "1", "post": "Duffy to Head" },
+      { "overs": "0.1", "runs": "0", "post": "Duffy to Head" }
+    ]
+  }
+}
+```
+Since the function iterates from index 0 and breaks at `over > 6.0`, it breaks immediately (19.6 > 6.0) and returns `0`.
+
+**Impact:** The `parseFullResults` fallback path produces wrong powerplay scores for finished matches. However, this is **masked in practice** because `progressiveResolve` resolves this scenario during live play (when comments key is `"Live"` and entries are in chronological order). The fallback only fires if progressive resolution missed the powerplay phase.
 
 ### Edge Cases
 
@@ -129,4 +151,6 @@ The function sums runs for all balls where `parseFloat(overs) <= 6.0`, stopping 
 | Marker entries (`"F"`, `"D"`, `"1"`) | `parseFloat("F")` returns `NaN`, `NaN > 6.0` is `false`, but `safeInt("F")` returns `0` — so these add 0 runs and don't break the loop |
 | Wicket on ball 6.0 | Included (condition is `> 6.0`, not `>= 6.0`) |
 | All out in powerplay | Whatever was scored in the first 6 overs (or fewer) |
-| Comments key is "Live" | `getFirstInningsKey()` returns whatever the first key is — works for both `"Live"` and innings-named keys |
+| Comments key is "Live" (during live play) | `getFirstInningsKey()` returns `"Live"`, entries are roughly chronological → works correctly |
+| Comments keys reversed (finished match) | `getFirstInningsKey()` returns 2nd innings key → **wrong innings used** |
+| Ball entries reversed (finished match) | Loop breaks immediately on first entry (high over) → returns `0` |

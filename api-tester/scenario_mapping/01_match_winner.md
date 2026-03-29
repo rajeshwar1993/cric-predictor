@@ -99,12 +99,28 @@ The match winner is extracted from the `event_status_info` string when `event_st
 }
 ```
 
+### KNOWN BUG: API uses abbreviations in `event_status_info`
+
+The API returns `"RCB won by 6 wickets (with 26 balls remaining)"` — using the abbreviation `"RCB"`, not the full name `"Royal Challengers Bengaluru"`.
+
+`parseMatchWinner()` extracts `"RCB"`, then `toCode("RCB")` is called. But `TEAM_NAME_TO_CODE` in `deps.ts` only maps **full team names** (e.g., `"Royal Challengers Bengaluru" → "RCB"`). There is no entry for `"RCB" → "RCB"`.
+
+**Result:** `toCode("RCB")` returns `null` → `match_winner` is NOT set → scenario not resolved.
+
+**Fix needed:** Add abbreviation-to-code entries in `TEAM_NAME_TO_CODE`:
+```
+"CSK": "CSK", "MI": "MI", "RCB": "RCB", "KKR": "KKR",
+"DC": "DC", "SRH": "SRH", "RR": "RR", "PBKS": "PBKS",
+"GT": "GT", "LSG": "LSG"
+```
+
 ### Edge Cases
 
 | Case | `event_status_info` | Result |
 |------|---------------------|--------|
-| Normal win | `"RCB won by 6 wickets (with 26 balls remaining)"` | `"RCB"` |
-| Runs win | `"CSK won by 15 runs"` | `"CSK"` |
-| Super Over | `"(MI won the Super Over)"` | `"MI"` |
+| Normal win (abbreviation) | `"RCB won by 6 wickets (with 26 balls remaining)"` | `"RCB"` extracted, but `toCode("RCB")` returns `null` (BUG) |
+| Normal win (full name) | `"Royal Challengers Bengaluru won by 6 wickets"` | `toCode("Royal Challengers Bengaluru")` → `"RCB"` (works) |
+| Runs win | `"CSK won by 15 runs"` | `toCode("CSK")` → `null` (same bug) |
+| Super Over | `"(MI won the Super Over)"` | `toCode("MI")` → `null` (same bug) |
 | Abandoned | `"Match abandoned due to rain"` | `null` (voided) |
 | No result | `"No result"` | `null` (voided) |
