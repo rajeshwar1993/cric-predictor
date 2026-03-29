@@ -9,7 +9,8 @@ import * as scenariosDal from "@/lib/dal/scenarios";
 import * as membersDal from "@/lib/dal/members";
 import * as matchesDal from "@/lib/dal/matches";
 import { submitPredictionsSchema } from "@/lib/validators";
-import { isDeadlinePassed } from "@/lib/utils";
+import { isDeadlinePassed, computeWindowOpen } from "@/lib/utils";
+import { PREDICTION_WINDOW_COPY } from "@/lib/constants";
 import type { ActionResponse } from "@/types";
 
 export async function submitPredictions(
@@ -47,8 +48,14 @@ export async function submitPredictions(
     return { success: false, error: "Picks are locked for this match" };
   }
 
+  // Check prediction window is open (not too early)
+  const windowOpen = computeWindowOpen(match.date);
+  if (new Date() < windowOpen) {
+    return { success: false, error: PREDICTION_WINDOW_COPY.ERROR_WINDOW_NOT_OPEN };
+  }
+
   if (isDeadlinePassed(match.date, match.time_ist, settings?.prediction_deadline)) {
-    return { success: false, error: "Too late — the deadline has passed" };
+    return { success: false, error: PREDICTION_WINDOW_COPY.ERROR_DEADLINE_PASSED };
   }
 
   // Verify scenarios belong to this group+match

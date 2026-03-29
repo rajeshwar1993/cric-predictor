@@ -7,7 +7,15 @@ import * as predictionsDal from "@/lib/dal/predictions";
 import * as playersDal from "@/lib/dal/players";
 import { TeamBadge } from "@/components/shared/team-badge";
 import { PredictionForm } from "@/components/prediction/prediction-form";
-import { formatMatchDate, formatMatchTime, isDeadlinePassed } from "@/lib/utils";
+import { PredictPageWindowBadge } from "@/components/prediction/predict-page-window-badge";
+import { PreWindowBanner } from "@/components/prediction/pre-window-banner";
+import {
+  formatMatchDate,
+  formatMatchTime,
+  computeWindowOpen,
+  computeDeadline,
+  getWindowState,
+} from "@/lib/utils";
 import { ROUTES } from "@/lib/constants";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -56,11 +64,23 @@ export default async function PredictPage({ params }: PredictPageProps) {
     scenarioIds
   );
 
-  // Determine lock state
+  // Compute window state
+  const windowState = getWindowState(match, settings?.prediction_deadline);
+  const windowOpen = computeWindowOpen(match.date);
+  const windowClose = computeDeadline(
+    match.date,
+    match.time_ist,
+    settings?.prediction_deadline
+  );
+  const isPreWindow =
+    windowState === "PRE_WINDOW_FUTURE" ||
+    windowState === "PRE_WINDOW_MATCH_DAY";
+
+  // Determine lock state (window closed or admin-locked)
   const locked =
     match.status !== "upcoming" ||
     settings?.is_locked === true ||
-    isDeadlinePassed(match.date, match.time_ist, settings?.prediction_deadline);
+    windowState === "WINDOW_CLOSED";
 
   // Last updated timestamp from most recent prediction
   const lastUpdated = existingPredictions.length > 0
@@ -86,9 +106,12 @@ export default async function PredictPage({ params }: PredictPageProps) {
           <span className="font-display text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
             Match {match.match_number}
           </span>
-          <span className={`font-stats text-xs ${locked ? "text-[var(--danger)]" : "text-[var(--text-muted)]"}`}>
-            {locked ? "Locked" : `Closes at ${formatMatchTime(match.time_ist)}`}
-          </span>
+          <PredictPageWindowBadge
+            windowState={windowState}
+            windowOpen={windowOpen.toISOString()}
+            windowClose={windowClose.toISOString()}
+            matchDate={match.date}
+          />
         </div>
         <div className="mt-4 flex items-center justify-center gap-6">
           <TeamBadge teamCode={match.team_a} size="lg" />
@@ -100,18 +123,32 @@ export default async function PredictPage({ params }: PredictPageProps) {
         </p>
       </div>
 
-      {/* Prediction form */}
-      <PredictionForm
-        groupId={groupId}
-        matchId={matchId}
-        teamA={match.team_a}
-        teamB={match.team_b}
-        scenarios={scenarios}
-        existingPredictions={existingPredictions}
-        players={players}
-        isLocked={locked}
-        lastUpdated={lastUpdated}
-      />
+      {/* Prediction form or pre-window banner */}
+      {isPreWindow ? (
+        <PreWindowBanner
+          windowOpen={windowOpen.toISOString()}
+          matchDate={match.date}
+          squadsAvailable={players.length > 0}
+          isMatchDay={windowState === "PRE_WINDOW_MATCH_DAY"}
+        />
+      ) : (
+        <PredictionForm
+          groupId={groupId}
+          matchId={matchId}
+          teamA={match.team_a}
+          teamB={match.team_b}
+          scenarios={scenarios}
+          existingPredictions={existingPredictions}
+          players={players}
+          isLocked={locked}
+          lastUpdated={lastUpdated}
+          deadline={
+            windowState === "WINDOW_OPEN"
+              ? windowClose.toISOString()
+              : null
+          }
+        />
+      )}
     </div>
   );
 }

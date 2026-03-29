@@ -237,3 +237,13 @@ export interface MatchScoreData {
   match_winner: string | null;
   status: import("./database").MatchStatus;
 }
+
+/**
+ * Prediction window states for a match.
+ * Determines UI display and action availability.
+ */
+export type WindowState =
+  | "PRE_WINDOW_FUTURE"     // Current date < match date
+  | "PRE_WINDOW_MATCH_DAY"  // Match day, current time < 8 AM IST
+  | "WINDOW_OPEN"           // 8 AM IST <= now < deadline
+  | "WINDOW_CLOSED";        // now >= deadline OR match is live

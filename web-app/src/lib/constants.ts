@@ -99,6 +99,7 @@ export const LIMITS = {
   MAX_CUSTOM_SCENARIOS_PER_GROUP_PER_MATCH: 30,
   MAGIC_LINK_RESEND_SECONDS: 60,
   PREDICTION_DEADLINE_MINUTES_BEFORE_MATCH: 45,
+  PREDICTION_WINDOW_OPEN_HOUR_IST: 8,
 } as const;
 
 // Prediction status indicators
@@ -130,6 +131,43 @@ export const REVEAL_TABLE_COPY = {
   LEGEND_INCORRECT: "Missed",
   LEGEND_PENDING: "In Play",
   LEGEND_NO_PICK: "No Pick",
+} as const;
+
+/** Prediction Window copy — all user-facing text for the window feature */
+export const PREDICTION_WINDOW_COPY = {
+  // Group Page: Match Card Window States
+  CARD_PRE_WINDOW_FUTURE: "Predictions open on {matchDate} at 8:00 AM",
+  CARD_PRE_WINDOW_TODAY: "Predictions open at 8:00 AM",
+  CARD_PRE_WINDOW_TODAY_COUNTDOWN: "Opens in {countdown}",
+  CARD_WINDOW_OPEN_CTA: "Make Your Calls",
+  CARD_WINDOW_OPEN_DEADLINE: "Closes in {countdown}",
+  CARD_WINDOW_CLOSED: "Predictions Locked",
+  CARD_WINDOW_CLOSED_LIVE: "Match is live \u2014 predictions are locked",
+
+  // Predict Page: Header & Banner
+  PREDICT_PRE_WINDOW_TITLE: "Not Open Yet",
+  PREDICT_PRE_WINDOW_BODY:
+    "Predictions open at 8:00 AM IST on {matchDate}. Come back when the window opens to make your calls.",
+  PREDICT_PRE_WINDOW_BADGE: "Opens {matchDate} at 8:00 AM",
+  PREDICT_WINDOW_OPEN_BADGE: "Closes in {countdown}",
+  PREDICT_WINDOW_CLOSED_TITLE: "Predictions Locked",
+  PREDICT_WINDOW_CLOSED_BODY:
+    "Time\u2019s up! The deadline has passed or an admin locked predictions.",
+  PREDICT_WINDOW_JUST_OPENED:
+    "Window is now open \u2014 tap to start predicting",
+
+  // Tooltip / Help
+  TOOLTIP_TITLE: "Prediction Window",
+  TOOLTIP_BODY:
+    "You can submit picks between 8:00 AM IST on match day and 45 minutes before the match starts. Squads are confirmed by then, so every scenario is ready to go.",
+
+  // Edge Cases
+  SQUADS_PENDING_NOTE: "Squads will be available when the window opens.",
+  ZERO_WINDOW: "Predictions are locked for this match.",
+
+  // Server Error Messages
+  ERROR_WINDOW_NOT_OPEN: "Predictions open at 8 AM on match day",
+  ERROR_DEADLINE_PASSED: "Too late \u2014 the prediction window has closed",
 } as const;
 
 // Scenario column header abbreviations (keyed by system_category)
