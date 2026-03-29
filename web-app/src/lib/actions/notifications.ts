@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { logError, logInfo } from "@/lib/logger";
-import { trackServerEvent, ANALYTICS_EVENTS } from "@/lib/analytics";
+import { trackServerEvent, ANALYTICS_EVENTS } from "@/lib/analytics/server";
 import * as notificationsDal from "@/lib/dal/notifications";
 import type { ActionResponse } from "@/types";
 

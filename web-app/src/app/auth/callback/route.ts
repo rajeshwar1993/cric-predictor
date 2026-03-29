@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { trackServerEvent, hashIdentifier, ANALYTICS_EVENTS } from "@/lib/analytics";
+import { trackServerEvent, hashIdentifier, ANALYTICS_EVENTS } from "@/lib/analytics/server";
 
 /**
  * Validate that redirectTo is a safe relative path.

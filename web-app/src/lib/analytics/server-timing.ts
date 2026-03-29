@@ -11,8 +11,7 @@
  *   });
  */
 
-import { trackServerEvent } from "@/lib/analytics";
-import { ANALYTICS_EVENTS } from "@/lib/posthog/events";
+import { trackServerEvent, ANALYTICS_EVENTS } from "@/lib/analytics/server";
 import { logWarn } from "@/lib/logger";
 
 const SLOW_THRESHOLD_MS = 3000;

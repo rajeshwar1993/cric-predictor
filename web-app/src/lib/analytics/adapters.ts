@@ -22,23 +22,6 @@ export function capturePostHogClient(
   }
 }
 
-// ── PostHog (server) ─────────────────────────────
-
-export function capturePostHogServer(
-  userId: string,
-  event: string,
-  properties: Record<string, unknown>
-): void {
-  try {
-    // Dynamic require to avoid circular imports at module load time.
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { captureServerEvent } = require("@/lib/posthog/server");
-    captureServerEvent(userId, event, properties);
-  } catch (err) {
-    logWarn({ layer: "analytics", operation: "capturePostHogServer" }, String(err));
-  }
-}
-
 // ── Firebase (client only) ───────────────────────
 
 export async function captureFirebase(

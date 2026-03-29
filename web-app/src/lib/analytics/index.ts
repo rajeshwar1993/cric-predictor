@@ -17,7 +17,6 @@ export type { AnalyticsEvent } from "@/lib/posthog/events";
 import { sanitizeProperties } from "./sanitize";
 import {
   capturePostHogClient,
-  capturePostHogServer,
   captureFirebase,
   identifyFirebase,
 } from "./adapters";
@@ -51,19 +50,6 @@ export function trackPageView(url: string): void {
 
   capturePostHogClient("$pageview", { $current_url: url });
   captureFirebase("page_view", { page_path: url }); // Firebase built-in event name
-}
-
-/**
- * Track a server-side event (PostHog only -- Firebase is client-side only).
- * Properties are PII-sanitized before dispatch.
- */
-export function trackServerEvent(
-  userId: string,
-  eventName: string,
-  properties?: Record<string, unknown>
-): void {
-  const clean = properties ? sanitizeProperties(properties) : {};
-  capturePostHogServer(userId, eventName, clean);
 }
 
 /**

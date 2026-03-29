@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { logError, logInfo } from "@/lib/logger";
-import { trackServerEvent, ANALYTICS_EVENTS } from "@/lib/analytics";
+import { trackServerEvent, ANALYTICS_EVENTS } from "@/lib/analytics/server";
 import { onboardingSchema } from "@/lib/validators";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";

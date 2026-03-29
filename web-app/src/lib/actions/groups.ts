@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { logError, logInfo } from "@/lib/logger";
-import { trackServerEvent, ANALYTICS_EVENTS } from "@/lib/analytics";
+import { trackServerEvent, ANALYTICS_EVENTS } from "@/lib/analytics/server";
 import * as groupsDal from "@/lib/dal/groups";
 import * as membersDal from "@/lib/dal/members";
 import { createGroupSchema, updateMemberSchema } from "@/lib/validators";
