@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useMemo, useCallback, useTransition } from "react";
+import { useState, useCallback, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ScenarioCard } from "./scenario-card";
 import { submitPredictions } from "@/lib/actions/predictions";
-import { useCountdown } from "@/hooks/use-countdown";
 import { Loader2, Check } from "lucide-react";
 import { getPostHogClient } from "@/lib/posthog/client";
 import { ANALYTICS_EVENTS } from "@/lib/posthog/events";
@@ -21,8 +20,6 @@ interface PredictionFormProps {
   players: Player[];
   isLocked: boolean;
   lastUpdated: string | null;
-  /** ISO string deadline for auto-lock countdown during active session */
-  deadline?: string | null;
 }
 
 // Group scenarios by resolution phase for display order
@@ -81,18 +78,9 @@ export function PredictionForm({
   players,
   isLocked,
   lastUpdated,
-  deadline,
 }: PredictionFormProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
-
-  // Auto-lock: when deadline passes during the session
-  const deadlineDate = useMemo(
-    () => (deadline ? new Date(deadline) : null),
-    [deadline]
-  );
-  const { isExpired: isAutoLocked } = useCountdown(deadlineDate);
-  const effectivelyLocked = isLocked || isAutoLocked;
 
   // Initialize picks from existing predictions
   const initialPicks: Record<string, string> = {};
@@ -166,7 +154,7 @@ export function PredictionForm({
         </p>
       )}
 
-      {effectivelyLocked && (
+      {isLocked && (
         <div className="rounded-[14px] border border-[var(--danger)] bg-[color-mix(in_srgb,var(--danger)_8%,transparent)] p-4 text-center">
           <p className="font-display text-sm font-semibold text-[var(--danger)]">
             Predictions Locked
@@ -193,7 +181,7 @@ export function PredictionForm({
                 players={players}
                 value={picks[scenario.id] || null}
                 onChange={handleChange}
-                disabled={effectivelyLocked}
+                disabled={isLocked}
               />
             ))}
           </div>
@@ -219,7 +207,7 @@ export function PredictionForm({
           </div>
           <Button
             onClick={handleSubmit}
-            disabled={loading || effectivelyLocked || answeredCount === 0}
+            disabled={loading || isLocked || answeredCount === 0}
             className="w-full sm:w-auto font-display font-semibold text-sm bg-gradient-to-br from-[var(--cyan)] to-[color-mix(in_srgb,var(--cyan),#000_20%)] text-[var(--bg-deep)] hover:opacity-90 btn-glow"
           >
             {loading ? (

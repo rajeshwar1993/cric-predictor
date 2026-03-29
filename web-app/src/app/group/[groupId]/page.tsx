@@ -14,9 +14,8 @@ import Link from "next/link";
 import { LIMITS } from "@/lib/constants";
 import { ROUTES } from "@/lib/constants";
 import type { MatchLeaderboardEntry } from "@/types";
-import { formatMatchDate, formatMatchTime, computeDeadline, computeWindowOpen } from "@/lib/utils";
+import { formatMatchDate, formatMatchTime, computeDeadline } from "@/lib/utils";
 import { LiveMatchCard } from "@/components/match/live-match-card";
-import { WindowStatusIndicator } from "@/components/prediction/window-status-indicator";
 
 interface GroupPageProps {
   params: Promise<{ groupId: string }>;
@@ -106,6 +105,7 @@ export default async function GroupHomePage({ params }: GroupPageProps) {
           {upcomingMatches.map((match, index) => {
             const isLive = match.status === "live";
             const deadline = computeDeadline(match.date, match.time_ist);
+            const deadlineStr = deadline.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" }) + " IST";
             const isPrimary = index === 0;
 
             return (
@@ -161,21 +161,27 @@ export default async function GroupHomePage({ params }: GroupPageProps) {
                       View Leaderboard
                     </Link>
                   ) : (
-                    <WindowStatusIndicator
-                      matchId={match.id}
-                      matchDate={match.date}
-                      groupId={groupId}
-                      isPrimary={isPrimary}
-                      windowOpen={computeWindowOpen(match.date).toISOString()}
-                      windowClose={deadline.toISOString()}
-                    />
+                    <Link
+                      href={ROUTES.PREDICT(groupId, match.id)}
+                      className={`w-full sm:w-auto text-center rounded-xl px-5 py-2.5 font-display text-sm font-semibold transition-opacity ${
+                        isPrimary
+                          ? "cta-gradient text-[var(--text-inverse)] hover:opacity-90"
+                          : "bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+                      }`}
+                    >
+                      {isPrimary ? "Make Your Calls" : "Predict Early"}
+                    </Link>
                   )}
                 </div>
 
-                {/* Live status text — window status is handled by WindowStatusIndicator */}
-                {isLive && (
+                {/* Deadline or live status */}
+                {isLive ? (
                   <p className="mt-3 text-xs text-[var(--success)]">
                     Match is live — predictions are locked
+                  </p>
+                ) : (
+                  <p className="mt-3 text-xs text-[var(--danger)]">
+                    Predictions close at {deadlineStr}
                   </p>
                 )}
 

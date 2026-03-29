@@ -26,12 +26,6 @@ export const ANALYTICS_EVENTS = {
   PREDICTION_SUBMITTED: "prediction_submitted",
   PREDICTION_PICK_CHANGED: "prediction_pick_changed",
 
-  // Prediction Window
-  PREDICTION_WINDOW_NOT_OPEN_VIEWED: "prediction_window_not_open_viewed",
-  PREDICTION_WINDOW_OPENED: "prediction_window_opened",
-  PREDICTION_WINDOW_CLOSED_VIEWED: "prediction_window_closed_viewed",
-  PREDICTION_EARLY_SUBMIT_BLOCKED: "prediction_early_submit_blocked",
-
   // Scenarios
   SCENARIO_CUSTOM_CREATED: "scenario_custom_created",
   SCENARIO_CUSTOM_CREATED_BY_ADMIN: "scenario_custom_created_by_admin",

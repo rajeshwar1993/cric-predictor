@@ -1,7 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { LIMITS, IPL_TEAMS } from "./constants";
-import type { WindowState } from "@/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -48,101 +47,6 @@ export function isDeadlinePassed(
 ): boolean {
   const deadline = computeDeadline(matchDate, matchTimeIst, customDeadline);
   return new Date() > deadline;
-}
-
-/**
- * Compute when the prediction window opens for a match.
- * Always 8:00 AM IST on the match date.
- *
- * TIMEZONE SEMANTICS:
- *   Constructs "matchDate + 08:00:00 + 05:30" so JavaScript
- *   converts to UTC internally. Mirrors the SQL:
- *   (m.date + '08:00:00'::time) AT TIME ZONE 'Asia/Kolkata'
- *
- * @param matchDate - Date string (e.g., "2026-04-01")
- * @returns Date object representing 8 AM IST on match day
- */
-export function computeWindowOpen(matchDate: string): Date {
-  const hour = LIMITS.PREDICTION_WINDOW_OPEN_HOUR_IST;
-  const hourStr = hour.toString().padStart(2, "0");
-  const windowOpen = new Date(`${matchDate}T${hourStr}:00:00+05:30`);
-  if (isNaN(windowOpen.getTime())) return new Date(0); // Invalid → treat as already passed
-  return windowOpen;
-}
-
-/**
- * Check if the prediction window is currently open.
- * Returns true only when: 8 AM IST on match day <= now < deadline.
- *
- * Returns false (window not open) if date/time inputs are malformed — fail closed.
- *
- * @param matchDate - Date string (e.g., "2026-04-01")
- * @param matchTimeIst - Time string in IST (e.g., "19:30:00")
- * @param customDeadline - Optional admin override for close time
- */
-export function isWindowOpen(
-  matchDate: string,
-  matchTimeIst: string,
-  customDeadline?: string | null
-): boolean {
-  const now = new Date();
-  const windowOpen = computeWindowOpen(matchDate);
-  const deadline = computeDeadline(matchDate, matchTimeIst, customDeadline);
-  return now >= windowOpen && now < deadline;
-}
-
-/**
- * Determine the prediction window state for a match.
- * Used by server components to decide which UI state to render.
- *
- * @param match - Object with date and time_ist fields
- * @param customDeadline - Optional admin override for close time
- * @returns WindowState enum value
- */
-export function getWindowState(
-  match: { date: string; time_ist: string },
-  customDeadline?: string | null
-): WindowState {
-  const now = new Date();
-  const windowOpen = computeWindowOpen(match.date);
-  const deadline = computeDeadline(match.date, match.time_ist, customDeadline);
-
-  // Edge case: zero-duration window (deadline before window open)
-  if (deadline <= windowOpen) return "WINDOW_CLOSED";
-
-  if (now >= deadline) return "WINDOW_CLOSED";
-  if (now >= windowOpen) return "WINDOW_OPEN";
-
-  // Pre-window: distinguish between future day and match day
-  // IST is always UTC+05:30 (no DST). Use explicit offset arithmetic
-  // instead of toLocaleString which is fragile across runtimes.
-  const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
-  const nowIST = new Date(now.getTime() + IST_OFFSET_MS);
-  const matchDayIST = new Date(
-    new Date(match.date + "T00:00:00+05:30").getTime() + IST_OFFSET_MS
-  );
-
-  // Compare dates only (year, month, day in IST) using UTC getters
-  // since we already shifted by the IST offset
-  const isSameDay =
-    nowIST.getUTCFullYear() === matchDayIST.getUTCFullYear() &&
-    nowIST.getUTCMonth() === matchDayIST.getUTCMonth() &&
-    nowIST.getUTCDate() === matchDayIST.getUTCDate();
-
-  if (isSameDay) return "PRE_WINDOW_MATCH_DAY";
-  return "PRE_WINDOW_FUTURE";
-}
-
-/**
- * Format a match date for window copy (e.g., "Apr 6").
- * Short format: month abbreviation + day.
- */
-export function formatWindowDate(matchDate: string): string {
-  return new Date(matchDate + "T00:00:00+05:30").toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    timeZone: "Asia/Kolkata",
-  });
 }
 
 /**
