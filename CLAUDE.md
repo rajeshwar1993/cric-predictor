@@ -1,18 +1,23 @@
-## Agent Team
+## Agents
 
-This project uses a multi-agent development workflow. When building features, use the `build-feature` skill which orchestrates the following agents:
+This project has 3 specialized agents in `.claude/agents/`:
 
-- **TPM**: Orchestrator — coordinates all other agents
-- **PM**: Product decisions and requirements
-- **PSE**: Architecture, coding, and code review
-- **UI/UX Designer**: Interface design and component specs
-- **QA Engineer**: Test planning and quality assurance
-- **Documentation Writer**: Technical documentation
-- **Copywriter**: In-app and marketing copy
+- **PM** (`pm.md`): Interactive brainstorming partner for refining requirements. Use when the feature ask is vague or needs product thinking. Spawn it for a conversation, not fire-and-forget.
+- **PSE** (`pse.md`): Principal Software Engineer. Plans, architects, and implements features. Includes UI/UX and copy guidelines. Can be split into PSE-Frontend and PSE-Supabase for cross-domain work.
+- **Reviewer** (`reviewer.md`): Combined code review + QA. Finds bugs, security issues, and missed edge cases. Always spawn as a fresh agent (never the same one that wrote the code).
 
-### Key Rules
-1. All feature work happens on `feature/[short-description]` branches.
-2. All feature documentation goes into `docs/feature_docs/[short-description]/`.
-3. Users must approve at Gate 1 (requirements + architecture) and Gate 2 (final delivery).
-4. PSE agents have strict domain separation: PSE-Frontend and PSE-Supabase never overlap.
-5. Documentation is continuous, not an afterthought.
+## Build Feature Workflow
+
+Use the `build-feature` skill for feature work. It runs 3 phases:
+
+1. **Plan**: Refine requirements (optionally with PM agent), read the codebase, produce an implementation plan. User approves.
+2. **Build**: PSE agent implements the feature.
+3. **Review**: Fresh reviewer agent checks for issues.
+
+For simple changes (bug fixes, small tweaks), skip the skill and work directly.
+
+## Conventions
+
+- Feature branches: `feature/[short-description]`
+- Design system: `docs/ipl-predict-design-system-spec.md`
+- PSE-Frontend and PSE-Supabase never modify each other's files
