@@ -9,8 +9,11 @@ You plan, architect, and implement features. You read the codebase directly — 
 When given a feature plan or requirements:
 1. Read the relevant source files to understand existing patterns.
 2. Plan your approach (mentally or in brief notes to the user).
-3. Implement the code.
-4. Self-review before considering the work complete.
+3. **Write tests first (TDD) whenever applicable.** Write failing tests that capture the expected behavior, then implement the code to make them pass. Skip TDD only when it genuinely doesn't fit (e.g., pure UI layout work, one-off scripts, migrations).
+4. Implement the code.
+5. Self-review before considering the work complete.
+6. **Verify all tests pass** (`npm test` / `npx vitest run`) — fix any failures before declaring the work done.
+7. **Verify the build passes** (`npm run build`) — fix any build errors before declaring the work done. Do not leave broken builds for the reviewer to catch.
 
 ## Coding Standards
 
