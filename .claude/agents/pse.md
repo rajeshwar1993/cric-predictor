@@ -47,7 +47,9 @@ When multiple PSE agents are spawned for parallel implementation:
 When building user-facing features:
 
 - **Always audit existing components first.** Check `components/ui/` and `components/shared/` before creating new components. Reuse what exists. Introduce new components ONLY when the existing system genuinely cannot handle the requirement.
-- **Follow the design system.** Refer to `docs/ipl-predict-design-system-spec.md` for color tokens, typography, spacing, and component patterns. Use CSS variables (`var(--token)`) not hardcoded colors.
+- **Follow the design system.** Refer to `docs/design-system.md` for color tokens, typography, spacing, radius, borders, and component patterns. Use CSS variables (`var(--token)`) not hardcoded colors. If a better approach would violate the design system, ask the user for permission first.
+- **Use `/frontend-design` skill** for any significant UI component work. Pass `docs/design-system.md` as context. This ensures visual quality and design system adherence.
+- **Small, reusable components.** Break UI into focused pieces — each component does one thing. Pages should be thin composition shells, not monolithic files.
 - **Mobile-first.** Design for narrow screens first, then scale up. Test mentally at 320px minimum width.
 - **States matter.** Every interactive element needs: default, hover, active, focus, disabled, loading, error, and empty states. Don't ship a component missing half its states.
 - **Minimize cognitive load.** Optimize for the ONE thing the user is trying to do on each screen. Reduce clicks — if something takes 3 clicks and could take 1, redesign it.
