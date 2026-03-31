@@ -1,8 +1,10 @@
-import { defineConfig } from "@playwright/test";
-import dotenv from "dotenv";
-import path from "path";
+import { loadTestEnv } from "./helpers/env";
 
-dotenv.config({ path: path.resolve(__dirname, ".env.qa") });
+// Load environment before any other imports that might read env vars
+loadTestEnv();
+
+import { defineConfig } from "@playwright/test";
+import path from "path";
 
 export default defineConfig({
   testDir: "./tests",
@@ -29,8 +31,14 @@ export default defineConfig({
   ],
   projects: [
     {
-      name: "chromium",
+      name: "anytime",
       use: { browserName: "chromium" },
+      testMatch: /^(0[1-9]|1[34])-/,
+    },
+    {
+      name: "live-match",
+      use: { browserName: "chromium" },
+      testMatch: /^1[0-2]-/,
     },
   ],
 });

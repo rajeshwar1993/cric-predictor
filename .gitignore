@@ -4,6 +4,7 @@ Thumbs.db
 
 # E2E
 web-app/e2e/.env.qa
+web-app/e2e/.env.staging
 web-app/e2e/reports/
 !web-app/e2e/reports/.gitkeep
 
@@ -23,3 +24,4 @@ web-app/.git-bak/
 
 # Supabase local
 supabase/.temp/
+supabase/.env*
