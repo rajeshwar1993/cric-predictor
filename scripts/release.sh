@@ -6,7 +6,17 @@ set -euo pipefail
 #
 # Run this on a feature/ or bugfix/ branch after testing on staging.
 # It verifies the build, bumps the version, and creates a PR to main.
+#
+# Flags:
+#   --skip-tests    Skip running tests and build verification
 # =============================================================================
+
+SKIP_TESTS=false
+for arg in "$@"; do
+  case "$arg" in
+    --skip-tests) SKIP_TESTS=true ;;
+  esac
+done
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -77,20 +87,21 @@ fi
 ok "Branch is up-to-date with main"
 
 # ---------------------------------------------------------------------------
-# 4. Run tests
+# 4. Run tests and verify build
 # ---------------------------------------------------------------------------
-info "Running tests..."
-cd "$WEB_APP_DIR"
-npm run test:run || error "Tests failed. Fix them before releasing."
-ok "All tests passed"
+if [[ "$SKIP_TESTS" == true ]]; then
+  warn "Skipping tests and build verification (--skip-tests)"
+else
+  info "Running tests..."
+  cd "$WEB_APP_DIR"
+  npm run test:run || error "Tests failed. Fix them before releasing."
+  ok "All tests passed"
 
-# ---------------------------------------------------------------------------
-# 5. Verify build
-# ---------------------------------------------------------------------------
-info "Verifying build..."
-npm run build || error "Build failed. Fix build errors before releasing."
-ok "Build passed"
-cd "$REPO_ROOT"
+  info "Verifying build..."
+  npm run build || error "Build failed. Fix build errors before releasing."
+  ok "Build passed"
+  cd "$REPO_ROOT"
+fi
 
 # ---------------------------------------------------------------------------
 # 6. Bump version
