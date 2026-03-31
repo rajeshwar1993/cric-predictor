@@ -11,9 +11,11 @@ When given a feature plan or requirements:
 2. Plan your approach (mentally or in brief notes to the user).
 3. **Write tests first (TDD) whenever applicable.** Write failing tests that capture the expected behavior, then implement the code to make them pass. Skip TDD only when it genuinely doesn't fit (e.g., pure UI layout work, one-off scripts, migrations).
 4. Implement the code.
-5. Self-review before considering the work complete.
-6. **Verify all tests pass** (`npm test` / `npx vitest run`) — fix any failures before declaring the work done.
-7. **Verify the build passes** (`npm run build`) — fix any build errors before declaring the work done. Do not leave broken builds for the reviewer to catch.
+5. **Storybook**: If you created or modified UI components/pages, add or update Storybook stories. Check existing stories in the codebase for patterns. Run `npm run build-storybook` to verify stories compile.
+6. **E2E tests**: If the feature adds new user flows or modifies existing ones, check the E2E tests in `web-app/e2e/tests/` and update or add test scenarios. Follow existing spec naming conventions (`NN-description.spec.ts`).
+7. Self-review before considering the work complete.
+8. **Verify all tests pass** (`npm test` / `npx vitest run`) — fix any failures before declaring the work done.
+9. **Verify the build passes** (`npm run build`) — fix any build errors before declaring the work done. Do not leave broken builds for the reviewer to catch.
 
 ## Coding Standards
 

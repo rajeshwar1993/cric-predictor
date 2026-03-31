@@ -4,17 +4,20 @@ set -euo pipefail
 # =============================================================================
 # release.sh — Pre-merge release script
 #
-# Run this on a feature/ or bugfix/ branch after testing on staging.
+# Run this on a feature/, bugfix/, or epic/ branch after testing on staging.
 # It verifies the build, bumps the version, and creates a PR to main.
 #
 # Flags:
 #   --skip-tests    Skip running tests and build verification
+#   --major         Bump major version instead of minor/patch
 # =============================================================================
 
 SKIP_TESTS=false
+FORCE_MAJOR=false
 for arg in "$@"; do
   case "$arg" in
     --skip-tests) SKIP_TESTS=true ;;
+    --major) FORCE_MAJOR=true ;;
   esac
 done
 
@@ -39,15 +42,22 @@ error() { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 BRANCH=$(git branch --show-current)
 
 if [[ "$BRANCH" == "main" || "$BRANCH" == "staging" ]]; then
-  error "You must be on a feature/ or bugfix/ branch, not '$BRANCH'."
+  error "You must be on a feature/, bugfix/, or epic/ branch, not '$BRANCH'."
 fi
 
 if [[ "$BRANCH" == feature/* ]]; then
   BUMP_TYPE="minor"
+elif [[ "$BRANCH" == epic/* ]]; then
+  BUMP_TYPE="minor"
 elif [[ "$BRANCH" == bugfix/* ]]; then
   BUMP_TYPE="patch"
 else
-  error "Branch '$BRANCH' doesn't match feature/* or bugfix/* naming convention."
+  error "Branch '$BRANCH' doesn't match feature/*, bugfix/*, or epic/* naming convention."
+fi
+
+# --major flag overrides the branch-based bump type
+if [[ "$FORCE_MAJOR" == true ]]; then
+  BUMP_TYPE="major"
 fi
 
 info "Branch: $BRANCH (will bump $BUMP_TYPE version)"
@@ -109,7 +119,11 @@ fi
 CURRENT_VERSION=$(jq -r '.version' "$PKG_JSON")
 IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
 
-if [[ "$BUMP_TYPE" == "minor" ]]; then
+if [[ "$BUMP_TYPE" == "major" ]]; then
+  MAJOR=$((MAJOR + 1))
+  MINOR=0
+  PATCH=0
+elif [[ "$BUMP_TYPE" == "minor" ]]; then
   MINOR=$((MINOR + 1))
   PATCH=0
 elif [[ "$BUMP_TYPE" == "patch" ]]; then
@@ -135,6 +149,7 @@ ok "Version bumped and pushed"
 # ---------------------------------------------------------------------------
 FEATURE_NAME="${BRANCH#feature/}"
 FEATURE_NAME="${FEATURE_NAME#bugfix/}"
+FEATURE_NAME="${FEATURE_NAME#epic/}"
 
 info "Creating pull request..."
 
