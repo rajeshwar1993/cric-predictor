@@ -69,9 +69,9 @@ export function LoginForm() {
 
   if (state === "sent") {
     return (
-      <div className="text-center space-y-6">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[var(--cyan-soft)]">
-          <Mail className="h-8 w-8 text-[var(--cyan)]" />
+      <div className="space-y-6 text-center">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--cta-from)]/10">
+          <Mail className="h-7 w-7 text-[var(--cta-from)]" />
         </div>
         <div className="space-y-2">
           <h2 className="font-display text-xl font-bold text-[var(--text-primary)]">
@@ -79,7 +79,9 @@ export function LoginForm() {
           </h2>
           <p className="text-sm text-[var(--text-secondary)]">
             We just fired a link to{" "}
-            <span className="font-medium text-[var(--text-primary)]">{email}</span>
+            <span className="font-medium text-[var(--text-primary)]">
+              {email}
+            </span>
           </p>
           <p className="text-xs text-[var(--text-muted)]">
             Tap the link in your inbox to get in. Expires in 1 hour.
@@ -90,10 +92,10 @@ export function LoginForm() {
             type="button"
             onClick={handleResend}
             disabled={!canResend || loading}
-            className={`w-full inline-flex items-center justify-center rounded-[10px] border px-4 py-2.5 text-sm font-medium transition-all ${
+            className={`inline-flex w-full items-center justify-center rounded-xl border px-4 py-2.5 text-sm font-medium transition-all ${
               !canResend || loading
-                ? "opacity-50 cursor-not-allowed border-[var(--border-subtle)] text-[var(--text-muted)]"
-                : "border-[var(--border-medium)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+                ? "cursor-not-allowed border-transparent bg-[var(--bg-elevated)]/50 text-[var(--text-muted)] opacity-50"
+                : "border-[var(--ghost-border)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
             }`}
           >
             {loading ? (
@@ -102,7 +104,7 @@ export function LoginForm() {
             {canResend ? "Send another" : "Hold on — resend in 1 min"}
           </button>
           <button
-            className="flex items-center justify-center gap-1 mx-auto text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
+            className="mx-auto flex items-center justify-center gap-1 text-xs text-[var(--text-muted)] transition-colors hover:text-[var(--text-secondary)]"
             onClick={() => setState("input")}
           >
             <ArrowLeft className="h-3 w-3" />
@@ -131,15 +133,19 @@ export function LoginForm() {
             setEmail(e.target.value);
             if (state === "error") setState("input");
           }}
-          className="bg-[var(--bg-input)] border-[var(--border-medium)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--border-focus)] focus:ring-[var(--border-focus)]"
+          className="h-10 border-[var(--ghost-border)] bg-[var(--bg-input)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--border-focus)]"
           required
           autoComplete="email"
           autoFocus
         />
       </div>
 
-      {(state === "error" && errorMessage) && (
-        <p className="text-sm text-[var(--danger)]" role="alert" aria-live="polite">
+      {state === "error" && errorMessage && (
+        <p
+          className="text-sm text-[var(--danger)]"
+          role="alert"
+          aria-live="polite"
+        >
           {errorMessage}
         </p>
       )}
@@ -147,10 +153,10 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={loading || !email}
-        className={`w-full inline-flex items-center justify-center rounded-[10px] px-4 py-2.5 font-display font-semibold text-sm transition-all ${
+        className={`inline-flex w-full items-center justify-center rounded-xl px-4 py-2.5 font-display text-sm font-semibold transition-all ${
           loading || !email
-            ? "opacity-50 cursor-not-allowed bg-[var(--bg-elevated)] text-[var(--text-muted)]"
-            : "bg-gradient-to-br from-[var(--cyan)] to-[color-mix(in_srgb,var(--cyan),#000_20%)] text-[var(--bg-deep)] hover:opacity-90 btn-glow"
+            ? "cursor-not-allowed bg-[var(--bg-elevated)] text-[var(--text-muted)] opacity-50"
+            : "cta-gradient btn-glow text-[var(--bg-deep)] hover:scale-[1.01] active:scale-[0.99]"
         }`}
       >
         {loading ? (

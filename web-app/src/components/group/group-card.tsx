@@ -20,7 +20,7 @@ export function GroupCard({ group }: GroupCardProps) {
   return (
     <Link
       href={ROUTES.GROUP(group.id)}
-      className="group block rounded-[14px] border border-[var(--border-light)] bg-[var(--bg-card)] p-5 transition-all hover:border-[var(--border-medium)] hover:bg-[var(--bg-hover)]"
+      className="group block rounded-2xl border border-[var(--ghost-border)] bg-[var(--bg-card)] p-5 transition-all hover:border-[var(--border-medium)] hover:bg-[var(--bg-hover)]"
     >
       <div className="flex items-start justify-between">
         <div className="min-w-0 space-y-1">
