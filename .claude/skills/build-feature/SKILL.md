@@ -98,6 +98,7 @@ Spawn **two PSE agents** with strict domain separation:
 
 - Let the PSE agent(s) make implementation decisions. Don't over-prescribe — the plan should say WHAT, the PSE decides HOW.
 - If a PSE agent encounters ambiguity, it should make a reasonable decision and note it, not block.
+- **Remind PSE agents**: If there are UI component changes, Storybook stories must be added/updated. If there are new user flows, E2E tests in `web-app/e2e/tests/` must be added/updated.
 
 ---
 
@@ -105,7 +106,7 @@ Spawn **two PSE agents** with strict domain separation:
 
 Once implementation is complete, spawn a **fresh Reviewer agent** via `Agent` tool:
 
-- Agent prompt: `"Read and follow your instructions in .claude/agents/reviewer.md. Review all code changes on this feature branch. The feature plan: [plan summary]. Run git diff main...HEAD to see all changes. Focus on real bugs, security issues, and missed edge cases."`
+- Agent prompt: `"Read and follow your instructions in .claude/agents/reviewer.md. Review all code changes on this feature branch. The feature plan: [plan summary]. Run git diff main...HEAD to see all changes. Focus on real bugs, security issues, and missed edge cases. Also verify: UI components have Storybook stories, and new user flows have E2E test coverage."`
 - The reviewer MUST be a new agent — not the same one that wrote the code.
 
 ### If the review finds blockers:

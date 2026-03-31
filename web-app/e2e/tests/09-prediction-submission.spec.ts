@@ -74,13 +74,13 @@ test.describe("Prediction submission", () => {
 
     // Submit predictions
     const submitButton = page.getByRole("button", {
-      name: /submit|save|confirm/i,
+      name: /lock it in|submit|save/i,
     });
     await submitButton.click();
 
     // Verify success feedback
     await expect(
-      page.getByText(/success|saved|submitted/i).first()
+      page.getByText(/locked in|success|saved/i).first()
     ).toBeVisible({ timeout: 10_000 });
   });
 

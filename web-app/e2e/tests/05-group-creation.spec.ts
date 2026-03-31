@@ -18,14 +18,7 @@ test.describe("Group creation", () => {
     const state = getTestState();
     await loginAndGoto(page, state.users.owner.email, "/dashboard");
 
-    // Click the create/start squad button or link
-    const createTrigger = page.getByRole("link", {
-      name: /start a new squad|create.*squad/i,
-    }).or(
-      page.getByRole("button", { name: /start a new squad|create.*squad/i })
-    );
-    await createTrigger.click();
-
+    // The create squad form is visible directly on the dashboard
     // Fill in the group name
     const nameInput = page.getByLabel(/name/i).or(
       page.getByPlaceholder(/squad name/i)

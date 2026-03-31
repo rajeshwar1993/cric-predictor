@@ -76,11 +76,9 @@ test.describe("Member management", () => {
       `/group/${state.group.id}/admin`
     );
 
-    // Find the pending user's row and click approve
+    // Find the pending user's row and click approve (icon-only button, first in row)
     const pendingRow = page.getByText("Pending User").locator("..");
-    const approveBtn = pendingRow
-      .getByRole("button", { name: /approve|accept/i })
-      .or(page.getByRole("button", { name: /approve|accept/i }).first());
+    const approveBtn = pendingRow.getByRole("button").first();
     await approveBtn.click();
 
     // Verify in DB

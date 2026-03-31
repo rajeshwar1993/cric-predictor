@@ -1,14 +1,59 @@
-import dotenv from "dotenv";
-import path from "path";
+import { loadTestEnv, getTestEnvName } from "./helpers/env";
+
+// Load environment before any other imports that might read env vars
+loadTestEnv();
+
 import fs from "fs";
+import path from "path";
 import { seedFullTestEnvironment, type TestEnvironment } from "./helpers/seed";
-import { cleanupTestData } from "./helpers/supabase-admin";
+import { cleanupTestData, getAdminClient } from "./helpers/supabase-admin";
 
 const STATE_FILE = path.join(__dirname, "reports", ".test-state.json");
 
 async function globalSetup() {
-  dotenv.config({ path: path.resolve(__dirname, ".env.qa") });
+  const envName = getTestEnvName();
+  console.log(`\n🌍 Test environment: ${envName}`);
 
+  // ── Sanity checks ──────────────────────────────────────────────
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error(
+      "Missing required env vars: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set."
+    );
+  }
+
+  const baseUrl = process.env.QA_BASE_URL || "http://localhost:3000";
+  console.log(`🔗 QA_BASE_URL: ${baseUrl}`);
+  console.log(`🔗 Supabase URL: ${supabaseUrl}`);
+
+  // Verify the app is reachable
+  try {
+    const res = await fetch(baseUrl);
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status} ${res.statusText}`);
+    }
+    console.log(`✅ App reachable (HTTP ${res.status})`);
+  } catch (err) {
+    throw new Error(
+      `Cannot reach QA_BASE_URL (${baseUrl}): ${err instanceof Error ? err.message : err}`
+    );
+  }
+
+  // Verify Supabase DB connectivity
+  try {
+    const sb = getAdminClient();
+    const { error } = await sb.from("teams").select("code").limit(1);
+    if (error) throw error;
+    console.log("✅ Supabase DB connected");
+  } catch (err) {
+    throw new Error(
+      `Supabase DB connectivity check failed: ${err instanceof Error ? err.message : err}`
+    );
+  }
+
+  // ── Seed ───────────────────────────────────────────────────────
   console.log("\n🧹 Cleaning up any previous test data...");
   await cleanupTestData();
 

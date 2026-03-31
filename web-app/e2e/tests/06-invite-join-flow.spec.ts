@@ -51,13 +51,13 @@ test.describe("Invite and join flow", () => {
     );
 
     // Click the join button
-    const joinBtn = page.getByRole("button", { name: /join/i });
+    const joinBtn = page.getByRole("button", { name: /let me in|join/i });
     await expect(joinBtn).toBeVisible();
     await joinBtn.click();
 
     // Should see a success state — either redirected to group or shown confirmation
     await expect(
-      page.getByText(/pending|requested|awaiting|joined/i)
+      page.getByText(/hang tight|pending|requested|awaiting|joined/i)
     ).toBeVisible({ timeout: 10_000 });
   });
 
