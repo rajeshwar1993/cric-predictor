@@ -10,6 +10,21 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(() => Promise.resolve(mockClient)),
 }));
 
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
+}));
+vi.mock("@/lib/logger", () => ({
+  logInfo: vi.fn(),
+  logError: vi.fn(),
+}));
+vi.mock("@/lib/analytics/server", () => ({
+  trackServerEvent: vi.fn(),
+  ANALYTICS_EVENTS: {
+    PREDICTION_SUBMITTED: "prediction_submitted",
+  },
+}));
+
 vi.mock("@/lib/dal/predictions");
 vi.mock("@/lib/dal/scenarios");
 vi.mock("@/lib/dal/members");

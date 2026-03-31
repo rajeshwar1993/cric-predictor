@@ -46,29 +46,16 @@ describe("getGroupsByUser", () => {
       {
         group_id: "group-001",
         role: "owner",
-        groups: { id: "group-001", name: "Office Cricket Gang", invite_code: "a1b2c3d4e5f6", created_by: "user-001", created_at: "2026-03-15T10:00:00Z" },
+        groups: { id: "group-001", name: "Office Cricket Gang", invite_code: "a1b2c3d4e5f6", created_by: "user-001", created_at: "2026-03-15T10:00:00Z", group_members: [{ count: 3 }] },
       },
       {
         group_id: "group-002",
         role: "admin",
-        groups: { id: "group-002", name: "College Buddies", invite_code: "x7y8z9a0b1c2", created_by: "user-002", created_at: "2026-03-10T10:00:00Z" },
+        groups: { id: "group-002", name: "College Buddies", invite_code: "x7y8z9a0b1c2", created_by: "user-002", created_at: "2026-03-10T10:00:00Z", group_members: [{ count: 2 }] },
       },
     ];
-    // Second call: member counts
-    const countRows = [
-      { group_id: "group-001" },
-      { group_id: "group-001" },
-      { group_id: "group-001" },
-      { group_id: "group-002" },
-      { group_id: "group-002" },
-    ];
-
-    let callIndex = 0;
-    mockClient.from.mockImplementation(() => {
-      callIndex++;
-      if (callIndex === 1) return createMockQueryBuilder(memberRows);
-      return createMockQueryBuilder(countRows);
-    });
+    const builder = createMockQueryBuilder(memberRows);
+    mockClient.from.mockReturnValue(builder);
 
     const result = await getGroupsByUser("user-001");
     expect(result).toHaveLength(2);
@@ -112,40 +99,25 @@ describe("createGroup", () => {
   it("creates a group and adds creator as owner", async () => {
     const createdGroup = { id: "group-new", name: "New Group", invite_code: "xyz123abc456", created_by: "user-001", created_at: "2026-03-27T10:00:00Z" };
 
-    let callIndex = 0;
-    mockClient.from.mockImplementation(() => {
-      callIndex++;
-      if (callIndex === 1) {
-        // groups insert
-        return createMockQueryBuilder([createdGroup]);
-      }
-      // group_members insert
-      return createMockQueryBuilder([]);
-    });
+    mockClient.rpc.mockResolvedValue({ data: [createdGroup], error: null });
 
     const result = await createGroup("New Group", "user-001");
     expect(result).toEqual(createdGroup);
+    expect(mockClient.rpc).toHaveBeenCalledWith("create_group_with_owner", {
+      p_name: "New Group",
+      p_created_by: "user-001",
+    });
   });
 
-  it("returns null when group insert fails", async () => {
-    const builder = createMockQueryBuilder([], { message: "Insert error" });
-    mockClient.from.mockReturnValue(builder);
+  it("returns null when rpc fails", async () => {
+    mockClient.rpc.mockResolvedValue({ data: null, error: { message: "Insert error" } });
 
     const result = await createGroup("Fail Group", "user-001");
     expect(result).toBeNull();
   });
 
-  it("returns null when member insert fails", async () => {
-    const createdGroup = { id: "group-new", name: "New Group", invite_code: "xyz", created_by: "user-001", created_at: "2026-03-27T10:00:00Z" };
-
-    let callIndex = 0;
-    mockClient.from.mockImplementation(() => {
-      callIndex++;
-      if (callIndex === 1) {
-        return createMockQueryBuilder([createdGroup]);
-      }
-      return createMockQueryBuilder([], { message: "Member insert error" });
-    });
+  it("returns null when rpc returns empty data", async () => {
+    mockClient.rpc.mockResolvedValue({ data: [], error: null });
 
     const result = await createGroup("New Group", "user-001");
     expect(result).toBeNull();

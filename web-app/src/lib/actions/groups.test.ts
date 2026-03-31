@@ -10,6 +10,27 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(() => Promise.resolve(mockClient)),
 }));
 
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
+}));
+vi.mock("@/lib/logger", () => ({
+  logInfo: vi.fn(),
+  logError: vi.fn(),
+}));
+vi.mock("@/lib/analytics/server", () => ({
+  trackServerEvent: vi.fn(),
+  ANALYTICS_EVENTS: {
+    GROUP_CREATED: "group_created",
+    GROUP_JOIN_REQUESTED: "group_join_requested",
+    GROUP_MEMBER_APPROVED: "group_member_approved",
+    GROUP_MEMBER_REJECTED: "group_member_rejected",
+    GROUP_MEMBER_PROMOTED: "group_member_promoted",
+    GROUP_MEMBER_DEMOTED: "group_member_demoted",
+    GROUP_MEMBER_REMOVED: "group_member_removed",
+  },
+}));
+
 vi.mock("@/lib/dal/groups");
 vi.mock("@/lib/dal/members");
 
@@ -162,7 +183,7 @@ describe("manageMember", () => {
   // --- approve ---
   it("approves a member successfully (caller is admin)", async () => {
     mockedMembersDal.getMembershipStatus.mockResolvedValue({ status: "approved", role: "admin" });
-    mockedMembersDal.updateMemberStatus.mockResolvedValue(true);
+    mockedMembersDal.updateMemberStatus.mockResolvedValue({ ok: true, capacityExceeded: false });
 
     const result = await manageMember(groupId, targetId, "approve");
     expect(result).toEqual({ success: true });
@@ -172,7 +193,7 @@ describe("manageMember", () => {
   // --- reject ---
   it("rejects a member successfully (caller is owner)", async () => {
     mockedMembersDal.getMembershipStatus.mockResolvedValue({ status: "approved", role: "owner" });
-    mockedMembersDal.updateMemberStatus.mockResolvedValue(true);
+    mockedMembersDal.updateMemberStatus.mockResolvedValue({ ok: true, capacityExceeded: false });
 
     const result = await manageMember(groupId, targetId, "reject");
     expect(result).toEqual({ success: true });

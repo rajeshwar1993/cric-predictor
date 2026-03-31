@@ -53,7 +53,7 @@ describe("getUpcomingMatches", () => {
     const result = await getUpcomingMatches();
     expect(result).toEqual([MOCK_MATCH_UPCOMING]);
     expect(mockClient.from).toHaveBeenCalledWith("matches");
-    expect(builder.in).toHaveBeenCalledWith("status", ["upcoming"]);
+    expect(builder.in).toHaveBeenCalledWith("status", ["upcoming", "live"]);
     expect(builder.order).toHaveBeenCalledWith("date", { ascending: true });
     expect(builder.limit).toHaveBeenCalledWith(5);
   });
@@ -105,7 +105,7 @@ describe("getMatchDeadlineInfo", () => {
 // ---------------------------------------------------------------------------
 describe("updateMatchResults", () => {
   it("updates match and returns true on success", async () => {
-    const builder = createMockQueryBuilder([]);
+    const builder = createMockQueryBuilder([{ id: 1 }]);
     mockClient.from.mockReturnValue(builder);
 
     const result = await updateMatchResults(1, {

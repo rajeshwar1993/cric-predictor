@@ -9,6 +9,22 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(() => Promise.resolve(mockClient)),
 }));
 
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
+}));
+vi.mock("@/lib/logger", () => ({
+  logInfo: vi.fn(),
+  logError: vi.fn(),
+}));
+vi.mock("@/lib/analytics/server", () => ({
+  trackServerEvent: vi.fn(),
+  ANALYTICS_EVENTS: {
+    ADMIN_RESULTS_ENTERED: "admin_results_entered",
+    ADMIN_SETTINGS_UPDATED: "admin_settings_updated",
+  },
+}));
+
 vi.mock("@/lib/dal/matches");
 vi.mock("@/lib/dal/members");
 

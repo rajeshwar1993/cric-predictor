@@ -14,17 +14,18 @@ describe("PlayerPick", () => {
     vi.clearAllMocks();
   });
 
-  it("renders the search input", () => {
+  it("renders the trigger button with placeholder text", () => {
     render(<PlayerPick {...defaultProps} />);
-    expect(screen.getByPlaceholderText("Search player...")).toBeInTheDocument();
+    expect(screen.getByText("Choose player...")).toBeInTheDocument();
   });
 
-  it("shows all players when the search input is focused", async () => {
+  it("shows the search input and all players when the trigger button is clicked", async () => {
     const user = userEvent.setup();
     render(<PlayerPick {...defaultProps} />);
 
-    await user.click(screen.getByPlaceholderText("Search player..."));
+    await user.click(screen.getByText("Choose player..."));
 
+    expect(screen.getByPlaceholderText("Search player...")).toBeInTheDocument();
     expect(screen.getByText("MS Dhoni")).toBeInTheDocument();
     expect(screen.getByText("Ruturaj Gaikwad")).toBeInTheDocument();
   });
@@ -33,6 +34,7 @@ describe("PlayerPick", () => {
     const user = userEvent.setup();
     render(<PlayerPick {...defaultProps} />);
 
+    await user.click(screen.getByText("Choose player..."));
     await user.type(screen.getByPlaceholderText("Search player..."), "Jadeja");
 
     expect(screen.getByText("Ravindra Jadeja")).toBeInTheDocument();
@@ -44,7 +46,7 @@ describe("PlayerPick", () => {
     const onChange = vi.fn();
     render(<PlayerPick {...defaultProps} onChange={onChange} />);
 
-    await user.click(screen.getByPlaceholderText("Search player..."));
+    await user.click(screen.getByText("Choose player..."));
     await user.click(screen.getByText("MS Dhoni"));
 
     expect(onChange).toHaveBeenCalledWith("MS Dhoni");
@@ -69,6 +71,7 @@ describe("PlayerPick", () => {
     const user = userEvent.setup();
     render(<PlayerPick {...defaultProps} />);
 
+    await user.click(screen.getByText("Choose player..."));
     await user.type(
       screen.getByPlaceholderText("Search player..."),
       "zzzzzzz"

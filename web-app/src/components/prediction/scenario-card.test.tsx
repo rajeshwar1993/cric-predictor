@@ -49,7 +49,7 @@ describe("ScenarioCard", () => {
     render(
       <ScenarioCard {...baseProps} scenario={MOCK_SCENARIOS[2]} />
     );
-    expect(screen.getByPlaceholderText("Search player...")).toBeInTheDocument();
+    expect(screen.getByText("Choose player...")).toBeInTheDocument();
   });
 
   it("renders RangePick for first_innings_score category", () => {
