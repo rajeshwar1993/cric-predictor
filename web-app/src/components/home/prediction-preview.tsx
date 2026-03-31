@@ -28,7 +28,7 @@ export function PredictionPreview() {
         </p>
       </div>
 
-      <div className="mx-auto max-w-md overflow-hidden rounded-2xl border border-[var(--ghost-border)] bg-[var(--bg-card)]/60 backdrop-blur">
+      <div className="mx-auto max-w-md overflow-hidden rounded-xl border border-[var(--ghost-border)] bg-[var(--bg-card)]/60 backdrop-blur">
         {/* Match header */}
         <div className="flex items-center justify-between border-b border-[var(--ghost-border)] px-6 py-4">
           <div className="flex items-center gap-3">
@@ -69,7 +69,7 @@ export function PredictionPreview() {
                 {options.map((opt, j) => (
                   <span
                     key={opt}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                    className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
                       j === 0
                         ? "bg-[var(--cta-from)]/15 text-[var(--cta-from)] ring-1 ring-inset ring-[var(--cta-from)]/30"
                         : "bg-[var(--bg-elevated)]/60 text-[var(--text-secondary)]"

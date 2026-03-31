@@ -134,7 +134,7 @@
   --border: transparent;
   --input: transparent;
   --ring: #f3ffca4D;
-  --radius: 0.75rem;
+  --radius: 0.5rem;
 }
 
 @layer base {
