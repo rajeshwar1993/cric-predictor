@@ -37,14 +37,14 @@ export function HowItWorks() {
         {steps.map(({ num, icon: Icon, title, desc }) => (
           <div
             key={num}
-            className="group relative overflow-hidden rounded-xl bg-[var(--bg-card)]/50 p-6 backdrop-blur transition-all hover:bg-[var(--bg-card)]/80 sm:p-8"
+            className="group relative overflow-hidden rounded-2xl bg-[var(--bg-card)]/50 p-6 backdrop-blur transition-all hover:bg-[var(--bg-card)]/80 sm:p-8"
           >
             <span className="pointer-events-none absolute -right-2 -top-4 select-none font-display text-[120px] font-extrabold leading-none text-[var(--cyan-soft)]">
               {num}
             </span>
 
             <div className="relative z-10">
-              <div className="mb-5 inline-flex rounded-lg bg-[var(--cyan-soft)] p-3">
+              <div className="mb-5 inline-flex rounded-xl bg-[var(--cyan-soft)] p-3">
                 <Icon className="h-5 w-5 text-[var(--cyan)]" />
               </div>
               <h3 className="font-display text-lg font-bold text-[var(--text-primary)]">
