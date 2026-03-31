@@ -15,6 +15,7 @@ Both branches are permanent and protected. Never commit directly to them.
 - Naming:
   - `feature/short-description` — new functionality
   - `bugfix/short-description` — bug fixes
+  - `epic/short-description` — large features or multi-part work
 
 ## Development Workflow
 
@@ -126,9 +127,11 @@ Follows [Semantic Versioning](https://semver.org/):
 | Branch prefix | Version bump | Example |
 |---------------|-------------|---------|
 | `feature/*` | Minor | 1.0.0 → 1.1.0 |
+| `epic/*` | Minor | 1.0.0 → 1.1.0 |
 | `bugfix/*` | Patch | 1.0.0 → 1.0.1 |
+| Any + `--major` | Major | 1.2.3 → 2.0.0 |
 
-Major version bumps are done manually for breaking changes.
+Use the `--major` flag with the release script for breaking changes: `npm run release -- --major`
 
 ## Supabase Migrations
 
@@ -156,6 +159,6 @@ Migrations live in `supabase/migrations/`. Deployment is manual via script.
 
 | Script | Purpose | Usage |
 |--------|---------|-------|
-| `scripts/release.sh` | Pre-merge: verify, bump version, create PR | `./scripts/release.sh` |
+| `scripts/release.sh` | Pre-merge: verify, bump version, create PR | `./scripts/release.sh [--skip-tests] [--major]` |
 | `scripts/post-release.sh` | Post-merge: tag, GitHub release, reset staging | `./scripts/post-release.sh` |
 | `scripts/deploy-migrations.sh` | Deploy Supabase migrations | `./scripts/deploy-migrations.sh [staging\|production]` |

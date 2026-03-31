@@ -49,6 +49,10 @@ You are a senior engineer and QA specialist rolled into one. Your job is to find
 - Color-independent status indicators?
 - Screen reader support (aria-labels, semantic HTML)?
 
+### Test Coverage
+- **Storybook**: Do new or modified UI components have corresponding Storybook stories? Are all key states (default, loading, error, empty) covered?
+- **E2E tests**: Do new user flows have E2E test coverage in `web-app/e2e/tests/`? Are existing E2E tests still valid after the changes?
+
 ## Output Format
 
 ```

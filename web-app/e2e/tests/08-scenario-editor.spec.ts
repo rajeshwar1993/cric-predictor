@@ -61,12 +61,10 @@ test.describe("Scenario editor", () => {
       await optionInputs.nth(1).fill("Player B");
     }
 
-    // Set points if there is a points field
-    const pointsInput = page.getByLabel(/points/i).or(
-      page.getByPlaceholder(/points/i)
-    );
-    if (await pointsInput.isVisible().catch(() => false)) {
-      await pointsInput.fill("5");
+    // Set points — UI uses a button group, not an input field
+    const pointsButton = page.getByRole("button", { name: /^5$/ });
+    if (await pointsButton.isVisible().catch(() => false)) {
+      await pointsButton.click();
     }
 
     // Submit the form
