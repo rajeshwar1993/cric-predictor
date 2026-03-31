@@ -120,23 +120,23 @@ test.describe("Concurrent multi-user scenarios", () => {
 
     // All three submit simultaneously
     await Promise.all([
-      owner.page.getByRole("button", { name: /submit|save|confirm/i }).click(),
-      admin.page.getByRole("button", { name: /submit|save|confirm/i }).click(),
+      owner.page.getByRole("button", { name: /lock it in|submit|save/i }).click(),
+      admin.page.getByRole("button", { name: /lock it in|submit|save/i }).click(),
       member.page
-        .getByRole("button", { name: /submit|save|confirm/i })
+        .getByRole("button", { name: /lock it in|submit|save/i })
         .click(),
     ]);
 
     // Verify each sees success feedback
     await Promise.all([
       expect(
-        owner.page.getByText(/success|saved|submitted/i).first()
+        owner.page.getByText(/locked in|success|saved/i).first()
       ).toBeVisible({ timeout: 10_000 }),
       expect(
-        admin.page.getByText(/success|saved|submitted/i).first()
+        admin.page.getByText(/locked in|success|saved/i).first()
       ).toBeVisible({ timeout: 10_000 }),
       expect(
-        member.page.getByText(/success|saved|submitted/i).first()
+        member.page.getByText(/locked in|success|saved/i).first()
       ).toBeVisible({ timeout: 10_000 }),
     ]);
 
@@ -212,7 +212,7 @@ test.describe("Concurrent multi-user scenarios", () => {
     ]);
 
     // Outsider joins and member submits prediction concurrently
-    const joinBtn = outsiderCtx.page.getByRole("button", { name: /join/i });
+    const joinBtn = outsiderCtx.page.getByRole("button", { name: /let me in|join/i });
     await expect(joinBtn).toBeVisible();
 
     // Select a prediction option on member's page (match2 is CSK vs MI)
@@ -225,18 +225,18 @@ test.describe("Concurrent multi-user scenarios", () => {
     await Promise.all([
       joinBtn.click(),
       memberCtx.page
-        .getByRole("button", { name: /submit|save|confirm/i })
+        .getByRole("button", { name: /lock it in|submit|save/i })
         .click(),
     ]);
 
     // Verify outsider got pending status
     await expect(
-      outsiderCtx.page.getByText(/pending|requested|awaiting|joined/i)
+      outsiderCtx.page.getByText(/hang tight|pending|requested|awaiting|joined/i)
     ).toBeVisible({ timeout: 10_000 });
 
     // Verify member's prediction succeeded
     await expect(
-      memberCtx.page.getByText(/success|saved|submitted/i).first()
+      memberCtx.page.getByText(/locked in|success|saved/i).first()
     ).toBeVisible({ timeout: 10_000 });
   });
 
