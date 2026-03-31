@@ -1,5 +1,6 @@
 import {
   createMockSupabaseClient,
+  createMockQueryBuilder,
   mockAuthenticatedUser,
   mockUnauthenticated,
 } from "@/test/helpers/mock-supabase";
@@ -8,6 +9,24 @@ import { MOCK_SCENARIOS } from "@/__mocks__/data";
 const mockClient = createMockSupabaseClient();
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(() => Promise.resolve(mockClient)),
+}));
+
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
+}));
+vi.mock("@/lib/logger", () => ({
+  logInfo: vi.fn(),
+  logError: vi.fn(),
+}));
+vi.mock("@/lib/analytics/server", () => ({
+  trackServerEvent: vi.fn(),
+  ANALYTICS_EVENTS: {
+    SCENARIO_CUSTOM_CREATED: "scenario_custom_created",
+    SCENARIO_APPROVED: "scenario_approved",
+    SCENARIO_REJECTED: "scenario_rejected",
+    SCENARIO_REMOVED: "scenario_removed",
+  },
 }));
 
 vi.mock("@/lib/dal/scenarios");
@@ -116,7 +135,7 @@ describe("approveScenario", () => {
 
     const result = await approveScenario(groupId, scenarioId);
     expect(result).toEqual({ success: true });
-    expect(mockedScenDal.updateScenarioApproval).toHaveBeenCalledWith(scenarioId, "approved", undefined);
+    expect(mockedScenDal.updateScenarioApproval).toHaveBeenCalledWith(scenarioId, "approved", undefined, groupId);
   });
 
   it("approves scenario with custom points", async () => {
@@ -124,7 +143,7 @@ describe("approveScenario", () => {
 
     const result = await approveScenario(groupId, scenarioId, 20);
     expect(result).toEqual({ success: true });
-    expect(mockedScenDal.updateScenarioApproval).toHaveBeenCalledWith(scenarioId, "approved", 20);
+    expect(mockedScenDal.updateScenarioApproval).toHaveBeenCalledWith(scenarioId, "approved", 20, groupId);
   });
 
   it("returns error when DAL fails", async () => {
@@ -157,7 +176,7 @@ describe("rejectScenario", () => {
 
     const result = await rejectScenario(groupId, scenarioId);
     expect(result).toEqual({ success: true });
-    expect(mockedScenDal.updateScenarioApproval).toHaveBeenCalledWith(scenarioId, "rejected");
+    expect(mockedScenDal.updateScenarioApproval).toHaveBeenCalledWith(scenarioId, "rejected", undefined, groupId);
   });
 
   it("returns error when DAL fails", async () => {
@@ -185,15 +204,44 @@ describe("removeScenario", () => {
     expect(result).toEqual({ success: false, error: "Only admins can remove scenarios" });
   });
 
+  it("returns error when scenario not found in group", async () => {
+    // Mock supabase from() to return null scenario data (not found)
+    mockClient.from.mockReturnValue(
+      createMockQueryBuilder([], null)
+    );
+
+    const result = await removeScenario(groupId, scenarioId);
+    expect(result).toEqual({ success: false, error: "Scenario not found in this group" });
+  });
+
   it("removes scenario successfully", async () => {
+    // Mock supabase from() to return scenario data
+    mockClient.from.mockReturnValue(
+      createMockQueryBuilder([{ match_id: 2, group_id: groupId }], null)
+    );
+    mockedScenDal.hasAnyPredictionsForMatch.mockResolvedValue(false);
     mockedScenDal.removeScenario.mockResolvedValue(true);
 
     const result = await removeScenario(groupId, scenarioId);
     expect(result).toEqual({ success: true });
-    expect(mockedScenDal.removeScenario).toHaveBeenCalledWith(scenarioId, "user-001");
+    expect(mockedScenDal.removeScenario).toHaveBeenCalledWith(scenarioId, "user-001", groupId);
+  });
+
+  it("returns error when predictions exist for match", async () => {
+    mockClient.from.mockReturnValue(
+      createMockQueryBuilder([{ match_id: 2, group_id: groupId }], null)
+    );
+    mockedScenDal.hasAnyPredictionsForMatch.mockResolvedValue(true);
+
+    const result = await removeScenario(groupId, scenarioId);
+    expect(result).toEqual({ success: false, error: "Scenarios are locked — members have already predicted" });
   });
 
   it("returns error when DAL fails", async () => {
+    mockClient.from.mockReturnValue(
+      createMockQueryBuilder([{ match_id: 2, group_id: groupId }], null)
+    );
+    mockedScenDal.hasAnyPredictionsForMatch.mockResolvedValue(false);
     mockedScenDal.removeScenario.mockResolvedValue(false);
 
     const result = await removeScenario(groupId, scenarioId);

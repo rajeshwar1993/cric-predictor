@@ -1,6 +1,6 @@
 {
   "name": "web-app",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -17,8 +17,8 @@
     "test:e2e:report": "playwright show-report e2e/reports/html",
     "release": "../scripts/release.sh",
     "post-release": "../scripts/post-release.sh",
-    "deploy:staging": "../scripts/deploy-migrations.sh staging",
-    "deploy:production": "../scripts/deploy-migrations.sh production"
+    "deploy:migrations:staging": "../scripts/deploy-migrations.sh staging",
+    "deploy:migrations:production": "../scripts/deploy-migrations.sh production"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",

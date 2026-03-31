@@ -119,31 +119,31 @@ describe("requestToJoin", () => {
 // updateMemberStatus
 // ---------------------------------------------------------------------------
 describe("updateMemberStatus", () => {
-  it("returns true when status is updated to approved", async () => {
-    const builder = createMockQueryBuilder([]);
+  it("returns { ok: true } when status is updated to approved", async () => {
+    const builder = createMockQueryBuilder([{ user_id: "user-005" }]);
     mockClient.from.mockReturnValue(builder);
 
     const result = await updateMemberStatus("group-001", "user-005", "approved");
-    expect(result).toBe(true);
+    expect(result).toEqual({ ok: true });
     expect(builder.update).toHaveBeenCalled();
     expect(builder.eq).toHaveBeenCalledWith("group_id", "group-001");
     expect(builder.eq).toHaveBeenCalledWith("user_id", "user-005");
   });
 
-  it("returns true when status is updated to rejected", async () => {
-    const builder = createMockQueryBuilder([]);
+  it("returns { ok: true } when status is updated to rejected", async () => {
+    const builder = createMockQueryBuilder([{ user_id: "user-005" }]);
     mockClient.from.mockReturnValue(builder);
 
     const result = await updateMemberStatus("group-001", "user-005", "rejected");
-    expect(result).toBe(true);
+    expect(result).toEqual({ ok: true });
   });
 
-  it("returns false on error", async () => {
+  it("returns { ok: false } on error", async () => {
     const builder = createMockQueryBuilder([], { message: "Update failed" });
     mockClient.from.mockReturnValue(builder);
 
     const result = await updateMemberStatus("group-001", "user-005", "approved");
-    expect(result).toBe(false);
+    expect(result).toEqual({ ok: false, capacityExceeded: false });
   });
 });
 
@@ -152,7 +152,7 @@ describe("updateMemberStatus", () => {
 // ---------------------------------------------------------------------------
 describe("removeMember", () => {
   it("returns true on success", async () => {
-    const builder = createMockQueryBuilder([]);
+    const builder = createMockQueryBuilder([{ user_id: "user-003" }]);
     mockClient.from.mockReturnValue(builder);
 
     const result = await removeMember("group-001", "user-003");
