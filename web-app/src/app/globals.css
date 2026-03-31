@@ -37,7 +37,7 @@
   /* Font families — Stadium Kinetic */
   --font-sans: var(--font-outfit);
   --font-mono: var(--font-jetbrains);
-  --font-heading: var(--font-bricolage);
+  --font-heading: var(--font-sora);
 
   /* Bragg custom colors */
   --color-cyan: var(--cyan);
@@ -105,7 +105,7 @@
   /* Text — no pure white */
   --text-primary: #ecedf6;
   --text-secondary: #9ba1b5;
-  --text-muted: #4a5068;
+  --text-muted: #7c8599;
   --text-inverse: #0b0e14;
 
   /* Ghost Borders — 15% opacity outlines only */

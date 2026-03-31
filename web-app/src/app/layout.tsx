@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
-import { Bricolage_Grotesque, Outfit, JetBrains_Mono } from "next/font/google";
+import { Sora, Outfit, JetBrains_Mono } from "next/font/google";
 import { Suspense } from "react";
 import { ThemeProvider } from "@/components/shared/theme-provider";
 import { PostHogProvider } from "@/components/shared/posthog-provider";
 import "@/lib/env"; // Validate env vars at startup — fail fast if missing
 import "./globals.css";
 
-const bricolage = Bricolage_Grotesque({
-  variable: "--font-bricolage",
+const sora = Sora({
+  variable: "--font-sora",
   subsets: ["latin"],
-  weight: ["400", "600", "700", "800"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 const outfit = Outfit({
@@ -75,7 +75,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${bricolage.variable} ${outfit.variable} ${jetbrainsMono.variable}`}
+      className={`${sora.variable} ${outfit.variable} ${jetbrainsMono.variable}`}
     >
       <body className="min-h-dvh bg-[var(--bg-deep)] antialiased">
         <ThemeProvider>
