@@ -70,7 +70,7 @@ export function OnboardingForm() {
           placeholder="How should we call you?"
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
-          className="bg-[var(--bg-input)] border-[var(--border-medium)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)]"
+          className="bg-[var(--bg-input)] border-[var(--ghost-border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)]"
           minLength={2}
           maxLength={30}
           required
@@ -94,7 +94,7 @@ export function OnboardingForm() {
             setDateOfBirth(e.target.value);
             setError("");
           }}
-          className="bg-[var(--bg-input)] border-[var(--border-medium)] text-[var(--text-primary)]"
+          className="bg-[var(--bg-input)] border-[var(--ghost-border)] text-[var(--text-primary)]"
           required
           max={new Date().toISOString().split("T")[0]}
         />
@@ -118,7 +118,7 @@ export function OnboardingForm() {
               setAcceptedTerms(e.target.checked);
               setError("");
             }}
-            className="mt-0.5 h-4 w-4 rounded border-[var(--border-medium)] bg-[var(--bg-input)] accent-[var(--cyan)]"
+            className="mt-0.5 h-4 w-4 rounded border-[var(--ghost-border)] bg-[var(--bg-input)] accent-[var(--cyan)]"
           />
           <span className="text-sm text-[var(--text-secondary)]">
             I agree to the{" "}
@@ -152,7 +152,7 @@ export function OnboardingForm() {
       <Button
         type="submit"
         disabled={!canSubmit}
-        className="w-full font-display font-semibold text-sm bg-gradient-to-br from-[var(--cyan)] to-[color-mix(in_srgb,var(--cyan),#000_20%)] text-[var(--bg-deep)] hover:opacity-90 btn-glow"
+        className="w-full font-display font-semibold text-sm cta-gradient btn-glow text-[var(--bg-deep)] hover:opacity-90"
       >
         {loading ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />

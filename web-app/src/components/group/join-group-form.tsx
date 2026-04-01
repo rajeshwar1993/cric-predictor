@@ -56,7 +56,7 @@ export function JoinGroupForm() {
             setCode(e.target.value);
             if (error) setError("");
           }}
-          className="flex-1 bg-[var(--bg-input)] border-[var(--border-medium)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)]"
+          className="flex-1 bg-[var(--bg-input)] border-[var(--ghost-border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)]"
         />
         <Button
           type="submit"

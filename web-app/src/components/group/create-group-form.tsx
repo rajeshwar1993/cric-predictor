@@ -50,7 +50,7 @@ export function CreateGroupForm() {
             setName(e.target.value);
             if (error) setError("");
           }}
-          className="bg-[var(--bg-input)] border-[var(--border-medium)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)]"
+          className="bg-[var(--bg-input)] border-[var(--ghost-border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)]"
           minLength={3}
           maxLength={50}
           required
@@ -67,7 +67,7 @@ export function CreateGroupForm() {
       <Button
         type="submit"
         disabled={loading || !name.trim()}
-        className="w-full font-display font-semibold text-sm bg-gradient-to-br from-[var(--cyan)] to-[color-mix(in_srgb,var(--cyan),#000_20%)] text-[var(--bg-deep)] hover:opacity-90 btn-glow"
+        className="w-full font-display font-semibold text-sm cta-gradient btn-glow text-[var(--bg-deep)] hover:opacity-90"
       >
         {loading ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />

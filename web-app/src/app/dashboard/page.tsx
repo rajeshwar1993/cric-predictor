@@ -37,14 +37,12 @@ export default async function DashboardPage() {
           ) : (
             <div className="space-y-8">
               {/* Groups header */}
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <h1 className="font-display text-2xl font-bold text-[var(--text-primary)]">
                   Your Squads
                 </h1>
-                <div className="flex items-center gap-3">
-                  <div className="relative w-full sm:w-48">
-                    <JoinGroupForm />
-                  </div>
+                <div className="w-full sm:w-56">
+                  <JoinGroupForm />
                 </div>
               </div>
 
@@ -56,7 +54,7 @@ export default async function DashboardPage() {
               </div>
 
               {/* Create new group */}
-              <div className="rounded-[14px] border border-dashed border-[var(--border-medium)] bg-[var(--bg-card)]/50 p-6">
+              <div className="rounded-2xl border border-[var(--ghost-border)] bg-[var(--bg-card)]/40 p-6">
                 <h3 className="mb-4 font-display text-sm font-semibold text-[var(--text-secondary)]">
                   Start a New Squad
                 </h3>

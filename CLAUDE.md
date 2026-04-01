@@ -16,8 +16,16 @@ Use the `build-feature` skill for feature work. It runs 3 phases:
 
 For simple changes (bug fixes, small tweaks), skip the skill and work directly.
 
+## UI / Component Work
+
+When doing any UI or component work:
+
+1. **Use the `/frontend-design` skill** along with `docs/design-system.md` to guide all visual decisions. Follow the design system strictly. If a better approach would violate the design system, ask the user for permission before proceeding.
+2. **Reuse before creating.** Always check `src/components/ui/` and `src/components/` for existing components before creating new ones. Prefer composing existing primitives over building from scratch.
+3. **Small, focused components.** Break UI into reusable pieces. Each component should do one thing. Pages should be thin shells that compose components.
+
 ## Conventions
 
 - Feature branches: `feature/[short-description]`
-- Design system: `docs/ipl-predict-design-system-spec.md`
+- Design system: `docs/design-system.md`
 - PSE-Frontend and PSE-Supabase never modify each other's files
