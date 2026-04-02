@@ -118,11 +118,13 @@
   - CTA to view match leaderboard
 - **Recent Results**
   - Completed match cards with user's prediction summary (predicted count, correct count, points earned)
+  - Each card links to the Match Leaderboard page
   - Results pending state
 - **Member List / Leaderboard**
   - List of all members with display name, avatar initial, and role (admin/member)
   - Overall points displayed per member
   - Sorted by points (acts as season leaderboard)
+- Leave gang option at the bottom (members only, not shown to admin)
 - Global Footer
 
 ### Predict Page (`/group/[groupId]/predict/[matchId]`)
@@ -184,7 +186,6 @@
   - Overall accuracy percentage
   - Total points across all gangs
 - **Account Actions**
-  - Sign out
   - Delete account
 - Global Footer
 
@@ -201,6 +202,7 @@
 - Global Nav Bar
 - Gang name (editable)
 - Auto-accept join requests toggle
+- Custom prediction deadline (relative minutes before match start, overrides default 45 min)
 - Member management: list of members with option to remove
 - Admin-only page
 - Global Footer
@@ -289,7 +291,8 @@
     - Invite code + gang name stored in localStorage (expires after 24 hours)
     - User signs in/up → lands on dashboard → pending invite banner appears
     - User can accept or dismiss the banner
-  - Notifications sent to admins when a join request is received
+  - Notification sent to the admin when a join request is received
+  - If auto-accept is enabled, admin gets a "X joined your gang" notification instead
 - **Limits**
   - Max 20 members per gang (configurable via system-level settings)
 - **Member Management** (admin only)
@@ -383,7 +386,7 @@
   - Mark all as read
   - Clicking a notification navigates to the relevant page (gang or match)
 - **Triggers:**
-  - Join request received (sent to admins)
+  - Join request received (sent to the admin)
   - Join request approved/rejected (sent to requester)
   - Prediction deadline approaching (sent to members who haven't predicted)
   - Match results available (sent to gang members)
