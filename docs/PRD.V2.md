@@ -279,3 +279,20 @@
 - **Member Management** (admin only)
   - Approve or reject pending join requests
   - Remove members
+
+### Matches
+
+- **Statuses:** upcoming → live → completed (also: abandoned, no_result)
+- **Data source:** match schedule pre-loaded in DB (teams, date, time IST, venue, match number)
+- **Live updates:**
+  - Polled from cricket API and stored as live snapshot
+  - Data stored: scores, overs, batting team, current run rate, last 6 balls, both batsmen with individual scores and on-strike indicator, current bowler, current partnership
+  - Client auto-polls for updates on live match pages
+- **Prediction window:**
+  - Opens: 12 hours before match start time
+  - Closes: 45 minutes before match start time (default, configurable per gang as relative minutes before match)
+  - Scenarios automatically available when prediction window opens
+- **Result resolution:**
+  - Match results updated in DB (match winner, scores, toss winner, etc.)
+  - Triggers prediction resolution via DB function
+  - Sets `resolved_at` timestamp on match
