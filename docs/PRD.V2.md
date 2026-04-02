@@ -69,7 +69,7 @@
   - Create gang form (gang name input)
   - Join gang form (invite code input)
 - Gangs List (has gangs)
-  - Grid of gang cards showing gang name, member count, and user's role (owner/admin/member)
+  - Grid of gang cards showing gang name, member count, and user's role (admin/member)
   - Each card links to the gang page
   - Join gang form (invite code input)
   - Create new gang form
@@ -99,7 +99,7 @@
 - Gang header: gang name, member count (out of max)
 - Invite actions: copy invite link, share/send invite (uses native share on mobile)
 - Link to Season Standings page
-- Pending join requests section (visible to owner/admin only, shown below gang header)
+- Pending join requests section (visible to admin only, shown below gang header)
 - **Upcoming Matches**
   - Match cards showing teams, match number, date, time, venue
   - Prediction deadline displayed
@@ -118,7 +118,7 @@
   - Completed match cards with user's prediction summary (predicted count, correct count, points earned)
   - Results pending state
 - **Member List / Leaderboard**
-  - List of all members with display name, avatar initial, and role (owner/admin/member)
+  - List of all members with display name, avatar initial, and role (admin/member)
   - Overall points displayed per member
   - Sorted by points (acts as season leaderboard)
 - Global Footer
@@ -138,7 +138,7 @@
   - Progress counter (X/total picked)
   - Submit button to lock in predictions
   - Error and success feedback
-- Predictions disabled when locked (deadline passed, match live, or admin-locked)
+- Predictions disabled when locked (deadline passed or match live)
 - Global Footer
 
 ### Match Leaderboard Page (`/group/[groupId]/match/[matchId]`)
