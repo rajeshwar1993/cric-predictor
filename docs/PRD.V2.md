@@ -28,7 +28,7 @@
   - Leave gang → type gang name (irreversible)
   - Remove member → type member's display name (member's data will be deleted; member can rejoin but data is lost)
 
-#### Global Footer (shown on all pages)
+#### Global Footer (shown on all pages except standalone pages: Login, Onboarding, Accept Terms, 404, Error)
 
 - Disclaimer text
 - Link to Privacy Policy
@@ -161,7 +161,7 @@
 
 - Global Nav Bar
 - Match header: match number, teams, date, time, venue
-- Live scorecard (auto-polls for updates during live matches)
+- Live scorecard (auto-polls for updates during live matches): scores, overs, batting team, current run rate, last 6 balls, both batsmen with individual scores and on-strike indicator, current bowler, current partnership
 - **Match Leaderboard**
   - Ranked list of members: rank, display name, correct/resolved count, predicted count, points
   - Current user highlighted
