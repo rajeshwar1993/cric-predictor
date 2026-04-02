@@ -372,7 +372,7 @@
 
 ## Tech Stack
 
-- **Frontend:** Next.js (App Router), React, TypeScript
+- **Frontend:** Next.js 16 (App Router), React, TypeScript
 - **Styling:** Tailwind CSS, shadcn/ui components
 - **Backend:** Next.js Server Actions, Supabase Edge Functions
 - **Database:** Supabase Postgres (with DB views, RPC functions, RLS)
@@ -382,3 +382,58 @@
 - **Hosting:** Vercel
 - **Analytics:** PostHog
 - **Icons:** Lucide React
+
+## Analytics
+
+- **Provider:** PostHog
+- **Pageviews & Sessions:** PostHog autocapture (pageviews, session recording, funnels defined in dashboard)
+- **Custom events tracked:**
+  - **Auth:** magic link requested, magic link resent, callback success/failure, onboarding completed, signed out
+  - **Gangs:** created, join requested, invite copied, invite shared, member approved/rejected/removed
+  - **Predictions:** submitted, pick changed, predict page viewed/revisited
+  - **Notifications:** bell opened, marked read, all cleared
+  - **Performance:** Web Vitals (LCP, INP, CLS), page load time, server action duration
+- **Error Reporting:**
+  - All client-side errors captured (error boundaries, unhandled errors)
+  - All Next.js server action errors captured
+  - All Supabase Edge Function errors captured
+  - All errors sent to PostHog with context (user ID, page, action, stack trace)
+- **Identity:** users identified by Supabase user ID; pre-auth events use hashed email (no PII leak)
+
+## Non-Functional Requirements
+
+- **Mobile-first:** designed for mobile, responsive up to desktop
+- **Browser support:** modern evergreen browsers (Chrome, Safari, Firefox, Edge)
+- **Performance:**
+  - Pages should load under 2 seconds on 4G
+  - Web Vitals targets: LCP < 2.5s, INP < 200ms, CLS < 0.1
+  - Live score polling interval: TBD
+- **Accessibility:** semantic HTML, ARIA labels, keyboard navigable
+- **SEO:** meta tags and Open Graph on public pages (landing, join invite)
+- **Offline:** no offline support required (online-only app)
+- **Localization:** English only. All times displayed in user's local timezone with timezone abbreviation shown after the time.
+- **Age restriction:** 18+ only (enforced at onboarding)
+- **Gambling disclaimer:** visible on landing, login, and join pages — no real money, no betting
+
+## Security
+
+- **Authentication:**
+  - All authenticated routes protected via middleware (redirects to login if no session)
+  - Supabase session tokens managed via HTTP-only cookies
+- **Authorization:**
+  - Row-Level Security (RLS) on all Supabase tables — users can only access data they're authorized for
+  - Server actions verify auth + membership + role before any mutation
+  - Predictions only visible to the user before deadline; visible to gang after deadline (RLS enforced)
+- **Input validation:**
+  - All server actions validate input via Zod schemas
+  - Client-side validation for immediate feedback, server-side as source of truth
+- **Redirect protection:**
+  - `redirectTo` params sanitized to relative paths only (prevents open redirect attacks)
+- **Rate limiting:**
+  - Magic link: 60-second cooldown + Supabase email rate limits
+- **Data privacy:**
+  - No passwords stored (magic link auth)
+  - Analytics use hashed identifiers for pre-auth events (no PII leak)
+  - Date of birth stored but never displayed publicly
+- **CSRF:** protected by Supabase's built-in token handling
+- **XSS:** React's default escaping + no `dangerouslySetInnerHTML` usage
