@@ -332,3 +332,53 @@
   - Points per scenario defined on the scenario (5–20 points)
   - Resolved automatically when scenario resolution runs during/after match
   - Each prediction gets `is_correct` flag and `points_earned` set on resolution
+
+### Scoring & Leaderboards
+
+- **Match Leaderboard** (per gang, per match)
+  - Ranked by: total points earned in that match
+  - Tiebreaker: earliest submission timestamp wins
+  - Shows: rank, display name, correct/resolved count, predicted count, points
+  - Current user highlighted
+  - Computed via DB view
+- **Season Standings** (per gang, across all matches)
+  - Ranked by: total cumulative points
+  - Shows: rank, display name, role, total points, matches predicted, points per match average, accuracy percentage
+  - Current user highlighted
+  - Computed via DB view
+- **Scoring rules**
+  - Binary scoring: correct = scenario's point value, incorrect = 0
+  - No partial credit
+  - Points only count for resolved scenarios (unresolved scenarios don't affect rankings)
+
+### Notifications _(TODO: revisit triggers and delivery)_
+
+- **Delivery**
+  - In-app only (no email/push)
+  - Real-time updates via Supabase Realtime
+  - Shown in notification bell side panel
+  - Each notification has: type, message, read/unread status, optional gang/match reference
+- **Actions**
+  - Mark individual notification as read
+  - Mark all as read
+  - Clicking a notification navigates to the relevant page (gang or match)
+- **Triggers:**
+  - Join request received (sent to admins)
+  - Join request approved/rejected (sent to requester)
+  - Prediction deadline approaching (sent to members who haven't predicted)
+  - Match results available (sent to gang members)
+- **Limits**
+  - Fetches latest 20 notifications
+
+## Tech Stack
+
+- **Frontend:** Next.js (App Router), React, TypeScript
+- **Styling:** Tailwind CSS, shadcn/ui components
+- **Backend:** Next.js Server Actions, Supabase Edge Functions
+- **Database:** Supabase Postgres (with DB views, RPC functions, RLS)
+- **Auth:** Supabase Auth (magic link OTP)
+- **Realtime:** Supabase Realtime (notifications)
+- **Cricket Data:** CricketData.org API
+- **Hosting:** Vercel
+- **Analytics:** PostHog
+- **Icons:** Lucide React
