@@ -310,3 +310,25 @@
   - Continues until match is completed or all scenarios are resolved
   - Correct answer set on each scenario; predictions scored automatically
   - Scenarios can be soft-removed (not deleted)
+
+### Predictions
+
+- **Submission**
+  - User selects answers for scenarios and submits all at once (batch upsert)
+  - Can update predictions multiple times before the deadline (last submission wins)
+  - Must pick at least one scenario to submit
+  - Timestamp recorded on each submission
+- **Validation**
+  - User must be an approved member of the gang
+  - Match must be in "upcoming" status
+  - Prediction window must be open (12h before to configurable minutes before match)
+  - Scenarios must belong to the correct gang + match
+- **Visibility**
+  - Before deadline: only the user can see their own predictions
+  - After deadline: all gang members' predictions visible (prediction reveal table)
+  - Who has predicted (but not what) is visible to all gang members before deadline
+- **Scoring**
+  - Binary: correct = full points, incorrect = 0 (no partial credit)
+  - Points per scenario defined on the scenario (5–20 points)
+  - Resolved automatically when scenario resolution runs during/after match
+  - Each prediction gets `is_correct` flag and `points_earned` set on resolution
