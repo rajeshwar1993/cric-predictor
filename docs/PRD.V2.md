@@ -98,6 +98,7 @@
 - Global Nav Bar
 - Gang header: gang name, member count (out of max)
 - Invite actions: copy invite link, share/send invite (uses native share on mobile)
+- Link to Season Standings page
 - Pending join requests section (visible to owner/admin only, shown below gang header)
 - **Upcoming Matches**
   - Match cards showing teams, match number, date, time, venue
