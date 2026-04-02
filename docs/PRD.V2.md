@@ -296,3 +296,17 @@
   - Match results updated in DB (match winner, scores, toss winner, etc.)
   - Triggers prediction resolution via DB function
   - Sets `resolved_at` timestamp on match
+
+### Scenarios
+
+- **Types**
+  - System scenarios only (auto-seeded per gang per match when prediction window opens)
+- **Structure:**
+  - Each scenario has: title, category, input type, point value, resolution phase
+  - Point values range from 5–20
+  - Input types: team pick, player pick, range brackets, yes/no
+- **Resolution:**
+  - Runs as a periodic function while match is live
+  - Continues until match is completed or all scenarios are resolved
+  - Correct answer set on each scenario; predictions scored automatically
+  - Scenarios can be soft-removed (not deleted)
