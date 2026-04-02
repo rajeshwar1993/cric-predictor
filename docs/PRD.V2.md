@@ -259,12 +259,20 @@
 - **Roles**
   - Admin: full control — approve/reject/remove members, manage gang settings
   - Member: can predict, view leaderboards
-- **Joining**
-  - Via invite code or invite link (`/join/[code]`)
+- **Invitations & Joining**
+  - Invite link format: `/join/[code]` (shareable URL)
+  - Copy link button (desktop) and native share (mobile)
+  - Share message includes inviter name, gang name, and invite code
   - Join request requires admin approval by default
   - Auto-accept can be enabled from gang settings
   - Handles duplicate requests (already pending, already a member)
   - Previously rejected users can request again
+  - If already a member → redirected to gang page
+  - Unauthenticated invite flow:
+    - Invite code + gang name stored in localStorage (expires after 24 hours)
+    - User signs in/up → lands on dashboard → pending invite banner appears
+    - User can accept or dismiss the banner
+  - Notifications sent to admins when a join request is received
 - **Limits**
   - Max 20 members per gang (configurable via system-level settings)
 - **Member Management** (admin only)
