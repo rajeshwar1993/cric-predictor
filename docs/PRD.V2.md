@@ -28,14 +28,14 @@
 
 - **Hero Section**
   - App logo and name
-  - CTA to create a squad (redirects to login if unauthenticated)
-  - CTA to join a squad (redirects to login if unauthenticated)
+  - CTA to create a gang (redirects to login if unauthenticated)
+  - CTA to join a gang (redirects to login if unauthenticated)
 - **How It Works Section**
-  - Three-step explainer: form a squad, make predictions, compete on leaderboard
+  - Three-step explainer: form a gang, make predictions, compete on leaderboard
 - **Prediction Preview Section**
   - Mock match card showing sample prediction scenarios with point values and options
 - **CTA Section**
-  - Repeated create squad and join squad CTAs
+  - Repeated create gang and join gang CTAs
 - Global Footer
 
 ### Login Page (`/login`)
@@ -63,42 +63,42 @@
 - Global Nav Bar
 - Pending Invite Banner
   - Shows when user arrived via an invite link while logged out
-  - Displays squad name with option to join or dismiss
+  - Displays gang name with option to join or dismiss
   - Auto-expires after 24 hours
-- Empty State (no squads yet)
-  - Create squad form (squad name input)
-  - Join squad form (invite code input)
-- Squads List (has squads)
-  - Grid of squad cards showing squad name, member count, and user's role (owner/admin/member)
-  - Each card links to the squad page
-  - Join squad form (invite code input)
-  - Create new squad form
+- Empty State (no gangs yet)
+  - Create gang form (gang name input)
+  - Join gang form (invite code input)
+- Gangs List (has gangs)
+  - Grid of gang cards showing gang name, member count, and user's role (owner/admin/member)
+  - Each card links to the gang page
+  - Join gang form (invite code input)
+  - Create new gang form
 - Global Footer
 
 ### Join Page (`/join/[code]`)
 
 - **Unauthenticated user**
   - App logo and name
-  - Shows squad name they've been invited to
+  - Shows gang name they've been invited to
   - Login form (magic link) to sign in and join
   - Stores invite code in localStorage for post-login pickup
 - **Authenticated user**
   - Global Nav Bar
-  - Shows squad name they've been invited to
-  - Join squad button (sends join request, requires admin approval)
+  - Shows gang name they've been invited to
+  - Join gang button (sends join request, requires admin approval)
   - Handles states:
-    - Already approved → redirects to squad page
+    - Already approved → redirects to gang page
     - Pending → waiting for admin approval message
     - Rejected → option to request again
-    - Squad full → message that squad has reached max members
+    - Gang full → message that gang has reached max members
 - Global Footer
 
-### Squad Page (`/group/[groupId]`)
+### Gang Page (`/group/[groupId]`)
 
 - Global Nav Bar
-- Squad header: squad name, member count (out of max)
+- Gang header: gang name, member count (out of max)
 - Invite actions: copy invite link, share/send invite (uses native share on mobile)
-- Pending join requests section (visible to owner/admin only, shown below squad header)
+- Pending join requests section (visible to owner/admin only, shown below gang header)
 - **Upcoming Matches**
   - Match cards showing teams, match number, date, time, venue
   - Prediction deadline displayed
@@ -155,7 +155,7 @@
   - Members ordered by leaderboard rank
   - Hidden until predictions lock (shows countdown placeholder before lock)
   - Auto-polls for updates during live matches
-  - Empty states: solo squad (nudge to invite), no predictions
+  - Empty states: solo gang (nudge to invite), no predictions
 - Global Footer
 
 ### Season Standings Page (`/group/[groupId]/standings`)
@@ -175,11 +175,98 @@
   - Email address (read-only)
   - Date of birth (read-only)
 - **Stats Overview**
-  - Total squads joined
+  - Total gangs joined
   - Total matches predicted
   - Overall accuracy percentage
-  - Total points across all squads
+  - Total points across all gangs
 - **Account Actions**
   - Sign out
   - Delete account
 - Global Footer
+
+### Accept Terms Page (`/accept-terms`)
+
+- App logo and name
+- Updated terms/privacy content (or links to full pages)
+- Acceptance checkbox
+- Submit button to accept and continue
+- Blocking — cannot access app until accepted
+
+### Gang Settings Page (`/group/[groupId]/settings`)
+
+- Global Nav Bar
+- Gang name (editable)
+- Auto-accept join requests toggle
+- Member management: list of members with option to remove
+- Admin-only page
+- Global Footer
+
+### Privacy Policy Page (`/privacy`)
+
+- Static content page with privacy policy text
+- Global Footer
+
+### Terms & Conditions Page (`/terms`)
+
+- Static content page with terms and conditions text
+- Global Footer
+
+## Business Logic
+
+### Authentication
+
+- Magic link only (no passwords)
+- User enters email → receives a magic link via email (expires in 1 hour)
+- Resend cooldown: 60 seconds between requests
+- Email rate limiting enforced by Supabase
+- On clicking magic link: auth callback exchanges code for session
+- Post-auth routing:
+  - New user (not onboarded) → redirected to onboarding page
+  - Existing user (onboarded) → redirected to dashboard (or original `redirectTo` destination)
+- Onboarded status tracked via cookie for fast checks
+- Sign out clears session and cookies, redirects to landing page
+- Redirect URLs sanitized to prevent open redirect attacks (must be relative paths)
+
+### Onboarding
+
+- Triggered after first-ever login (profile not yet completed)
+- Required fields: display name (2–30 characters), date of birth, terms acceptance
+- Age verification: must be 18 or older (validated client-side and server-side)
+- Once completed, `onboarding_completed` flag is set on the profile
+- Users who have already onboarded are automatically redirected to dashboard
+- Post-onboarding redirect honours the original destination (e.g., join page) if one was stored
+- Onboarded cookie (`bragg_onboarded`, 1 year max age):
+  - Set on: auth callback (if already onboarded) and on completing onboarding
+  - Cleared on: sign out and during auth callback if user hasn't onboarded (prevents stale cookie from previous user)
+
+### Terms & Privacy Re-Acceptance
+
+- `CURRENT_TERMS_VERSION` constant in codebase (e.g., "2.0")
+- `terms_version` field stored on user profile
+- Cookie `bragg_terms_version` set on acceptance (avoids DB check on every request)
+- Middleware compares major version of cookie value against major version of `CURRENT_TERMS_VERSION` — cookie check only, no DB call
+- Major version change (e.g., 2.x → 3.0) → redirect to `/accept-terms` (blocking, cannot use app until accepted)
+- Minor version change (e.g., 2.0 → 2.1) → allowed through, no re-acceptance required
+- `/accept-terms` page updates DB + sets new cookie
+- Cookie cleared on sign out (same as other auth cookies)
+
+### Gangs
+
+- **Creation**
+  - Any authenticated user can create a gang (name: 3–50 characters)
+  - Creator becomes an admin
+  - Unique invite code generated automatically (6 characters, uppercase letters and numbers only)
+- **Roles**
+  - Admin: full control — approve/reject/remove members, manage gang settings
+  - Member: can predict, view leaderboards
+- **Joining**
+  - Via invite code or invite link (`/join/[code]`)
+  - Join request requires admin approval by default
+  - Auto-accept can be enabled from gang settings
+  - Handles duplicate requests (already pending, already a member)
+  - Previously rejected users can request again
+- **Limits**
+  - Max 20 members per gang (configurable via system-level settings)
+- **Member Management** (admin only)
+  - Approve or reject pending join requests
+  - Remove members
