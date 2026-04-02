@@ -18,6 +18,16 @@
   - Navigation links to Dashboard and Profile page
   - Sign out option at the bottom
 
+#### Destructive Action Confirmation
+
+- All destructive actions require a type-to-confirm dialog
+- Warning message shown explaining consequences
+- User must type a specific value (shown as input placeholder) to enable the action:
+  - Delete gang → type gang name (irreversible)
+  - Delete account → type email address (irreversible)
+  - Leave gang → type gang name (irreversible)
+  - Remove member → type member's display name (member's data will be deleted; member can rejoin but data is lost)
+
 #### Global Footer (shown on all pages)
 
 - Disclaimer text
@@ -86,10 +96,11 @@
 - **Authenticated user**
   - Global Nav Bar
   - Shows gang name they've been invited to
-  - Join gang button (sends join request, requires admin approval)
-  - Handles states:
+  - Join gang button
+  - Handles states after action:
+    - Auto-accept on → "You're in!" (joined immediately)
+    - Auto-accept off → "Request sent, waiting for admin approval"
     - Already approved → redirects to gang page
-    - Pending → waiting for admin approval message
     - Rejected → option to request again
     - Gang full → message that gang has reached max members
 - Global Footer
@@ -204,7 +215,8 @@
 - Auto-accept join requests toggle
 - Custom prediction deadline (relative minutes before match start, overrides default 45 min)
 - Member management: list of members with option to remove
-- Admin-only page
+- Delete gang option
+- Admin-only page (non-admin access redirects to gang page, checked at page level)
 - Global Footer
 
 ### Privacy Policy Page (`/privacy`)
@@ -257,6 +269,7 @@
 - Onboarded cookie (`bragg_onboarded`, 1 year max age):
   - Set on: auth callback (if already onboarded) and on completing onboarding
   - Cleared on: sign out and during auth callback if user hasn't onboarded (prevents stale cookie from previous user)
+- `bragg_terms_version` cookie set during onboarding when user first accepts terms
 
 ### Terms & Privacy Re-Acceptance
 
@@ -411,8 +424,8 @@
 - **Provider:** PostHog
 - **Pageviews & Sessions:** PostHog autocapture (pageviews, session recording, funnels defined in dashboard)
 - **Custom events tracked:**
-  - **Auth:** magic link requested, magic link resent, callback success/failure, onboarding completed, signed out
-  - **Gangs:** created, join requested, invite copied, invite shared, member approved/rejected, member removed
+  - **Auth:** magic link requested, magic link resent, callback success/failure, onboarding completed, signed out, account deleted
+  - **Gangs:** created, join requested, invite copied, invite shared, member approved/rejected, member removed, member left, gang deleted
   - **Predictions:** submitted, pick changed, predict page viewed/revisited
   - **Notifications:** bell opened, marked read, all cleared
   - **Performance:** Web Vitals (LCP, INP, CLS), page load time, server action duration
