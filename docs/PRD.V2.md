@@ -26,6 +26,7 @@
 
 ### Landing Page (`/`)
 
+- Authenticated users redirected to dashboard
 - **Hero Section**
   - App logo and name
   - CTA to create a gang (redirects to login if unauthenticated)
@@ -99,6 +100,7 @@
 - Gang header: gang name, member count (out of max)
 - Invite actions: copy invite link, share/send invite (uses native share on mobile)
 - Link to Season Standings page
+- Link to Gang Settings (admin only)
 - Pending join requests section (visible to admin only, shown below gang header)
 - **Upcoming Matches**
   - Match cards showing teams, match number, date, time, venue
@@ -138,6 +140,7 @@
   - Progress counter (X/total picked)
   - Submit button to lock in predictions
   - Error and success feedback
+- Before prediction window opens: shows message with exact opening time and link back to gang page
 - Predictions disabled when locked (deadline passed or match live)
 - Global Footer
 
@@ -212,6 +215,18 @@
 - Static content page with terms and conditions text
 - Global Footer
 
+### Not Found Page (404)
+
+- Standalone (no nav bar)
+- "Page not found" message
+- Link back to dashboard
+
+### Error Page (500)
+
+- Standalone (no nav bar)
+- Generic error message
+- Option to retry or go to dashboard
+
 ## Business Logic
 
 ### Authentication
@@ -226,6 +241,7 @@
   - Existing user (onboarded) → redirected to dashboard (or original `redirectTo` destination)
 - Onboarded status tracked via cookie for fast checks
 - Sign out clears session and cookies, redirects to landing page
+- Account deletion: soft-delete (marked in DB, data handling TBD)
 - Redirect URLs sanitized to prevent open redirect attacks (must be relative paths)
 
 ### Onboarding
@@ -279,11 +295,15 @@
 - **Member Management** (admin only)
   - Approve or reject pending join requests
   - Remove members
+- **Leaving & Deletion**
+  - Members can voluntarily leave a gang
+  - Admin cannot leave — must delete the gang
+  - Deleting a gang soft-deletes it (marked as deleted in DB, details TBD)
 
 ### Matches
 
 - **Statuses:** upcoming → live → completed (also: abandoned, no_result)
-- **Data source:** match schedule pre-loaded in DB (teams, date, time IST, venue, match number)
+- **Data source:** match schedule auto-imported from CricketData.org API via cron function (details TBD in DB section)
 - **Live updates:**
   - Polled from cricket API and stored as live snapshot
   - Data stored: scores, overs, batting team, current run rate, last 6 balls, both batsmen with individual scores and on-strike indicator, current bowler, current partnership
@@ -342,7 +362,7 @@
   - Current user highlighted
   - Computed via DB view
 - **Season Standings** (per gang, across all matches)
-  - Ranked by: total cumulative points
+  - Ranked by: total cumulative points → accuracy percentage → matches predicted (tiebreakers in order)
   - Shows: rank, display name, role, total points, matches predicted, points per match average, accuracy percentage
   - Current user highlighted
   - Computed via DB view
@@ -389,7 +409,7 @@
 - **Pageviews & Sessions:** PostHog autocapture (pageviews, session recording, funnels defined in dashboard)
 - **Custom events tracked:**
   - **Auth:** magic link requested, magic link resent, callback success/failure, onboarding completed, signed out
-  - **Gangs:** created, join requested, invite copied, invite shared, member approved/rejected/removed
+  - **Gangs:** created, join requested, invite copied, invite shared, member approved/rejected, member removed
   - **Predictions:** submitted, pick changed, predict page viewed/revisited
   - **Notifications:** bell opened, marked read, all cleared
   - **Performance:** Web Vitals (LCP, INP, CLS), page load time, server action duration
