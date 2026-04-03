@@ -642,3 +642,43 @@ _(TODO: add scenario-specific result fields once scenarios are finalized)_
 | `raw_scorecard_json` | JSONB, nullable | Full API response for reference |
 | `last_polled_at` | TIMESTAMPTZ, nullable | When last updated from API |
 | `updated_at` | TIMESTAMPTZ, default now() | |
+
+### `v2_scenarios` — Prediction questions for a fixture
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | UUID, PK | |
+| `league_id` | UUID, FK → v2_leagues | For future league-level predictions |
+| `fixture_id` | UUID, FK → v2_league_season_fixtures | Which match |
+| `gang_id` | UUID, FK → v2_gangs | Scenarios are per gang per fixture |
+| `type` | ENUM('system'), default 'system' | System only for now |
+| `slug` | TEXT, nullable | e.g., "match_winner", "top_scorer" |
+| `title` | TEXT, NOT NULL | Display title |
+| `input_type` | ENUM('team_pick', 'player_pick', 'range', 'yes_no', 'number') | |
+| `range_min` | INT, nullable | Min value for range/number input |
+| `range_max` | INT, nullable | Max value for range/number input |
+| `points` | INT, NOT NULL | 5–20 |
+| `resolution_phase` | TEXT, nullable | When this resolves during match |
+| `correct_answer` | TEXT, nullable | Set when resolved |
+| `is_resolved` | BOOLEAN, default false | |
+| `is_removed` | BOOLEAN, default false | Soft-delete |
+| `created_at` | TIMESTAMPTZ, default now() | |
+
+**Unique constraint:** (gang_id, fixture_id, slug) WHERE slug IS NOT NULL
+
+### `v2_predictions` — User predictions for scenarios
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | UUID, PK | |
+| `user_id` | UUID, FK → v2_profiles | |
+| `scenario_id` | UUID, FK → v2_scenarios | |
+| `gang_id` | UUID, FK → v2_gangs | Denormalized for faster queries |
+| `league_id` | UUID, FK → v2_leagues | Denormalized for faster queries |
+| `fixture_id` | UUID, FK → v2_league_season_fixtures | Denormalized for faster queries |
+| `value` | TEXT, NOT NULL | The user's prediction |
+| `points_earned` | INT, default 0 | |
+| `submitted_at` | TIMESTAMPTZ, default now() | Last submission time (updates on re-submission) |
+| `created_at` | TIMESTAMPTZ, default now() | First submission time |
+
+**Unique constraint:** (user_id, scenario_id)
