@@ -573,3 +573,72 @@ All tables prefixed with `v2_`. Hierarchy: Sport → League → Season → Match
 | `is_active` | BOOLEAN, default true | Gang participating in this season |
 | `created_at` | TIMESTAMPTZ, default now() | |
 | **PK** | (gang_id, league_id, season_id) | |
+
+### `v2_league_teams` — Teams within a league
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | UUID, PK | |
+| `api_id` | TEXT, NOT NULL, UNIQUE | Data provider identifier |
+| `league_id` | UUID, FK → v2_leagues | Team belongs to a league |
+| `name` | TEXT, NOT NULL | e.g., "Chennai Super Kings" |
+| `code` | TEXT, NOT NULL | e.g., "CSK" |
+| `color` | TEXT, NOT NULL | Hex color for UI |
+| `logo_url` | TEXT, nullable | Team logo |
+| `is_active` | BOOLEAN, default true | |
+| `created_at` | TIMESTAMPTZ, default now() | |
+
+**Unique constraint:** (league_id, code)
+
+### `v2_league_season_fixtures` — Match schedule
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | UUID, PK | |
+| `api_id` | TEXT, NOT NULL, UNIQUE | Data provider identifier |
+| `league_id` | UUID, FK → v2_leagues | |
+| `season_id` | UUID, FK → v2_seasons | |
+| `match_number` | INT, NOT NULL | Match number in the season |
+| `home_team_id` | UUID, FK → v2_league_teams | |
+| `away_team_id` | UUID, FK → v2_league_teams | |
+| `start_datetime` | TIMESTAMPTZ, NOT NULL | Match start time with timezone |
+| `venue_id` | UUID, nullable | Future use (FK to venues table) |
+| `venue_name` | TEXT, NOT NULL | e.g., "M. Chinnaswamy Stadium, Bengaluru" |
+| `status` | ENUM('upcoming', 'live', 'completed', 'abandoned', 'no_result'), default 'upcoming' | |
+| `created_at` | TIMESTAMPTZ, default now() | |
+
+**Unique constraint:** (season_id, match_number)
+
+### `v2_fixture_results` — Resolved match stats
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `fixture_id` | UUID, PK, FK → v2_league_season_fixtures | One-to-one |
+| `toss_winner_id` | UUID, FK → v2_league_teams, nullable | |
+| `match_winner_id` | UUID, FK → v2_league_teams, nullable | |
+| `resolved_at` | TIMESTAMPTZ, nullable | When results were finalized |
+| `created_at` | TIMESTAMPTZ, default now() | |
+
+_(TODO: add scenario-specific result fields once scenarios are finalized)_
+
+### `v2_fixture_live_scores` — Live scorecard data
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `fixture_id` | UUID, PK, FK → v2_league_season_fixtures | One-to-one with fixture |
+| `score_home` | TEXT, nullable | e.g., "185/4" |
+| `score_away` | TEXT, nullable | |
+| `overs_home` | DECIMAL(4,1), nullable | e.g., 18.3 |
+| `overs_away` | DECIMAL(4,1), nullable | |
+| `batting_team_id` | UUID, FK → v2_league_teams, nullable | Currently batting |
+| `current_run_rate` | DECIMAL(4,2), nullable | |
+| `last_6_balls` | TEXT, nullable | e.g., "1 4 W 0 6 2" |
+| `striker_name` | TEXT, nullable | |
+| `striker_score` | TEXT, nullable | e.g., "45(32)" |
+| `non_striker_name` | TEXT, nullable | |
+| `non_striker_score` | TEXT, nullable | |
+| `current_bowler` | TEXT, nullable | |
+| `current_partnership` | TEXT, nullable | e.g., "78(52)" |
+| `raw_scorecard_json` | JSONB, nullable | Full API response for reference |
+| `last_polled_at` | TIMESTAMPTZ, nullable | When last updated from API |
+| `updated_at` | TIMESTAMPTZ, default now() | |
