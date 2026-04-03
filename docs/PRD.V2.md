@@ -519,3 +519,18 @@ All tables prefixed with `v2_`. Hierarchy: Sport → League → Season → Match
 | `created_at` | TIMESTAMPTZ, default now() | |
 
 **Unique constraint:** (league_id, year)
+
+### `v2_profiles` — User accounts
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | UUID, PK | References `auth.users(id)`, cascade delete |
+| `display_name` | TEXT, NOT NULL | 2–30 characters |
+| `email` | TEXT, NOT NULL | From auth |
+| `date_of_birth` | DATE, NOT NULL | Age verification (18+) |
+| `terms_version` | TEXT | Version of terms accepted (e.g., "2.0") |
+| `terms_accepted_at` | TIMESTAMPTZ, nullable | When terms were last accepted |
+| `onboarding_completed` | BOOLEAN, default false | Gate for onboarding flow |
+| `is_deleted` | BOOLEAN, default false | Soft-delete for account deletion |
+| `deleted_at` | TIMESTAMPTZ, nullable | When account was deleted |
+| `created_at` | TIMESTAMPTZ, default now() | |
