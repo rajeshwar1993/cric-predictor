@@ -476,3 +476,46 @@
   - Date of birth stored but never displayed publicly
 - **CSRF:** protected by Supabase's built-in token handling
 - **XSS:** React's default escaping + no `dangerouslySetInnerHTML` usage
+
+## Database Schema
+
+All tables prefixed with `v2_`. Hierarchy: Sport → League → Season → Match.
+
+### `v2_sports` — Sport definitions
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | UUID, PK | |
+| `api_id` | TEXT, NOT NULL, UNIQUE | Data provider identifier |
+| `name` | TEXT, NOT NULL, UNIQUE | e.g., "Cricket" |
+| `code` | TEXT, NOT NULL, UNIQUE | URL-friendly slug |
+| `is_active` | BOOLEAN, default true | |
+| `created_at` | TIMESTAMPTZ, default now() | |
+
+### `v2_leagues` — Leagues within a sport
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | UUID, PK | |
+| `api_id` | TEXT, NOT NULL, UNIQUE | Data provider identifier |
+| `sport_id` | UUID, FK → v2_sports | |
+| `name` | TEXT, NOT NULL | e.g., "Indian Premier League" |
+| `code` | TEXT, NOT NULL, UNIQUE | URL-friendly slug |
+| `is_active` | BOOLEAN, default true | |
+| `created_at` | TIMESTAMPTZ, default now() | |
+
+### `v2_seasons` — Season/edition of a league
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | UUID, PK | |
+| `api_id` | TEXT, NOT NULL, UNIQUE | Data provider identifier |
+| `league_id` | UUID, FK → v2_leagues | |
+| `name` | TEXT, NOT NULL | e.g., "IPL 2026" |
+| `year` | INT, NOT NULL | |
+| `start_date` | DATE | Season start |
+| `end_date` | DATE | Season end |
+| `is_active` | BOOLEAN, default true | Current season flag |
+| `created_at` | TIMESTAMPTZ, default now() | |
+
+**Unique constraint:** (league_id, year)
