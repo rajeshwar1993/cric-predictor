@@ -308,6 +308,7 @@
   - If auto-accept is enabled, admin gets a "X joined your gang" notification instead
 - **Limits**
   - Max 20 members per gang (configurable via system-level settings)
+  - Max 40 gangs per user (across created + joined)
 - **Member Management** (admin only)
   - Approve or reject pending join requests
   - Remove members
@@ -332,6 +333,7 @@
   - Match results updated in DB (match winner, scores, toss winner, etc.)
   - Triggers prediction resolution via DB function
   - Sets `resolved_at` timestamp on match
+  - Abandoned/no_result matches: all predictions voided (no points awarded or deducted)
 
 ### Scenarios
 
@@ -368,6 +370,7 @@
   - Points per scenario defined on the scenario (5–20 points)
   - Resolved automatically when scenario resolution runs during/after match
   - Each prediction gets `is_correct` flag and `points_earned` set on resolution
+  - Abandoned/no_result matches: predictions voided, don't count toward leaderboards
 
 ### Scoring & Leaderboards
 
