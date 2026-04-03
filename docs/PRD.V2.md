@@ -626,10 +626,10 @@ _(TODO: add scenario-specific result fields once scenarios are finalized)_
 | Column | Type | Notes |
 |--------|------|-------|
 | `fixture_id` | UUID, PK, FK → v2_league_season_fixtures | One-to-one with fixture |
-| `score_home` | TEXT, nullable | e.g., "185/4" |
-| `score_away` | TEXT, nullable | |
-| `overs_home` | DECIMAL(4,1), nullable | e.g., 18.3 |
-| `overs_away` | DECIMAL(4,1), nullable | |
+| `home_team_score` | TEXT, nullable | e.g., "185/4" |
+| `away_team_score` | TEXT, nullable | |
+| `home_team_overs` | DECIMAL(4,1), nullable | e.g., 18.3 |
+| `away_team_overs` | DECIMAL(4,1), nullable | |
 | `batting_team_id` | UUID, FK → v2_league_teams, nullable | Currently batting |
 | `current_run_rate` | DECIMAL(4,2), nullable | |
 | `last_6_balls` | TEXT, nullable | e.g., "1 4 W 0 6 2" |
