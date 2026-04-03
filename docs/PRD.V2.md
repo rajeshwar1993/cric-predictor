@@ -683,3 +683,73 @@ _(TODO: add scenario-specific result fields once scenarios are finalized)_
 | `created_at` | TIMESTAMPTZ, default now() | First submission time |
 
 **Unique constraint:** (user_id, scenario_id)
+
+### `v2_players` — Player database
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | UUID, PK | |
+| `api_id` | TEXT, NOT NULL, UNIQUE | Data provider identifier |
+| `name` | TEXT, NOT NULL | Full name |
+| `role` | TEXT, nullable | e.g., "batsman", "bowler", "all-rounder", "wicket-keeper" |
+| `batting_style` | TEXT, nullable | |
+| `bowling_style` | TEXT, nullable | |
+| `is_active` | BOOLEAN, default true | |
+| `created_at` | TIMESTAMPTZ, default now() | |
+
+### `v2_fixture_squads` — Playing squad for each fixture
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `fixture_id` | UUID, FK → v2_league_season_fixtures | |
+| `player_id` | UUID, FK → v2_players | |
+| `team_id` | UUID, FK → v2_league_teams | Which team the player is in for this fixture |
+| `is_playing_xi` | BOOLEAN, default false | Playing XI vs bench |
+| `created_at` | TIMESTAMPTZ, default now() | |
+| **PK** | (fixture_id, player_id) | |
+
+### `v2_gang_fixture_standings` — Match leaderboard per gang (materialized)
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `gang_id` | UUID, FK → v2_gangs | |
+| `fixture_id` | UUID, FK → v2_league_season_fixtures | |
+| `user_id` | UUID, FK → v2_profiles | |
+| `predicted_count` | INT, default 0 | Number of predictions submitted |
+| `resolved_count` | INT, default 0 | Number of predictions resolved |
+| `correct_count` | INT, default 0 | Number correct |
+| `points_earned` | INT, default 0 | Total points for this match |
+| `last_submitted_at` | TIMESTAMPTZ | Latest submission time (for tiebreaker) |
+| `rank` | INT, nullable | Computed on resolution |
+| `updated_at` | TIMESTAMPTZ, default now() | |
+| **PK** | (gang_id, fixture_id, user_id) | |
+
+### `v2_gang_season_standings` — Season leaderboard per gang (materialized)
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `gang_id` | UUID, FK → v2_gangs | |
+| `season_id` | UUID, FK → v2_seasons | |
+| `user_id` | UUID, FK → v2_profiles | |
+| `matches_predicted` | INT, default 0 | Number of fixtures predicted |
+| `total_points` | INT, default 0 | Cumulative points |
+| `total_correct` | INT, default 0 | Total correct predictions |
+| `total_resolved` | INT, default 0 | Total resolved predictions |
+| `accuracy_pct` | DECIMAL(5,2), default 0 | Percentage correct |
+| `points_per_match` | DECIMAL(5,2), default 0 | Average points per match |
+| `rank` | INT, nullable | Computed by: points → accuracy → matches predicted |
+| `updated_at` | TIMESTAMPTZ, default now() | |
+| **PK** | (gang_id, season_id, user_id) | |
+
+### `v2_notifications` — User notifications
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | UUID, PK | |
+| `user_id` | UUID, FK → v2_profiles | Recipient |
+| `type` | TEXT, NOT NULL | e.g., "join_request", "join_approved", "deadline_reminder", "results_available" |
+| `message` | TEXT, NOT NULL | Display text |
+| `gang_id` | UUID, FK → v2_gangs, nullable | Related gang |
+| `fixture_id` | UUID, FK → v2_league_season_fixtures, nullable | Related fixture |
+| `is_read` | BOOLEAN, default false | |
+| `created_at` | TIMESTAMPTZ, default now() | |
