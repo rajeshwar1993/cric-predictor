@@ -330,10 +330,10 @@
   - Closes: 45 minutes before match start time (default, configurable per gang as relative minutes before match)
   - Scenarios automatically available when prediction window opens
 - **Result resolution:**
-  - Match results updated in DB (match winner, scores, toss winner, etc.)
+  - Match results stored in `v2_fixture_results` (match winner, toss winner, etc.)
   - Triggers prediction resolution via DB function
-  - Sets `resolved_at` timestamp on match
-  - Abandoned/no_result matches: all predictions voided (no points awarded or deducted)
+  - Sets `resolved_at` timestamp on fixture results
+  - Abandoned/no_result matches: `v2_fixture_results` row created with `resolved_at` set but `match_winner_id` null; all predictions voided (no points awarded or deducted)
 
 ### Scenarios
 
@@ -379,12 +379,12 @@
   - Tiebreaker: earliest submission timestamp wins
   - Shows: rank, display name, correct/resolved count, predicted count, points
   - Current user highlighted
-  - Computed via DB view
+  - Materialized in `v2_gang_fixture_standings` — updated on prediction submit and scenario resolution
 - **Season Standings** (per gang, across all matches)
   - Ranked by: total cumulative points → accuracy percentage → matches predicted (tiebreakers in order)
   - Shows: rank, display name, role, total points, matches predicted, points per match average, accuracy percentage
   - Current user highlighted
-  - Computed via DB view
+  - Materialized in `v2_gang_season_standings` — updated on scenario resolution
 - **Scoring rules**
   - Binary scoring: correct = scenario's point value, incorrect = 0
   - No partial credit
