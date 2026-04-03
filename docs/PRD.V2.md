@@ -26,7 +26,7 @@
   - Delete gang → type gang name (irreversible)
   - Delete account → type email address (irreversible)
   - Leave gang → type gang name (irreversible)
-  - Remove member → type member's display name (member's data will be deleted; member can rejoin but data is lost)
+  - Remove member → type member's display name (member is removed and grayed out in standings; data is preserved)
 
 #### Global Footer (shown on all pages except standalone pages: Login, Onboarding, Accept Terms, 404, Error)
 
@@ -214,7 +214,7 @@
 - Gang name (editable)
 - Auto-accept join requests toggle
 - Custom prediction deadline (relative minutes before match start, overrides default 45 min)
-- Member management: list of members with option to remove
+- Member management: list of members with option to remove or block
 - Delete gang option
 - Admin-only page (non-admin access redirects to gang page, checked at page level)
 - Global Footer
@@ -534,3 +534,42 @@ All tables prefixed with `v2_`. Hierarchy: Sport → League → Season → Match
 | `is_deleted` | BOOLEAN, default false | Soft-delete for account deletion |
 | `deleted_at` | TIMESTAMPTZ, nullable | When account was deleted |
 | `created_at` | TIMESTAMPTZ, default now() | |
+
+### `v2_gangs` — User-created groups
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | UUID, PK | |
+| `name` | TEXT, NOT NULL | 3–50 characters |
+| `invite_code` | TEXT, NOT NULL, UNIQUE | 6 chars, uppercase + numbers |
+| `created_by` | UUID, FK → v2_profiles | The admin |
+| `auto_accept` | BOOLEAN, default false | Auto-accept join requests |
+| `is_deleted` | BOOLEAN, default false | Soft-delete |
+| `deleted_at` | TIMESTAMPTZ, nullable | |
+| `created_at` | TIMESTAMPTZ, default now() | |
+
+### `v2_gang_members` — Gang membership
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `gang_id` | UUID, FK → v2_gangs | |
+| `user_id` | UUID, FK → v2_profiles | |
+| `role` | ENUM('admin', 'member'), default 'member' | |
+| `status` | ENUM('pending', 'approved', 'rejected', 'removed'), default 'pending' | |
+| `is_blocked` | BOOLEAN, default false | Blocked members cannot rejoin even with auto-accept |
+| `joined_at` | TIMESTAMPTZ, default now() | |
+| `approved_at` | TIMESTAMPTZ, nullable | |
+| `removed_at` | TIMESTAMPTZ, nullable | When member was removed |
+| **PK** | (gang_id, user_id) | |
+
+### `v2_gang_league_seasons` — Gang enrolled in a league season (with settings)
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `gang_id` | UUID, FK → v2_gangs | |
+| `league_id` | UUID, FK → v2_leagues | |
+| `season_id` | UUID, FK → v2_seasons | |
+| `prediction_deadline_mins` | INT, default 45 | Minutes before match to close predictions |
+| `is_active` | BOOLEAN, default true | Gang participating in this season |
+| `created_at` | TIMESTAMPTZ, default now() | |
+| **PK** | (gang_id, league_id, season_id) | |
