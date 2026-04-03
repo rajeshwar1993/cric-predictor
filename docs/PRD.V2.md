@@ -677,6 +677,7 @@ _(TODO: add scenario-specific result fields once scenarios are finalized)_
 | `league_id` | UUID, FK → v2_leagues | Denormalized for faster queries |
 | `fixture_id` | UUID, FK → v2_league_season_fixtures | Denormalized for faster queries |
 | `value` | TEXT, NOT NULL | The user's prediction |
+| `is_correct` | BOOLEAN, nullable | NULL while unresolved |
 | `points_earned` | INT, default 0 | |
 | `submitted_at` | TIMESTAMPTZ, default now() | Last submission time (updates on re-submission) |
 | `created_at` | TIMESTAMPTZ, default now() | First submission time |
