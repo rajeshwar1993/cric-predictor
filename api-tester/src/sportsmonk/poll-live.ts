@@ -44,10 +44,13 @@ const sessionDir = path.join("responses", "sportsmonk", sessionId);
 const todayStr = now.toISOString().split("T")[0];
 
 // Full includes for live fixture detail
+// Nested includes (batting.batsman, etc.) resolve player names inline
 const FIXTURE_INCLUDES = [
-  "batting", "bowling", "runs", "scoreboards",
+  "batting.batsman", "batting.bowler", "batting.catchstump",
+  "bowling.bowler",
+  "runs", "scoreboards",
   "lineup", "manofmatch", "tosswon", "venue",
-  "localteam", "visitorteam",
+  "localteam", "visitorteam", "winnerteam",
 ].join(",");
 
 // ─── Types ───────────────────────────────────────────────────────────────────
