@@ -781,13 +781,19 @@ _(TODO: add scenario-specific result fields once scenarios are finalized)_
 | `v2_predictions` | `idx_predictions_scenario` | `(scenario_id)` |
 | `v2_predictions` | `idx_predictions_gang_season_user` | `(gang_id, season_id, user_id)` |
 | `v2_gang_fixture_standings` | `idx_fixture_standings_season` | `(gang_id, season_id)` |
+| `v2_gang_season_standings` | `idx_season_standings_user` | `(user_id)` |
 | `v2_notifications` | `idx_notifications_user` | `(user_id, is_read, created_at)` |
 
 ### Row-Level Security (RLS) Policies
 
 All tables have RLS enabled. System operations (cron, edge functions) use service role key to bypass RLS.
 
-Helper function: `is_gang_member(gang_id, user_id)` — returns true if user is an approved member of the gang.
+Helper functions (SECURITY DEFINER):
+- `is_gang_member(gang_id, user_id)` — returns true if user is an approved member of the gang
+- `is_gang_admin(gang_id, user_id)` — returns true if user is the admin of the gang
+- `get_gang_by_invite_code(code)` — looks up gang by invite code, bypasses RLS (needed for Join Page before membership)
+- `get_members_who_predicted(gang_id, fixture_id)` — returns user_ids only, no prediction values (visible to all gang members before deadline)
+- `prediction_deadline(fixture_id, gang_id)` — computes deadline from `start_datetime` minus `prediction_deadline_mins`, used in prediction RLS policies
 
 #### Reference tables (public read, no user writes)
 
@@ -818,7 +824,7 @@ Helper function: `is_gang_member(gang_id, user_id)` — returns true if user is 
 
 | Operation | Policy |
 |-----------|--------|
-| SELECT | Approved members see other approved members. Admins also see pending. Users see own row regardless of status. |
+| SELECT | Approved members see other approved members. Admins see all statuses (for member management). Users see own row regardless of status. |
 | INSERT | Any authenticated user (own row only, as pending) |
 | UPDATE | Admin can update others (approve/reject/remove/block). User can update own (leave). |
 | DELETE | None (status changes only) |
@@ -844,11 +850,11 @@ Helper function: `is_gang_member(gang_id, user_id)` — returns true if user is 
 | Operation | Policy |
 |-----------|--------|
 | SELECT | Before deadline: own only. After deadline/match live/completed: all approved gang members. |
-| INSERT | Approved gang members, own user_id, before deadline, match status = 'upcoming' |
+| INSERT | Approved gang members, own user_id, before deadline, match status = 'upcoming'. Prediction window open time (12h before) enforced at server action level, not RLS. |
 | UPDATE | Same as INSERT (own predictions before deadline) |
 | DELETE | None |
 
-Deadline check: `start_datetime` from fixture minus `prediction_deadline_mins` from `v2_gang_league_seasons`.
+Deadline check uses `prediction_deadline(fixture_id, gang_id)` helper function.
 
 #### `v2_gang_fixture_standings`
 
@@ -871,3 +877,7 @@ Deadline check: `start_datetime` from fixture minus `prediction_deadline_mins` f
 | SELECT | Own only |
 | UPDATE | Own only (mark as read) |
 | INSERT/DELETE | None (system only) |
+
+#### Supabase Realtime
+
+Enabled on: `v2_notifications` only. Live scores use client polling, not realtime.
