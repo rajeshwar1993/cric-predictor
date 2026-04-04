@@ -25,7 +25,7 @@
 - User must type a specific value (shown as input placeholder) to enable the action:
   - Delete gang → type gang name (irreversible)
   - Delete account → type email address (irreversible)
-  - Leave gang → type gang name (irreversible)
+  - Leave gang → type gang name (you will lose access; can rejoin with invite code)
   - Remove member → type member's display name (member is removed and grayed out in standings; data is preserved)
 
 #### Global Footer (shown on all pages except standalone pages: Login, Onboarding, Accept Terms, 404, Error)
@@ -314,8 +314,11 @@
   - Remove members
   - Block members (blocked members cannot rejoin even with auto-accept)
 - **Leaving & Deletion**
-  - Members can voluntarily leave a gang
+  - Members can voluntarily leave a gang (status set to `left`)
   - Admin cannot leave — must delete the gang
+  - Left and removed members are grayed out in standings; their data (predictions, scores) is preserved
+  - Left/removed members no longer appear in the active member list
+  - Left members can rejoin with an invite code (unless blocked)
   - Deleting a gang soft-deletes it (marked as deleted in DB, details TBD)
 
 ### Matches
@@ -556,7 +559,7 @@ All tables prefixed with `v2_`. Hierarchy: Sport → League → Season → Match
 | `gang_id` | UUID, FK → v2_gangs | |
 | `user_id` | UUID, FK → v2_profiles | |
 | `role` | ENUM('admin', 'member'), default 'member' | |
-| `status` | ENUM('pending', 'approved', 'rejected', 'removed'), default 'pending' | |
+| `status` | ENUM('pending', 'approved', 'rejected', 'removed', 'left'), default 'pending' | |
 | `is_blocked` | BOOLEAN, default false | Blocked members cannot rejoin even with auto-accept |
 | `joined_at` | TIMESTAMPTZ, default now() | |
 | `approved_at` | TIMESTAMPTZ, nullable | |
