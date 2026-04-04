@@ -390,6 +390,33 @@
 | 19 | `bowler_three_wickets` | Will any bowler take 3+ wickets? | yes_no | 15 | mid_match | — |
 | 20 | `super_over` | Will there be a super over? | yes_no | 10 | end | — |
 
+#### Scenario Resolution Mapping (Sportmonks API)
+
+All data available via single call: `GET /fixtures/{id}?include=batting,bowling,runs,manofmatch`
+
+| # | Slug | API Source | Resolution Method |
+|---|------|-----------|-------------------|
+| 1 | `toss_winner` | Fixture: `toss_won_team_id` | Direct field. Map to internal team UUID via `v2_league_teams.api_id`. |
+| 2 | `match_winner` | Fixture: `winner_team_id` | Direct field. Map to internal team UUID via `v2_league_teams.api_id`. |
+| 3 | `top_scorer` | Batting include: `player_id`, `score` | Find max `score` across all batting entries (both innings). Map `player_id` to internal UUID via `v2_players.api_id`. Tiebreaker: fewer balls faced (`ball` field). |
+| 4 | `top_wicket_taker` | Bowling include: `player_id`, `wickets` | Find max `wickets` across all bowling entries (both innings). Map `player_id` to internal UUID via `v2_players.api_id`. Tiebreaker: fewer runs conceded. |
+| 5 | `most_sixes_player` | Batting include: `player_id`, `six_x` | Sum `six_x` per player across both innings. Find max. Map `player_id` to internal UUID. Tiebreaker: fewer balls faced. |
+| 6 | `player_of_match` | Fixture: `man_of_match_id` | Direct field. Map to internal UUID via `v2_players.api_id`. |
+| 7 | `home_team_innings_score` | Runs include: `score` where `team_id` = home team | Direct field from runs. Map raw score to bracket option. |
+| 8 | `away_team_innings_score` | Runs include: `score` where `team_id` = away team | Direct field from runs. Map raw score to bracket option. |
+| 9 | `home_team_powerplay_runs` | Live score capture | Captured during live polling when home team overs cross 6.0. Stored in `v2_fixture_results`. Not available post-match from API. |
+| 10 | `away_team_powerplay_runs` | Live score capture | Same as #9, for away team. |
+| 11 | `home_team_powerplay_wickets_lost` | Live score capture | Captured during live polling when home team overs cross 6.0 — count wickets at that point. Stored in `v2_fixture_results`. |
+| 12 | `away_team_powerplay_wickets_lost` | Live score capture | Same as #11, for away team. |
+| 13 | `total_match_runs` | Runs include: `score` (all entries) | Sum `score` from all innings. Map to bracket option. |
+| 14 | `total_match_sixes` | Batting include: `six_x` (all entries) | Sum `six_x` across all batting entries (both teams, both innings). Map to bracket. |
+| 15 | `total_match_wickets` | Runs include: `wickets` (all entries) | Sum `wickets` from all innings. Map to bracket. |
+| 16 | `total_match_catches` | _(TODO: resolve catch vs stumping distinction from `wicket_id` field)_ | Count batting entries where `catch_stump_player_id` is not null. May include stumpings. |
+| 17 | `first_wicket_over` | Batting include: `fow_balls` | Find minimum `fow_balls` across all batting entries in the first innings (where `fow_balls > 0`). Map over number to bracket. |
+| 18 | `fifty_scored` | Batting include: `score` | Check if any batting entry has `score >= 50`. Boolean result. |
+| 19 | `bowler_three_wickets` | Bowling include: `wickets` | Check if any bowling entry has `wickets >= 3`. Boolean result. |
+| 20 | `super_over` | Fixture: `super_over` | Direct boolean field. |
+
 ### Predictions
 
 - **Submission**
