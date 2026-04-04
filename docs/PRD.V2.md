@@ -312,6 +312,7 @@
 - **Member Management** (admin only)
   - Approve or reject pending join requests
   - Remove members
+  - Block members (blocked members cannot rejoin even with auto-accept)
 - **Leaving & Deletion**
   - Members can voluntarily leave a gang
   - Admin cannot leave — must delete the gang
@@ -342,7 +343,7 @@
 - **Structure:**
   - Each scenario has: title, category, input type, point value, resolution phase
   - Point values range from 5–20
-  - Input types: team pick, player pick, range brackets, yes/no
+  - Input types: team pick, player pick, range, yes/no, number
 - **Resolution:**
   - Runs as a periodic function while match is live
   - Continues until match is completed or all scenarios are resolved
