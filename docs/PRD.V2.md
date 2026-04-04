@@ -763,3 +763,111 @@ _(TODO: add scenario-specific result fields once scenarios are finalized)_
 | `fixture_id` | UUID, FK → v2_league_season_fixtures, nullable | Related fixture |
 | `is_read` | BOOLEAN, default false | |
 | `created_at` | TIMESTAMPTZ, default now() | |
+
+### Database Indexes
+
+| Table | Index | Columns |
+|-------|-------|---------|
+| `v2_profiles` | `idx_profiles_email` | `(email)` |
+| `v2_gangs` | `idx_gangs_created_by` | `(created_by)` |
+| `v2_gangs` | `idx_gangs_deleted` | `(is_deleted)` |
+| `v2_gang_members` | `idx_gang_members_status` | `(gang_id, status)` |
+| `v2_gang_members` | `idx_gang_members_user` | `(user_id, status)` |
+| `v2_gang_league_seasons` | `idx_gang_league_seasons_season` | `(season_id)` |
+| `v2_league_season_fixtures` | `idx_fixtures_season_status` | `(season_id, status, start_datetime)` |
+| `v2_scenarios` | `idx_scenarios_gang_fixture` | `(gang_id, fixture_id)` |
+| `v2_scenarios` | `idx_scenarios_gang_season` | `(gang_id, season_id)` |
+| `v2_predictions` | `idx_predictions_gang_fixture_user` | `(gang_id, fixture_id, user_id)` |
+| `v2_predictions` | `idx_predictions_scenario` | `(scenario_id)` |
+| `v2_predictions` | `idx_predictions_gang_season_user` | `(gang_id, season_id, user_id)` |
+| `v2_gang_fixture_standings` | `idx_fixture_standings_season` | `(gang_id, season_id)` |
+| `v2_notifications` | `idx_notifications_user` | `(user_id, is_read, created_at)` |
+
+### Row-Level Security (RLS) Policies
+
+All tables have RLS enabled. System operations (cron, edge functions) use service role key to bypass RLS.
+
+Helper function: `is_gang_member(gang_id, user_id)` — returns true if user is an approved member of the gang.
+
+#### Reference tables (public read, no user writes)
+
+`v2_sports`, `v2_leagues`, `v2_seasons`, `v2_league_teams`, `v2_players`, `v2_fixture_squads`, `v2_league_season_fixtures`, `v2_fixture_results`, `v2_fixture_live_scores`
+
+- SELECT: all authenticated users
+- INSERT/UPDATE/DELETE: none (system only via service role)
+
+#### `v2_profiles`
+
+| Operation | Policy |
+|-----------|--------|
+| SELECT | Own profile always. Others visible if in same gang (approved members). |
+| INSERT | None (created by auth trigger) |
+| UPDATE | Own profile only |
+| DELETE | None (soft-delete via update) |
+
+#### `v2_gangs`
+
+| Operation | Policy |
+|-----------|--------|
+| SELECT | Approved gang members only. Filter out `is_deleted = true`. |
+| INSERT | Any authenticated user |
+| UPDATE | Admin only (name, auto_accept, soft-delete) |
+| DELETE | None (soft-delete via update) |
+
+#### `v2_gang_members`
+
+| Operation | Policy |
+|-----------|--------|
+| SELECT | Approved members see other approved members. Admins also see pending. Users see own row regardless of status. |
+| INSERT | Any authenticated user (own row only, as pending) |
+| UPDATE | Admin can update others (approve/reject/remove/block). User can update own (leave). |
+| DELETE | None (status changes only) |
+
+#### `v2_gang_league_seasons`
+
+| Operation | Policy |
+|-----------|--------|
+| SELECT | Approved gang members |
+| INSERT | None (system-created on gang creation) |
+| UPDATE | Admin only (prediction_deadline_mins) |
+| DELETE | None |
+
+#### `v2_scenarios`
+
+| Operation | Policy |
+|-----------|--------|
+| SELECT | Approved gang members. Filter out `is_removed = true`. |
+| INSERT/UPDATE/DELETE | None (system only) |
+
+#### `v2_predictions`
+
+| Operation | Policy |
+|-----------|--------|
+| SELECT | Before deadline: own only. After deadline/match live/completed: all approved gang members. |
+| INSERT | Approved gang members, own user_id, before deadline, match status = 'upcoming' |
+| UPDATE | Same as INSERT (own predictions before deadline) |
+| DELETE | None |
+
+Deadline check: `start_datetime` from fixture minus `prediction_deadline_mins` from `v2_gang_league_seasons`.
+
+#### `v2_gang_fixture_standings`
+
+| Operation | Policy |
+|-----------|--------|
+| SELECT | Approved gang members |
+| INSERT/UPDATE/DELETE | None (system-managed) |
+
+#### `v2_gang_season_standings`
+
+| Operation | Policy |
+|-----------|--------|
+| SELECT | Approved gang members |
+| INSERT/UPDATE/DELETE | None (system-managed) |
+
+#### `v2_notifications`
+
+| Operation | Policy |
+|-----------|--------|
+| SELECT | Own only |
+| UPDATE | Own only (mark as read) |
+| INSERT/DELETE | None (system only) |
