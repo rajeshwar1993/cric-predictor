@@ -6,7 +6,8 @@
   "scripts": {
     "test": "tsx src/run-all.ts",
     "spec": "tsx src/run-all.ts --spec",
-    "poll": "tsx src/poll.ts"
+    "poll": "tsx src/poll.ts",
+    "sportsmonk": "tsx src/sportsmonk/run-all.ts"
   },
   "devDependencies": {
     "dotenv": "^16.4.0",
