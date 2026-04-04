@@ -181,7 +181,7 @@
 - Global Nav Bar
 - Season standings table:
   - Defaults to current active season (future: season selector dropdown)
-  - Ranked list of members: rank, display name, role icon, total points, matches predicted, points per match average, accuracy percentage
+  - Ranked list of members: rank, display name, total points, matches predicted, points per match average, accuracy percentage
   - Current user highlighted
   - Empty state if no predictions yet
 - Global Footer
@@ -383,13 +383,13 @@
 
 - **Match Leaderboard** (per gang, per match)
   - Ranked by: total points earned in that match
-  - Tiebreaker: earliest submission timestamp wins
+  - Tiebreaker: whoever's final submission was earliest wins (rewards committing to picks early)
   - Shows: rank, display name, correct/resolved count, predicted count, points
   - Current user highlighted
   - Materialized in `v2_gang_fixture_standings` — updated on prediction submit and scenario resolution
 - **Season Standings** (per gang, across all matches)
   - Ranked by: total cumulative points → accuracy percentage → matches predicted (tiebreakers in order)
-  - Shows: rank, display name, role, total points, matches predicted, points per match average, accuracy percentage
+  - Shows: rank, display name, total points, matches predicted, points per match average, accuracy percentage
   - Current user highlighted
   - Materialized in `v2_gang_season_standings` — updated on scenario resolution
 - **Scoring rules**
@@ -421,7 +421,7 @@
 - **Frontend:** Next.js 16 (App Router), React, TypeScript
 - **Styling:** Tailwind CSS, shadcn/ui components
 - **Backend:** Next.js Server Actions, Supabase Edge Functions
-- **Database:** Supabase Postgres (with DB views, RPC functions, RLS)
+- **Database:** Supabase Postgres (with materialized tables, RPC functions, RLS)
 - **Auth:** Supabase Auth (magic link OTP)
 - **Realtime:** Supabase Realtime (notifications)
 - **Cricket Data:** CricketData.org API
