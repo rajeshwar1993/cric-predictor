@@ -700,24 +700,40 @@ All tables prefixed with `v2_`. Hierarchy: Sport → League → Season → Match
 | `last_polled_at` | TIMESTAMPTZ, nullable | When last updated from API |
 | `updated_at` | TIMESTAMPTZ, default now() | |
 
-### `v2_scenarios` — Prediction questions for a fixture
+### `v2_scenario_templates` — System scenario definitions (reference table)
 
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | UUID, PK | |
+| `sport_id` | UUID, FK → v2_sports | Templates are sport-specific |
+| `slug` | TEXT, NOT NULL, UNIQUE | e.g., "match_winner" |
+| `title` | TEXT, NOT NULL | Display title (with {Home Team}/{Away Team} placeholders) |
+| `input_type` | ENUM('team_pick', 'player_pick', 'range', 'yes_no', 'number') | |
+| `options` | JSONB, nullable | Bracket options for range type |
+| `points` | INT, NOT NULL | Default points |
+| `resolution_phase` | TEXT, NOT NULL | When this resolves |
+| `is_active` | BOOLEAN, default true | |
+| `created_at` | TIMESTAMPTZ, default now() | |
+
+### `v2_fixture_scenarios` — Prediction questions for a fixture (seeded from templates)
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | UUID, PK | |
+| `template_id` | UUID, FK → v2_scenario_templates, nullable | Source template |
 | `league_id` | UUID, FK → v2_leagues | For future league-level predictions |
 | `season_id` | UUID, FK → v2_seasons | Denormalized for season-level queries |
 | `fixture_id` | UUID, FK → v2_league_season_fixtures | Which match |
 | `gang_id` | UUID, FK → v2_gangs | Scenarios are per gang per fixture |
 | `type` | ENUM('system'), default 'system' | System only for now |
-| `slug` | TEXT, nullable | e.g., "match_winner", "top_scorer" |
-| `title` | TEXT, NOT NULL | Display title |
-| `input_type` | ENUM('team_pick', 'player_pick', 'range', 'yes_no', 'number') | |
-| `options` | JSONB, nullable | Predefined bracket options for range input type |
+| `slug` | TEXT, nullable | Copied from template on seeding |
+| `title` | TEXT, NOT NULL | Copied from template, placeholders replaced with team names |
+| `input_type` | ENUM('team_pick', 'player_pick', 'range', 'yes_no', 'number') | Copied from template |
+| `options` | JSONB, nullable | Copied from template |
 | `range_min` | INT, nullable | Min value for number input |
 | `range_max` | INT, nullable | Max value for number input |
-| `points` | INT, NOT NULL | 5–20 |
-| `resolution_phase` | TEXT, nullable | When this resolves during match |
+| `points` | INT, NOT NULL | Copied from template |
+| `resolution_phase` | TEXT, nullable | Copied from template |
 | `correct_answer` | TEXT, nullable | Set when resolved |
 | `is_resolved` | BOOLEAN, default false | |
 | `is_removed` | BOOLEAN, default false | Soft-delete |
@@ -725,13 +741,15 @@ All tables prefixed with `v2_`. Hierarchy: Sport → League → Season → Match
 
 **Unique constraint:** (gang_id, fixture_id, slug) WHERE slug IS NOT NULL
 
+Seeding copies template values into scenarios. Existing matches keep their original values even if templates are updated later.
+
 ### `v2_predictions` — User predictions for scenarios
 
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | UUID, PK | |
 | `user_id` | UUID, FK → v2_profiles | |
-| `scenario_id` | UUID, FK → v2_scenarios | |
+| `scenario_id` | UUID, FK → v2_fixture_scenarios | |
 | `gang_id` | UUID, FK → v2_gangs | Denormalized for faster queries |
 | `league_id` | UUID, FK → v2_leagues | Denormalized for faster queries |
 | `season_id` | UUID, FK → v2_seasons | Denormalized for faster queries |
@@ -826,8 +844,8 @@ All tables prefixed with `v2_`. Hierarchy: Sport → League → Season → Match
 | `v2_gang_members` | `idx_gang_members_user` | `(user_id, status)` |
 | `v2_gang_league_seasons` | `idx_gang_league_seasons_season` | `(season_id)` |
 | `v2_league_season_fixtures` | `idx_fixtures_season_status` | `(season_id, status, start_datetime)` |
-| `v2_scenarios` | `idx_scenarios_gang_fixture` | `(gang_id, fixture_id)` |
-| `v2_scenarios` | `idx_scenarios_gang_season` | `(gang_id, season_id)` |
+| `v2_fixture_scenarios` | `idx_scenarios_gang_fixture` | `(gang_id, fixture_id)` |
+| `v2_fixture_scenarios` | `idx_scenarios_gang_season` | `(gang_id, season_id)` |
 | `v2_predictions` | `idx_predictions_gang_fixture_user` | `(gang_id, fixture_id, user_id)` |
 | `v2_predictions` | `idx_predictions_scenario` | `(scenario_id)` |
 | `v2_predictions` | `idx_predictions_gang_season_user` | `(gang_id, season_id, user_id)` |
@@ -848,7 +866,7 @@ Helper functions (SECURITY DEFINER):
 
 #### Reference tables (public read, no user writes)
 
-`v2_sports`, `v2_leagues`, `v2_seasons`, `v2_league_teams`, `v2_players`, `v2_fixture_squads`, `v2_league_season_fixtures`, `v2_fixture_results`, `v2_fixture_live_scores`
+`v2_sports`, `v2_leagues`, `v2_seasons`, `v2_league_teams`, `v2_players`, `v2_fixture_squads`, `v2_league_season_fixtures`, `v2_fixture_results`, `v2_fixture_live_scores`, `v2_scenario_templates`
 
 - SELECT: all authenticated users
 - INSERT/UPDATE/DELETE: none (system only via service role)
@@ -889,7 +907,7 @@ Helper functions (SECURITY DEFINER):
 | UPDATE | Admin only (prediction_deadline_mins) |
 | DELETE | None |
 
-#### `v2_scenarios`
+#### `v2_fixture_scenarios`
 
 | Operation | Policy |
 |-----------|--------|
