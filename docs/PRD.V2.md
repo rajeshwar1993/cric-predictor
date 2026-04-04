@@ -347,14 +347,48 @@
 - **Types**
   - System scenarios only (auto-seeded per gang per match when prediction window opens)
 - **Structure:**
-  - Each scenario has: title, category, input type, point value, resolution phase
-  - Point values range from 5–20
+  - Each scenario has: title, slug, input type, point value, resolution phase, options (for range type)
+  - Point values: 5 (easy), 10 (medium), 15 (hard), 20 (hardest)
   - Input types: team pick, player pick, range, yes/no, number
+  - {Home Team} and {Away Team} in titles are dynamically replaced with actual team names
 - **Resolution:**
   - Runs as a periodic function while match is live
   - Continues until match is completed or all scenarios are resolved
   - Correct answer set on each scenario; predictions scored automatically
   - Scenarios can be soft-removed (not deleted)
+- **Resolution phases:**
+  - `toss` — after toss
+  - `first_wicket` — when first wicket falls
+  - `team_powerplay_end` — when a team's powerplay (first 6 overs) ends; resolves that team's powerplay scenarios
+  - `mid_match` — during the match (can resolve as soon as condition is met)
+  - `team_innings_end` — when a team's innings ends; resolves that team's innings scenarios
+  - `end` — after match ends
+  - `post_match` — after official awards (POTM)
+
+#### System Scenario Definitions (20 scenarios, max 230 points)
+
+| # | Slug | Title | Input Type | Points | Resolution Phase | Options |
+|---|------|-------|------------|--------|-----------------|---------|
+| 1 | `toss_winner` | Who wins the toss? | team_pick | 5 | toss | — |
+| 2 | `match_winner` | Who wins the match? | team_pick | 10 | end | — |
+| 3 | `top_scorer` | Top run scorer of the match? | player_pick | 15 | end | — |
+| 4 | `top_wicket_taker` | Top wicket-taker of the match? | player_pick | 15 | end | — |
+| 5 | `most_sixes_player` | Who hits the most sixes? | player_pick | 15 | end | — |
+| 6 | `player_of_match` | Player of the Match? | player_pick | 20 | post_match | — |
+| 7 | `home_team_innings_score` | {Home Team} innings score? | range | 10 | team_innings_end | <140, 140-159, 160-179, 180-199, 200+ |
+| 8 | `away_team_innings_score` | {Away Team} innings score? | range | 10 | team_innings_end | <140, 140-159, 160-179, 180-199, 200+ |
+| 9 | `home_team_powerplay_runs` | {Home Team} powerplay runs? | range | 10 | team_powerplay_end | <30, 30-39, 40-49, 50-59, 60+ |
+| 10 | `away_team_powerplay_runs` | {Away Team} powerplay runs? | range | 10 | team_powerplay_end | <30, 30-39, 40-49, 50-59, 60+ |
+| 11 | `home_team_powerplay_wickets_lost` | {Home Team} powerplay wickets lost? | range | 10 | team_powerplay_end | 0, 1, 2, 3, 4+ |
+| 12 | `away_team_powerplay_wickets_lost` | {Away Team} powerplay wickets lost? | range | 10 | team_powerplay_end | 0, 1, 2, 3, 4+ |
+| 13 | `total_match_runs` | Total runs in the match? | range | 10 | end | <300, 300-339, 340-369, 370-399, 400+ |
+| 14 | `total_match_sixes` | Total sixes in the match? | range | 10 | end | <10, 10-15, 16-20, 21-25, 26+ |
+| 15 | `total_match_wickets` | Total wickets in the match? | range | 10 | end | <5, 5-8, 9-12, 13-15, 16+ |
+| 16 | `total_match_catches` | Total catches in the match? | range | 10 | end | <3, 3-5, 6-8, 9-11, 12+ |
+| 17 | `first_wicket_over` | When does the first wicket fall? | range | 10 | first_wicket | 1, 2, 3, 4-5, 6+ |
+| 18 | `fifty_scored` | Will anyone score 50+? | yes_no | 5 | mid_match | — |
+| 19 | `bowler_three_wickets` | Will any bowler take 3+ wickets? | yes_no | 15 | mid_match | — |
+| 20 | `super_over` | Will there be a super over? | yes_no | 10 | end | — |
 
 ### Predictions
 
@@ -623,10 +657,26 @@ All tables prefixed with `v2_`. Hierarchy: Sport → League → Season → Match
 | `fixture_id` | UUID, PK, FK → v2_league_season_fixtures | One-to-one |
 | `toss_winner_id` | UUID, FK → v2_league_teams, nullable | |
 | `match_winner_id` | UUID, FK → v2_league_teams, nullable | |
+| `top_scorer` | TEXT, nullable | Player name or ID |
+| `top_wicket_taker` | TEXT, nullable | Player name or ID |
+| `most_sixes_player` | TEXT, nullable | Player name or ID |
+| `player_of_match` | TEXT, nullable | Player name or ID |
+| `home_team_innings_score` | INT, nullable | |
+| `away_team_innings_score` | INT, nullable | |
+| `home_team_powerplay_runs` | INT, nullable | |
+| `away_team_powerplay_runs` | INT, nullable | |
+| `home_team_powerplay_wickets_lost` | INT, nullable | |
+| `away_team_powerplay_wickets_lost` | INT, nullable | |
+| `total_match_runs` | INT, nullable | |
+| `total_match_sixes` | INT, nullable | |
+| `total_match_wickets` | INT, nullable | |
+| `total_match_catches` | INT, nullable | |
+| `first_wicket_over` | INT, nullable | |
+| `fifty_scored` | BOOLEAN, nullable | |
+| `bowler_three_wickets` | BOOLEAN, nullable | |
+| `super_over` | BOOLEAN, nullable | |
 | `resolved_at` | TIMESTAMPTZ, nullable | When results were finalized |
 | `created_at` | TIMESTAMPTZ, default now() | |
-
-_(TODO: add scenario-specific result fields once scenarios are finalized)_
 
 ### `v2_fixture_live_scores` — Live scorecard data
 
@@ -663,8 +713,9 @@ _(TODO: add scenario-specific result fields once scenarios are finalized)_
 | `slug` | TEXT, nullable | e.g., "match_winner", "top_scorer" |
 | `title` | TEXT, NOT NULL | Display title |
 | `input_type` | ENUM('team_pick', 'player_pick', 'range', 'yes_no', 'number') | |
-| `range_min` | INT, nullable | Min value for range/number input |
-| `range_max` | INT, nullable | Max value for range/number input |
+| `options` | JSONB, nullable | Predefined bracket options for range input type |
+| `range_min` | INT, nullable | Min value for number input |
+| `range_max` | INT, nullable | Max value for number input |
 | `points` | INT, NOT NULL | 5–20 |
 | `resolution_phase` | TEXT, nullable | When this resolves during match |
 | `correct_answer` | TEXT, nullable | Set when resolved |
