@@ -191,7 +191,7 @@
   - Display name (editable)
   - Email address (read-only)
   - Date of birth (read-only)
-- **Stats Overview**
+- **Stats Overview** (computed on read from `v2_gang_season_standings`)
   - Total gangs joined
   - Total matches predicted
   - Overall accuracy percentage
@@ -288,6 +288,7 @@
   - Any authenticated user can create a gang (name: 3–50 characters)
   - Creator becomes an admin
   - Unique invite code generated automatically (6 characters, uppercase letters and numbers only)
+  - Automatically enrolled in current active season (IPL 2026 for now; future: admin selects leagues/seasons)
 - **Roles**
   - Admin: full control — approve/reject/remove members, manage gang settings
   - Member: can predict, view leaderboards
@@ -307,7 +308,7 @@
   - Notification sent to the admin when a join request is received
   - If auto-accept is enabled, admin gets a "X joined your gang" notification instead
 - **Limits**
-  - Max 20 members per gang (configurable via system-level settings)
+  - Max 20 members per gang (code constant)
   - Max 40 gangs per user (across created + joined)
 - **Member Management** (admin only)
   - Approve or reject pending join requests
@@ -679,6 +680,7 @@ _(TODO: add scenario-specific result fields once scenarios are finalized)_
 | `scenario_id` | UUID, FK → v2_scenarios | |
 | `gang_id` | UUID, FK → v2_gangs | Denormalized for faster queries |
 | `league_id` | UUID, FK → v2_leagues | Denormalized for faster queries |
+| `season_id` | UUID, FK → v2_seasons | Denormalized for faster queries |
 | `fixture_id` | UUID, FK → v2_league_season_fixtures | Denormalized for faster queries |
 | `value` | TEXT, NOT NULL | The user's prediction |
 | `is_correct` | BOOLEAN, nullable | NULL while unresolved |
@@ -717,6 +719,7 @@ _(TODO: add scenario-specific result fields once scenarios are finalized)_
 | Column | Type | Notes |
 |--------|------|-------|
 | `gang_id` | UUID, FK → v2_gangs | |
+| `season_id` | UUID, FK → v2_seasons | Denormalized for season-level queries |
 | `fixture_id` | UUID, FK → v2_league_season_fixtures | |
 | `user_id` | UUID, FK → v2_profiles | |
 | `predicted_count` | INT, default 0 | Number of predictions submitted |
