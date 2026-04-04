@@ -103,6 +103,7 @@
     - Already approved → redirects to gang page
     - Rejected → option to request again
     - Gang full → message that gang has reached max members
+    - Blocked → message that user is not able to join this gang
 - Global Footer
 
 ### Gang Page (`/group/[groupId]`)
@@ -179,6 +180,7 @@
 
 - Global Nav Bar
 - Season standings table:
+  - Defaults to current active season (future: season selector dropdown)
   - Ranked list of members: rank, display name, role icon, total points, matches predicted, points per match average, accuracy percentage
   - Current user highlighted
   - Empty state if no predictions yet
@@ -213,7 +215,7 @@
 - Global Nav Bar
 - Gang name (editable)
 - Auto-accept join requests toggle
-- Custom prediction deadline (relative minutes before match start, overrides default 45 min)
+- Custom prediction deadline for current active season (relative minutes before match start, overrides default 45 min; future: per-season selector)
 - Member management: list of members with option to remove or block
 - Delete gang option
 - Admin-only page (non-admin access redirects to gang page, checked at page level)
@@ -564,7 +566,7 @@ All tables prefixed with `v2_`. Hierarchy: Sport → League → Season → Match
 | `is_blocked` | BOOLEAN, default false | Blocked members cannot rejoin even with auto-accept |
 | `joined_at` | TIMESTAMPTZ, default now() | |
 | `approved_at` | TIMESTAMPTZ, nullable | |
-| `removed_at` | TIMESTAMPTZ, nullable | When member was removed |
+| `departed_at` | TIMESTAMPTZ, nullable | When member left or was removed |
 | **PK** | (gang_id, user_id) | |
 
 ### `v2_gang_league_seasons` — Gang enrolled in a league season (with settings)
@@ -654,6 +656,7 @@ _(TODO: add scenario-specific result fields once scenarios are finalized)_
 |--------|------|-------|
 | `id` | UUID, PK | |
 | `league_id` | UUID, FK → v2_leagues | For future league-level predictions |
+| `season_id` | UUID, FK → v2_seasons | Denormalized for season-level queries |
 | `fixture_id` | UUID, FK → v2_league_season_fixtures | Which match |
 | `gang_id` | UUID, FK → v2_gangs | Scenarios are per gang per fixture |
 | `type` | ENUM('system'), default 'system' | System only for now |
