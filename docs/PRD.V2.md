@@ -657,10 +657,10 @@ All tables prefixed with `v2_`. Hierarchy: Sport → League → Season → Match
 | `fixture_id` | UUID, PK, FK → v2_league_season_fixtures | One-to-one |
 | `toss_winner_id` | UUID, FK → v2_league_teams, nullable | |
 | `match_winner_id` | UUID, FK → v2_league_teams, nullable | |
-| `top_scorer` | TEXT, nullable | Player name or ID |
-| `top_wicket_taker` | TEXT, nullable | Player name or ID |
-| `most_sixes_player` | TEXT, nullable | Player name or ID |
-| `player_of_match` | TEXT, nullable | Player name or ID |
+| `top_scorer_id` | UUID, FK → v2_players, nullable | |
+| `top_wicket_taker_id` | UUID, FK → v2_players, nullable | |
+| `most_sixes_player_id` | UUID, FK → v2_players, nullable | |
+| `player_of_match_id` | UUID, FK → v2_players, nullable | |
 | `home_team_innings_score` | INT, nullable | |
 | `away_team_innings_score` | INT, nullable | |
 | `home_team_powerplay_runs` | INT, nullable | |
