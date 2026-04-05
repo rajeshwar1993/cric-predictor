@@ -1068,3 +1068,21 @@ Enabled on: `v2_notifications` only. Live scores use client polling, not realtim
 - **Notes:**
   - Resolution is idempotent — skip scenarios where `is_resolved = true`
   - Single unified function polls both live and recently-completed fixtures (same endpoint, same includes, different filter criteria)
+
+### `update-standings` — Standings recalculation (DB trigger, not cron)
+
+- **Trigger:** Not a cron. Runs automatically via Postgres triggers:
+  - `AFTER INSERT/UPDATE ON v2_predictions` → updates `predicted_count`, `last_submitted_at` on `v2_gang_fixture_standings`
+  - `AFTER UPDATE ON v2_fixture_scenarios WHEN NEW.is_resolved = true AND OLD.is_resolved = false` → recalculates full standings
+- **Purpose:** Keep materialized `v2_gang_fixture_standings` and `v2_gang_season_standings` up-to-date
+- **Action on prediction submission:**
+  - Upsert `v2_gang_fixture_standings` row for (gang_id, fixture_id, user_id)
+  - Update `predicted_count`, `last_submitted_at`
+- **Action on scenario resolution:**
+  - Recalculate all users' `correct_count`, `resolved_count`, `points_earned` in `v2_gang_fixture_standings` for the affected (gang_id, fixture_id)
+  - Recompute `rank` sorted by (points DESC, last_submitted_at ASC)
+  - Aggregate `v2_gang_fixture_standings` into `v2_gang_season_standings` for the affected (gang_id, season_id)
+  - Recompute season `rank` sorted by (total_points DESC, accuracy_pct DESC, matches_predicted DESC)
+- **Implementation:** Postgres stored procedures called by triggers
+- **Writes to:** `v2_gang_fixture_standings`, `v2_gang_season_standings`
+- **Note:** Using DB triggers ensures any path that resolves scenarios (edge function, manual admin, future tools) automatically updates standings
