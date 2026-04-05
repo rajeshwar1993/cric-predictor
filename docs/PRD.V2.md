@@ -361,8 +361,8 @@
   - Input types: team pick, player pick, range, yes/no, number
   - {Home Team} and {Away Team} in titles are dynamically replaced with actual team names
 - **Resolution:**
-  - Runs as a periodic function while match is live
-  - Continues until match is completed or all scenarios are resolved
+  - Runs as a periodic function during both `live` and `completed` match states
+  - Continues until all scenarios are resolved (status transitions to `resolved`) or the 120-minute post-match cutoff is reached
   - Correct answer set on each scenario; predictions scored automatically
   - Scenarios can be soft-removed (not deleted)
 - **Resolution phases:**
