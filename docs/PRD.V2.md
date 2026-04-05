@@ -1086,3 +1086,18 @@ Enabled on: `v2_notifications` only. Live scores use client polling, not realtim
 - **Implementation:** Postgres stored procedures called by triggers
 - **Writes to:** `v2_gang_fixture_standings`, `v2_gang_season_standings`
 - **Note:** Using DB triggers ensures any path that resolves scenarios (edge function, manual admin, future tools) automatically updates standings
+
+### `deadline-reminders` — Prediction deadline notifications
+
+- **Schedule:** Every 15 minutes
+- **Purpose:** Notify gang members who haven't predicted before the deadline closes
+- **Action:**
+  - Find upcoming fixtures where deadline is approximately 1 hour away (per-gang deadline computed from `start_datetime - prediction_deadline_mins` in `v2_gang_league_seasons`)
+  - For each (gang, fixture) pair:
+    - Get approved gang members
+    - Filter out members who already have at least one prediction in `v2_predictions` for this (gang_id, fixture_id)
+    - Filter out members who already received a `deadline_reminder` notification for this (gang_id, fixture_id)
+    - For remaining members → create notification in `v2_notifications` (type: `deadline_reminder`)
+- **Writes to:** `v2_notifications`
+- **Duplicate prevention:** Query `v2_notifications` by (user_id, gang_id, fixture_id, type) — no flag column needed
+- **Note:** Will revisit notification cadence (multiple reminders) in a separate discussion
