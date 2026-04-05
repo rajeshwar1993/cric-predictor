@@ -326,7 +326,9 @@
 
 ### Matches
 
-- **Statuses:** upcoming → live → completed (also: abandoned, no_result)
+- **Statuses:** upcoming → live → completed → resolved (also: abandoned, no_result)
+  - `completed`: match has ended per Sportmonks (`Finished`) but some scenarios (e.g., Player of the Match) may still be unresolved
+  - `resolved`: all scenarios for the match have been resolved; polling stops
 - **Data source:** match schedule auto-imported from Sportmonks API via cron function
 - **Live updates:**
   - Polled from cricket API and stored as live snapshot
@@ -339,7 +341,9 @@
 - **Result resolution:**
   - Match results stored in `v2_fixture_results` (match winner, toss winner, etc.)
   - Triggers prediction resolution via DB function
-  - Sets `resolved_at` timestamp on fixture results
+  - Cron continues polling fixture endpoint after `status = completed` until all scenarios are resolved (e.g., Player of the Match may take up to 1 hour post-match)
+  - Once all scenarios resolved, status changes to `resolved` and polling stops
+  - `resolved_at` timestamp set on fixture results when all scenarios are resolved
   - Abandoned/no_result matches: `v2_fixture_results` row created with `resolved_at` set but `match_winner_id` null; all predictions voided (no points awarded or deducted)
 
 ### Scenarios
@@ -404,7 +408,7 @@ All data available via single call: `GET /fixtures/{id}?include=batting,bowling,
 | 6 | `player_of_match` | Fixture: `man_of_match_id` | Direct field. Map to internal UUID via `v2_players.api_id`. |
 | 7 | `home_team_innings_score` | Runs include: `score` where `team_id` = home team | Direct field from runs. Map raw score to bracket option. |
 | 8 | `away_team_innings_score` | Runs include: `score` where `team_id` = away team | Direct field from runs. Map raw score to bracket option. |
-| 9 | `home_team_powerplay_runs` | Live score capture | Captured during live polling (15s interval) when home team overs first reach >= 6.0. Stored in `v2_fixture_results`. Not available post-match from API. |
+| 9 | `home_team_powerplay_runs` | Live score capture | Captured during live polling (15s interval). Track `max(overs)` seen so far per team (defensive against cache anomalies where API returns non-monotonic values). Snapshot score+wickets when max first crosses 6.0. Stored in `v2_fixture_results`. Not available post-match from API. |
 | 10 | `away_team_powerplay_runs` | Live score capture | Same as #9, for away team. |
 | 11 | `home_team_powerplay_wickets_lost` | Live score capture | Captured during live polling when home team overs cross 6.0 — count wickets at that point. Stored in `v2_fixture_results`. |
 | 12 | `away_team_powerplay_wickets_lost` | Live score capture | Same as #11, for away team. |
@@ -672,7 +676,7 @@ All tables prefixed with `v2_`. Hierarchy: Sport → League → Season → Match
 | `start_datetime` | TIMESTAMPTZ, NOT NULL | Match start time with timezone |
 | `venue_id` | UUID, nullable | Future use (FK to venues table) |
 | `venue_name` | TEXT, NOT NULL | e.g., "M. Chinnaswamy Stadium, Bengaluru" |
-| `status` | ENUM('upcoming', 'live', 'completed', 'abandoned', 'no_result'), default 'upcoming' | |
+| `status` | ENUM('upcoming', 'live', 'completed', 'resolved', 'abandoned', 'no_result'), default 'upcoming' | |
 | `created_at` | TIMESTAMPTZ, default now() | |
 
 **Unique constraint:** (season_id, match_number)
