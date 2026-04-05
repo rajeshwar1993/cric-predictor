@@ -515,7 +515,7 @@ All data available via single call: `GET /fixtures/{id}?include=batting,bowling,
   - **Auth:** magic link requested, magic link resent, callback success/failure, onboarding completed, signed out, account deleted
   - **Gangs:** created, join requested, invite copied, invite shared, member approved/rejected, member removed, member left, gang deleted
   - **Predictions:** submitted, pick changed, predict page viewed/revisited
-  - **Notifications:** bell opened, notification clicked, marked read, all cleared
+  - **Notifications:** bell opened, notification clicked, marked read, all marked read
   - **Performance:** Web Vitals (LCP, INP, CLS), page load time, server action duration
 - **Error Reporting:**
   - All client-side errors captured (error boundaries, unhandled errors)
@@ -819,16 +819,18 @@ Seeding copies template values into scenarios. Existing matches keep their origi
 | `is_active` | BOOLEAN, default true | |
 | `created_at` | TIMESTAMPTZ, default now() | |
 
-### `v2_fixture_squads` — Playing squad for each fixture
+### `v2_league_season_team_players` — Player-to-team mapping per season
 
 | Column | Type | Notes |
 |--------|------|-------|
-| `fixture_id` | UUID, FK → v2_league_season_fixtures | |
+| `league_id` | UUID, FK → v2_leagues | |
+| `season_id` | UUID, FK → v2_seasons | |
+| `team_id` | UUID, FK → v2_league_teams | |
 | `player_id` | UUID, FK → v2_players | |
-| `team_id` | UUID, FK → v2_league_teams | Which team the player is in for this fixture |
-| `is_playing_xi` | BOOLEAN, default false | Playing XI vs bench |
 | `created_at` | TIMESTAMPTZ, default now() | |
-| **PK** | (fixture_id, player_id) | |
+| **PK** | (season_id, team_id, player_id) | |
+
+A player can be on different teams in different seasons (trades, auctions). Populated by `sync-fixtures` via `/teams/{id}/squad/{season_id}`.
 
 ### `v2_gang_fixture_standings` — Match leaderboard per gang (materialized)
 
@@ -910,19 +912,28 @@ Helper functions (SECURITY DEFINER):
 
 #### Reference tables (public read, no user writes)
 
-`v2_sports`, `v2_leagues`, `v2_seasons`, `v2_league_teams`, `v2_players`, `v2_fixture_squads`, `v2_league_season_fixtures`, `v2_fixture_results`, `v2_fixture_live_scores`, `v2_scenario_templates`
+`v2_sports`, `v2_leagues`, `v2_seasons`, `v2_league_teams`, `v2_players`, `v2_league_season_fixtures`, `v2_scenario_templates`
 
 - SELECT: all authenticated users
 - INSERT/UPDATE/DELETE: none (system only via service role)
+
+#### `v2_fixture_results`, `v2_fixture_live_scores`, `v2_league_season_team_players` — System-managed, public read
+
+| Operation | Policy |
+|-----------|--------|
+| SELECT | All authenticated users (match data is public) |
+| INSERT/UPDATE/DELETE | None (written by cron functions via service role) |
 
 #### `v2_profiles`
 
 | Operation | Policy |
 |-----------|--------|
-| SELECT | Own profile always. Others visible if in same gang (approved members). |
-| INSERT | None (created by auth trigger) |
+| SELECT | Own profile always. Others visible if in same gang regardless of member status (includes approved, pending, rejected, left, removed) — needed to display names in standings and reveal tables even after a member leaves. |
+| INSERT | None (profile row auto-created via Postgres trigger on `auth.users` insert) |
 | UPDATE | Own profile only |
 | DELETE | None (soft-delete via update) |
+
+**Profile creation trigger:** A Postgres trigger `AFTER INSERT ON auth.users` creates a `v2_profiles` row with `id` and `email` from auth. The `display_name`, `date_of_birth`, and `terms_version` fields are populated when the user completes onboarding.
 
 #### `v2_gangs`
 
@@ -989,7 +1000,8 @@ Deadline check uses `prediction_deadline(fixture_id, gang_id)` helper function.
 |-----------|--------|
 | SELECT | Own only |
 | UPDATE | Own only (mark as read) |
-| INSERT/DELETE | None (system only) |
+| INSERT | None for users. Server-side only via service role (server actions for join requests, cron functions for deadline reminders and match results) |
+| DELETE | None (notifications are never deleted; only marked as read) |
 
 #### Supabase Realtime
 
@@ -1006,8 +1018,8 @@ Enabled on: `v2_notifications` only. Live scores use client polling, not realtim
   - Upsert `v2_league_teams` for any new/updated teams (match by `api_id`)
   - Upsert `v2_league_season_fixtures` (match by `api_id`); silently updates existing fixtures including `start_datetime` changes
   - Reset `pre_match_synced = false` if `start_datetime` changes for a future fixture
-  - For each unique team, fetch `/teams/{id}/squad/{season_id}` → upsert players into `v2_players` (match by `api_id`)
-- **Writes to:** `v2_league_season_fixtures`, `v2_league_teams`, `v2_players`
+  - For each unique team, fetch `/teams/{id}/squad/{season_id}` → upsert players into `v2_players` (match by `api_id`) and populate `v2_league_season_team_players` mapping
+- **Writes to:** `v2_league_season_fixtures`, `v2_league_teams`, `v2_players`, `v2_league_season_team_players`
 - **Assumptions:**
   - `v2_sports`, `v2_leagues`, `v2_seasons` already exist (created manually via admin dashboard for new seasons)
 
