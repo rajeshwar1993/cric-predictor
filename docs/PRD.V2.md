@@ -515,7 +515,7 @@ All data available via single call: `GET /fixtures/{id}?include=batting,bowling,
   - **Auth:** magic link requested, magic link resent, callback success/failure, onboarding completed, signed out, account deleted
   - **Gangs:** created, join requested, invite copied, invite shared, member approved/rejected, member removed, member left, gang deleted
   - **Predictions:** submitted, pick changed, predict page viewed/revisited
-  - **Notifications:** bell opened, marked read, all cleared
+  - **Notifications:** bell opened, notification clicked, marked read, all cleared
   - **Performance:** Web Vitals (LCP, INP, CLS), page load time, server action duration
 - **Error Reporting:**
   - All client-side errors captured (error boundaries, unhandled errors)
@@ -1126,3 +1126,31 @@ Enabled on: `v2_notifications` only. Live scores use client polling, not realtim
 | `live-poll-resolve-fixtures` | No retries (next cycle in 15s) | After 10 consecutive failures (~2.5 min down) |
 | `update-standings` | DB transaction — rollback on error, log | After any failure (rare, indicates DB issue) |
 | `deadline-reminders` | No retries (next cycle in 15 min) | After 3 consecutive failures |
+
+## Pending Items
+
+Open items to address in future iterations:
+
+### Notification triggers and cadence
+- Finalize the complete list of notification trigger conditions
+- Decide on notification message templates
+- Revisit whether multiple deadline reminders are needed (currently single reminder 1h before deadline)
+- Consider additional reminder cadences (3h, 1h, 30m before deadline)
+
+### System Admin
+- Separate role from Gang Admin — for the Bragg platform team
+- Needed for:
+  - Creating new sports, leagues, and seasons (admin dashboard)
+  - Manual scenario resolution fallback (when 120-min cron cutoff is reached)
+  - Viewing platform-wide stats and error alerts
+  - Managing scenario templates (activating `total_match_catches` once `wicket_id` mapping is available)
+- Dedicated admin dashboard UI needs to be designed (separate PRD section)
+
+### `total_match_catches` scenario (INACTIVE)
+- Currently marked `is_active = false` in `v2_scenario_templates`
+- Blocker: Sportmonks `catch_stump_player_id` combines catches and stumpings; need full `wicket_id` → dismissal type mapping
+- Next step: contact Sportmonks support to get `wicket_id` reference table, then either filter stumpings out or rename the scenario to "Total catches & stumpings"
+
+### Account deletion and gang deletion data handling
+- Currently both are soft-delete (marked in DB); actual data cleanup policy is TBD
+- Questions to resolve: Are predictions from deleted accounts preserved? What happens to standings when all members of a gang delete their accounts? Data retention period before hard delete?
