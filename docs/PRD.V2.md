@@ -1015,3 +1015,17 @@ Enabled on: `v2_notifications` only. Live scores use client polling, not realtim
   - For each → fetch the specific fixture from Sportmonks → update `start_datetime` if changed → set `pre_match_synced = true`
 - **Writes to:** `v2_league_season_fixtures`
 - **Future enhancement:** Send notification to members if `start_datetime` changes
+
+### `seed-scenarios` — Scenario seeding per gang per fixture
+
+- **Schedule:** Every 30 minutes
+- **Purpose:** Create `v2_fixture_scenarios` rows for every active gang enrolled in a season, for upcoming fixtures
+- **Action:**
+  - Find fixtures where `start_datetime - 14 hours <= now()` AND `start_datetime > now()` AND `status = 'upcoming'`
+  - For each fixture → find all active gangs enrolled in the fixture's season (via `v2_gang_league_seasons`)
+  - For each (gang, fixture) pair that doesn't already have scenarios → copy active templates from `v2_scenario_templates` (`is_active = true`) into `v2_fixture_scenarios`
+  - Replace `{Home Team}` / `{Away Team}` placeholders in titles with actual team names
+  - Idempotent — won't create duplicates (unique constraint on `gang_id, fixture_id, slug`)
+- **Writes to:** `v2_fixture_scenarios`
+- **Also triggered by:** Gang creation — when a new gang is created, immediately seed scenarios for any upcoming fixtures already within the 14-hour window
+- **Note:** 14h buffer ensures scenarios are seeded before the 12h prediction window opens, accounting for cron lag
