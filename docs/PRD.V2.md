@@ -373,7 +373,7 @@
   - `end` — after match ends
   - `post_match` — after official awards (POTM)
 
-#### System Scenario Definitions (20 scenarios total; 19 active + 1 inactive, max 220 active points)
+#### System Scenario Definitions (20 scenarios total; 19 active + 1 inactive; max 210 active points, 220 including inactive)
 
 Only active templates (`is_active = true`) are seeded into `v2_fixture_scenarios` during scenario seeding.
 
@@ -403,6 +403,8 @@ Only active templates (`is_active = true`) are seeded into `v2_fixture_scenarios
 #### Scenario Resolution Mapping (Sportmonks API)
 
 All data available via single call: `GET /fixtures/{id}?include=batting,bowling,runs,manofmatch`
+
+**Range scenario resolution note:** For all `range` type scenarios, the raw numeric value (e.g., `first_innings_score = 185`) is extracted from the API, stored as-is in `v2_fixture_results` (numeric column), and then mapped to the matching bracket string (e.g., `"180-199"`) before being set as `correct_answer` on the scenario. User predictions (which store bracket strings as their `value`) are compared directly to the bracket string.
 
 | # | Slug | API Source | Resolution Method |
 |---|------|-----------|-------------------|
@@ -1029,8 +1031,9 @@ Enabled on: `v2_notifications` only. Live scores use client polling, not realtim
 - **Purpose:** Catch last-minute timing changes before a match starts
 - **Action:**
   - Find fixtures where `start_datetime` is within the next 15–30 minutes AND `pre_match_synced = false`
-  - For each → fetch the specific fixture from Sportmonks → update `start_datetime` if changed → set `pre_match_synced = true`
+  - For each → fetch the specific fixture from Sportmonks → if `start_datetime` has changed, update it (flag stays `false`, will re-run next cycle to confirm); if unchanged, set `pre_match_synced = true`
 - **Writes to:** `v2_league_season_fixtures`
+- **Flag reset rule:** Any change to `start_datetime` (from any source — daily sync, pre-match sync, or manual admin edit) resets `pre_match_synced = false`. This ensures re-syncing whenever the time moves.
 - **Future enhancement:** Send notification to members if `start_datetime` changes
 
 ### `seed-scenarios` — Scenario seeding per gang per fixture
@@ -1044,7 +1047,7 @@ Enabled on: `v2_notifications` only. Live scores use client polling, not realtim
   - Replace `{Home Team}` / `{Away Team}` placeholders in titles with actual team names
   - Idempotent — won't create duplicates (unique constraint on `gang_id, fixture_id, slug`)
 - **Writes to:** `v2_fixture_scenarios`
-- **Also triggered by:** Gang creation — when a new gang is created, immediately seed scenarios for any upcoming fixtures already within the 14-hour window
+- **Also triggered by:** Gang creation — the gang creation server action synchronously calls an RPC `seed_scenarios_for_gang(gang_id)` after inserting the gang. This RPC seeds scenarios for any upcoming fixtures already within the 14-hour window. Uses the same logic as the cron.
 - **Note:** 14h buffer ensures scenarios are seeded before the 12h prediction window opens, accounting for cron lag
 
 ### `live-poll-resolve-fixtures` — Unified live polling and scenario resolution
