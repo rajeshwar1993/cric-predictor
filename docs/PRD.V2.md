@@ -1,5 +1,64 @@
 # Bragg — Product Requirements Document (V2)
 
+## Overview
+
+### What we're building
+
+Bragg (intentionally spelled — "brag" + bragging rights) is a free, mobile-first social prediction game for cricket. Friends form private groups (called **gangs**), predict outcomes across 19 scenarios per match (match winner, top scorer, powerplay runs, etc.), and compete on live leaderboards as each match unfolds.
+
+There's no real money, no betting, no prizes. The entire point is bragging rights — predict right, climb the leaderboard, earn screenshot-worthy wins you can share in the group chat.
+
+### Target persona
+
+**Who:** Groups of friends (colleagues, college mates, family) who follow sports together and want a structured way to compete with each other.
+
+**Characteristics:**
+- 18+ (legally required, enforced at onboarding)
+- Sports fans — casual to hardcore
+- Already have a group chat where they debate match predictions
+- Want to settle arguments with receipts, not just opinions
+- Mobile-first users — they open the app on their phones before and during matches
+
+**Not the target:**
+- Fantasy league players looking for complex stats gameplay
+- Gamblers or anyone looking for real-money stakes
+- Solo users without a friend group
+
+### Launch target
+
+**IPL 2026** (starts March 2026). The first season is the test. Scalability for multi-league support is built into the schema but only IPL is enabled for launch.
+
+### Product feel
+
+**Vibe:**
+- Confident, a little cheeky — the name is literally "Bragg"
+- Copy is casual and punchy: "Predict right. Prove it. Bragg." Not corporate, not sterile
+- Mobile-first, thumb-friendly, fast
+- Leaderboards and stats are the star — numbers should feel satisfying
+- Every interaction should feel like a small win or small burn
+
+**Design principles:**
+- **Dark mode by default** — it's a game app, not a productivity tool
+- **Cricket team colors** — bold, saturated, tied to franchise identity
+- **Minimal friction** — magic link auth, no passwords, no OTP, no captcha
+- **Progressive disclosure** — simple on the surface, rich data when you drill in
+- **Real-time where it matters** — live scores update, leaderboards recalculate, notifications push
+
+**Tone of voice:**
+- Direct and energetic, never apologetic
+- Celebrates winners; doesn't coddle losers
+- Treats users as adults who can handle cricket banter
+- Avoids fantasy-sports jargon
+
+### How it works (elevator pitch)
+
+1. **Form a gang** — create a private group, share the invite link, get your friends to join
+2. **Predict** — 12 hours before each IPL match, 19 scenarios become available. Pick your answers, lock them in before the deadline (45 min before match)
+3. **Watch** — live scorecard updates every 15 seconds, scenarios resolve progressively as the match unfolds (toss, first wicket, powerplay, innings end, match end)
+4. **Compete** — match leaderboard updates live; season standings roll up across all matches. Screenshot your #1 spot. Talk trash in the group chat.
+
+---
+
 ## UI Screens
 
 ### Shared Components
@@ -1207,6 +1266,79 @@ Admin UI for managing these is a Pending Item (not needed for launch).
 | `live-poll-resolve-fixtures` | No retries (next cycle in 15s) | After 10 consecutive failures (~2.5 min down) |
 | `update-standings` | DB transaction — rollback on error, log | After any failure (rare, indicates DB issue) |
 | `deadline-reminders` | No retries (next cycle in 15 min) | After 3 consecutive failures |
+
+## Implementation Plan
+
+### Folder structure
+
+Parallel implementation alongside existing codebase (both kept running during development):
+
+```
+cric-predictor/
+├── web-app/           # existing — kept for reference
+├── web-app-2/         # new — clean implementation per PRD V2
+├── supabase/          # existing — kept for reference
+├── supabase-2/        # new — clean schema + migrations + edge functions
+├── docs/              # shared
+└── api-tester/        # shared
+```
+
+Post-launch: delete `web-app` and `supabase`, rename `web-app-2` → `web-app` and `supabase-2` → `supabase`.
+
+### Supabase-2 migration files
+
+1. `001_initial_schema.sql` — all `v2_*` tables, enums, triggers, RLS policies, indexes, helper functions
+2. `002_seed_data.sql` — seed reference data:
+   - `v2_sports` (Cricket)
+   - `v2_leagues` (IPL)
+   - `v2_seasons` (IPL 2026, `is_active = true`)
+   - `v2_league_teams` (10 IPL franchises)
+   - `v2_scenario_templates` (20 scenarios, 19 active + 1 inactive)
+3. `003_migrate_from_v1.sql` — one-time data migration from old schema
+
+### One-time migration strategy
+
+**Preserved:**
+- `auth.users` (Supabase-managed, untouched)
+- Old `profiles` table (data migrated to `v2_profiles`, then old table dropped)
+
+**Dropped:**
+- All old v1 tables (except auth): `groups`, `group_members`, `matches`, `scenarios`, `predictions`, `notifications`, `teams`, `players`, `match_squads`, `points_config`, `match_group_settings`, plus old views/functions/triggers
+
+**Migrated:**
+
+*Profile data* (`profiles` → `v2_profiles`):
+- `id`, `email`, `display_name`, `date_of_birth`, `onboarding_completed`, `created_at`
+- `terms_version` / `terms_accepted_at` from old schema if present, otherwise NULL
+- `is_deleted = false`
+
+*Gangs* (`groups` → `v2_gangs`):
+- `id`, `name`, `created_by`, `created_at`
+- Generate new 6-char `invite_code` for each gang (old 12-char hex links will break — accepted trade-off)
+- `auto_accept = false`
+- `is_deleted = false`
+
+*Gang members* (`group_members` → `v2_gang_members`):
+- Only migrate rows with status `approved` or `pending` (skip `removed`, `rejected`)
+- Role mapping: old `owner` → new `admin`; old `admin` or `member` → new `member` (new schema allows only one admin per gang)
+- `joined_at` → `requested_at`
+- Preserve `approved_at`
+- `is_blocked = false`, `departed_at = NULL`
+
+*Gang enrollment* (new `v2_gang_league_seasons`):
+- For every migrated gang, auto-insert a row enrolling the gang in the active IPL 2026 season
+- `prediction_deadline_mins = 45` (default)
+
+**Not migrated:**
+- Old predictions (different scenario schema, can't map meaningfully)
+- Old notifications (transient)
+- Old matches, scenarios, teams, players, squads (completely new data from Sportmonks)
+
+### Environment
+
+- Migration runs on **STG Supabase environment** first
+- Script must be idempotent — safe to run multiple times during development (clean, test, clean again)
+- Big-bang migration: single script runs during a maintenance window, downtime acceptable for STG
 
 ## Pending Items
 
