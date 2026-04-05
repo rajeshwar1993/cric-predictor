@@ -327,7 +327,7 @@
 ### Matches
 
 - **Statuses:** upcoming → live → completed (also: abandoned, no_result)
-- **Data source:** match schedule auto-imported from CricketData.org API via cron function (details TBD in DB section)
+- **Data source:** match schedule auto-imported from Sportmonks API via cron function
 - **Live updates:**
   - Polled from cricket API and stored as live snapshot
   - Data stored: scores, overs, batting team, current run rate, last 6 balls, both batsmen with individual scores and on-strike indicator, current bowler, current partnership
@@ -404,7 +404,7 @@ All data available via single call: `GET /fixtures/{id}?include=batting,bowling,
 | 6 | `player_of_match` | Fixture: `man_of_match_id` | Direct field. Map to internal UUID via `v2_players.api_id`. |
 | 7 | `home_team_innings_score` | Runs include: `score` where `team_id` = home team | Direct field from runs. Map raw score to bracket option. |
 | 8 | `away_team_innings_score` | Runs include: `score` where `team_id` = away team | Direct field from runs. Map raw score to bracket option. |
-| 9 | `home_team_powerplay_runs` | Live score capture | Captured during live polling when home team overs cross 6.0. Stored in `v2_fixture_results`. Not available post-match from API. |
+| 9 | `home_team_powerplay_runs` | Live score capture | Captured during live polling (15s interval) when home team overs first reach >= 6.0. Stored in `v2_fixture_results`. Not available post-match from API. |
 | 10 | `away_team_powerplay_runs` | Live score capture | Same as #9, for away team. |
 | 11 | `home_team_powerplay_wickets_lost` | Live score capture | Captured during live polling when home team overs cross 6.0 — count wickets at that point. Stored in `v2_fixture_results`. |
 | 12 | `away_team_powerplay_wickets_lost` | Live score capture | Same as #11, for away team. |
@@ -412,7 +412,7 @@ All data available via single call: `GET /fixtures/{id}?include=batting,bowling,
 | 14 | `total_match_sixes` | Batting include: `six_x` (all entries) | Sum `six_x` across all batting entries (both teams, both innings). Map to bracket. |
 | 15 | `total_match_wickets` | Runs include: `wickets` (all entries) | Sum `wickets` from all innings. Map to bracket. |
 | 16 | `total_match_catches` | _(TODO: resolve catch vs stumping distinction from `wicket_id` field)_ | Count batting entries where `catch_stump_player_id` is not null. May include stumpings. |
-| 17 | `first_wicket_over` | Batting include: `fow_balls` | Find minimum `fow_balls` across all batting entries in the first innings (where `fow_balls > 0`). Map over number to bracket. |
+| 17 | `first_wicket_over` | Batting include: `fow_balls` | Find minimum `fow_balls` across all batting entries in the first innings (where `fow_balls > 0`). Convert to over number: `floor(fow_balls) + 1` (e.g., 2.6 → over 3). Map to bracket. |
 | 18 | `fifty_scored` | Batting include: `score` | Check if any batting entry has `score >= 50`. Boolean result. |
 | 19 | `bowler_three_wickets` | Bowling include: `wickets` | Check if any bowling entry has `wickets >= 3`. Boolean result. |
 | 20 | `super_over` | Fixture: `super_over` | Direct boolean field. |
@@ -485,7 +485,7 @@ All data available via single call: `GET /fixtures/{id}?include=batting,bowling,
 - **Database:** Supabase Postgres (with materialized tables, RPC functions, RLS)
 - **Auth:** Supabase Auth (magic link OTP)
 - **Realtime:** Supabase Realtime (notifications)
-- **Cricket Data:** CricketData.org API
+- **Cricket Data:** Sportmonks API
 - **Hosting:** Vercel
 - **Analytics:** PostHog
 - **Icons:** Lucide React
@@ -514,7 +514,7 @@ All data available via single call: `GET /fixtures/{id}?include=batting,bowling,
 - **Performance:**
   - Pages should load under 2 seconds on 4G
   - Web Vitals targets: LCP < 2.5s, INP < 200ms, CLS < 0.1
-  - Live score polling interval: TBD
+  - Live score polling interval: 15 seconds during live matches (required for precise powerplay capture)
 - **Accessibility:** semantic HTML, ARIA labels, keyboard navigable
 - **SEO:** meta tags and Open Graph on public pages (landing, join invite)
 - **Offline:** no offline support required (online-only app)
