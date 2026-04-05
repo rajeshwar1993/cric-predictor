@@ -92,8 +92,7 @@ Phase 0 (FND-002) had a placeholder landing page. This is the real marketing fro
 - [ ] Share link in WhatsApp/Twitter, verify OG preview
 - [ ] Run Lighthouse, verify performance scores
 
-**Open questions:**
-- Do we have final copy for the tagline and CTAs? (Check with PM; use PRD copy as default)
+**Open questions:** None (decided: tagline is final — "Predict right. Prove it. Bragg." Matches PRD and ships as-is)
 
 ---
 
@@ -357,7 +356,14 @@ Before final QA, everything needs to work on STG. This story is a checklist of d
 Catches integration issues that unit tests miss.
 
 **Acceptance criteria:**
-- [ ] Automated E2E tests using Playwright (or similar) covering:
+- [ ] Playwright installed in `web-app-2/` (`@playwright/test`, latest stable) with `playwright.config.ts` at the project root
+- [ ] Test folder structure: `web-app-2/e2e/` with one file per flow (e.g., `signup.spec.ts`, `create-gang.spec.ts`, etc.)
+- [ ] Base URL configurable via env var (`PLAYWRIGHT_BASE_URL`) so the same suite runs against local dev, STG, and (post-launch) prod
+- [ ] Playwright runs Chromium, Firefox, and WebKit projects by default; mobile viewports (iPhone 12, Pixel 5) configured as separate projects
+- [ ] Trace viewer and screenshots captured on failure (`trace: 'on-first-retry'`, `screenshot: 'only-on-failure'`)
+- [ ] `npm run e2e` script wired in `package.json`; `npm run e2e:ui` opens the Playwright UI runner
+- [ ] CI job (GitHub Actions or equivalent) runs the suite on every PR targeting `main`
+- [ ] Automated E2E tests using Playwright covering:
   1. **Signup flow:** visit landing → click CTA → login → enter email → open magic link (manual or mock) → complete onboarding → land on dashboard
   2. **Create gang flow:** from dashboard → enter gang name → submit → land on new gang page
   3. **Join gang flow:** from dashboard → enter invite code → submit (auto-accept on) → land on gang page
@@ -385,10 +391,13 @@ Catches integration issues that unit tests miss.
 - Entire PRD — all critical paths must work
 
 **Technical notes:**
-- Playwright config: `e2e/` folder in `web-app-2/`
-- Test data: seed specific test fixtures + users
-- Use Supabase test project or reset DB between runs
-- Magic link: either mock by querying `auth.users` token directly, or use Supabase's test helper
+- **Framework: Playwright** (locked in) — chosen for first-class Next.js 16 / RSC support, auto-waits, trace viewer, and Chromium/Firefox/WebKit coverage out of the box
+- Playwright config: `e2e/` folder in `web-app-2/`, `playwright.config.ts` alongside it
+- Test data: seed specific test fixtures + users via a Playwright `globalSetup` that talks to Supabase with the service role key; each test file cleans up after itself in `afterEach` or via a shared teardown
+- Use a dedicated Supabase **test project** (NOT STG) so the suite can wipe/seed without contaminating shared environments. Alternative for launch: run against STG with a known test-user pool and no cleanup (acceptable as a one-off launch-blocker smoke test)
+- Magic link: bypass the email flow by querying `auth.users` for the user's `confirmation_token` directly via service role, or use Supabase's `generateLink` admin API. Do not depend on real email delivery in tests.
+- Use Playwright fixtures for reusable state (logged-in user, gang with predictions, live fixture mock) to keep individual specs focused
+- Live resolution test (flow #6): stub the Sportmonks poll cron by inserting a canned fixture + live score row directly via service role, then trigger the resolve edge function. Avoids waiting on a real live match.
 
 **Analytics events:** Verify events fire correctly in tests
 
@@ -399,8 +408,7 @@ Catches integration issues that unit tests miss.
 - [ ] Manual mobile test on iOS + Android
 - [ ] Manual accessibility pass with VoiceOver/NVDA
 
-**Open questions:**
-- Which E2E framework? (Recommendation: Playwright — best Next.js + Supabase support)
+**Open questions:** None (decided: Playwright — Chromium/Firefox/WebKit + mobile viewports, dedicated Supabase test project, magic-link bypass via service role admin API, live resolution stubbed via direct DB inserts)
 
 ---
 
@@ -459,7 +467,9 @@ Final gate before production. Covers technical, business, and legal checks.
     - [ ] Alerting set up for cron failures
     - [ ] Analytics dashboard to watch during Match 1
     - [ ] Rollback plan documented
-    - [ ] On-call rotation for launch day (even if just one person)
+    - [ ] **On-call owner for launch day: Project owner (sole developer / "you")**. Solo on-call for Match 1 of IPL 2026; expected to be available from ~2 hours before toss through ~2 hours after the match ends.
+    - [ ] On-call owner has: (a) PostHog dashboard pinned, (b) Supabase project dashboard pinned (logs, cron status, DB usage), (c) Sportmonks API usage dashboard pinned, (d) phone/laptop available, (e) rollback runbook within arm's reach
+    - [ ] Launch-day communication channel decided (where user reports will arrive: Twitter DMs, email, Discord, etc.) and monitored for the duration of the on-call window
 
 **Out of scope:**
 - Marketing campaign (outside engineering scope)
@@ -481,8 +491,7 @@ Final gate before production. Covers technical, business, and legal checks.
 - [ ] Walk through the entire checklist, mark each item as complete or explicitly defer
 - [ ] Any unresolved items must have a clear owner and ETA
 
-**Open questions:**
-- Who owns the launch day on-call? (TBD — assign before launch day)
+**Open questions:** None (decided: project owner / sole developer is on-call for launch day, solo rotation, expected availability ~2 hours before toss through ~2 hours after match end)
 
 ---
 

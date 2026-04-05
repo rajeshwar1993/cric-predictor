@@ -795,7 +795,14 @@ Shared component shown on all authenticated pages. Per PRD, includes notificatio
 
 **Technical notes:**
 - Bell animates from **right**, user menu from **left** (per PRD)
-- Avatar initials: compute from display_name (first letter of first and last word, uppercase)
+- Avatar initials: compute from `display_name` (first letter of first and last word, uppercase).
+- **Fallback when `display_name` is null or empty** (edge case: profile exists but onboarding incomplete, cookie/middleware bug, etc.): use the first character of the email's local-part (everything before `@`), uppercased. Examples:
+  - `display_name = "Rajesh Rudra"` → `"RR"`
+  - `display_name = "Rajesh"` → `"R"`
+  - `display_name = null`, `email = "rajesh@example.com"` → `"R"`
+  - `display_name = null`, `email = "r@example.com"` → `"R"`
+  - `display_name = null`, `email = null` → `"?"` (defensive fallback; in practice should never happen since email is always present for authenticated users)
+- Extract this into a helper `getAvatarInitials(displayName: string | null, email: string | null): string` in `src/lib/utils.ts` so other components (leaderboards, member lists, profile page) reuse the exact same logic.
 - `NotificationBell` component: client component, receives `userId` as prop, placeholder panel for now
 - `UserMenu` component: client component, receives `displayName`, `email` as props
 
@@ -805,7 +812,11 @@ Shared component shown on all authenticated pages. Per PRD, includes notificatio
 
 **Unit tests:**
 - [ ] Renders with user display name
-- [ ] Initials computed correctly (single word, two words, empty name fallback)
+- [ ] Initials computed correctly:
+  - Two-word display name → first letter of first word + first letter of last word
+  - Single-word display name → first letter only
+  - Null/empty display name + valid email → first letter of email local-part
+  - Null display name + null email → `"?"`
 - [ ] Clicking bell opens right panel
 - [ ] Clicking avatar opens left panel
 - [ ] Sign out button calls the action
@@ -815,8 +826,7 @@ Shared component shown on all authenticated pages. Per PRD, includes notificatio
 - [ ] Test open/close of both side panels
 - [ ] Verify sign out flow
 
-**Open questions:**
-- Where does the user's avatar initial come from if `display_name` is null (edge case where profile exists but onboarding incomplete)? (Fallback to email initial)
+**Open questions:** None (decided: fall back to first character of email local-part uppercased; shared helper `getAvatarInitials` in `src/lib/utils.ts` so all avatar-rendering components use identical logic)
 
 ---
 
