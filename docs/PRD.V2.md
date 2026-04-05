@@ -364,7 +364,6 @@
   - Runs as a periodic function during both `live` and `completed` match states
   - Continues until all scenarios are resolved (status transitions to `resolved`) or the 120-minute post-match cutoff is reached
   - Correct answer set on each scenario; predictions scored automatically
-  - Scenarios can be soft-removed (not deleted)
 - **Resolution phases:**
   - `toss` — after toss
   - `first_wicket` — when first wicket falls
@@ -782,7 +781,6 @@ All tables prefixed with `v2_`. Hierarchy: Sport → League → Season → Match
 | `resolution_phase` | TEXT, nullable | Copied from template |
 | `correct_answer` | TEXT, nullable | Set when resolved |
 | `is_resolved` | BOOLEAN, default false | |
-| `is_removed` | BOOLEAN, default false | Soft-delete |
 | `created_at` | TIMESTAMPTZ, default now() | |
 
 **Unique constraint:** (gang_id, fixture_id, slug) WHERE slug IS NOT NULL
@@ -957,7 +955,7 @@ Helper functions (SECURITY DEFINER):
 
 | Operation | Policy |
 |-----------|--------|
-| SELECT | Approved gang members. Filter out `is_removed = true`. |
+| SELECT | Approved gang members |
 | INSERT/UPDATE/DELETE | None (system only) |
 
 #### `v2_predictions`
