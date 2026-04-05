@@ -115,6 +115,7 @@
 - Link to Gang Settings (admin only)
 - Pending join requests section (visible to admin only, shown below gang header)
 - **Upcoming Matches**
+  - Shows the next 3 upcoming fixtures chronologically (status = `upcoming` or `live`)
   - Match cards showing teams, match number, date, time, venue
   - Prediction deadline displayed
   - CTA to predict for each match
@@ -129,9 +130,11 @@
   - Predictions locked indicator
   - CTA to view match leaderboard
 - **Recent Results**
-  - Completed match cards with user's prediction summary (predicted count, correct count, points earned)
+  - Shows the last 3 matches with `status IN ('completed', 'resolved', 'abandoned', 'no_result')` chronologically
+  - Shows user's prediction summary (predicted count, correct count, points earned)
   - Each card links to the Match Leaderboard page
-  - Results pending state
+  - "Results pending" state shown for `completed` (not yet fully resolved) matches
+  - "Match voided" state shown for `abandoned`/`no_result` matches
 - **Member List / Leaderboard**
   - List of all members with display name, avatar initial, and role (admin/member)
   - Overall points displayed per member
@@ -152,7 +155,7 @@
   - "Picked" indicator when answered
 - Sticky submit bar at bottom:
   - Progress counter (X/total picked)
-  - Submit button to lock in predictions
+  - Submit button to save predictions (users can update predictions until the deadline)
   - Error and success feedback
 - Before prediction window opens: shows message with exact opening time and link back to gang page
 - Predictions disabled when locked (deadline passed or match live)
@@ -355,7 +358,7 @@
   - Once all scenarios resolved, status changes to `resolved` and polling stops
   - `resolved_at` timestamp set on fixture results when all scenarios are resolved
   - **Fallback:** if 120 minutes pass after `completed` and some scenarios remain unresolved, system admin is notified and manually resolves the remaining scenarios (system admin flow — TBD in separate discussion)
-  - Abandoned/no_result matches: `v2_fixture_results` row created with `resolved_at` set but `match_winner_id` null; all predictions voided (no points awarded or deducted)
+  - Abandoned/no_result matches: `v2_fixture_results` row created with `resolved_at` set but `match_winner_id` null; all scenarios for this fixture are marked `is_voided = true` across all gangs. Voided scenarios are excluded from standings aggregations (`matches_predicted`, `total_correct`, `total_resolved`, `points_earned`).
 
 ### Scenarios
 
@@ -440,7 +443,8 @@ All data available via single call: `GET /fixtures/{id}?include=batting,bowling,
 - **Submission**
   - User selects answers for scenarios and submits all at once (batch upsert)
   - Can update predictions multiple times before the deadline (last submission wins)
-  - Must pick at least one scenario to submit
+  - Submit button is disabled until at least one scenario is answered; server action also rejects empty submissions
+  - Submission is additive — partial submissions are allowed (user can answer 5 scenarios, submit, then come back and answer 5 more)
   - Timestamp recorded on each submission
 - **Validation**
   - User must be an approved member of the gang
@@ -456,7 +460,7 @@ All data available via single call: `GET /fixtures/{id}?include=batting,bowling,
   - Points per scenario defined on the scenario (5–20 points)
   - Resolved automatically when scenario resolution runs during/after match
   - Each prediction gets `is_correct` flag and `points_earned` set on resolution
-  - Abandoned/no_result matches: predictions voided, don't count toward leaderboards
+  - Abandoned/no_result matches: scenarios marked `is_voided = true`; predictions rows remain intact but are excluded from standings aggregations
 
 ### Scoring & Leaderboards
 
@@ -610,10 +614,12 @@ All tables prefixed with `v2_`. Hierarchy: Sport → League → Season → Match
 | `year` | INT, NOT NULL | |
 | `start_date` | DATE | Season start |
 | `end_date` | DATE | Season end |
-| `is_active` | BOOLEAN, default true | Current season flag |
+| `is_active` | BOOLEAN, default true | Current season flag (only one per league can be true) |
 | `created_at` | TIMESTAMPTZ, default now() | |
 
-**Unique constraint:** (league_id, year)
+**Unique constraints:**
+- `(league_id, year)`
+- Partial unique index: `(league_id) WHERE is_active = true` — enforces exactly one active season per league
 
 ### `v2_profiles` — User accounts
 
@@ -665,7 +671,7 @@ All tables prefixed with `v2_`. Hierarchy: Sport → League → Season → Match
 | `league_id` | UUID, FK → v2_leagues | |
 | `season_id` | UUID, FK → v2_seasons | |
 | `prediction_deadline_mins` | INT, default 45 | Minutes before match to close predictions |
-| `is_active` | BOOLEAN, default true | Gang participating in this season |
+| `is_active` | BOOLEAN, default true | Gang participating in this season (reserved for future admin opt-out UI; always true for now) |
 | `created_at` | TIMESTAMPTZ, default now() | |
 | **PK** | (gang_id, league_id, season_id) | |
 
@@ -791,6 +797,7 @@ All tables prefixed with `v2_`. Hierarchy: Sport → League → Season → Match
 | `resolution_phase` | TEXT, nullable | Copied from template |
 | `correct_answer` | TEXT, nullable | Set when resolved |
 | `is_resolved` | BOOLEAN, default false | |
+| `is_voided` | BOOLEAN, default false | Set to true for scenarios in abandoned/no_result matches; excluded from standings aggregations |
 | `created_at` | TIMESTAMPTZ, default now() | |
 
 **Unique constraint:** (gang_id, fixture_id, slug) WHERE slug IS NOT NULL
@@ -866,12 +873,12 @@ A player can be on different teams in different seasons (trades, auctions). Popu
 | `gang_id` | UUID, FK → v2_gangs | |
 | `season_id` | UUID, FK → v2_seasons | |
 | `user_id` | UUID, FK → v2_profiles | |
-| `matches_predicted` | INT, default 0 | Number of fixtures predicted |
+| `matches_predicted` | INT, default 0 | Number of non-voided fixtures where user submitted at least one prediction |
 | `total_points` | INT, default 0 | Cumulative points |
 | `total_correct` | INT, default 0 | Total correct predictions |
 | `total_resolved` | INT, default 0 | Total resolved predictions |
-| `accuracy_pct` | DECIMAL(5,2), default 0 | Percentage correct |
-| `points_per_match` | DECIMAL(5,2), default 0 | Average points per match |
+| `accuracy_pct` | DECIMAL(5,2), default 0 | `(total_correct / total_resolved) * 100`, 0 if `total_resolved = 0`. Excludes voided scenarios. |
+| `points_per_match` | DECIMAL(5,2), default 0 | `total_points / matches_predicted`, 0 if `matches_predicted = 0` |
 | `rank` | INT, nullable | Computed by: points → accuracy → matches predicted |
 | `updated_at` | TIMESTAMPTZ, default now() | |
 | **PK** | (gang_id, season_id, user_id) | |
@@ -900,14 +907,17 @@ A player can be on different teams in different seasons (trades, auctions). Popu
 | `v2_gang_members` | `idx_gang_members_user` | `(user_id, status)` |
 | `v2_gang_league_seasons` | `idx_gang_league_seasons_season` | `(season_id)` |
 | `v2_league_season_fixtures` | `idx_fixtures_season_status` | `(season_id, status, start_datetime)` |
+| `v2_league_season_fixtures` | `idx_fixtures_status_start` | `(status, start_datetime)` — for `seed-scenarios` and `live-poll-resolve-fixtures` queries that filter across all seasons |
 | `v2_fixture_scenarios` | `idx_scenarios_gang_fixture` | `(gang_id, fixture_id)` |
 | `v2_fixture_scenarios` | `idx_scenarios_gang_season` | `(gang_id, season_id)` |
+| `v2_fixture_scenarios` | `idx_scenarios_fixture_unresolved` | `(fixture_id) WHERE is_resolved = false` — for cron to find unresolved scenarios across all gangs |
 | `v2_predictions` | `idx_predictions_gang_fixture_user` | `(gang_id, fixture_id, user_id)` |
 | `v2_predictions` | `idx_predictions_scenario` | `(scenario_id)` |
 | `v2_predictions` | `idx_predictions_gang_season_user` | `(gang_id, season_id, user_id)` |
 | `v2_gang_fixture_standings` | `idx_fixture_standings_season` | `(gang_id, season_id)` |
 | `v2_gang_season_standings` | `idx_season_standings_user` | `(user_id)` |
-| `v2_notifications` | `idx_notifications_user` | `(user_id, is_read, created_at)` |
+| `v2_notifications` | `idx_notifications_user` | `(user_id, created_at DESC)` — for fetching latest N per user |
+| `v2_notifications` | `idx_notifications_unread` | `(user_id, is_read) WHERE is_read = false` — partial index for unread count |
 
 ### Row-Level Security (RLS) Policies
 
@@ -972,7 +982,7 @@ Helper functions (SECURITY DEFINER):
 | Operation | Policy |
 |-----------|--------|
 | SELECT | Approved gang members |
-| INSERT | None (system-created on gang creation) |
+| INSERT | None for users. Created by gang-creation server action (single transaction with `v2_gangs` insert) — enrolls the gang in the current active season of the default league. Uses service role. |
 | UPDATE | Admin only (prediction_deadline_mins) |
 | DELETE | None |
 
@@ -1124,7 +1134,7 @@ Enabled on: `v2_notifications` only. Live scores use client polling, not realtim
 - **Schedule:** Every 15 minutes
 - **Purpose:** Notify gang members who haven't predicted before the deadline closes
 - **Action:**
-  - Find upcoming fixtures where deadline is approximately 1 hour away (per-gang deadline computed from `start_datetime - prediction_deadline_mins` in `v2_gang_league_seasons`)
+  - Find fixtures where `status = 'upcoming'` AND `(start_datetime - prediction_deadline_mins - INTERVAL '1 hour')` is within `(now() - INTERVAL '15 minutes', now()]` — i.e., deadline-minus-1-hour falls within the last 15 minutes (cron runs every 15 min, so this catches the window)
   - For each (gang, fixture) pair:
     - Get approved gang members
     - Filter out members who already have at least one prediction in `v2_predictions` for this (gang_id, fixture_id)
@@ -1177,6 +1187,11 @@ Open items to address in future iterations:
 - Currently marked `is_active = false` in `v2_scenario_templates`
 - Blocker: Sportmonks `catch_stump_player_id` combines catches and stumpings; need full `wicket_id` → dismissal type mapping
 - Next step: contact Sportmonks support to get `wicket_id` reference table, then either filter stumpings out or rename the scenario to "Total catches & stumpings"
+
+### Past seasons visibility
+- Currently only the active season is shown in the UI
+- When a season ends (`is_active = false`), its standings are preserved but no UI path is defined to view them
+- Need a season selector / history view design
 
 ### Account deletion and gang deletion data handling
 - Currently both are soft-delete (marked in DB); actual data cleanup policy is TBD
