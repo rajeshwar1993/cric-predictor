@@ -8,7 +8,7 @@
 
 - App logo and name (links to dashboard)
 - Notification bell with unread count badge
-  - Opens a side panel (animates from left) with unread notifications
+  - Opens a side panel (animates from right) with unread notifications
   - Each notification is clickable and redirects to the relevant page
   - Mark individual notification as read
   - Mark all notifications as read
@@ -261,6 +261,7 @@
 - Onboarded status tracked via cookie for fast checks
 - Sign out clears session and cookies, redirects to landing page
 - Account deletion: soft-delete (marked in DB, data handling TBD)
+- Deleted account re-signin: if a user with `is_deleted = true` signs in again with the same email, the profile is restored (sets `is_deleted = false`, clears `deleted_at`) and their data is preserved
 - Redirect URLs sanitized to prevent open redirect attacks (must be relative paths)
 
 ### Onboarding
@@ -292,11 +293,12 @@
 - **Creation**
   - Any authenticated user can create a gang (name: 3–50 characters)
   - Creator becomes an admin
-  - Unique invite code generated automatically (6 characters, uppercase letters and numbers only)
+  - Unique invite code generated automatically (6 characters, uppercase letters and numbers only). On unique constraint collision, server action retries with a new code (up to 5 attempts, then errors out).
   - Automatically enrolled in current active season (IPL 2026 for now; future: admin selects leagues/seasons)
 - **Roles**
   - Admin: full control — approve/reject/remove members, manage gang settings
   - Member: can predict, view leaderboards
+- **Display name uniqueness:** Display names must be unique within a gang. On join/approve, the server action checks the prospective member's display name against existing approved members; if collision, the join is rejected with a clear error.
 - **Invitations & Joining**
   - Invite link format: `/join/[code]` (shareable URL)
   - Copy link button (desktop) and native share (mobile)
@@ -482,7 +484,7 @@ All data available via single call: `GET /fixtures/{id}?include=batting,bowling,
 - **Rank computation**
   - Uses SQL `RANK()` window function (ties share rank; next rank skips — e.g., 1, 2, 2, 4)
   - Rank recalculation JOINs with `v2_gang_members` on (gang_id, user_id) to get member status
-  - Match rank ORDER BY: `CASE WHEN gm.status IN ('left', 'removed') THEN 1 ELSE 0 END ASC`, then `points_earned DESC`, then `last_submitted_at ASC`
+  - Match rank ORDER BY: `CASE WHEN gm.status IN ('left', 'removed') THEN 1 ELSE 0 END ASC`, then `points_earned DESC`, then `last_submitted_at ASC NULLS LAST` (users who didn't predict rank last)
   - Season rank ORDER BY: `CASE WHEN gm.status IN ('left', 'removed') THEN 1 ELSE 0 END ASC`, then `total_points DESC`, then `accuracy_pct DESC`, then `matches_predicted DESC`
   - Left/removed members are always sorted to the bottom regardless of their points (grayed out in UI)
   - Triggered automatically on prediction submission and scenario resolution via Postgres triggers
@@ -658,7 +660,7 @@ All tables prefixed with `v2_`. Hierarchy: Sport → League → Season → Match
 | `role` | ENUM('admin', 'member'), default 'member' | |
 | `status` | ENUM('pending', 'approved', 'rejected', 'removed', 'left'), default 'pending' | |
 | `is_blocked` | BOOLEAN, default false | Blocked members cannot rejoin even with auto-accept |
-| `joined_at` | TIMESTAMPTZ, default now() | |
+| `requested_at` | TIMESTAMPTZ, default now() | When the user requested to join (row created) |
 | `approved_at` | TIMESTAMPTZ, nullable | |
 | `departed_at` | TIMESTAMPTZ, nullable | When member left or was removed |
 | **PK** | (gang_id, user_id) | |
@@ -703,9 +705,10 @@ All tables prefixed with `v2_`. Hierarchy: Sport → League → Season → Match
 | `home_team_id` | UUID, FK → v2_league_teams | |
 | `away_team_id` | UUID, FK → v2_league_teams | |
 | `start_datetime` | TIMESTAMPTZ, NOT NULL | Match start time with timezone |
-| `venue_id` | UUID, nullable | Future use (FK to venues table) |
+| `venue_id` | UUID, nullable | Reserved for future venues table (no FK constraint yet) |
 | `venue_name` | TEXT, NOT NULL | e.g., "M. Chinnaswamy Stadium, Bengaluru" |
 | `status` | ENUM('upcoming', 'live', 'completed', 'resolved', 'abandoned', 'no_result'), default 'upcoming' | |
+| `status_changed_at` | TIMESTAMPTZ, default now() | Updated whenever status changes; used for 120-minute post-match cutoff |
 | `pre_match_synced` | BOOLEAN, default false | Set to true after pre-match delta sync runs; reset by daily sync if fixture is rescheduled |
 | `created_at` | TIMESTAMPTZ, default now() | |
 
@@ -772,7 +775,7 @@ All tables prefixed with `v2_`. Hierarchy: Sport → League → Season → Match
 | `input_type` | ENUM('team_pick', 'player_pick', 'range', 'yes_no', 'number') | |
 | `options` | JSONB, nullable | Bracket options for range type |
 | `points` | INT, NOT NULL | Default points |
-| `resolution_phase` | TEXT, NOT NULL | When this resolves |
+| `resolution_phase` | ENUM('toss', 'first_wicket', 'team_powerplay_end', 'mid_match', 'team_innings_end', 'end', 'post_match'), NOT NULL | When this resolves |
 | `is_active` | BOOLEAN, default true | |
 | `created_at` | TIMESTAMPTZ, default now() | |
 
@@ -787,20 +790,20 @@ All tables prefixed with `v2_`. Hierarchy: Sport → League → Season → Match
 | `fixture_id` | UUID, FK → v2_league_season_fixtures | Which match |
 | `gang_id` | UUID, FK → v2_gangs | Scenarios are per gang per fixture |
 | `type` | ENUM('system'), default 'system' | System only for now |
-| `slug` | TEXT, nullable | Copied from template on seeding |
+| `slug` | TEXT, NOT NULL | Copied from template on seeding |
 | `title` | TEXT, NOT NULL | Copied from template, placeholders replaced with team names |
 | `input_type` | ENUM('team_pick', 'player_pick', 'range', 'yes_no', 'number') | Copied from template |
 | `options` | JSONB, nullable | Copied from template |
 | `range_min` | INT, nullable | Min value for number input |
 | `range_max` | INT, nullable | Max value for number input |
 | `points` | INT, NOT NULL | Copied from template |
-| `resolution_phase` | TEXT, nullable | Copied from template |
+| `resolution_phase` | ENUM('toss', 'first_wicket', 'team_powerplay_end', 'mid_match', 'team_innings_end', 'end', 'post_match'), NOT NULL | Copied from template |
 | `correct_answer` | TEXT, nullable | Set when resolved |
 | `is_resolved` | BOOLEAN, default false | |
 | `is_voided` | BOOLEAN, default false | Set to true for scenarios in abandoned/no_result matches; excluded from standings aggregations |
 | `created_at` | TIMESTAMPTZ, default now() | |
 
-**Unique constraint:** (gang_id, fixture_id, slug) WHERE slug IS NOT NULL
+**Unique constraint:** (gang_id, fixture_id, slug)
 
 Seeding copies template values into scenarios. Existing matches keep their original values even if templates are updated later.
 
@@ -889,7 +892,7 @@ A player can be on different teams in different seasons (trades, auctions). Popu
 |--------|------|-------|
 | `id` | UUID, PK | |
 | `user_id` | UUID, FK → v2_profiles | Recipient |
-| `type` | TEXT, NOT NULL | e.g., "join_request", "join_approved", "deadline_reminder", "results_available" |
+| `type` | ENUM('join_request', 'join_approved', 'join_rejected', 'new_member', 'deadline_reminder', 'results_available'), NOT NULL | |
 | `message` | TEXT, NOT NULL | Display text |
 | `gang_id` | UUID, FK → v2_gangs, nullable | Related gang |
 | `fixture_id` | UUID, FK → v2_league_season_fixtures, nullable | Related fixture |
@@ -1035,7 +1038,7 @@ Enabled on: `v2_notifications` only. Live scores use client polling, not realtim
 
 ### `sync-fixtures` — Daily fixture and player sync
 
-- **Schedule:** Once a day at 5 AM IST
+- **Schedule:** Once a day at 5 AM IST (pg_cron uses UTC, so schedule as `30 23 * * *` for 05:00 IST = 23:30 UTC previous day)
 - **Purpose:** Import match schedule and player rosters from Sportmonks for the current active season
 - **Action:**
   - Fetch fixtures for current active season from Sportmonks (`/fixtures?filter[season_id]={id}`)
@@ -1064,7 +1067,7 @@ Enabled on: `v2_notifications` only. Live scores use client polling, not realtim
 - **Purpose:** Create `v2_fixture_scenarios` rows for every active gang enrolled in a season, for upcoming fixtures
 - **Action:**
   - Find fixtures where `start_datetime - 14 hours <= now()` AND `start_datetime > now()` AND `status = 'upcoming'`
-  - For each fixture → find all active gangs enrolled in the fixture's season (via `v2_gang_league_seasons`)
+  - For each fixture → find all active gangs enrolled in the fixture's season (via `v2_gang_league_seasons`), filtering out gangs where `v2_gangs.is_deleted = true`
   - For each (gang, fixture) pair that doesn't already have scenarios → copy active templates from `v2_scenario_templates` (`is_active = true`) into `v2_fixture_scenarios`
   - Replace `{Home Team}` / `{Away Team}` placeholders in titles with actual team names
   - Idempotent — won't create duplicates (unique constraint on `gang_id, fixture_id, slug`)
