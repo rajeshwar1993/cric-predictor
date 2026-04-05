@@ -341,9 +341,13 @@
 - **Result resolution:**
   - Match results stored in `v2_fixture_results` (match winner, toss winner, etc.)
   - Triggers prediction resolution via DB function
-  - Cron continues polling fixture endpoint after `status = completed` until all scenarios are resolved (e.g., Player of the Match may take up to 1 hour post-match)
+  - Polling strategy:
+    - During `live` status: poll `livescores` endpoint every 15 seconds
+    - During `completed` status: poll specific fixture endpoint (`/fixtures/{id}?include=...`) — `livescores` drops Finished fixtures
+    - Continue polling until all scenarios are resolved or 120-minute cutoff is reached
   - Once all scenarios resolved, status changes to `resolved` and polling stops
   - `resolved_at` timestamp set on fixture results when all scenarios are resolved
+  - **Fallback:** if 120 minutes pass after `completed` and some scenarios remain unresolved, system admin is notified and manually resolves the remaining scenarios (system admin flow — TBD in separate discussion)
   - Abandoned/no_result matches: `v2_fixture_results` row created with `resolved_at` set but `match_winner_id` null; all predictions voided (no points awarded or deducted)
 
 ### Scenarios
