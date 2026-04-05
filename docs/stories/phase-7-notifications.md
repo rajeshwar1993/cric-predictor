@@ -326,6 +326,7 @@ Each notification row in the panel is this component. Handles routing based on n
   - `deadline_reminder` → `/group/{gang_id}/predict/{fixture_id}`
   - `results_available` → `/group/{gang_id}/match/{fixture_id}`
   - `gang_deleted` → `/dashboard` (gang no longer exists)
+  - `admin_promoted` → `/group/{gang_id}` (emitted by `delete_account` RPC when the recipient was auto-promoted to admin because the previous admin deleted their account; message is pre-composed by the RPC and just rendered as-is)
 - [ ] On click:
   1. Mark notification as read via `markNotificationAsRead` server action
   2. Close the panel (callback to parent)
@@ -360,8 +361,9 @@ Each notification row in the panel is this component. Handles routing based on n
 - [ ] Relative timestamp formats correctly
 
 **Test plan:**
-- [ ] Generate notification of each type
+- [ ] Generate notification of each type (including `admin_promoted`)
 - [ ] Click each one, verify correct navigation and read status update
+- [ ] For `admin_promoted`: confirm the rendered message matches the RPC-composed text and clicking navigates to the gang page
 
 **Open questions:** None
 

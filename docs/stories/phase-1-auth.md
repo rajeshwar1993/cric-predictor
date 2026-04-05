@@ -35,12 +35,21 @@ Per PRD, account deletion must handle the case where the user is admin of one or
   1. Find all gangs where the user has `role = 'admin'` via `v2_gang_members`
   2. For each admin gang:
      - Find the earliest-joined approved member with `is_deleted = false` on their profile, order by `approved_at ASC`, excluding the user being deleted
-     - If a candidate is found: promote them (set `v2_gang_members.role = 'admin'`), update `v2_gangs.created_by` to new admin
+     - If a candidate is found:
+       - Promote them: set `v2_gang_members.role = 'admin'` for the candidate
+       - Update `v2_gangs.created_by` to the new admin's user_id
+       - **Insert `admin_promoted` notification** for the promoted user, one row per gang they were promoted to:
+         - `user_id` = promoted user
+         - `type` = `'admin_promoted'`
+         - `gang_id` = the gang they were promoted to
+         - `fixture_id` = NULL
+         - `message` = `'You''ve been promoted to admin of ' || gang.name || ' because the previous admin left Bragg.'`
+         - `is_read` = false
      - If no candidate: soft-delete the gang (`is_deleted = true`, `deleted_at = now()`), insert `gang_deleted` notifications for all remaining approved members whose profile is not deleted
   3. Mark the user's profile as deleted: `v2_profiles.is_deleted = true`, `deleted_at = now()`
   4. Any failure → automatic rollback of all changes
 - [ ] Raises exception with SQLSTATE `P0001` if user_id not found
-- [ ] Notification inserts use the unique `uniq_notifications_dedup` index to prevent duplicates
+- [ ] Notification inserts use the unique `uniq_notifications_dedup` index to prevent duplicates (note: `admin_promoted` is not in the dedup index predicate, which is correct — one promotion is a unique event)
 
 **Out of scope:**
 - Server action wrapper (AUTH-API-006)
@@ -61,12 +70,13 @@ Per PRD, account deletion must handle the case where the user is admin of one or
 **Analytics events:** None (DB function; event fires from server action)
 
 **Unit tests:**
-- [ ] User with no gangs → profile deleted, no gang changes
-- [ ] User is admin of 1 gang with 2 other approved members → earliest one promoted
-- [ ] User is admin of gang where all other members are deleted → gang soft-deleted, no notifications
-- [ ] User is admin of gang with mix of deleted and non-deleted members → promoted to first non-deleted member
-- [ ] Non-existent user_id → exception
-- [ ] Concurrent calls don't double-promote
+- [ ] User with no gangs → profile deleted, no gang changes, no notifications
+- [ ] User is admin of 1 gang with 2 other approved members → earliest one promoted, 1 `admin_promoted` notification inserted for the promoted user with correct message and `gang_id`
+- [ ] User is admin of 3 gangs → 3 `admin_promoted` notifications inserted (one per gang, possibly to different users)
+- [ ] User is admin of gang where all other members are deleted → gang soft-deleted, `gang_deleted` notifications inserted, no `admin_promoted` notification
+- [ ] User is admin of gang with mix of deleted and non-deleted members → promoted to first non-deleted member, `admin_promoted` notification sent to that member
+- [ ] Non-existent user_id → exception, no side effects (transaction rollback)
+- [ ] Concurrent calls don't double-promote (advisory lock holds)
 
 **Test plan:**
 - [ ] Create test scenarios for each branch
@@ -449,8 +459,7 @@ Per PRD, account deletion is soft-delete. If the user is admin of any gangs, aut
 - [ ] Create test user, test gangs, run deletion in each scenario
 - [ ] Verify notifications land in recipient's inbox
 
-**Open questions:**
-- Do we need to notify the promoted member that they're now admin? (Suggest yes, new `admin_promoted` notification type — but that's out of scope for launch)
+**Open questions:** None (decided: `admin_promoted` notification type is in-scope for launch; emitted by `delete_account` RPC in AUTH-DB-001; notification renderer handled in NOTIF-UI-002)
 
 ---
 

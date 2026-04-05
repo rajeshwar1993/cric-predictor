@@ -79,6 +79,8 @@ Per PRD Tech Stack, we use Next.js (App Router), React, TypeScript, Tailwind CSS
 
 **Acceptance criteria:**
 - [ ] Next.js project initialized in `web-app-2/` with App Router (`create-next-app` or manual)
+- [ ] `.nvmrc` file created with `20` (Node 20 LTS) at `web-app-2/.nvmrc`
+- [ ] `package.json` includes `"engines": { "node": ">=20.0.0" }`
 - [ ] TypeScript configured (`tsconfig.json` with strict mode)
 - [ ] Tailwind CSS v4 installed and configured (`tailwind.config.ts`, `globals.css`)
 - [ ] shadcn/ui initialized via `npx shadcn@latest init` (with dark mode default, per PRD)
@@ -127,8 +129,7 @@ Per PRD Tech Stack, we use Next.js (App Router), React, TypeScript, Tailwind CSS
 - [ ] Verify placeholder home page renders
 - [ ] Verify `web-app/` (old) still runs on port 3000 in parallel
 
-**Open questions:**
-- What Node version? (Match existing `web-app/.nvmrc` if present)
+**Open questions:** None (decided: Node 20 LTS — v1 has no `.nvmrc` to match)
 
 ---
 
@@ -213,6 +214,13 @@ Per the PRD, we have several database access patterns: anon client (user-scoped 
 - [ ] Environment variable validation — app fails to start if `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, or `SUPABASE_SERVICE_ROLE_KEY` (server only) is missing
 - [ ] Service role client is NEVER imported from any file in `src/app/` except server actions in `src/lib/actions/`
 - [ ] Comment in `service-role.ts` warns about security: "NEVER import this from client components"
+- [ ] `src/lib/supabase/service-role.ts` has `import 'server-only'` as its first line (hard guarantee: throws a build error if bundled into client code)
+- [ ] `server-only` package added to `web-app-2/package.json` dependencies
+- [ ] ESLint `no-restricted-imports` rule added to `.eslintrc` that blocks importing `@/lib/supabase/service-role` (and relative-path variants) from anywhere except:
+  - `src/lib/actions/**` (server actions)
+  - `src/lib/supabase/service-role.ts` itself
+  - `supabase/functions/**` (Edge Functions, if they ever live in the same ESLint scope)
+- [ ] Violating the rule fails `npm run lint` (and therefore CI)
 
 **Out of scope:**
 - Actual auth helper functions (`getUser`, `getSession`) — per-story as needed
@@ -231,6 +239,24 @@ Per the PRD, we have several database access patterns: anon client (user-scoped 
 - Cookie management pattern: follow Supabase SSR docs
 - Type generation script: add to `package.json` scripts (`"db:types": "supabase gen types typescript --linked > src/types/database.ts"`)
 - Environment validation: use a small helper like `src/lib/env.ts` that throws on missing vars
+- Two-layer defense for service-role key:
+  1. `server-only` package — runtime/build guarantee that the module cannot be bundled into client code (Next.js recognizes this package and errors at build time).
+  2. ESLint `no-restricted-imports` — lint-time guardrail that restricts *which* server files may import it, so even a server component or route handler can't accidentally grab the service-role client and forget RLS.
+- Example ESLint config (in `.eslintrc.json` `overrides`):
+  ```json
+  {
+    "files": ["src/**/*.{ts,tsx}"],
+    "excludedFiles": ["src/lib/actions/**", "src/lib/supabase/service-role.ts"],
+    "rules": {
+      "no-restricted-imports": ["error", {
+        "patterns": [
+          { "group": ["**/lib/supabase/service-role", "@/lib/supabase/service-role"],
+            "message": "service-role client may only be imported from src/lib/actions/**" }
+        ]
+      }]
+    }
+  }
+  ```
 
 **Analytics events:** None
 **Unit tests:**
@@ -242,8 +268,7 @@ Per the PRD, we have several database access patterns: anon client (user-scoped 
 - [ ] Import each client in a dummy route and verify no runtime errors
 - [ ] Verify service-role client warns loudly if imported from `'use client'` context (TypeScript check or ESLint rule)
 
-**Open questions:**
-- Should we add an ESLint rule to prevent importing `service-role.ts` from non-server-action files?
+**Open questions:** None (decided: two-layer defense — `server-only` package + ESLint `no-restricted-imports` rule restricting to `src/lib/actions/**`)
 
 ---
 
@@ -256,8 +281,8 @@ Per the PRD, we have several database access patterns: anon client (user-scoped 
 
 **User story:**
 > As the developer,
-> I want PostHog initialized with autocapture, session recording, and a shared server-side helper for custom events,
-> So that every feature can track user behavior and errors per the PRD Analytics section.
+> I want PostHog initialized with autocapture and a shared server-side helper for custom events (session recording disabled by default, gated behind a feature flag),
+> So that every feature can track user behavior and errors per the PRD Analytics section, without recording raw session video for all users at launch.
 
 **Context / Why:**
 PRD specifies PostHog for analytics (autocapture + custom events + error reporting). Setting this up early means every feature can fire events from day one without retrofitting later.
@@ -267,7 +292,11 @@ PRD specifies PostHog for analytics (autocapture + custom events + error reporti
 - [ ] PostHog Node SDK installed for server-side (`posthog-node`)
 - [ ] `src/app/layout.tsx` wraps children in a PostHog provider for client-side autocapture
 - [ ] Autocapture enabled (per PRD: pageviews, clicks, form submissions)
-- [ ] Session recording enabled (per PRD)
+- [ ] Session recording **disabled by default** — initialized with `disable_session_recording: true`
+- [ ] Session recording gated behind PostHog feature flag `session-recording-enabled`:
+  - On app boot, after PostHog is identified (or with anonymous distinct_id), check flag via `posthog.onFeatureFlags(() => { if (posthog.isFeatureEnabled('session-recording-enabled')) posthog.startSessionRecording() })`
+  - Flag is managed in the PostHog dashboard and can be rolled out to a sampled % or specific users post-launch (no code change required)
+  - When recording *is* enabled via flag, use masking config: `session_recording: { maskAllInputs: true, maskTextSelector: '[data-ph-mask]' }` to avoid leaking magic link tokens / prediction picks
 - [ ] `src/lib/analytics/events.ts` — centralized event name constants (TypeScript `as const`)
 - [ ] `src/lib/analytics/client.ts` — client-side tracking helper (`trackEvent(name, props?)`)
 - [ ] `src/lib/analytics/server.ts` — server-side tracking helper (for server actions / edge functions)
@@ -304,6 +333,11 @@ PRD specifies PostHog for analytics (autocapture + custom events + error reporti
   - `PAGE_LOAD_TIME`, `SERVER_ACTION_DURATION`
   - `ERROR_BOUNDARY_CAUGHT`, `ERROR_LOGGED`, `UNHANDLED_ERROR`
 - Pre-auth hashing: `crypto.subtle.digest('SHA-256', email)` → hex string (distinct_id)
+- Session recording rollout plan (post-launch, no code change needed):
+  1. Create feature flag `session-recording-enabled` in PostHog dashboard (default: off, 0% rollout)
+  2. For debugging a specific user, target the flag to their `distinct_id` only
+  3. For broad debugging of a funnel, roll out to 5–10% sample
+  4. Masking config ensures inputs and `[data-ph-mask]` elements are hidden even when recording is active — apply `data-ph-mask` to any component rendering sensitive data (magic link token, pick selections)
 
 **Analytics events:** N/A (this story SETS UP analytics)
 **Unit tests:**
@@ -317,74 +351,93 @@ PRD specifies PostHog for analytics (autocapture + custom events + error reporti
 - [ ] Manually call `trackEvent('test_event', { foo: 'bar' })` in a component and verify it appears in PostHog dashboard
 - [ ] Throw an intentional error, verify it's captured with stack trace
 
-**Open questions:**
-- Should session recording be enabled by default or behind a feature flag for privacy?
+**Open questions:** None (decided: session recording disabled at launch, gated behind PostHog feature flag `session-recording-enabled` with input/text masking when enabled. PRD updated accordingly.)
 
 ---
 
-## FND-006: Design system baseline
+## FND-006: Design system baseline + Storybook
 
 **Phase:** Phase 0 — Foundation
 **Priority:** P0
 **Estimated effort:** Medium (1–2 days)
-**Status:** Not started
+**Status:** Blocked — waiting on new `docs/design-system.md` (user to author)
 
 **User story:**
 > As the developer,
-> I want the design system tokens, typography, and base shadcn/ui primitives set up per `docs/design-system.md`,
-> So that all subsequent UI stories can reuse consistent components and styles.
+> I want the design system tokens, typography, base shadcn/ui primitives, AND Storybook set up per the (new) `docs/design-system.md`,
+> So that all subsequent UI stories can reuse consistent components and styles, and every component ships with an isolated showcase in Storybook.
 
 **Context / Why:**
-Bragg is mobile-first and dark mode by default (per PRD Product Feel). A solid design system baseline prevents every UI story from redefining colors, spacing, and button styles.
+Bragg is mobile-first and dark mode by default (per PRD Product Feel). A solid design system baseline prevents every UI story from redefining colors, spacing, and button styles. Storybook is the canonical showcase for every component and page — replacing the old `docs/design-system.jsx` approach. Every subsequent UI story ships a matching Storybook story (see [Global UI story requirements](./README.md#global-ui-story-requirements)).
+
+> **Prerequisite (blocker):** A new `docs/design-system.md` must be authored by the user before this story starts. The existing `docs/design-system.md` is stale and is NOT the source of truth. FND-006 is **blocked** until the new doc exists.
 
 **Acceptance criteria:**
-- [ ] Design tokens defined as CSS custom properties in `src/app/globals.css`:
-  - Colors: dark background, cyan accent, gold (for top ranks), danger, success, muted
-  - Typography: display font, body font, stats font (per existing design-system.md)
-  - Spacing scale (4, 8, 12, 16, 24, 32, 48, 64 px)
+- [ ] Design tokens defined as CSS custom properties in `src/app/globals.css`, sourced from the new `docs/design-system.md`:
+  - Colors: dark background, accent, gold (for top ranks), danger, success, muted — exact values per design-system.md
+  - Typography: display font, body font, stats font — per design-system.md
+  - Spacing scale — per design-system.md
 - [ ] Tailwind config references CSS variables (so theming is consistent)
-- [ ] shadcn primitives installed: `Button`, `Input`, `Label`, `Card`, `Dialog`, `DropdownMenu`, `Avatar`, `Separator`, `Sheet` (for side panels)
+- [ ] shadcn primitives installed: `Button`, `Input`, `Label`, `Card`, `Dialog`, `DropdownMenu`, `Avatar`, `Separator`, `Sheet` (for side panels). Additional primitives added per-story as needed.
 - [ ] Custom components:
   - `src/components/ui/logo.tsx` — app logo with gradient text
   - `src/components/ui/loading-spinner.tsx`
   - `src/components/ui/empty-state.tsx` — reusable empty state layout
 - [ ] `src/components/layout/page-wrapper.tsx` — standard page layout with max-width, padding, responsive
 - [ ] Mobile-first responsive breakpoints: `sm` (640px), `md` (768px), `lg` (1024px)
-- [ ] All components tested in Storybook OR a `/dev/components` route (optional but helpful)
 - [ ] Dark mode is default (`html.dark` class always present or prefers-color-scheme ignored for launch)
-- [ ] Matches existing `docs/design-system.md` tokens and specs
+- [ ] Matches the new `docs/design-system.md` tokens and specs
+- [ ] **Storybook installed and configured:**
+  - [ ] Storybook 8+ installed in `web-app-2/` (`npx storybook@latest init` with Next.js framework preset)
+  - [ ] Storybook runs via `npm run storybook` on a non-conflicting port (e.g., 6006)
+  - [ ] Tailwind + globals.css loaded in Storybook preview (`.storybook/preview.ts` imports `../src/app/globals.css`)
+  - [ ] Dark mode is applied by default in Storybook (via `parameters.backgrounds` + `html.dark` class decorator)
+  - [ ] Storybook `main.ts` points to `src/**/*.stories.@(ts|tsx|mdx)` so component stories live next to components
+  - [ ] `@storybook/addon-a11y` installed for accessibility checks in the Storybook panel
+  - [ ] `@storybook/test` + Storybook's play-function support available for interaction testing
+  - [ ] `npm run build-storybook` succeeds and produces a static build (can be deployed later)
+  - [ ] A sample Storybook story exists for each baseline primitive delivered by this story (Button, Input, Card, Logo, LoadingSpinner, EmptyState, PageWrapper) with `Default` + key variants
 
 **Out of scope:**
-- Feature-specific components (built per-story)
+- Feature-specific components (built per-story, each with their own Storybook story)
 - Landing page hero, gang cards, scorecards — built in later phases
+- Deploying Storybook to a hosted URL (post-launch; `build-storybook` output is sufficient for Phase 0)
+- Authoring the new `docs/design-system.md` — user handles offline before this story starts
 
-**Dependencies:** FND-002
+**Dependencies:** FND-002, new `docs/design-system.md` (authored by user, pre-implementation)
 **Blocks:** All UI stories
 
 **PRD references:**
 - [Product feel](../PRD.V2.md#product-feel) — vibe, design principles
 - [Non-Functional Requirements § Mobile-first, Accessibility](../PRD.V2.md#non-functional-requirements)
-- Also follow `docs/design-system.md` for token details
+- `docs/design-system.md` (new version, authored by user before this story starts) — token values, typography, voice
+- [Global UI story requirements](./README.md#global-ui-story-requirements) — Storybook mandatory for every UI story
 
 **Technical notes:**
 - Use Tailwind v4's new CSS-first config approach
 - Custom fonts via `next/font` (Google Fonts) to avoid FOUC
 - Accessibility: semantic HTML, ARIA labels, keyboard navigation (per PRD NFR)
 - Follow the `/frontend-design` skill guidelines per CLAUDE.md
+- Storybook is the canonical component showcase — it replaces the old `docs/design-system.jsx` pattern. Every subsequent component gets a story file next to the component (`Button.tsx` → `Button.stories.tsx`).
+- Storybook story decorator should wrap stories in `<html class="dark">` context and the app's font providers so stories render identically to the app.
+- Storybook should be runnable in CI for snapshot/interaction tests post-launch (not required at Phase 0).
 
 **Analytics events:** None
 **Unit tests:**
 - [ ] Snapshot tests for each custom component (empty state, page wrapper)
-- [ ] Accessibility test: axe-core integration on one sample component
+- [ ] Accessibility test: axe-core integration on one sample component (in addition to Storybook a11y addon)
+- [ ] Storybook `build-storybook` command runs in CI as a smoke test (fails CI if any story has a build error)
 
 **Test plan:**
-- [ ] Render each shadcn primitive and custom component on a dev route
-- [ ] Verify dark mode is visible
-- [ ] Verify mobile responsive breakpoints look correct (DevTools responsive mode)
-- [ ] Run axe-core and verify no critical accessibility violations
+- [ ] Run `npm run storybook` and verify it opens on http://localhost:6006
+- [ ] Verify every baseline primitive (Button, Input, Card, Logo, LoadingSpinner, EmptyState, PageWrapper) has a visible Storybook entry
+- [ ] Toggle Controls in Storybook to verify variants render
+- [ ] Verify dark mode is default in Storybook
+- [ ] Verify mobile responsive breakpoints look correct (Storybook viewport addon or DevTools responsive mode)
+- [ ] Run axe-core (Storybook a11y panel) and verify no critical accessibility violations
+- [ ] Run `npm run build-storybook` — expect success
 
-**Open questions:**
-- Should we import the design-system.jsx from `docs/` or re-implement in `web-app-2/`?
+**Open questions:** None (decided: Storybook is the canonical showcase; user authors new `docs/design-system.md` offline before FND-006 starts)
 
 ---
 
@@ -412,7 +465,7 @@ The PRD defines 17 v2 tables (plus `v2_scenario_templates` and `v2_league_season
   - `v2_scenario_type` — system
   - `v2_scenario_input_type` — team_pick, player_pick, range, yes_no
   - `v2_resolution_phase` — toss, first_wicket, team_powerplay_end, mid_match, team_innings_end, end, post_match
-  - `v2_notification_type` — join_request, join_approved, join_rejected, new_member, deadline_reminder, results_available, gang_deleted
+  - `v2_notification_type` — join_request, join_approved, join_rejected, new_member, deadline_reminder, results_available, gang_deleted, admin_promoted
 - [ ] All tables created per PRD Database Schema section:
   - `v2_sports`, `v2_leagues`, `v2_seasons`
   - `v2_profiles` (with CHECK constraint for onboarding_completed)
@@ -692,7 +745,7 @@ The PRD defines many triggers that enforce business rules (max members, max gang
 **Phase:** Phase 0 — Foundation
 **Priority:** P0
 **Estimated effort:** Medium (4–8 hours)
-**Status:** Not started
+**Status:** Blocked — waiting on IPL 2026 Sportmonks IDs (fetch as pre-implementation step, see below)
 
 **User story:**
 > As the developer,
@@ -700,9 +753,26 @@ The PRD defines many triggers that enforce business rules (max members, max gang
 > So that the app works out of the box after a fresh deploy.
 
 **Context / Why:**
-Sports, leagues, seasons, teams, and scenario templates are required reference data. Per the PRD, these are seeded via SQL migration (admin UI is post-launch).
+Sports, leagues, seasons, teams, and scenario templates are required reference data. Per the PRD, these are seeded via SQL migration (admin UI is post-launch). All Sportmonks IDs are fetched fresh from the live API immediately before this migration runs — the sample responses in `api-tester/responses/sportsmonk/` may be stale and should not be trusted for real seed data.
+
+**Pre-implementation step (blocker — must happen before writing the migration):**
+
+Fetch the following IDs from the live Sportmonks Cricket API using the account's production token. Record them in a scratch doc (or inline in the migration file as comments) before writing the seed SQL:
+
+1. **Cricket sport ID** — `GET https://cricket.sportmonks.com/api/v2.0/...` (or v3 equivalent) → find the sport record for "Cricket", capture `id`.
+2. **IPL league ID** — `GET .../leagues?filter[name]=Indian Premier League` → capture `id` of the IPL league.
+3. **IPL 2026 season ID** — `GET .../seasons?filter[league_id]={ipl_league_id}` → find the season with `name: "2026"` (or equivalent) and capture `id`. If the 2026 season does not yet exist in Sportmonks at the time of seeding, flag this to the user immediately — we cannot proceed without it.
+4. **All 10 IPL team IDs for 2026** — `GET .../teams?filter[season_id]={ipl_2026_season_id}&include=squad` → for each team, capture:
+   - `id` (Sportmonks API ID)
+   - `name` (full name, e.g., "Chennai Super Kings")
+   - `code` (short code, e.g., "CSK")
+   - `image_path` (logo URL — copy to our CDN or use directly)
+5. **Team list expected:** CSK, MI, RCB, KKR, DC, PBKS, RR, SRH, GT, LSG. If the API returns a different set (franchise rename, new team, removed team), stop and flag to the user.
+
+Save the fetched raw responses to `api-tester/responses/sportsmonk/2026-seed/` for audit trail. Do NOT write the seed SQL until all 12 IDs (1 sport + 1 league + 1 season + 10 teams − wait, that's 13) are confirmed.
 
 **Acceptance criteria:**
+- [ ] Pre-implementation step completed: all IDs fetched from live Sportmonks API, saved to `api-tester/responses/sportsmonk/2026-seed/`, and recorded inline in the migration as comments
 - [ ] Migration file: `supabase-2/migrations/005_seed_data.sql`
 - [ ] `v2_sports`: 1 row — Cricket (`code: cricket`, Sportmonks `api_id`)
 - [ ] `v2_leagues`: 1 row — Indian Premier League (`code: ipl`, linked to cricket sport, Sportmonks `api_id`)
@@ -736,10 +806,11 @@ Sports, leagues, seasons, teams, and scenario templates are required reference d
 - [Scenario Resolution Mapping](../PRD.V2.md#scenario-resolution-mapping-sportmonks-api)
 
 **Technical notes:**
-- Get Sportmonks IDs from `api-tester/responses/sportsmonk/general-calls/01b-league-ipl-with-seasons.json`, `02b-season-current.json`, `03a-teams-all.json`
-- Team colors: get from existing `web-app/src/lib/constants.ts` or style guide
-- Logo URLs: use Sportmonks CDN URLs from team data
+- **Do not rely on `api-tester/responses/sportsmonk/general-calls/*.json` for real IDs** — those are sample responses from an earlier probe and may be for a prior season. Always re-fetch fresh from the live API for the current season before seeding. Use those files only as a format reference to know which fields to extract.
+- Team colors: get from existing `web-app/src/lib/constants.ts` or style guide (Sportmonks does not provide brand colors)
+- Logo URLs: use Sportmonks CDN URLs from team data (the `image_path` field). Consider proxying through our own CDN for stability post-launch, but direct Sportmonks URLs are acceptable for launch.
 - Options JSONB format: `'["<140","140-159","160-179","180-199","200+"]'::jsonb`
+- Token: use the production Sportmonks API token (stored in 1Password / env var, not committed) for the fetch step
 
 **Analytics events:** None
 **Unit tests:**
@@ -749,13 +820,14 @@ Sports, leagues, seasons, teams, and scenario templates are required reference d
 - [ ] Assert each scenario template has valid `resolution_phase` (enum check)
 
 **Test plan:**
+- [ ] Pre-step: verify all 13 Sportmonks IDs have been fetched from the live API and saved to `api-tester/responses/sportsmonk/2026-seed/`
 - [ ] Apply migration
 - [ ] Query `SELECT * FROM v2_sports, v2_leagues, v2_seasons, v2_league_teams, v2_scenario_templates`
 - [ ] Verify counts and key fields
 - [ ] Verify `total_match_catches` is inactive
+- [ ] Spot-check one team's `api_id` against a live Sportmonks `GET /teams/{id}` call — confirm it returns the expected team
 
-**Open questions:**
-- Do we have the actual Sportmonks league/season/team IDs for IPL 2026 at time of seeding? If not, placeholder and update later.
+**Open questions:** None (decided: fetch Sportmonks IDs live as a pre-implementation step; if IPL 2026 season doesn't yet exist in Sportmonks, stop and flag to user)
 
 ---
 

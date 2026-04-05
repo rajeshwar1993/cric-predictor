@@ -578,6 +578,7 @@ All data available via single call: `GET /fixtures/{id}?include=batting,bowling,
   - Join request approved/rejected (sent to requester)
   - Prediction deadline approaching (sent to members who haven't predicted)
   - Match results available (sent to gang members)
+  - **Admin promoted** (sent to a member who has been auto-promoted to admin because the previous sole admin deleted their account). Message: _"You've been promoted to admin of {gang_name} because the previous admin left Bragg."_ Clicking navigates to the gang page. Emitted by the `delete_account` RPC inside the same transaction as the promotion, one row per affected gang.
 - **Limits**
   - Fetches latest 20 notifications
 
@@ -597,7 +598,7 @@ All data available via single call: `GET /fixtures/{id}?include=batting,bowling,
 ## Analytics
 
 - **Provider:** PostHog
-- **Pageviews & Sessions:** PostHog autocapture (pageviews, session recording, funnels defined in dashboard)
+- **Pageviews & Sessions:** PostHog autocapture (pageviews, funnels defined in dashboard). Session recording is **disabled by default at launch** and gated behind a PostHog feature flag (`session-recording-enabled`); it can be rolled out to a sampled % or specific users post-launch without a code change. When enabled, masking is applied so inputs and `[data-ph-mask]` elements are not captured.
 - **Custom events tracked:**
   - **Auth:** magic link requested, magic link resent, callback success/failure, onboarding completed, signed out, account deleted
   - **Gangs:** created, join requested, invite copied, invite shared, member approved/rejected, member removed, member left, gang deleted
@@ -967,7 +968,7 @@ A player can be on different teams in different seasons (trades, auctions). Popu
 |--------|------|-------|
 | `id` | UUID, PK | |
 | `user_id` | UUID, FK → v2_profiles | Recipient |
-| `type` | ENUM('join_request', 'join_approved', 'join_rejected', 'new_member', 'deadline_reminder', 'results_available', 'gang_deleted'), NOT NULL | |
+| `type` | ENUM('join_request', 'join_approved', 'join_rejected', 'new_member', 'deadline_reminder', 'results_available', 'gang_deleted', 'admin_promoted'), NOT NULL | `admin_promoted` is emitted by `delete_account` RPC when the departing user was the sole admin and the earliest approved member is auto-promoted. |
 | `message` | TEXT, NOT NULL | Display text |
 | `gang_id` | UUID, FK → v2_gangs, nullable | Related gang |
 | `fixture_id` | UUID, FK → v2_league_season_fixtures, nullable | Related fixture |
