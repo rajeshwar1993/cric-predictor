@@ -329,6 +329,7 @@
 - **Statuses:** upcoming → live → completed → resolved (also: abandoned, no_result)
   - `completed`: match has ended per Sportmonks (`Finished`) but some scenarios (e.g., Player of the Match) may still be unresolved
   - `resolved`: all scenarios for the match have been resolved; polling stops
+- **Home/Away vs batting order:** The home team does not always bat first. Team-specific scenarios (innings score, powerplay) must filter by `team_id` matching `localteam_id` or `visitorteam_id`, **not** by inning number.
 - **Data source:** match schedule auto-imported from Sportmonks API via cron function
 - **Live updates:**
   - Polled from cricket API and stored as live snapshot
@@ -404,7 +405,7 @@ All data available via single call: `GET /fixtures/{id}?include=batting,bowling,
 
 | # | Slug | API Source | Resolution Method |
 |---|------|-----------|-------------------|
-| 1 | `toss_winner` | Fixture: `toss_won_team_id` | Direct field. Map to internal team UUID via `v2_league_teams.api_id`. |
+| 1 | `toss_winner` | Fixture: `toss_won_team_id` | Direct field. Map to internal team UUID via `v2_league_teams.api_id`. Available even when match status is `NS` — resolve as soon as field is populated (don't wait for `1st Innings` status). |
 | 2 | `match_winner` | Fixture: `winner_team_id` | Direct field. Map to internal team UUID via `v2_league_teams.api_id`. |
 | 3 | `top_scorer` | Batting include: `player_id`, `score` | Find max `score` across all batting entries (both innings). Map `player_id` to internal UUID via `v2_players.api_id`. Tiebreaker: fewer balls faced (`ball` field). |
 | 4 | `top_wicket_taker` | Bowling include: `player_id`, `wickets` | Find max `wickets` across all bowling entries (both innings). Map `player_id` to internal UUID via `v2_players.api_id`. Tiebreaker: fewer runs conceded. |
