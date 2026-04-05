@@ -104,6 +104,7 @@
     - Rejected → option to request again
     - Gang full → message that gang has reached max members
     - Blocked → message that user is not able to join this gang
+    - Gang deleted → message that this gang no longer exists
 - Global Footer
 
 ### Gang Page (`/group/[groupId]`)
@@ -170,7 +171,7 @@ _(URL paths use `/group/` for legacy compatibility; DB schema and product termin
 - Match header: match number, teams, date, time, venue
 - Live scorecard (auto-polls for updates during live matches): scores, overs, batting team, current run rate, last 6 balls, both batsmen with individual scores and on-strike indicator, current bowler, current partnership
 - **Match Leaderboard**
-  - Gated: only visible after the prediction deadline passes (before deadline, shows a countdown placeholder)
+  - Gated: only visible after predictions are locked (deadline passed OR match live) — before that, shows a countdown placeholder
   - Ranked list of members: rank, display name, correct/resolved count, predicted count, points
   - Current user highlighted
   - Empty state if no one has predicted
@@ -178,7 +179,7 @@ _(URL paths use `/group/` for legacy compatibility; DB schema and product termin
   - Matrix of all members' predictions per scenario
   - Shows correct/incorrect status per cell
   - Members ordered by leaderboard rank
-  - Hidden until predictions lock (shows countdown placeholder before lock)
+  - Hidden until predictions are locked (deadline passed OR match live) — shows countdown placeholder before lock
   - Auto-polls for updates during live matches
   - Empty states: solo gang (nudge to invite), no predictions
 - Global Footer
@@ -266,7 +267,12 @@ _(URL paths use `/group/` for legacy compatibility; DB schema and product termin
 - Sign out clears session and cookies, redirects to landing page
 - Account deletion: soft-delete (marked in DB, data handling TBD)
 - Deleted account re-signin: if a user with `is_deleted = true` signs in again with the same email, the profile is restored (sets `is_deleted = false`, clears `deleted_at`) and their data is preserved
-- Admin account deletion: if the deleting user is admin of any gangs, each of those gangs auto-promotes the earliest-joined approved member (by `approved_at` ASC) to admin. If a gang has no other approved members, the gang is auto soft-deleted.
+- Admin account deletion: implemented as a single Postgres RPC that runs in one transaction. For each gang the deleting user admins:
+  - Find the earliest-joined approved member (by `approved_at` ASC) whose profile has `is_deleted = false`
+  - If found: promote them to admin (set `role = 'admin'`, update `v2_gangs.created_by` to new admin)
+  - If no eligible candidate: auto soft-delete the gang
+  - Send `gang_deleted` notifications to all approved members with `is_deleted = false`
+  - Any failure rolls back the entire transaction (profile deletion and all gang changes)
 - Redirect URLs sanitized to prevent open redirect attacks (must be relative paths)
 
 ### Onboarding
@@ -333,7 +339,7 @@ _(URL paths use `/group/` for legacy compatibility; DB schema and product termin
   - Left and removed members are grayed out in standings; their data (predictions, scores) is preserved
   - Left/removed members no longer appear in the active member list
   - Left members can rejoin with an invite code (unless blocked)
-  - Deleting a gang soft-deletes it (marked as deleted in DB, details TBD); all approved members receive a `gang_deleted` notification
+  - Deleting a gang soft-deletes it (marked as deleted in DB, details TBD); all approved members with `is_deleted = false` on their profile receive a `gang_deleted` notification (sent via gang deletion server action using service role in same transaction as the soft-delete)
 
 ### Matches
 
@@ -495,7 +501,7 @@ All data available via single call: `GET /fixtures/{id}?include=batting,bowling,
   - Left/removed members are always sorted to the bottom regardless of their points (grayed out in UI)
   - Triggered automatically on prediction submission and scenario resolution via Postgres triggers
   - Scope: only the affected (gang_id, fixture_id) or (gang_id, season_id) is recalculated
-  - Additional trigger: `AFTER UPDATE OF status ON v2_gang_members FOR EACH ROW WHEN OLD.status IS DISTINCT FROM NEW.status` recalculates ranks whenever a member's status changes (so standings reflect the new sort order immediately)
+  - Additional trigger: `AFTER UPDATE OF status ON v2_gang_members FOR EACH ROW WHEN (OLD.status IS DISTINCT FROM NEW.status) AND (OLD.status IN ('approved', 'left', 'removed') OR NEW.status IN ('approved', 'left', 'removed'))` recalculates ranks when a member's status transitions into or out of an active/departed state
 
 ### Notifications _(TODO: revisit triggers and delivery)_
 
@@ -858,7 +864,7 @@ Seeding copies template values into scenarios. Existing matches keep their origi
 | `created_at` | TIMESTAMPTZ, default now() | |
 | **PK** | (season_id, team_id, player_id) | |
 
-A player can be on different teams in different seasons (trades, auctions). Populated by `sync-fixtures` via `/teams/{id}/squad/{season_id}`. On each daily sync, rows for the season not present in the current squad response are deleted (handles mid-season trades).
+A player can be on different teams in different seasons (trades, auctions). Populated by `sync-fixtures` via `/teams/{id}/squad/{season_id}`. On each daily sync, for each (season_id, team_id) whose squad was fetched in this run, rows with that (season_id, team_id) whose `player_id` is not in the current squad response are deleted (scoped per team — other teams' rows are untouched).
 
 ### `v2_gang_fixture_standings` — Match leaderboard per gang (materialized)
 
@@ -922,6 +928,7 @@ A player can be on different teams in different seasons (trades, auctions). Popu
 | `v2_fixture_scenarios` | `idx_scenarios_gang_fixture` | `(gang_id, fixture_id)` |
 | `v2_fixture_scenarios` | `idx_scenarios_gang_season` | `(gang_id, season_id)` |
 | `v2_fixture_scenarios` | `idx_scenarios_fixture_unresolved` | `(fixture_id) WHERE is_resolved = false` — for cron to find unresolved scenarios across all gangs |
+| `v2_fixture_scenarios` | `idx_scenarios_gang_fixture_active` | `(gang_id, fixture_id) WHERE is_voided = false` — for standings aggregation queries that exclude voided scenarios |
 | `v2_predictions` | `idx_predictions_gang_fixture_user` | `(gang_id, fixture_id, user_id)` |
 | `v2_predictions` | `idx_predictions_scenario` | `(scenario_id)` |
 | `v2_predictions` | `idx_predictions_gang_season_user` | `(gang_id, season_id, user_id)` |
@@ -929,7 +936,7 @@ A player can be on different teams in different seasons (trades, auctions). Popu
 | `v2_gang_season_standings` | `idx_season_standings_user` | `(user_id)` |
 | `v2_notifications` | `idx_notifications_user` | `(user_id, created_at DESC)` — for fetching latest N per user |
 | `v2_notifications` | `idx_notifications_unread` | `(user_id, is_read) WHERE is_read = false` — partial index for unread count |
-| `v2_notifications` | `idx_notifications_dedup` | `(user_id, gang_id, fixture_id, type)` — for `deadline-reminders` dedup lookup |
+| `v2_notifications` | `uniq_notifications_dedup` | UNIQUE `(user_id, gang_id, fixture_id, type) WHERE type IN ('deadline_reminder', 'results_available')` — prevents duplicate inserts via `ON CONFLICT DO NOTHING` |
 
 ### Row-Level Security (RLS) Policies
 
@@ -937,7 +944,7 @@ All tables have RLS enabled. System operations (cron, edge functions) use servic
 
 Helper functions (SECURITY DEFINER):
 - `is_gang_member(gang_id, user_id)` — returns true if user is an approved member of the gang
-- `is_gang_admin(gang_id, user_id)` — returns true if user is the admin of the gang
+- `is_gang_admin(gang_id, user_id)` — returns true if the user has `role = 'admin'` in `v2_gang_members` (not based on `v2_gangs.created_by`, which is historical and can be outdated after admin transfer). Also filters out profiles where `is_deleted = true`.
 - `get_gang_by_invite_code(code)` — looks up gang by invite code, bypasses RLS (needed for Join Page before membership)
 - `get_members_who_predicted(gang_id, fixture_id)` — returns user_ids only, no prediction values (visible to all gang members before deadline). Function must internally call `is_gang_member(gang_id, auth.uid())` first and return empty if the caller is not an approved member.
 - `prediction_deadline(fixture_id, gang_id)` — computes deadline from `start_datetime` minus `prediction_deadline_mins`, used in prediction RLS policies
@@ -987,9 +994,9 @@ Helper functions (SECURITY DEFINER):
 | UPDATE | Admin can update others: approve (`pending → approved`, sets `approved_at`), reject (`pending → rejected`), remove (`approved → removed`, sets `departed_at`), block (sets `is_blocked = true`, independent of status — block can coexist with any status). User can update own: leave (`approved → left`, sets `departed_at`). |
 | DELETE | None (status changes only) |
 
-**Max members trigger:** A Postgres trigger `BEFORE INSERT OR UPDATE ON v2_gang_members WHEN NEW.status = 'approved'` checks the count of approved members in the gang. If count >= 20 (code constant `MAX_MEMBERS_PER_GANG`), it raises an exception with a clear error message (e.g., "Gang has reached maximum member capacity"). The error bubbles up through the server action and is returned to the client. Fires on both INSERT (auto-accept direct-to-approved path) and UPDATE (manual approval path).
+**Max members trigger:** A Postgres trigger `BEFORE INSERT OR UPDATE ON v2_gang_members WHEN NEW.status = 'approved'` checks the count of approved members in the gang. If count >= 20 (code constant `MAX_MEMBERS_PER_GANG`), it raises an exception with SQLSTATE `P0001` and message prefix `MAX_MEMBERS_REACHED`. Server action catches and maps to user-friendly error ("Gang has reached maximum member capacity"). Fires on both INSERT (auto-accept direct-to-approved path) and UPDATE (manual approval path).
 
-**Max gangs per user trigger:** A Postgres trigger `BEFORE INSERT/UPDATE ON v2_gang_members` checks the user's total count of rows (excluding the current row) where `status IN ('approved', 'pending')`. Trigger only fires when NEW.status IN ('approved', 'pending') AND (OLD.status IS NULL OR OLD.status NOT IN ('approved', 'pending')) — i.e., only when the row is *transitioning into* an active state. If excluded count >= 40 (code constant `MAX_GANGS_PER_USER`), it raises an exception with a clear error message (e.g., "You have reached the maximum number of gangs"). This correctly handles rejoin (left → pending) without counting the current row twice.
+**Max gangs per user trigger:** A Postgres trigger `BEFORE INSERT/UPDATE ON v2_gang_members` checks the user's total count of rows (excluding the current row) where `status IN ('approved', 'pending')`. Trigger only fires when NEW.status IN ('approved', 'pending') AND (OLD.status IS NULL OR OLD.status NOT IN ('approved', 'pending')) — i.e., only when the row is *transitioning into* an active state. If excluded count >= 40 (code constant `MAX_GANGS_PER_USER`), it raises an exception with SQLSTATE `P0001` and message prefix `MAX_GANGS_REACHED`. Server action catches and maps to user-friendly error. This correctly handles rejoin (left → pending) without counting the current row twice.
 
 #### `v2_gang_league_seasons`
 
@@ -1011,7 +1018,7 @@ Helper functions (SECURITY DEFINER):
 
 | Operation | Policy |
 |-----------|--------|
-| SELECT | Before deadline: own only. After deadline/match live/completed: all approved gang members. |
+| SELECT | Before deadline AND match is still `upcoming`: own only. After deadline OR match status in (`live`, `completed`, `resolved`, `abandoned`, `no_result`): all approved gang members. |
 | INSERT | Approved gang members, own user_id, before deadline, match status = 'upcoming'. Prediction window open time (12h before) enforced at server action level, not RLS — early insertions via direct client access are accepted as harmless (still scored correctly, still bound by deadline). |
 | UPDATE | Same as INSERT (own predictions before deadline) |
 | DELETE | None |
@@ -1096,8 +1103,16 @@ Admin UI for managing these is a Pending Item (not needed for launch).
   - For each (gang, fixture) pair that doesn't already have scenarios → copy active templates from `v2_scenario_templates` (`is_active = true`) into `v2_fixture_scenarios`
   - Replace `{Home Team}` / `{Away Team}` placeholders in titles with actual team names
   - Idempotent — won't create duplicates (unique constraint on `gang_id, fixture_id, slug`)
+  - Each (gang, fixture) pair is seeded within a single transaction (bulk insert); failure on one pair doesn't affect other pairs
 - **Writes to:** `v2_fixture_scenarios`
-- **Also triggered by:** Gang creation — the gang creation server action synchronously calls an RPC `seed_scenarios_for_gang(gang_id)` after inserting the gang, in the same DB transaction as the gang insert. This RPC seeds scenarios for any upcoming fixtures already within the 14-hour window. If the RPC fails, the transaction is rolled back and the gang is not created — the user sees an error and can retry. The 30-minute cron acts as a fallback for any edge cases.
+- **Also triggered by:** Gang creation via a single Postgres RPC `create_gang(gang_name, creator_id)` that runs in one transaction:
+  1. Insert `v2_gangs` row
+  2. Insert creator as admin in `v2_gang_members`
+  3. Insert `v2_gang_league_seasons` enrolling gang in current active season
+  4. Seed `v2_fixture_scenarios` for upcoming fixtures within the 14-hour window (same logic as the cron)
+  5. Return the new gang id
+  - Any failure rolls back the entire transaction. The 30-minute cron acts as a fallback for edge cases.
+  - Server action catches invite code collision exceptions and retries with a new code (up to 5 attempts).
 - **Note:** 14h buffer ensures scenarios are seeded before the 12h prediction window opens, accounting for cron lag
 
 ### `live-poll-resolve-fixtures` — Unified live polling and scenario resolution
@@ -1107,7 +1122,7 @@ Admin UI for managing these is a Pending Item (not needed for launch).
 - **Action:**
   1. **Identify fixtures to poll:** query `v2_league_season_fixtures` where:
      - `status IN ('upcoming', 'live')` AND `start_datetime` within active window (started less than 6 hours ago OR starts within next 1 hour), OR
-     - `status = 'completed'` AND time since status change < 120 minutes (waiting for delayed resolutions like POTM)
+     - `status = 'completed'` AND `now() - status_changed_at < INTERVAL '120 minutes'` (waiting for delayed resolutions like POTM)
   2. **For each fixture, fetch from Sportmonks:** `/fixtures/{id}?include=batting,bowling,runs,manofmatch,tosswon,localteam,visitorteam`
   3. **Status transitions:**
      - `upcoming` → `live` when API returns in-progress status (`1st Innings`, `2nd Innings`, etc.)
@@ -1162,7 +1177,7 @@ Admin UI for managing these is a Pending Item (not needed for launch).
 - **Schedule:** Every 15 minutes
 - **Purpose:** Notify gang members who haven't predicted before the deadline closes
 - **Action:**
-  - For each (fixture, gang) pair where `fixture.status = 'upcoming'` AND the gang is enrolled in the fixture's season: compute gang-specific deadline as `start_datetime - gang_league_season.prediction_deadline_mins`. If `(deadline - INTERVAL '1 hour')` falls within `(now() - INTERVAL '15 minutes', now()]`, the gang's fixture is in the reminder window.
+  - For each (fixture, gang) pair where `fixture.status = 'upcoming'` AND the gang is enrolled in the fixture's season: compute gang-specific deadline as `start_datetime - gang_league_season.prediction_deadline_mins`. If `(deadline - INTERVAL '1 hour')` falls within `(now() - INTERVAL '20 minutes', now()]`, the gang's fixture is in the reminder window (20-min window allows for cron lag; dedup via unique index prevents duplicates).
   - For each (gang, fixture) pair:
     - Get approved gang members
     - Filter out members who already have at least one prediction in `v2_predictions` for this (gang_id, fixture_id)
