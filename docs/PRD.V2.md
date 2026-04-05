@@ -684,6 +684,7 @@ All tables prefixed with `v2_`. Hierarchy: Sport → League → Season → Match
 | `venue_id` | UUID, nullable | Future use (FK to venues table) |
 | `venue_name` | TEXT, NOT NULL | e.g., "M. Chinnaswamy Stadium, Bengaluru" |
 | `status` | ENUM('upcoming', 'live', 'completed', 'resolved', 'abandoned', 'no_result'), default 'upcoming' | |
+| `pre_match_synced` | BOOLEAN, default false | Set to true after pre-match delta sync runs; reset by daily sync if fixture is rescheduled |
 | `created_at` | TIMESTAMPTZ, default now() | |
 
 **Unique constraint:** (season_id, match_number)
@@ -988,3 +989,29 @@ Deadline check uses `prediction_deadline(fixture_id, gang_id)` helper function.
 #### Supabase Realtime
 
 Enabled on: `v2_notifications` only. Live scores use client polling, not realtime.
+
+## Cron Functions
+
+### `sync-fixtures` — Daily fixture and player sync
+
+- **Schedule:** Once a day at 5 AM IST
+- **Purpose:** Import match schedule and player rosters from Sportmonks for the current active season
+- **Action:**
+  - Fetch fixtures for current active season from Sportmonks (`/fixtures?filter[season_id]={id}`)
+  - Upsert `v2_league_teams` for any new/updated teams (match by `api_id`)
+  - Upsert `v2_league_season_fixtures` (match by `api_id`); silently updates existing fixtures including `start_datetime` changes
+  - Reset `pre_match_synced = false` if `start_datetime` changes for a future fixture
+  - For each unique team, fetch `/teams/{id}/squad/{season_id}` → upsert players into `v2_players` (match by `api_id`)
+- **Writes to:** `v2_league_season_fixtures`, `v2_league_teams`, `v2_players`
+- **Assumptions:**
+  - `v2_sports`, `v2_leagues`, `v2_seasons` already exist (created manually via admin dashboard for new seasons)
+
+### `sync-fixtures-pre-match` — Pre-match delta sync
+
+- **Schedule:** Every 15 minutes
+- **Purpose:** Catch last-minute timing changes before a match starts
+- **Action:**
+  - Find fixtures where `start_datetime` is within the next 15–30 minutes AND `pre_match_synced = false`
+  - For each → fetch the specific fixture from Sportmonks → update `start_datetime` if changed → set `pre_match_synced = true`
+- **Writes to:** `v2_league_season_fixtures`
+- **Future enhancement:** Send notification to members if `start_datetime` changes
