@@ -338,7 +338,7 @@
 - **Prediction window:**
   - Opens: 12 hours before match start time
   - Closes: 45 minutes before match start time (default, configurable per gang as relative minutes before match)
-  - Scenarios automatically available when prediction window opens
+  - Scenarios are seeded per gang at least 12 hours before match start (via `seed-scenarios` cron); they become visible and predictable when the prediction window opens
 - **Result resolution:**
   - Match results stored in `v2_fixture_results` (match winner, toss winner, etc.)
   - Triggers prediction resolution via DB function
