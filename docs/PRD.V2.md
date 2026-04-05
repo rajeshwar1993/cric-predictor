@@ -1029,3 +1029,32 @@ Enabled on: `v2_notifications` only. Live scores use client polling, not realtim
 - **Writes to:** `v2_fixture_scenarios`
 - **Also triggered by:** Gang creation — when a new gang is created, immediately seed scenarios for any upcoming fixtures already within the 14-hour window
 - **Note:** 14h buffer ensures scenarios are seeded before the 12h prediction window opens, accounting for cron lag
+
+### `poll-live-scores` — Live match polling
+
+- **Schedule:** Every 15 seconds via `pg_cron` (Supabase supports sub-minute intervals with `'15 seconds'` syntax)
+- **Purpose:** Keep live scorecards updated, capture powerplay snapshots, resolve scenarios progressively as the match unfolds
+- **Action:**
+  1. **Identify fixtures to poll:** query `v2_league_season_fixtures` where `status IN ('upcoming', 'live')` AND `start_datetime` is within the active window (started less than 6 hours ago OR starts within next 30 minutes)
+  2. **For each fixture, fetch from Sportmonks:** `/fixtures/{id}?include=batting,bowling,runs,manofmatch,tosswon,localteam,visitorteam`
+  3. **Status transitions:**
+     - `upcoming` → `live` when API returns in-progress status (`1st Innings`, `2nd Innings`, etc.)
+     - `live` → `completed` when API returns `Finished` (polling handoff to `poll-completed-fixtures`)
+     - → `abandoned` / `no_result` when API returns those statuses
+  4. **Update live scorecard:** write current state to `v2_fixture_live_scores` (scores, overs, batting team, run rate, last 6 balls, both batsmen with on-strike indicator, current bowler, current partnership)
+  5. **Track max overs per team:** defensive against cache anomalies (non-monotonic values seen in real data); only accept values >= stored max
+  6. **Capture powerplay snapshot:** when max(overs) first crosses 6.0 for a team → write powerplay runs and wickets to `v2_fixture_results`
+  7. **Progressive scenario resolution:**
+     - `toss_winner` — resolve as soon as `toss_won_team_id` is populated (works even when status is `upcoming`/`NS`)
+     - `first_wicket_over` — resolve when first batting entry with `fow_balls > 0` appears in innings 1
+     - `home_team_powerplay_runs`, `home_team_powerplay_wickets_lost` — resolve when home team's max overs crosses 6.0
+     - `away_team_powerplay_runs`, `away_team_powerplay_wickets_lost` — same for away team
+     - `home_team_innings_score`, `away_team_innings_score` — resolve when that team's innings ends
+     - `fifty_scored` — resolve as soon as any batting entry has `score >= 50`
+     - `bowler_three_wickets` — resolve as soon as any bowling entry has `wickets >= 3`
+     - For each resolved scenario: set `correct_answer`, `is_resolved = true`, update affected predictions' `is_correct` and `points_earned`
+     - Trigger `update-standings` for affected gangs
+- **Writes to:** `v2_fixture_live_scores`, `v2_fixture_results`, `v2_fixture_scenarios`, `v2_predictions`, `v2_league_season_fixtures`, `v2_gang_fixture_standings`
+- **Notes:**
+  - Does NOT resolve `match_winner`, `top_scorer`, `top_wicket_taker`, `most_sixes_player`, `player_of_match`, `total_*`, `super_over` — those are handled by `poll-completed-fixtures`
+  - Resolution is idempotent — skip scenarios where `is_resolved = true`
