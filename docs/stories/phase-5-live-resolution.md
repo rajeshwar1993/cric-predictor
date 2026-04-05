@@ -117,6 +117,7 @@ Centralizing scoring logic in Postgres ensures atomicity and consistency, and ma
   - Updates all `v2_predictions` for this scenario: `is_correct = (value = p_correct_answer)`, `points_earned = is_correct ? scenario.points : 0`
   - Atomic; errors bubble up
   - Standings triggers (from FND-DB-004) fire automatically after this update
+  - **For range scenarios**: the caller (LIVE-CRON-001) is responsible for converting the raw numeric value (e.g., `185`) to the matching bracket string (e.g., `"180-199"`) BEFORE passing it as `p_correct_answer`. This function always compares `value = p_correct_answer` as strings. The raw numeric value is separately stored in `v2_fixture_results` for reference.
 - [ ] Function: `void_fixture_scenarios(p_fixture_id UUID) RETURNS VOID`
   - Sets `is_voided = true` on all `v2_fixture_scenarios` for the fixture (across all gangs)
   - Standings triggers fire and exclude voided scenarios from aggregations
@@ -209,10 +210,11 @@ The core data processing engine for match days. This is the single most complex 
      - When home team's max first crosses 6.0 → call `extractHomeTeamPowerplayRuns`, `extractHomeTeamPowerplayWickets`, write to `v2_fixture_results`, then resolve the corresponding scenarios
      - Same for away team
   7. Progressive scenario resolution:
-     - For each scenario for this fixture that's `is_resolved = false`:
+     - For each scenario for this fixture that's `is_resolved = false` (already-resolved scenarios are never re-resolved, even if match re-enters a comparable state like a super over):
        - Call the matching extractor based on slug
        - If `resolved: true`:
          - Map player/team API IDs to internal UUIDs where applicable
+         - For range scenarios: map raw numeric value to matching bracket string (via `mapToBracket`) before passing to `resolve_scenario`
          - Call `resolve_scenario(scenario_id, correct_answer)` Postgres function
        - If `resolved: false` → skip
   8. After all scenario updates for a fixture, check `all_scenarios_resolved(fixture_id)`:
@@ -240,8 +242,7 @@ The core data processing engine for match days. This is the single most complex 
 - `docs/PRD.V2-scenario-resolution-report.md` — real data findings
 
 **Technical notes:**
-- Migration required: add `home_team_max_overs_seen` and `away_team_max_overs_seen` DECIMAL columns to `v2_fixture_live_scores`
-- OR store max overs in a small key-value state table — simpler: add columns to live_scores
+- Max overs tracking: uses `home_team_max_overs_seen` and `away_team_max_overs_seen` columns on `v2_fixture_live_scores` (created in FND-DB-001); reads current max, compares with incoming overs, only updates if higher; captures powerplay snapshot when max first crosses 6.0
 - `pg_cron` interval: `SELECT cron.schedule('live-poll', '15 seconds', $$SELECT net.http_post(url:='...')$$)`
 - Sportmonks API rate limit: monitor — 1 call per fixture per 15s. For 1 live match = 240 calls/hour. Within plan quota.
 - `results_available` notification: use `ON CONFLICT DO NOTHING` with the unique index

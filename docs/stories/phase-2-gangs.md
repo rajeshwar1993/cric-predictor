@@ -15,7 +15,76 @@
 
 ---
 
-## GANG-DB-001: create_gang RPC
+## GANG-DB-001: Scenario seeding Postgres function
+
+**Phase:** Phase 2 — Gangs
+**Priority:** P0
+**Estimated effort:** Medium (4–6 hours)
+**Status:** Not started
+
+**User story:**
+> As the developer,
+> I want a reusable Postgres function that seeds scenarios for a given (gang, fixture) pair from the scenario templates,
+> So that both the `create_gang` RPC and the `seed-scenarios` cron share the same logic without duplication.
+
+**Context / Why:**
+Scenario seeding is used in two places: (1) gang creation (for existing upcoming fixtures in the 14-hour window), (2) the 30-minute cron that catches newly-in-window fixtures. A shared function prevents drift.
+
+**Acceptance criteria:**
+- [ ] Migration file: `supabase-2/migrations/007_seed_scenarios_function.sql`
+- [ ] Function: `seed_fixture_scenarios_for_gang(p_gang_id UUID, p_fixture_id UUID) RETURNS VOID`
+- [ ] Implementation:
+  1. Look up the fixture to get `home_team_id`, `away_team_id` → fetch team short codes from `v2_league_teams`
+  2. Look up `v2_seasons` via `fixture.season_id` → get `league_id`
+  3. For each row in `v2_scenario_templates` where `is_active = true` AND `sport_id` matches the league's sport:
+     - Replace `{Home Team}` / `{Away Team}` placeholders in `title` with real team codes
+     - INSERT into `v2_fixture_scenarios` with copied template values (template_id, league_id, season_id, fixture_id, gang_id, slug, title, input_type, options, points, resolution_phase)
+     - Use `ON CONFLICT (gang_id, fixture_id, slug) DO NOTHING` for idempotency
+  4. Single transaction per call (atomic — either all template rows insert or none)
+- [ ] Marked `SECURITY DEFINER` (writes bypass RLS)
+- [ ] Raises exception if fixture not found
+- [ ] Helper: `seed_fixture_scenarios_for_all_active_gangs(p_fixture_id UUID) RETURNS VOID` — calls the per-gang function for every non-deleted active gang enrolled in the fixture's season
+
+**Out of scope:**
+- The cron that invokes this function (SYNC-CRON-003 in Phase 3)
+- The `create_gang` RPC that calls it (GANG-DB-002)
+
+**Dependencies:** FND-DB-001 through FND-DB-005 (schema, RLS, seed data including `v2_scenario_templates`)
+**Blocks:** GANG-DB-002, SYNC-CRON-003
+
+**PRD references:**
+- [seed-scenarios](../PRD.V2.md#seed-scenarios--scenario-seeding-per-gang-per-fixture)
+- [v2_fixture_scenarios](../PRD.V2.md#v2_fixture_scenarios--prediction-questions-for-a-fixture-seeded-from-templates)
+- [Scenarios § Structure](../PRD.V2.md#scenarios)
+
+**Technical notes:**
+- Placeholder replacement: `REPLACE(REPLACE(t.title, '{Home Team}', home_team.code), '{Away Team}', away_team.code)`
+- `v2_scenario_templates` filter uses `is_active = true` — `total_match_catches` is excluded
+- Idempotent via unique constraint on `(gang_id, fixture_id, slug)`
+
+**Analytics events:** None (DB function)
+
+**Unit tests:**
+- [ ] Seeds correct number of active templates (19 for IPL)
+- [ ] Skips inactive templates (`total_match_catches`)
+- [ ] Re-running is no-op (ON CONFLICT)
+- [ ] Placeholders replaced correctly (no `{Home Team}` in resulting titles)
+- [ ] Missing fixture raises exception
+- [ ] `seed_fixture_scenarios_for_all_active_gangs` filters out deleted gangs
+- [ ] Excludes gangs where `v2_gang_league_seasons.is_active = false`
+
+**Test plan:**
+- [ ] Call function with a real gang + fixture, verify 19 scenarios inserted
+- [ ] Call again, verify no duplicates
+- [ ] Spot-check titles: home/away team codes substituted
+
+**Open questions:** None
+
+---
+
+---
+
+## GANG-DB-002: create_gang RPC
 
 **Phase:** Phase 2 — Gangs
 **Priority:** P0
@@ -31,7 +100,7 @@
 Per PRD Implementation Plan, gang creation must be a single RPC (server actions can't share transactions with separate RPC calls). Everything happens in one `BEGIN ... COMMIT` block.
 
 **Acceptance criteria:**
-- [ ] Migration file: `supabase-2/migrations/007_create_gang_rpc.sql`
+- [ ] Migration file: `supabase-2/migrations/008_create_gang_rpc.sql`
 - [ ] RPC: `create_gang(gang_name TEXT, creator_id UUID) RETURNS UUID`
 - [ ] Implementation (all in one transaction):
   1. Validate `gang_name` length (3–50 chars); raise exception `P0001` with `INVALID_GANG_NAME` prefix otherwise
@@ -40,16 +109,17 @@ Per PRD Implementation Plan, gang creation must be a single RPC (server actions 
   4. INSERT into `v2_gang_members` (`gang_id`, `user_id = creator_id`, `role = 'admin'`, `status = 'approved'`, `requested_at = now()`, `approved_at = now()`)
   5. Find the active IPL 2026 season: `SELECT id, league_id FROM v2_seasons WHERE is_active = true LIMIT 1`
   6. INSERT into `v2_gang_league_seasons` (`gang_id`, `league_id`, `season_id`, `prediction_deadline_mins = 45`, `is_active = true`)
-  7. For each fixture where `start_datetime - INTERVAL '14 hours' <= now() AND start_datetime > now() AND status = 'upcoming'` in the season → insert scenario rows into `v2_fixture_scenarios` by copying active templates from `v2_scenario_templates` (placeholder-replaced titles)
+  7. For each fixture where `start_datetime - INTERVAL '14 hours' <= now() AND start_datetime > now() AND status = 'upcoming'` in the season → call `seed_fixture_scenarios_for_gang(new_gang_id, fixture_id)` from GANG-DB-001
   8. RETURN the new gang id
 - [ ] Marked `SECURITY DEFINER` to bypass RLS on writes
 - [ ] Uses advisory lock on creator_id to prevent concurrent max-gangs races
 - [ ] Helper function `generate_invite_code()` creates a 6-char uppercase alphanumeric string
-- [ ] Placeholder replacement: `{Home Team}` and `{Away Team}` in scenario titles replaced with team short codes from `v2_league_teams`
 
-**Out of scope:** Server action (GANG-API-001)
+**Out of scope:**
+- Scenario seeding logic (GANG-DB-001)
+- Server action wrapper (GANG-API-001)
 
-**Dependencies:** FND-DB-001 through FND-DB-005 (schema + seeds must be in place)
+**Dependencies:** GANG-DB-001, FND-DB-001 through FND-DB-005
 **Blocks:** GANG-API-001
 
 **PRD references:**
@@ -113,9 +183,9 @@ Thin wrapper around the RPC — handles auth check, input validation, error mapp
 - [ ] Returns the new gang id so UI can redirect to `/group/{gangId}`
 - [ ] Calls `revalidatePath('/dashboard')` after success
 
-**Out of scope:** RPC implementation (GANG-DB-001), UI form (GANG-UI-002)
+**Out of scope:** RPC implementation (GANG-DB-002), UI form (GANG-UI-002)
 
-**Dependencies:** GANG-DB-001, FND-004, FND-005
+**Dependencies:** GANG-DB-002, FND-004, FND-005
 **Blocks:** GANG-UI-002
 
 **PRD references:**
@@ -196,7 +266,7 @@ Handles both auto-accept gangs (immediate join) and manual-approval gangs (pendi
 - Join page UI (GANG-UI-011)
 - Notification delivery (handled by INSERT into `v2_notifications`)
 
-**Dependencies:** FND-DB-002 (helper functions), FND-DB-004 (triggers), GANG-DB-001
+**Dependencies:** FND-DB-002 (helper functions), FND-DB-004 (triggers), GANG-DB-002
 **Blocks:** GANG-UI-011
 
 **PRD references:**
@@ -364,11 +434,73 @@ Members can leave voluntarily. Admins cannot leave (must delete the gang instead
 
 ---
 
+## GANG-DB-003: delete_gang RPC
+
+**Phase:** Phase 2 — Gangs
+**Priority:** P0
+**Estimated effort:** Small (3–5 hours)
+**Status:** Not started
+
+**User story:**
+> As the developer,
+> I want a Postgres RPC that soft-deletes a gang and notifies all approved members in a single transaction,
+> So that the `deleteGang` server action has a clean atomic operation.
+
+**Context / Why:**
+Per PRD, gang deletion must: (1) soft-delete the gang row, (2) send notifications to all active members. Must be atomic to prevent partial states.
+
+**Acceptance criteria:**
+- [ ] Migration file: `supabase-2/migrations/009_delete_gang_rpc.sql`
+- [ ] Function: `delete_gang(p_gang_id UUID, p_caller_id UUID) RETURNS VOID` marked `SECURITY DEFINER`
+- [ ] Implementation (all in one transaction):
+  1. Verify caller is admin: `SELECT 1 FROM v2_gang_members WHERE gang_id = p_gang_id AND user_id = p_caller_id AND role = 'admin' AND status = 'approved'` → if not, raise exception with SQLSTATE `42501` and message `NOT_GANG_ADMIN`
+  2. Use `SELECT ... FOR UPDATE` on the gang row to prevent concurrent deletions
+  3. UPDATE `v2_gangs`: `is_deleted = true`, `deleted_at = now()`
+  4. Query all approved members of the gang with `v2_profiles.is_deleted = false`
+  5. For each such member, INSERT a `gang_deleted` notification with the gang name in the message; use `ON CONFLICT DO NOTHING` via the unique partial index
+  6. Any failure → automatic rollback
+- [ ] Returns void on success; caller queries outside if needed
+- [ ] Raises exception if gang not found or caller is not admin
+
+**Out of scope:**
+- Server action wrapper (GANG-API-005)
+- UI delete button (in GANG-UI-012)
+
+**Dependencies:** FND-DB-001, FND-DB-002, FND-DB-003 (dedup index), FND-DB-004
+**Blocks:** GANG-API-005
+
+**PRD references:**
+- [Gangs § Leaving & Deletion](../PRD.V2.md#gangs)
+- [v2_gangs](../PRD.V2.md#v2_gangs--user-created-groups)
+- [v2_notifications § type enum includes gang_deleted](../PRD.V2.md#v2_notifications--user-notifications)
+
+**Technical notes:**
+- `FOR UPDATE` lock serializes concurrent deletion attempts
+- Message template: e.g., `'The gang {gang_name} has been deleted by the admin.'`
+- `gang_deleted` is in the notification type enum
+
+**Analytics events:** None (DB function; event fires from server action)
+
+**Unit tests:**
+- [ ] Admin can delete: gang marked deleted, notifications created
+- [ ] Non-admin raises exception, no changes
+- [ ] Gang not found raises exception
+- [ ] Notifications only for non-deleted profiles
+- [ ] Re-running is idempotent (dedup index prevents duplicate notifications)
+
+**Test plan:**
+- [ ] Create gang with 3 members, run RPC as admin, verify gang deleted and 2 notifications sent
+- [ ] Run again, verify no additional notifications
+
+**Open questions:** None
+
+---
+
 ## GANG-API-005: deleteGang server action
 
 **Phase:** Phase 2 — Gangs
 **Priority:** P0
-**Estimated effort:** Medium (4–6 hours)
+**Estimated effort:** Small (2–3 hours)
 **Status:** Not started
 
 **User story:**
@@ -377,48 +509,42 @@ Members can leave voluntarily. Admins cannot leave (must delete the gang instead
 > So that it's removed from the platform and members are notified.
 
 **Context / Why:**
-Soft-delete. Notifies all approved members. Must be atomic.
+Thin wrapper around the `delete_gang` RPC (GANG-DB-003). Handles auth, error mapping, analytics, and redirect.
 
 **Acceptance criteria:**
 - [ ] Server action `deleteGang(gangId: string)` in `src/lib/actions/gangs.ts`
-- [ ] Uses a Postgres RPC `delete_gang(gang_id UUID)` that runs in one transaction:
-  1. Verify caller is admin (via `is_gang_admin`)
-  2. Update `v2_gangs`: `is_deleted = true`, `deleted_at = now()`
-  3. Query all approved members with `is_deleted = false` on their profile
-  4. Insert `gang_deleted` notifications for each member (service role bypasses RLS)
-  5. Return success
-- [ ] Server action catches RPC failure and returns user-friendly error
-- [ ] Fires `GANG_DELETED` PostHog event
-- [ ] `revalidatePath('/dashboard')`
+- [ ] Requires authenticated user
+- [ ] Calls the `delete_gang(gang_id, auth.uid())` RPC from GANG-DB-003
+- [ ] Error mapping:
+  - `NOT_GANG_ADMIN` → "Only the admin can delete this gang"
+  - Other errors → generic fallback
+- [ ] Fires `GANG_DELETED` PostHog event on success
+- [ ] `revalidatePath('/dashboard')` on success
 - [ ] Redirects to `/dashboard` on success
 
-**Out of scope:** Delete button UI (in Gang Settings page, GANG-UI-012)
+**Out of scope:**
+- The RPC itself (GANG-DB-003)
+- Delete button UI (GANG-UI-012)
 
-**Dependencies:** FND-DB-001, FND-DB-002, FND-DB-004
+**Dependencies:** GANG-DB-003, FND-004, FND-005
 **Blocks:** GANG-UI-012
 
 **PRD references:**
 - [Gangs § Leaving & Deletion](../PRD.V2.md#gangs)
-- [v2_gangs](../PRD.V2.md#v2_gangs--user-created-groups)
 
 **Technical notes:**
-- Use `FOR UPDATE` on the gang row to prevent concurrent deletes
-- Notification insert must filter `v2_profiles.is_deleted = false`
+- Uses `createClient()` server helper to get auth.uid(); RPC handles the rest in one transaction
 
 **Analytics events:**
-- `GANG_DELETED` — `{ gang_id, member_count }`, distinct_id: user.id
+- `GANG_DELETED` — `{ gang_id, member_count }`, distinct_id: user.id (count from a query before the RPC or returned from RPC)
 
 **Unit tests:**
-- [ ] Admin deletes gang → soft-delete applied, notifications created
-- [ ] Non-admin attempt → error
-- [ ] RPC failure → transaction rolls back, no partial state
-- [ ] Notifications only for non-deleted profiles
+- [ ] Admin calls action → RPC invoked, event fired, redirects
+- [ ] Non-admin → error "Only the admin can delete this gang"
+- [ ] RPC failure → returned as user-friendly error
 
 **Test plan:**
-- [ ] Create a test gang with members, delete it, verify:
-  - Gang no longer appears in member dashboards
-  - All members see `gang_deleted` notification
-  - Gang row has `is_deleted = true`
+- [ ] As admin, delete a test gang, verify redirect + gang vanished from dashboard + members notified
 
 **Open questions:** None
 
@@ -565,7 +691,7 @@ Inline form on the Dashboard (and possibly elsewhere). Single input, submit butt
 
 **Acceptance criteria:**
 - [ ] Component: `src/components/gangs/create-gang-form.tsx` (client component)
-- [ ] Single text input for gang name (2–50 chars, autofocus optional)
+- [ ] Single text input for gang name (3–50 chars, autofocus optional)
 - [ ] Submit button ("Create Gang")
 - [ ] Calls `createGang` server action
 - [ ] Loading state during submit (button disabled, spinner)

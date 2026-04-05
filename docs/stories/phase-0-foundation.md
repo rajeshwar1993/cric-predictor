@@ -276,7 +276,10 @@ PRD specifies PostHog for analytics (autocapture + custom events + error reporti
 - [ ] Server action errors automatically captured (wrapper util or try/catch pattern documented)
 - [ ] Supabase Edge Function errors captured via server-side PostHog client
 - [ ] `PostHog API key` required in env vars (`NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST`)
-- [ ] Events constants file pre-populated with all event names from PRD Analytics section (auth, gangs, predictions, notifications, performance)
+- [ ] Events constants file pre-populated with all event names from PRD Analytics section (auth, gangs, predictions, notifications, performance). Later stories MAY add additional events by extending this file — FND-005 just seeds it.
+- [ ] **Web Vitals reporter:** `src/components/analytics/web-vitals-reporter.tsx` — client component using `useReportWebVitals` hook from Next.js, fires `WEB_VITALS_LCP`, `WEB_VITALS_INP`, `WEB_VITALS_CLS` events with the metric value as a property. Mounted in root layout.
+- [ ] **Server action timing wrapper:** `src/lib/analytics/timing.ts` — `withTiming(name, fn)` helper wraps a server action, measures duration, fires `SERVER_ACTION_DURATION` event with `{ action_name, duration_ms }`. Reusable across all server actions.
+- [ ] **Page load time:** hook into Next.js navigation events to fire `PAGE_LOAD_TIME` on route change complete.
 
 **Out of scope:**
 - Firing specific events — done per-feature
@@ -498,7 +501,7 @@ PRD specifies detailed RLS policies for every table. These MUST be in place befo
   - `v2_gang_members` — SELECT per PRD (approved sees approved, admin sees all, own always); INSERT per PRD; UPDATE per PRD; no DELETE
   - `v2_gang_league_seasons` — SELECT approved members; INSERT via service role; UPDATE admin only
   - `v2_fixture_scenarios` — SELECT approved members; writes via service role only
-  - `v2_predictions` — SELECT per deadline/status rule (see PRD); INSERT/UPDATE per PRD; no DELETE
+  - `v2_predictions` SELECT: (before deadline AND fixture.status = 'upcoming' → own rows only) OR (after deadline OR fixture.status IN ('live','completed','resolved','abandoned','no_result') → all approved gang members' rows); INSERT/UPDATE: approved gang member, own user_id, fixture.status = 'upcoming', before deadline (via `prediction_deadline` helper); no DELETE
   - `v2_gang_fixture_standings`, `v2_gang_season_standings` — SELECT approved members; writes via service role
   - `v2_notifications` — SELECT own; UPDATE own (mark read); writes via service role
 - [ ] Supabase Realtime enabled on `v2_notifications` only

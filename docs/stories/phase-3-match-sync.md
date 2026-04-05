@@ -85,69 +85,7 @@ Hardcoding Sportmonks endpoints and field names in every cron function creates m
 
 ---
 
-## SYNC-DB-001: Reusable seed-scenarios Postgres function
-
-**Phase:** Phase 3 — Match Sync
-**Priority:** P0
-**Estimated effort:** Medium (4–6 hours)
-**Status:** Not started
-
-**User story:**
-> As the developer,
-> I want a reusable Postgres function that seeds scenarios for a given (gang, fixture) pair from the scenario templates,
-> So that both the `create_gang` RPC and the `seed-scenarios` cron share the same logic without duplication.
-
-**Context / Why:**
-Per PRD, scenario seeding logic is used in two places: (1) gang creation (for existing upcoming fixtures), (2) the 30-minute cron. A shared function prevents drift.
-
-**Acceptance criteria:**
-- [ ] Migration file: `supabase-2/migrations/008_seed_scenarios_function.sql`
-- [ ] Function: `seed_fixture_scenarios_for_gang(p_gang_id UUID, p_fixture_id UUID) RETURNS VOID`
-- [ ] Implementation:
-  1. Look up the fixture to get `home_team_id`, `away_team_id` → fetch team short codes from `v2_league_teams`
-  2. Look up `v2_seasons` via `fixture.season_id` → get `league_id`
-  3. For each row in `v2_scenario_templates` where `is_active = true`:
-     - Replace `{Home Team}` / `{Away Team}` placeholders in `title` with real team codes
-     - INSERT into `v2_fixture_scenarios` with copied template values
-     - Use `ON CONFLICT (gang_id, fixture_id, slug) DO NOTHING` for idempotency
-  4. Single transaction per call (atomic — either all template rows insert or none)
-- [ ] Marked `SECURITY DEFINER` (writes bypass RLS)
-- [ ] Raises exception if fixture not found or active season doesn't exist
-- [ ] Helper: `seed_fixture_scenarios_for_all_active_gangs(p_fixture_id UUID)` — calls the per-gang function for every active gang enrolled in the fixture's season
-- [ ] `create_gang` RPC (from GANG-DB-001) is refactored to call this function instead of having inline logic
-
-**Out of scope:**
-- The cron that invokes this function (SYNC-CRON-003)
-
-**Dependencies:** FND-DB-001 through FND-DB-005, GANG-DB-001
-**Blocks:** SYNC-CRON-003
-
-**PRD references:**
-- [seed-scenarios](../PRD.V2.md#seed-scenarios--scenario-seeding-per-gang-per-fixture)
-- [v2_fixture_scenarios](../PRD.V2.md#v2_fixture_scenarios--prediction-questions-for-a-fixture-seeded-from-templates)
-- [Scenarios § Structure](../PRD.V2.md#scenarios)
-
-**Technical notes:**
-- Placeholder replacement: `REPLACE(REPLACE(t.title, '{Home Team}', home_team.code), '{Away Team}', away_team.code)`
-- `v2_scenario_templates` filter: `WHERE is_active = true AND sport_id = (SELECT sport_id FROM v2_leagues WHERE id = (SELECT league_id FROM v2_seasons WHERE id = fixture.season_id))`
-- Idempotent via unique constraint on `(gang_id, fixture_id, slug)`
-
-**Analytics events:** None (DB function)
-
-**Unit tests:**
-- [ ] Seeds correct number of active templates
-- [ ] Skips inactive templates (total_match_catches)
-- [ ] Re-running is no-op (ON CONFLICT)
-- [ ] Placeholders replaced correctly (no `{Home Team}` in resulting titles)
-- [ ] Missing fixture raises exception
-- [ ] Error if no active season
-
-**Test plan:**
-- [ ] Call function with a real gang + fixture, verify 19 scenarios inserted
-- [ ] Call again, verify no duplicates
-- [ ] Spot-check titles: home/away team codes substituted
-
-**Open questions:** None
+_Note: The reusable seeding function (formerly `SYNC-DB-001`) has been moved to Phase 2 as `GANG-DB-001` so that `GANG-DB-002 create_gang RPC` can call it directly. Phase 3 depends on it being in place._
 
 ---
 
@@ -173,10 +111,10 @@ The core data pipeline. Per PRD, runs once a day at 5 AM IST (23:30 UTC prior da
 - [ ] Steps:
   1. Fetch season fixtures via Sportmonks client (`getSeasonFixtures(seasonId, ['localteam', 'visitorteam', 'venue'])`)
   2. For each fixture:
-     - Upsert home and away teams into `v2_league_teams` (match by `api_id`)
+     - Upsert teams into `v2_league_teams`: INSERT new teams only (by `api_id`). Do NOT overwrite existing teams' `color`, `logo_url`, or `name` since those are curated via the seed migration (FND-DB-005). Only update `api_id` if missing.
      - Upsert fixture into `v2_league_season_fixtures` (match by `api_id`)
      - Detect `start_datetime` changes vs stored value → if changed, reset `pre_match_synced = false`
-     - Do NOT overwrite fixture status if already `live`, `completed`, `resolved` (only update metadata)
+     - Do NOT overwrite fixture status if already `live`, `completed`, `resolved` (only update metadata like venue_name, match_number)
   3. Collect unique team IDs from the season → for each team:
      - Fetch team squad via `getTeamSquad(teamId, seasonId)`
      - Upsert players into `v2_players` (match by `api_id`)
@@ -337,7 +275,7 @@ Per PRD, scenarios must be seeded at least 12 hours before each match. The cron 
          WHERE fs.gang_id = g.id AND fs.fixture_id = f.id
        )
      ```
-  2. For each pair, call `seed_fixture_scenarios_for_gang(gang_id, fixture_id)` (from SYNC-DB-001)
+  2. For each pair, call `seed_fixture_scenarios_for_gang(gang_id, fixture_id)` (from GANG-DB-001 in Phase 2)
   3. Count successes and failures
   4. Return summary JSON: `{ pairs_processed, pairs_seeded, errors: [...] }`
 - [ ] Per-pair transaction: failure on one pair doesn't abort the cron
@@ -346,10 +284,10 @@ Per PRD, scenarios must be seeded at least 12 hours before each match. The cron 
 - [ ] Runs via pg_cron directly (no edge function wrapper needed since it's DB-only)
 
 **Out of scope:**
-- Scenario seeding during gang creation (already in GANG-DB-001 via SYNC-DB-001)
+- Scenario seeding during gang creation (handled in GANG-DB-002 via the same helper function)
 - Edge function wrapper (not needed for DB-only work)
 
-**Dependencies:** SYNC-DB-001
+**Dependencies:** GANG-DB-001 (Phase 2 — provides `seed_fixture_scenarios_for_gang` function)
 **Blocks:** Prediction flow in Phase 4 (scenarios must exist to predict)
 
 **PRD references:**

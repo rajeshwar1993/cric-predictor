@@ -13,6 +13,69 @@
 
 ---
 
+## AUTH-DB-001: delete_account RPC
+
+**Phase:** Phase 1 — Auth & Onboarding
+**Priority:** P1
+**Estimated effort:** Medium (1 day)
+**Status:** Not started
+
+**User story:**
+> As the developer,
+> I want a Postgres RPC that handles account deletion in a single transaction including admin auto-promotion,
+> So that the `deleteAccount` server action has a clean atomic operation to call.
+
+**Context / Why:**
+Per PRD, account deletion must handle the case where the user is admin of one or more gangs — auto-promoting the earliest-joined approved member, or auto-deleting the gang if no eligible candidate. All in one transaction so nothing is half-applied.
+
+**Acceptance criteria:**
+- [ ] Migration file: `supabase-2/migrations/012_delete_account_rpc.sql`
+- [ ] Function: `delete_account(p_user_id UUID) RETURNS VOID` marked `SECURITY DEFINER`
+- [ ] Implementation (all in one transaction):
+  1. Find all gangs where the user has `role = 'admin'` via `v2_gang_members`
+  2. For each admin gang:
+     - Find the earliest-joined approved member with `is_deleted = false` on their profile, order by `approved_at ASC`, excluding the user being deleted
+     - If a candidate is found: promote them (set `v2_gang_members.role = 'admin'`), update `v2_gangs.created_by` to new admin
+     - If no candidate: soft-delete the gang (`is_deleted = true`, `deleted_at = now()`), insert `gang_deleted` notifications for all remaining approved members whose profile is not deleted
+  3. Mark the user's profile as deleted: `v2_profiles.is_deleted = true`, `deleted_at = now()`
+  4. Any failure → automatic rollback of all changes
+- [ ] Raises exception with SQLSTATE `P0001` if user_id not found
+- [ ] Notification inserts use the unique `uniq_notifications_dedup` index to prevent duplicates
+
+**Out of scope:**
+- Server action wrapper (AUTH-API-006)
+- Sign-out flow (AUTH-API-003)
+
+**Dependencies:** FND-DB-001, FND-DB-002, FND-DB-003, FND-DB-004
+**Blocks:** AUTH-API-006
+
+**PRD references:**
+- [Authentication § Admin account deletion](../PRD.V2.md#authentication)
+- [v2_profiles § is_deleted](../PRD.V2.md#v2_profiles--user-accounts)
+
+**Technical notes:**
+- Use advisory lock on user_id to prevent concurrent deletion races
+- Filter out deleted profiles from both candidate search and notification recipient list
+- `is_gang_admin` helper from FND-DB-002 can verify caller but isn't strictly needed inside a SECURITY DEFINER function
+
+**Analytics events:** None (DB function; event fires from server action)
+
+**Unit tests:**
+- [ ] User with no gangs → profile deleted, no gang changes
+- [ ] User is admin of 1 gang with 2 other approved members → earliest one promoted
+- [ ] User is admin of gang where all other members are deleted → gang soft-deleted, no notifications
+- [ ] User is admin of gang with mix of deleted and non-deleted members → promoted to first non-deleted member
+- [ ] Non-existent user_id → exception
+- [ ] Concurrent calls don't double-promote
+
+**Test plan:**
+- [ ] Create test scenarios for each branch
+- [ ] Run RPC, verify expected state
+
+**Open questions:** None
+
+---
+
 ## AUTH-API-001: signInWithMagicLink server action
 
 **Phase:** Phase 1 — Auth & Onboarding
@@ -349,23 +412,18 @@ Per PRD, account deletion is soft-delete. If the user is admin of any gangs, aut
 **Acceptance criteria:**
 - [ ] Server action `deleteAccount()` in `src/lib/actions/account.ts`
 - [ ] Requires authenticated user
-- [ ] Calls a Postgres RPC `delete_account(user_id UUID)` that runs in a single transaction:
-  1. Find all gangs where user is admin
-  2. For each admin gang:
-     - Find earliest-joined approved member with `is_deleted = false` (order by `approved_at ASC`)
-     - If found: promote to admin (`role = 'admin'`) and update `v2_gangs.created_by`
-     - If not found: soft-delete the gang (`is_deleted = true`, `deleted_at = now()`)
-     - Send `gang_deleted` notification to all approved members with `is_deleted = false` (only for gangs being deleted)
-  3. Mark profile as deleted: `v2_profiles.is_deleted = true`, `deleted_at = now()`
-  4. Return success
-- [ ] After RPC succeeds, call `signOut()` (also clears cookies and redirects)
-- [ ] Fires `AUTH_ACCOUNT_DELETED` PostHog event
+- [ ] Calls the `delete_account(user_id UUID)` RPC from AUTH-DB-001 (single transaction handles gangs, notifications, profile soft-delete)
+- [ ] After RPC succeeds, sign out the user (clear Supabase session + cookies + redirect to `/`)
+- [ ] Sign-out should share the core logic with `signOut` server action (AUTH-API-003) — extract into a helper to avoid calling one server action from another
+- [ ] Fires `AUTH_ACCOUNT_DELETED` PostHog event before sign-out (so distinct_id is still set)
 - [ ] Returns error if RPC fails (rolls back all changes)
 
-**Out of scope:** UI trigger — delete account button on Profile page (covered in Phase 6)
+**Out of scope:**
+- The RPC itself (AUTH-DB-001)
+- UI trigger — delete account button on Profile page (covered in Phase 6)
 
-**Dependencies:** FND-DB-001, FND-DB-004, AUTH-API-003
-**Blocks:** None (UI story in Phase 6)
+**Dependencies:** AUTH-DB-001, AUTH-API-003, FND-004, FND-005
+**Blocks:** LB-UI-005 (Profile page uses this)
 
 **PRD references:**
 - [Authentication § Account deletion](../PRD.V2.md#authentication)

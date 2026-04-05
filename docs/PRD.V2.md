@@ -837,6 +837,8 @@ All tables prefixed with `v2_`. Hierarchy: Sport → League → Season → Match
 | `current_partnership` | TEXT, nullable | e.g., "78(52)" |
 | `raw_scorecard_json` | JSONB, nullable | Full API response for reference |
 | `last_polled_at` | TIMESTAMPTZ, nullable | When last updated from API |
+| `home_team_max_overs_seen` | DECIMAL(4,1), nullable | Max overs seen for home team across polls (defensive against Sportmonks cache anomalies; used to detect powerplay crossing) |
+| `away_team_max_overs_seen` | DECIMAL(4,1), nullable | Max overs seen for away team across polls |
 | `updated_at` | TIMESTAMPTZ, default now() | |
 
 ### `v2_scenario_templates` — System scenario definitions (reference table)

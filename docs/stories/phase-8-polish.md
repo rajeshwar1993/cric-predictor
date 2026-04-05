@@ -36,7 +36,7 @@ Phase 0 (FND-002) had a placeholder landing page. This is the real marketing fro
 - [ ] Sections per PRD:
   1. **Hero Section:**
      - App logo and "Bragg" wordmark with gradient text
-     - Tagline: "Think you know cricket? Prove it."
+     - Tagline: "Predict right. Prove it. Bragg." (per PRD Product Feel)
      - Sub-tagline: "The IPL prediction game for bragging rights..."
      - CTA buttons: "Start Your Gang" → `/login?redirectTo=/dashboard`, "Got an Invite?" → `/login`
      - Ambient background effects: stadium floodlight glows, diagonal energy lines, grain overlay (per existing design-system)
@@ -63,7 +63,7 @@ Phase 0 (FND-002) had a placeholder landing page. This is the real marketing fro
 - Auth flow (Phase 1)
 - Dashboard (Phase 2)
 
-**Dependencies:** FND-006, AUTH-UI-004 (not used here, but landing uses design system)
+**Dependencies:** FND-006, AUTH-UI-005 (footer reused on landing)
 **Blocks:** None (final touch)
 
 **PRD references:**
