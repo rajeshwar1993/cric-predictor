@@ -122,6 +122,7 @@
   - Prediction status: shows which members have predicted (for the next match)
 - **Live Matches**
   - Live scorecard with scores, overs, batting team (auto-polls for updates)
+  - "Stale data" indicator shown if `last_polled_at` is more than 1 minute old
   - Current run rate
   - Last 6 balls breakdown
   - Both batsmen displayed with individual scores, on-strike batsman indicated
@@ -571,10 +572,12 @@ All data available via single call: `GET /fixtures/{id}?include=batting,bowling,
   - `redirectTo` params sanitized to relative paths only (prevents open redirect attacks)
 - **Rate limiting:**
   - Magic link: 60-second cooldown + Supabase email rate limits
+  - Server actions: per-user rate limits on mutations (gang creation, join requests, prediction submissions, profile edits) — specific limits TBD during implementation
 - **Data privacy:**
   - No passwords stored (magic link auth)
   - Analytics use hashed identifiers for pre-auth events (no PII leak)
   - Date of birth stored but never displayed publicly
+- **Service role key:** stored as environment variable on server only (edge functions and server actions); never exposed to client. Used to bypass RLS for system operations (cron functions, profile creation trigger, gang creation enrollment).
 - **CSRF:** protected by Supabase's built-in token handling
 - **XSS:** React's default escaping + no `dangerouslySetInnerHTML` usage
 
@@ -1036,6 +1039,18 @@ Enabled on: `v2_notifications` only. Live scores use client polling, not realtim
 
 ## Cron Functions
 
+**Seed data:** For launch (IPL 2026), the following tables are populated via SQL migration files (not a cron):
+- `v2_sports` (Cricket)
+- `v2_leagues` (IPL)
+- `v2_seasons` (IPL 2026, `is_active = true`)
+- `v2_league_teams` (10 IPL franchises with names, codes, colors, logo URLs, Sportmonks api_ids)
+- `v2_scenario_templates` (20 scenario definitions; `total_match_catches` set to `is_active = false`)
+
+Admin UI for managing these is a Pending Item (not needed for launch).
+
+**Execution model:** All scheduled jobs are managed via Supabase `pg_cron`. Functions that make HTTP calls to Sportmonks (`sync-fixtures`, `sync-fixtures-pre-match`, `live-poll-resolve-fixtures`) are implemented as Supabase Edge Functions and triggered from pg_cron via `pg_net` (HTTP POST to the edge function endpoint). Functions that only touch the database (`seed-scenarios`, `deadline-reminders`) can be implemented as Postgres functions called directly from pg_cron. `update-standings` is not a cron — it runs as Postgres triggers on data changes.
+
+
 ### `sync-fixtures` — Daily fixture and player sync
 
 - **Schedule:** Once a day at 5 AM IST (pg_cron uses UTC, so schedule as `30 23 * * *` for 05:00 IST = 23:30 UTC previous day)
@@ -1155,6 +1170,7 @@ Enabled on: `v2_notifications` only. Live scores use client polling, not realtim
 - Partial failures don't block other work — one fixture failing doesn't stop processing of others
 - Alert system admin after 3 consecutive failures (not on single failures)
 - On Sportmonks rate limit (HTTP 429): drop the request, log error, notify admin, wait for next cron cycle
+- Sportmonks quota: confirm plan limits before launch; daily polling volume (~4/min × 180 min live × 1 match/day = ~720 live calls/day plus fixture syncs) should be within quota
 
 **Per-function retry strategy:**
 
@@ -1190,6 +1206,11 @@ Open items to address in future iterations:
 - Currently marked `is_active = false` in `v2_scenario_templates`
 - Blocker: Sportmonks `catch_stump_player_id` combines catches and stumpings; need full `wicket_id` → dismissal type mapping
 - Next step: contact Sportmonks support to get `wicket_id` reference table, then either filter stumpings out or rename the scenario to "Total catches & stumpings"
+
+### Bot protection (CAPTCHA)
+- Skipped for launch (low-value target, existing rate limits sufficient)
+- Revisit if signup abuse is observed post-launch
+- Supabase Auth supports hCaptcha/Turnstile out of the box
 
 ### Past seasons visibility
 - Currently only the active season is shown in the UI
