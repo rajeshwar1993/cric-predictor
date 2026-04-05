@@ -326,7 +326,13 @@
 
 ### Matches
 
-- **Statuses:** upcoming → live → completed → resolved (also: abandoned, no_result)
+- **Statuses and transitions:**
+  - `upcoming` → `live`, `abandoned`, `no_result`
+  - `live` → `completed`, `abandoned`, `no_result`
+  - `completed` → `resolved`, `abandoned` (fallback), `no_result`
+  - `resolved` → terminal (no further transitions)
+  - `abandoned` → terminal
+  - `no_result` → terminal
   - `completed`: match has ended per Sportmonks (`Finished`) but some scenarios (e.g., Player of the Match) may still be unresolved
   - `resolved`: all scenarios for the match have been resolved; polling stops
 - **Home/Away vs batting order:** The home team does not always bat first. Team-specific scenarios (innings score, powerplay) must filter by `team_id` matching `localteam_id` or `visitorteam_id`, **not** by inning number.
@@ -456,7 +462,7 @@ All data available via single call: `GET /fixtures/{id}?include=batting,bowling,
 
 - **Match Leaderboard** (per gang, per match)
   - Ranked by: total points earned in that match
-  - Tiebreaker: whoever's final submission was earliest wins (rewards committing to picks early)
+  - Tiebreaker: whoever stopped editing earliest wins (since re-submissions overwrite `submitted_at`, this rewards users who committed to their picks and didn't tweak them — a user who submitted once at T=0 beats a user who submitted at T=0 and edited at T=10)
   - Shows: rank, display name, correct/resolved count, predicted count, points
   - Current user highlighted
   - Materialized in `v2_gang_fixture_standings` — updated on prediction submit and scenario resolution
@@ -471,11 +477,13 @@ All data available via single call: `GET /fixtures/{id}?include=batting,bowling,
   - Points only count for resolved scenarios (unresolved scenarios don't affect rankings)
 - **Rank computation**
   - Uses SQL `RANK()` window function (ties share rank; next rank skips — e.g., 1, 2, 2, 4)
-  - Match rank ORDER BY: active members first, then `points_earned DESC`, then `last_submitted_at ASC`
-  - Season rank ORDER BY: active members first, then `total_points DESC`, then `accuracy_pct DESC`, then `matches_predicted DESC`
+  - Rank recalculation JOINs with `v2_gang_members` on (gang_id, user_id) to get member status
+  - Match rank ORDER BY: `CASE WHEN gm.status IN ('left', 'removed') THEN 1 ELSE 0 END ASC`, then `points_earned DESC`, then `last_submitted_at ASC`
+  - Season rank ORDER BY: `CASE WHEN gm.status IN ('left', 'removed') THEN 1 ELSE 0 END ASC`, then `total_points DESC`, then `accuracy_pct DESC`, then `matches_predicted DESC`
   - Left/removed members are always sorted to the bottom regardless of their points (grayed out in UI)
   - Triggered automatically on prediction submission and scenario resolution via Postgres triggers
   - Scope: only the affected (gang_id, fixture_id) or (gang_id, season_id) is recalculated
+  - Additional trigger: `AFTER UPDATE ON v2_gang_members` recalculates ranks when a member's status changes to/from left/removed (so standings reflect the new sort order immediately)
 
 ### Notifications _(TODO: revisit triggers and delivery)_
 
@@ -842,11 +850,11 @@ A player can be on different teams in different seasons (trades, auctions). Popu
 | `season_id` | UUID, FK → v2_seasons | Denormalized for season-level queries |
 | `fixture_id` | UUID, FK → v2_league_season_fixtures | |
 | `user_id` | UUID, FK → v2_profiles | |
-| `predicted_count` | INT, default 0 | Number of predictions submitted |
+| `predicted_count` | INT, default 0 | Number of predictions the user submitted for this fixture (regardless of whether they're resolved yet) |
 | `resolved_count` | INT, default 0 | Number of predictions resolved |
 | `correct_count` | INT, default 0 | Number correct |
 | `points_earned` | INT, default 0 | Total points for this match |
-| `last_submitted_at` | TIMESTAMPTZ | Latest submission time (for tiebreaker) |
+| `last_submitted_at` | TIMESTAMPTZ | Time of user's latest submission/edit (updates on every re-submission). Sorted ASC for tiebreaker — users who stopped editing earliest rank higher. |
 | `rank` | INT, nullable | Computed on resolution |
 | `updated_at` | TIMESTAMPTZ, default now() | |
 | **PK** | (gang_id, fixture_id, user_id) | |
@@ -909,7 +917,7 @@ Helper functions (SECURITY DEFINER):
 - `is_gang_member(gang_id, user_id)` — returns true if user is an approved member of the gang
 - `is_gang_admin(gang_id, user_id)` — returns true if user is the admin of the gang
 - `get_gang_by_invite_code(code)` — looks up gang by invite code, bypasses RLS (needed for Join Page before membership)
-- `get_members_who_predicted(gang_id, fixture_id)` — returns user_ids only, no prediction values (visible to all gang members before deadline)
+- `get_members_who_predicted(gang_id, fixture_id)` — returns user_ids only, no prediction values (visible to all gang members before deadline). Function must internally call `is_gang_member(gang_id, auth.uid())` first and return empty if the caller is not an approved member.
 - `prediction_deadline(fixture_id, gang_id)` — computes deadline from `start_datetime` minus `prediction_deadline_mins`, used in prediction RLS policies
 
 #### Reference tables (public read, no user writes)
@@ -951,9 +959,13 @@ Helper functions (SECURITY DEFINER):
 | Operation | Policy |
 |-----------|--------|
 | SELECT | Approved members see other approved members. Admins see all statuses (for member management). Users see own row regardless of status. |
-| INSERT | Any authenticated user (own row only, as pending) |
-| UPDATE | Admin can update others (approve/reject/remove/block). User can update own (leave). |
+| INSERT | Any authenticated user (own row only, as pending). For rejoin (existing row with `status IN ('rejected', 'left', 'removed')`): server action performs an UPDATE to set status back to `pending` instead of INSERT (PK conflict would otherwise occur). Rejoin is blocked if `is_blocked = true`. |
+| UPDATE | Admin can update others: approve (`pending → approved`, sets `approved_at`), reject (`pending → rejected`), remove (`approved → removed`, sets `departed_at`), block (sets `is_blocked = true`, independent of status — block can coexist with any status). User can update own: leave (`approved → left`, sets `departed_at`). |
 | DELETE | None (status changes only) |
+
+**Max members trigger:** A Postgres trigger `BEFORE UPDATE ON v2_gang_members WHEN NEW.status = 'approved'` checks the count of approved members in the gang. If count >= 20 (code constant `MAX_MEMBERS_PER_GANG`), it raises an exception with a clear error message (e.g., "Gang has reached maximum member capacity"). The error bubbles up through the server action and is returned to the client.
+
+**Max gangs per user trigger:** A Postgres trigger `BEFORE INSERT/UPDATE ON v2_gang_members` checks the user's total count of rows where `status IN ('approved', 'pending')`. If count >= 40 (code constant `MAX_GANGS_PER_USER`), it raises an exception with a clear error message (e.g., "You have reached the maximum number of gangs").
 
 #### `v2_gang_league_seasons`
 
@@ -976,7 +988,7 @@ Helper functions (SECURITY DEFINER):
 | Operation | Policy |
 |-----------|--------|
 | SELECT | Before deadline: own only. After deadline/match live/completed: all approved gang members. |
-| INSERT | Approved gang members, own user_id, before deadline, match status = 'upcoming'. Prediction window open time (12h before) enforced at server action level, not RLS. |
+| INSERT | Approved gang members, own user_id, before deadline, match status = 'upcoming'. Prediction window open time (12h before) enforced at server action level, not RLS — early insertions via direct client access are accepted as harmless (still scored correctly, still bound by deadline). |
 | UPDATE | Same as INSERT (own predictions before deadline) |
 | DELETE | None |
 
