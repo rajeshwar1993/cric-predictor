@@ -468,6 +468,13 @@ All data available via single call: `GET /fixtures/{id}?include=batting,bowling,
   - Binary scoring: correct = scenario's point value, incorrect = 0
   - No partial credit
   - Points only count for resolved scenarios (unresolved scenarios don't affect rankings)
+- **Rank computation**
+  - Uses SQL `RANK()` window function (ties share rank; next rank skips — e.g., 1, 2, 2, 4)
+  - Match rank ORDER BY: active members first, then `points_earned DESC`, then `last_submitted_at ASC`
+  - Season rank ORDER BY: active members first, then `total_points DESC`, then `accuracy_pct DESC`, then `matches_predicted DESC`
+  - Left/removed members are always sorted to the bottom regardless of their points (grayed out in UI)
+  - Triggered automatically on prediction submission and scenario resolution via Postgres triggers
+  - Scope: only the affected (gang_id, fixture_id) or (gang_id, season_id) is recalculated
 
 ### Notifications _(TODO: revisit triggers and delivery)_
 
@@ -1101,3 +1108,23 @@ Enabled on: `v2_notifications` only. Live scores use client polling, not realtim
 - **Writes to:** `v2_notifications`
 - **Duplicate prevention:** Query `v2_notifications` by (user_id, gang_id, fixture_id, type) — no flag column needed
 - **Note:** Will revisit notification cadence (multiple reminders) in a separate discussion
+
+### Error Handling & Retries
+
+**General principles:**
+- All cron functions are idempotent — safe to re-run without side effects
+- Log all errors to PostHog (see Analytics section)
+- Partial failures don't block other work — one fixture failing doesn't stop processing of others
+- Alert system admin after 3 consecutive failures (not on single failures)
+- On Sportmonks rate limit (HTTP 429): drop the request, log error, notify admin, wait for next cron cycle
+
+**Per-function retry strategy:**
+
+| Function | Retry Strategy | Alert Admin |
+|----------|---------------|-------------|
+| `sync-fixtures` | In-function retries: 3 attempts with 15-minute backoff between attempts | After all retries fail |
+| `sync-fixtures-pre-match` | No retries (runs every 15 min, next cycle acts as retry) | After 3 consecutive failures |
+| `seed-scenarios` | No retries (next cycle acts as retry) | After 3 consecutive failures |
+| `live-poll-resolve-fixtures` | No retries (next cycle in 15s) | After 10 consecutive failures (~2.5 min down) |
+| `update-standings` | DB transaction — rollback on error, log | After any failure (rare, indicates DB issue) |
+| `deadline-reminders` | No retries (next cycle in 15 min) | After 3 consecutive failures |
