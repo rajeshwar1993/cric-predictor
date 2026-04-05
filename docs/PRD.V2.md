@@ -343,9 +343,9 @@
   - Match results stored in `v2_fixture_results` (match winner, toss winner, etc.)
   - Triggers prediction resolution via DB function
   - Polling strategy:
-    - During `live` status: poll `livescores` endpoint every 15 seconds
-    - During `completed` status: poll specific fixture endpoint (`/fixtures/{id}?include=...`) — `livescores` drops Finished fixtures
-    - Continue polling until all scenarios are resolved or 120-minute cutoff is reached
+    - Unified polling via `live-poll-resolve-fixtures` cron (every 15 seconds)
+    - Uses fixture endpoint (`/fixtures/{id}?include=...`) for both `live` and `completed` states (`livescores` drops Finished fixtures, so fixture endpoint is the reliable source)
+    - Continues polling until all scenarios are resolved or 120-minute cutoff is reached
   - Once all scenarios resolved, status changes to `resolved` and polling stops
   - `resolved_at` timestamp set on fixture results when all scenarios are resolved
   - **Fallback:** if 120 minutes pass after `completed` and some scenarios remain unresolved, system admin is notified and manually resolves the remaining scenarios (system admin flow — TBD in separate discussion)
