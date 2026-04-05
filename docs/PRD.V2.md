@@ -374,7 +374,9 @@
   - `end` — after match ends
   - `post_match` — after official awards (POTM)
 
-#### System Scenario Definitions (20 scenarios, max 230 points)
+#### System Scenario Definitions (20 scenarios total; 19 active + 1 inactive, max 220 active points)
+
+Only active templates (`is_active = true`) are seeded into `v2_fixture_scenarios` during scenario seeding.
 
 | # | Slug | Title | Input Type | Points | Resolution Phase | Options |
 |---|------|-------|------------|--------|-----------------|---------|
@@ -393,7 +395,7 @@
 | 13 | `total_match_runs` | Total runs in the match? | range | 10 | end | <300, 300-339, 340-369, 370-399, 400+ |
 | 14 | `total_match_sixes` | Total sixes in the match? | range | 10 | end | <10, 10-15, 16-20, 21-25, 26+ |
 | 15 | `total_match_wickets` | Total wickets in the match? | range | 10 | end | <5, 5-8, 9-12, 13-15, 16+ |
-| 16 | `total_match_catches` | Total catches in the match? | range | 10 | end | <3, 3-5, 6-8, 9-11, 12+ |
+| 16 | `total_match_catches` _(INACTIVE)_ | Total catches in the match? | range | 10 | end | <3, 3-5, 6-8, 9-11, 12+ |
 | 17 | `first_wicket_over` | When does the first wicket fall? | range | 10 | first_wicket | 1, 2, 3, 4-5, 6+ |
 | 18 | `fifty_scored` | Will anyone score 50+? | yes_no | 5 | mid_match | — |
 | 19 | `bowler_three_wickets` | Will any bowler take 3+ wickets? | yes_no | 15 | mid_match | — |
@@ -420,7 +422,7 @@ All data available via single call: `GET /fixtures/{id}?include=batting,bowling,
 | 13 | `total_match_runs` | Runs include: `score` (all entries) | Sum `score` from all innings. Map to bracket option. |
 | 14 | `total_match_sixes` | Batting include: `six_x` (all entries) | Sum `six_x` across all batting entries (both teams, both innings). Map to bracket. |
 | 15 | `total_match_wickets` | Runs include: `wickets` (all entries) | Sum `wickets` from all innings. Map to bracket. |
-| 16 | `total_match_catches` | _(TODO: resolve catch vs stumping distinction from `wicket_id` field)_ | Count batting entries where `catch_stump_player_id` is not null. May include stumpings. |
+| 16 | `total_match_catches` | **INACTIVE** — template marked `is_active = false`, not seeded to fixtures. Will be enabled once `wicket_id` mapping is available to distinguish catches from stumpings. | Count batting entries where `catch_stump_player_id` is not null (currently includes stumpings). |
 | 17 | `first_wicket_over` | Batting include: `fow_balls` | Find minimum `fow_balls` across all batting entries in the first innings (where `fow_balls > 0`). Convert to over number: `floor(fow_balls) + 1` (e.g., 2.6 → over 3). Map to bracket. |
 | 18 | `fifty_scored` | Batting include: `score` | Check if any batting entry has `score >= 50`. Boolean result. |
 | 19 | `bowler_three_wickets` | Bowling include: `wickets` | Check if any bowling entry has `wickets >= 3`. Boolean result. |
