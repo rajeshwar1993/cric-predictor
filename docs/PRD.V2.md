@@ -1043,7 +1043,7 @@ Enabled on: `v2_notifications` only. Live scores use client polling, not realtim
 - **Purpose:** Keep live scorecards updated and resolve scenarios progressively during and after match. Handles both live match polling and post-match polling (for delayed fields like Player of the Match).
 - **Action:**
   1. **Identify fixtures to poll:** query `v2_league_season_fixtures` where:
-     - `status IN ('upcoming', 'live')` AND `start_datetime` within active window (started less than 6 hours ago OR starts within next 30 minutes), OR
+     - `status IN ('upcoming', 'live')` AND `start_datetime` within active window (started less than 6 hours ago OR starts within next 1 hour), OR
      - `status = 'completed'` AND time since status change < 120 minutes (waiting for delayed resolutions like POTM)
   2. **For each fixture, fetch from Sportmonks:** `/fixtures/{id}?include=batting,bowling,runs,manofmatch,tosswon,localteam,visitorteam`
   3. **Status transitions:**
