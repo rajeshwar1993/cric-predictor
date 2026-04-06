@@ -16,4 +16,10 @@ export const env = {
   get SUPABASE_SERVICE_ROLE_KEY() {
     return getEnvVar('SUPABASE_SERVICE_ROLE_KEY')
   },
+  get NEXT_PUBLIC_POSTHOG_KEY() {
+    return getEnvVar('NEXT_PUBLIC_POSTHOG_KEY')
+  },
+  get NEXT_PUBLIC_POSTHOG_HOST() {
+    return getEnvVar('NEXT_PUBLIC_POSTHOG_HOST')
+  },
 } as const
