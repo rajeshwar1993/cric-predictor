@@ -22,4 +22,7 @@ export const env = {
   get NEXT_PUBLIC_POSTHOG_HOST() {
     return getEnvVar('NEXT_PUBLIC_POSTHOG_HOST')
   },
+  get NEXT_PUBLIC_APP_URL() {
+    return getEnvVar('NEXT_PUBLIC_APP_URL')
+  },
 } as const
