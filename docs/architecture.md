@@ -938,7 +938,54 @@ Critical-path smoke tests in `web-app-2/e2e/`:
 
 ---
 
-## 16. Conventions Quick Reference
+## 16. Date & Time Formatting
+
+### Storage
+
+All timestamps stored as `TIMESTAMPTZ` in Postgres (UTC internally). Sportmonks API returns UTC. Never store local times — always UTC in the database.
+
+### Display
+
+All times displayed in the **user's local timezone** using `Intl.DateTimeFormat` on the client. The timezone abbreviation is always shown after the time (per PRD NFR).
+
+12h/24h format follows the user's system locale automatically — do not hardcode.
+
+### Format Reference
+
+| Context | Format | Example |
+|---------|--------|---------|
+| Match card (upcoming, >1 day away) | `Day, DD Mon · h:mm A TZ` | `Sat, 28 Mar · 7:30 PM IST` |
+| Match card (today) | `Today · h:mm A TZ` | `Today · 7:30 PM IST` |
+| Match card (tomorrow) | `Tomorrow · h:mm A TZ` | `Tomorrow · 7:30 PM IST` |
+| Prediction deadline | `h:mm A TZ` (time only) | `6:45 PM IST` |
+| Notification timestamp | Relative | `Just now`, `2h ago`, `3d ago` |
+| Profile (joined date) | `DD Mon YYYY` | `28 Mar 2026` |
+| Match leaderboard header | `DD Mon YYYY` | `28 Mar 2026` |
+| Last updated (stale data) | Relative | `Last updated 2m ago` |
+
+### Implementation
+
+Create a shared utility `src/lib/format-date.ts` with these helpers:
+
+```tsx
+// All accept a Date or ISO string and format in user's local timezone
+
+formatMatchTime(date)       // → "Sat, 28 Mar · 7:30 PM IST" or "Today · 7:30 PM IST"
+formatDeadline(date)        // → "6:45 PM IST"
+formatTimeAgo(date)         // → "Just now", "2h ago", "3d ago"
+formatDate(date)            // → "28 Mar 2026"
+```
+
+**Key rules:**
+- Use `Intl.DateTimeFormat` with `{ timeZoneName: 'short' }` for the timezone abbreviation
+- "Today" / "Tomorrow" detection: compare against user's local calendar date, not UTC
+- `formatTimeAgo` thresholds: <1 min = "Just now", <60 min = "Xm ago", <24h = "Xh ago", <7d = "Xd ago", older = `formatDate()`
+- **These are Client Component helpers** (they need the browser's timezone). Server Components should pass raw ISO strings as props and let Client Components format them.
+- For Server-rendered static text (e.g., SEO meta tags), use UTC with explicit label: `"28 Mar 2026, 14:00 UTC"`
+
+---
+
+## 17. Conventions Quick Reference
 
 | Convention | Rule |
 |-----------|------|
@@ -960,7 +1007,7 @@ Critical-path smoke tests in `web-app-2/e2e/`:
 
 ---
 
-## 17. Decision Log
+## 18. Decision Log
 
 Key architecture decisions and their rationale:
 
