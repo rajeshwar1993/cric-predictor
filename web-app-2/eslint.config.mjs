@@ -54,6 +54,25 @@ const eslintConfig = defineConfig([
     },
   },
 
+  // Block service-role imports from anywhere except server actions
+  {
+    files: ['src/**/*.ts', 'src/**/*.tsx'],
+    ignores: ['src/lib/actions/**', 'src/lib/supabase/service-role.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/lib/supabase/service-role', '@/lib/supabase/service-role'],
+              message: 'service-role client may only be imported from src/lib/actions/**',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // Prettier must be last to override formatting rules
   eslintConfigPrettier,
 ])
