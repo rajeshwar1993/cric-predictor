@@ -6,6 +6,7 @@
 - **User Stories:** `docs/stories/` — detailed implementation stories derived from the PRD. See `docs/stories/README.md` for structure, implementation order, and global requirements.
 - **Design System:** `docs/design-system.md` — the definitive reference for all visual decisions (colors, typography, spacing, components, motion, accessibility, copy voice).
 - **Design System Visual:** `docs/design-system-visual.html` — a rendered visual reference of the design system. Open in a browser for a live preview of all tokens, components, and patterns. Use alongside `design-system.md` when building UI.
+- **Architecture:** `docs/architecture.md` — rendering strategy (server vs client), data fetching patterns, component architecture, suspense/loading, state management, real-time/polling, auth flow, error handling, and key data flow diagrams. Reference during all development work.
 
 ## Project Structure
 
