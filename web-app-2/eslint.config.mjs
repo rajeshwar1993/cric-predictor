@@ -1,3 +1,6 @@
+// For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
+import storybook from 'eslint-plugin-storybook'
+
 import { defineConfig, globalIgnores } from 'eslint/config'
 import nextVitals from 'eslint-config-next/core-web-vitals'
 import nextTs from 'eslint-config-next/typescript'
@@ -7,16 +10,20 @@ import eslintConfigPrettier from 'eslint-config-prettier'
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
-
   // Override default ignores of eslint-config-next.
-  globalIgnores(['.next/**', 'out/**', 'build/**', 'next-env.d.ts']),
-
+  globalIgnores([
+    '.next/**',
+    'out/**',
+    'build/**',
+    'next-env.d.ts',
+    'src/stories/**',
+    '.storybook/**',
+  ]),
   // Strict TypeScript rules (type-aware)
   ...tseslint.configs.strictTypeChecked.map((config) => ({
     ...config,
     files: ['**/*.ts', '**/*.tsx', '**/*.mts'],
   })),
-
   // Project-specific overrides
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.mts'],
@@ -53,7 +60,6 @@ const eslintConfig = defineConfig([
       eqeqeq: 'error',
     },
   },
-
   // Block service-role imports from anywhere except server actions
   {
     files: ['src/**/*.ts', 'src/**/*.tsx'],
@@ -72,9 +78,9 @@ const eslintConfig = defineConfig([
       ],
     },
   },
-
   // Prettier must be last to override formatting rules
   eslintConfigPrettier,
+  ...storybook.configs['flat/recommended'],
 ])
 
 export default eslintConfig
