@@ -47,6 +47,17 @@ For simple changes (bug fixes, small tweaks), skip the skill and work directly.
 - **Integration tests** for cross-cutting concerns (auth flow, middleware, cron pipelines).
 - **Run tests before committing.** Code that breaks existing tests does not get committed.
 
+### Code Quality & Linting
+
+- **ESLint must pass with zero errors and zero warnings.** Run `npm run lint` before considering any story complete. Linting failures are blockers — do not skip or suppress them.
+- **No `any` type.** Ever. Use proper types, generics, or `unknown` with type guards. If Supabase or a third-party library returns `any`, cast it to a typed interface immediately at the boundary.
+- **No `@ts-ignore` or `@ts-expect-error`.** Fix the type error instead of suppressing it. The only exception is a documented third-party library bug with a linked issue — and even then, add a `// TODO: remove when <issue-url> is fixed` comment.
+- **No `eslint-disable` comments** unless absolutely unavoidable (e.g., a one-off third-party integration pattern). If used, it must disable a specific rule (never `eslint-disable` with no rule name) and include a comment explaining why.
+- **Strict TypeScript.** `tsconfig.json` uses `"strict": true`. This enables `noImplicitAny`, `strictNullChecks`, `strictFunctionTypes`, and all other strict checks. Do not loosen these.
+- **No unused variables or imports.** ESLint's `no-unused-vars` catches this. Clean up as you go.
+- **Consistent code style.** Prettier handles formatting. Do not fight Prettier — configure it once (FND-002) and let it run on save/commit.
+- **All code must be type-safe end-to-end.** From Supabase query → DAL function → Server Component → Client Component props — types flow through without breaks. Use the auto-generated `src/types/database.ts` for all DB types.
+
 ### Code Review
 
 - **Every piece of work must be independently reviewed** after development is done. Always spawn a fresh Reviewer agent (never the same agent that wrote the code) to check for bugs, security issues, missed edge cases, and PRD compliance.

@@ -84,7 +84,10 @@ Per PRD Tech Stack, we use Next.js (App Router), React, TypeScript, Tailwind CSS
 - [ ] TypeScript configured (`tsconfig.json` with strict mode)
 - [ ] Tailwind CSS v4 installed and configured (`tailwind.config.ts`, `globals.css`)
 - [ ] shadcn/ui initialized via `npx shadcn@latest init` (with dark mode default, per PRD)
-- [ ] ESLint + Prettier configured (match existing `web-app/` conventions)
+- [ ] ESLint configured with **strict rules** (see Technical notes for full rule list)
+- [ ] Prettier configured for consistent formatting (runs on save + pre-commit hook)
+- [ ] `npm run typecheck` script added (`tsc --noEmit`) — must pass with zero errors
+- [ ] `npm run lint` must pass with **zero errors and zero warnings** (warnings treated as errors via `--max-warnings 0`)
 - [ ] Folder structure:
   - `src/app/` — routes
   - `src/components/` — shared components
@@ -114,10 +117,51 @@ Per PRD Tech Stack, we use Next.js (App Router), React, TypeScript, Tailwind CSS
 
 **Technical notes:**
 - Use Next.js App Router, not Pages Router
-- Set up `package.json` scripts: `dev`, `build`, `start`, `lint`, `typecheck`
+- Set up `package.json` scripts: `dev`, `build`, `start`, `lint`, `lint:fix`, `typecheck`
+- `lint` script: `next lint --max-warnings 0` (treats warnings as errors)
+- `typecheck` script: `tsc --noEmit`
 - `port` set via `-p 3001` or `PORT=3001` in dev script
 - Dark mode should be default (`"defaultTheme": "dark"` in shadcn)
 - Include `lucide-react` as icon library (per PRD)
+- **Pre-commit hook:** Use `husky` + `lint-staged` to run `eslint --fix` and `prettier --write` on staged files before every commit. Lint failures block the commit.
+
+**ESLint configuration (strict):**
+- Extend: `next/core-web-vitals`, `next/typescript`, `plugin:@typescript-eslint/strict-type-checked`
+- Parser: `@typescript-eslint/parser` with `project: './tsconfig.json'` (enables type-aware rules)
+- Key rules (all set to `error`):
+  - `@typescript-eslint/no-explicit-any` — **error** (no `any` type, ever)
+  - `@typescript-eslint/no-unused-vars` — **error** (with `argsIgnorePattern: "^_"` for intentional unused args)
+  - `@typescript-eslint/strict-boolean-expressions` — **error** (no truthy checks on non-booleans; forces explicit `!== null`, `!== undefined`)
+  - `@typescript-eslint/no-floating-promises` — **error** (all promises must be awaited or explicitly voided)
+  - `@typescript-eslint/no-misused-promises` — **error** (no passing async functions where sync is expected)
+  - `@typescript-eslint/consistent-type-imports` — **error** (use `import type` for type-only imports)
+  - `@typescript-eslint/no-unsafe-assignment` — **error** (no assigning `any` to typed variables)
+  - `@typescript-eslint/no-unsafe-member-access` — **error**
+  - `@typescript-eslint/no-unsafe-call` — **error**
+  - `@typescript-eslint/no-unsafe-return` — **error**
+  - `@typescript-eslint/no-unsafe-argument` — **error**
+  - `no-console` — **warn** (use PostHog error capture instead; `console.log` allowed only via `eslint-disable-next-line` with comment)
+  - `prefer-const` — **error**
+  - `no-var` — **error**
+  - `eqeqeq` — **error** (no `==`, always `===`)
+- No `@ts-ignore` or `@ts-expect-error` — use proper types instead
+- No blanket `eslint-disable` — must specify rule name + justification comment
+
+**TypeScript configuration (strict):**
+- `"strict": true` (enables all strict checks)
+- `"noUncheckedIndexedAccess": true` (array/object access returns `T | undefined`)
+- `"noImplicitReturns": true`
+- `"noFallthroughCasesInSwitch": true`
+- `"forceConsistentCasingInFileNames": true`
+- `"exactOptionalPropertyTypes": true`
+
+**Prettier configuration:**
+- `semi: false` (no semicolons — cleaner code)
+- `singleQuote: true`
+- `trailingComma: 'all'`
+- `printWidth: 100`
+- `tabWidth: 2`
+- `arrowParens: 'always'`
 
 **Analytics events:** None yet (initialized in FND-005)
 **Unit tests:**

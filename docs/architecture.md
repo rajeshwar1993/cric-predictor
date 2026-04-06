@@ -951,6 +951,12 @@ Critical-path smoke tests in `web-app-2/e2e/`:
 | Event constants | SCREAMING_SNAKE: `PREDICTION_SUBMITTED`, `GANG_CREATED` |
 | Branch naming | `feature/[short-description]` |
 | Commit style | Past tense, lowercase: "resolve all open questions, fix story counts" |
+| TypeScript | `strict: true`, `noUncheckedIndexedAccess: true` — no `any`, no `@ts-ignore` |
+| ESLint | Zero errors, zero warnings (`--max-warnings 0`). See FND-002 for full rule list |
+| Types | No `any`. Use proper types, generics, or `unknown` with type guards. Cast at boundaries only |
+| Imports | Use `import type` for type-only imports (`consistent-type-imports` rule enforced) |
+| Promises | All awaited or explicitly voided (`no-floating-promises` enforced) |
+| Pre-commit | `husky` + `lint-staged` runs ESLint + Prettier on staged files. Lint failures block commit |
 
 ---
 
