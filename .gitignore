@@ -25,3 +25,14 @@ web-app/.git-bak/
 # Supabase local
 supabase/.temp/
 supabase/.env*
+
+# Web App v2
+web-app-2/node_modules/
+web-app-2/.next/
+web-app-2/.env
+web-app-2/.env.local
+web-app-2/.env.production.local
+
+# Supabase v2 local
+supabase-2/.temp/
+supabase-2/.env*
