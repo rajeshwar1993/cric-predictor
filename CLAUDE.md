@@ -5,6 +5,7 @@
 - **PRD:** `docs/PRD.V2.md` — the single source of truth for all product requirements, business logic, database schema, cron functions, and feature specs.
 - **User Stories:** `docs/stories/` — detailed implementation stories derived from the PRD. See `docs/stories/README.md` for structure, implementation order, and global requirements.
 - **Design System:** `docs/design-system.md` — the definitive reference for all visual decisions (colors, typography, spacing, components, motion, accessibility, copy voice).
+- **Design System Visual:** `docs/design-system-visual.html` — a rendered visual reference of the design system. Open in a browser for a live preview of all tokens, components, and patterns. Use alongside `design-system.md` when building UI.
 
 ## Project Structure
 
@@ -53,7 +54,7 @@ For simple changes (bug fixes, small tweaks), skip the skill and work directly.
 
 When doing any UI or component work:
 
-1. **Use the `/frontend-design` skill** along with `docs/design-system.md` to guide all visual decisions. Follow the design system strictly. If a better approach would violate the design system, ask the user for permission before proceeding.
+1. **Use the `/frontend-design` skill** along with `docs/design-system.md` and `docs/design-system-visual.html` to guide all visual decisions. Always read `docs/design-system.md` for token values, component specs, and rules. Open `docs/design-system-visual.html` in a browser for a rendered visual reference of how components should look. Follow the design system strictly. If a better approach would violate the design system, ask the user for permission before proceeding.
 2. **Reuse before creating.** Always check `web-app-2/src/components/ui/` and `web-app-2/src/components/` for existing components before creating new ones. Prefer composing existing primitives over building from scratch.
 3. **Small, focused components.** Break UI into reusable pieces. Each component should do one thing. Pages should be thin shells that compose components. Never build monolithic page files — split sections into separate component files.
 4. **Storybook is mandatory.** Every UI component and page must have a Storybook entry (`*.stories.tsx`) alongside the component file. Include a `Default` story plus stories for every key state/variant (loading, empty, error, with data, etc.). See `docs/stories/README.md` § "Global UI story requirements" for full details.

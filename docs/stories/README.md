@@ -84,7 +84,7 @@ The following requirements apply to **every UI story** (any story with ID patter
    - Mocked data lives in `src/components/**/*.mocks.ts` (or inline in the story file for trivial cases)
    - Storybook renders with dark mode applied (matching the app default)
    - If the component depends on auth or Supabase data, the Storybook story uses a mocked client / hardcoded props (no real network calls)
-2. **Design system source of truth.** UI work must conform to the (to-be-authored) `docs/design-system.md`. FND-006 cannot start until that doc exists. If a UI story needs a primitive/pattern not in the design system, flag it to the user — do not invent ad-hoc styles.
+2. **Design system source of truth.** UI work must conform to `docs/design-system.md` (spec) and `docs/design-system-visual.html` (rendered visual reference). Consult both: the spec for token values and rules, the visual HTML for what it should look like. If a UI story needs a primitive/pattern not in the design system, flag it to the user — do not invent ad-hoc styles.
 3. **Reuse before creating.** Always check `src/components/ui/` and `src/components/` for existing components before creating new ones (per CLAUDE.md).
 4. **Accessibility.** Semantic HTML, ARIA labels, keyboard navigation. Run axe-core against the Storybook story; no critical violations.
 5. **Mobile-first.** Every component must render correctly at `375px` width (iPhone SE) before expanding to tablet/desktop.
@@ -96,7 +96,7 @@ When a UI story's implementation is reviewed, missing any of the above is a revi
 Stories listed in dependency order. Within each step, stories separated by `∥` can be done in parallel. Complete all stories in a step before moving to the next.
 
 > **Blockers to clear before starting Phase 0:**
-> 1. Author new `docs/design-system.md` — blocks FND-006 → blocks all UI stories
+> 1. ~~Author new `docs/design-system.md`~~ — **DONE** (`docs/design-system.md` + `docs/design-system-visual.html` authored)
 > 2. Fetch live Sportmonks IPL 2026 IDs — blocks FND-DB-005 → blocks seed data
 
 **92 stories across 43 steps.**
@@ -111,7 +111,7 @@ Stories listed in dependency order. Within each step, stories separated by `∥`
 | 2 | FND-002 ∥ FND-003 | Next.js init + Supabase project init |
 | 3 | FND-004 ∥ FND-DB-001 | Supabase clients (server, client, middleware, service-role) ∥ Schema migration (19 tables, 7 enums) |
 | 4 | FND-005 ∥ FND-DB-002 ∥ FND-DB-003 | PostHog analytics ∥ RLS policies ∥ Database indexes |
-| 5 | FND-006 ∥ FND-DB-004 | Design system + Storybook ∥ Triggers & stored procs. **FND-006 blocked on `design-system.md`** |
+| 5 | FND-006 ∥ FND-DB-004 | Design system + Storybook ∥ Triggers & stored procs |
 | 6 | FND-DB-005 | Seed reference data (sport, league, season, teams, scenarios). **Blocked on Sportmonks IDs** |
 | 7 | FND-DB-006 | v1 → v2 data migration |
 

@@ -361,7 +361,7 @@ PRD specifies PostHog for analytics (autocapture + custom events + error reporti
 **Phase:** Phase 0 — Foundation
 **Priority:** P0
 **Estimated effort:** Medium (1–2 days)
-**Status:** Blocked — waiting on new `docs/design-system.md` (user to author)
+**Status:** Not started
 
 **User story:**
 > As the developer,
@@ -371,13 +371,19 @@ PRD specifies PostHog for analytics (autocapture + custom events + error reporti
 **Context / Why:**
 Bragg is mobile-first and dark mode by default (per PRD Product Feel). A solid design system baseline prevents every UI story from redefining colors, spacing, and button styles. Storybook is the canonical showcase for every component and page — replacing the old `docs/design-system.jsx` approach. Every subsequent UI story ships a matching Storybook story (see [Global UI story requirements](./README.md#global-ui-story-requirements)).
 
-> **Prerequisite (blocker):** A new `docs/design-system.md` must be authored by the user before this story starts. The existing `docs/design-system.md` is stale and is NOT the source of truth. FND-006 is **blocked** until the new doc exists.
+> **Design references:** `docs/design-system.md` (spec — tokens, rules, component definitions) and `docs/design-system-visual.html` (rendered visual reference — open in browser to see how components should look). Both must be consulted during implementation.
 
 **Acceptance criteria:**
-- [ ] Design tokens defined as CSS custom properties in `src/app/globals.css`, sourced from the new `docs/design-system.md`:
-  - Colors: dark background, accent, gold (for top ranks), danger, success, muted — exact values per design-system.md
-  - Typography: display font, body font, stats font — per design-system.md
-  - Spacing scale — per design-system.md
+- [ ] Design tokens defined as CSS custom properties in `src/app/globals.css`, sourced from `docs/design-system.md` § "Quick Reference — CSS Custom Properties":
+  - Brand colors: `--brand` (#D4F34A), `--brand-hover`, `--brand-muted`, `--brand-on`
+  - Surfaces: `--bg-base` (#0A0A0F), `--bg-raised` (#141418), `--bg-overlay` (#1C1C22), `--bg-inset` (#08080C)
+  - Text: `--text-primary` (#F0F0F5), `--text-secondary` (#9898A6), `--text-tertiary` (#5A5A6E), `--text-inverse`
+  - Borders: `--border-default`, `--border-strong`, `--border-focus`
+  - Semantic: `--success`, `--error`, `--warning`, `--info` (with muted variants)
+  - Match: `--live`, `--rank-gold`, `--rank-silver`, `--rank-bronze`, prediction state colors
+  - Typography: `--font-heading` (Space Grotesk), `--font-body` (Inter)
+  - Spacing scale: `--sp-1` through `--sp-16` (4px base unit)
+  - Border radius: `--radius-sm` through `--radius-full`
 - [ ] Tailwind config references CSS variables (so theming is consistent)
 - [ ] shadcn primitives installed: `Button`, `Input`, `Label`, `Card`, `Dialog`, `DropdownMenu`, `Avatar`, `Separator`, `Sheet` (for side panels). Additional primitives added per-story as needed.
 - [ ] Custom components:
@@ -387,7 +393,7 @@ Bragg is mobile-first and dark mode by default (per PRD Product Feel). A solid d
 - [ ] `src/components/layout/page-wrapper.tsx` — standard page layout with max-width, padding, responsive
 - [ ] Mobile-first responsive breakpoints: `sm` (640px), `md` (768px), `lg` (1024px)
 - [ ] Dark mode is default (`html.dark` class always present or prefers-color-scheme ignored for launch)
-- [ ] Matches the new `docs/design-system.md` tokens and specs
+- [ ] Visual output matches `docs/design-system-visual.html` — open both side-by-side and verify components look identical
 - [ ] **Storybook installed and configured:**
   - [ ] Storybook 8+ installed in `web-app-2/` (`npx storybook@latest init` with Next.js framework preset)
   - [ ] Storybook runs via `npm run storybook` on a non-conflicting port (e.g., 6006)
@@ -403,15 +409,16 @@ Bragg is mobile-first and dark mode by default (per PRD Product Feel). A solid d
 - Feature-specific components (built per-story, each with their own Storybook story)
 - Landing page hero, gang cards, scorecards — built in later phases
 - Deploying Storybook to a hosted URL (post-launch; `build-storybook` output is sufficient for Phase 0)
-- Authoring the new `docs/design-system.md` — user handles offline before this story starts
 
-**Dependencies:** FND-002, new `docs/design-system.md` (authored by user, pre-implementation)
+**Dependencies:** FND-002
 **Blocks:** All UI stories
 
 **PRD references:**
 - [Product feel](../PRD.V2.md#product-feel) — vibe, design principles
+- [Design System](../PRD.V2.md#design-system) — references to both design docs
 - [Non-Functional Requirements § Mobile-first, Accessibility](../PRD.V2.md#non-functional-requirements)
-- `docs/design-system.md` (new version, authored by user before this story starts) — token values, typography, voice
+- `docs/design-system.md` — spec (tokens, rules, component definitions, copy voice)
+- `docs/design-system-visual.html` — rendered visual reference (open in browser)
 - [Global UI story requirements](./README.md#global-ui-story-requirements) — Storybook mandatory for every UI story
 
 **Technical notes:**
@@ -419,6 +426,7 @@ Bragg is mobile-first and dark mode by default (per PRD Product Feel). A solid d
 - Custom fonts via `next/font` (Google Fonts) to avoid FOUC
 - Accessibility: semantic HTML, ARIA labels, keyboard navigation (per PRD NFR)
 - Follow the `/frontend-design` skill guidelines per CLAUDE.md
+- When implementing components, have `docs/design-system-visual.html` open in a browser tab for visual comparison — the rendered HTML shows exactly what each component (buttons, cards, inputs, avatars, badges, nav bar, side panels, toasts, skeletons, leaderboard rows, score display, etc.) should look like
 - Storybook is the canonical component showcase — it replaces the old `docs/design-system.jsx` pattern. Every subsequent component gets a story file next to the component (`Button.tsx` → `Button.stories.tsx`).
 - Storybook story decorator should wrap stories in `<html class="dark">` context and the app's font providers so stories render identically to the app.
 - Storybook should be runnable in CI for snapshot/interaction tests post-launch (not required at Phase 0).
@@ -438,7 +446,7 @@ Bragg is mobile-first and dark mode by default (per PRD Product Feel). A solid d
 - [ ] Run axe-core (Storybook a11y panel) and verify no critical accessibility violations
 - [ ] Run `npm run build-storybook` — expect success
 
-**Open questions:** None (decided: Storybook is the canonical showcase; user authors new `docs/design-system.md` offline before FND-006 starts)
+**Open questions:** None (design-system.md authored, design-system-visual.html available, Storybook is the canonical showcase)
 
 ---
 
@@ -923,7 +931,7 @@ Phase 0 builds the entire foundation — project scaffolding, Supabase clients, 
 **Estimated total effort:** ~12–18 working days
 
 **Blockers before starting:**
-- New `docs/design-system.md` must be authored by user (blocks FND-006)
+- ~~New `docs/design-system.md` must be authored by user (blocks FND-006)~~ — **DONE** (`docs/design-system.md` + `docs/design-system-visual.html` authored)
 - Sportmonks IPL 2026 IDs must be fetched live (blocks FND-DB-005)
 
 **Ship readiness:**

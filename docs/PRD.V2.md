@@ -582,6 +582,15 @@ All data available via single call: `GET /fixtures/{id}?include=batting,bowling,
 - **Limits**
   - Fetches latest 20 notifications
 
+## Design System
+
+All UI development must follow the Bragg design system:
+
+- **Spec:** [`docs/design-system.md`](design-system.md) — the definitive reference for colors, typography, spacing, components, motion, accessibility, and copy voice. Read this before writing any UI code.
+- **Visual reference:** [`docs/design-system-visual.html`](design-system-visual.html) — a rendered HTML preview of all design tokens, component patterns, and data display styles. Open in a browser for a live visual guide.
+
+Both files must be consulted together when building or reviewing UI components. The spec (`design-system.md`) defines the rules and token values; the visual reference (`design-system-visual.html`) shows what they look like rendered. If a component's implementation doesn't match the visual reference, fix it.
+
 ## Tech Stack
 
 - **Frontend:** Next.js 16 (App Router), React, TypeScript
