@@ -649,7 +649,7 @@ Per PRD, the Gang Page shows "which members have predicted" for the next upcomin
 
 Phase 4 delivers the full prediction flow. After this phase, users can make predictions for upcoming matches across all 19 active scenario types.
 
-**Story count:** 9 stories (1 DAL, 1 API, 7 UI)
+**Story count:** 10 stories (1 DAL, 1 API, 8 UI)
 **Estimated total effort:** ~10–15 working days
 
 **Ship readiness:**

@@ -912,3 +912,27 @@ Per PRD Implementation Plan, we migrate profiles and gangs but not predictions. 
 **Open questions:**
 - Do we need to preserve v1 profile `avatar_url` or other fields that don't exist in v2? (Decision: no, v2 uses initials-only avatars)
 - What if a v1 gang has 0 `approved` members after filtering? Do we still create the gang? (Recommendation: skip — empty gangs serve no purpose)
+
+---
+
+## Summary
+
+Phase 0 builds the entire foundation — project scaffolding, Supabase clients, analytics, design system + Storybook, full database schema (tables, RLS, indexes, triggers), seed data, and v1→v2 migration. After this phase, both `web-app-2/` and `supabase-2/` are running on STG with the complete schema deployed and existing user data migrated.
+
+**Story count:** 12 stories (6 project setup: FND-001 through FND-006, 6 database: FND-DB-001 through FND-DB-006)
+**Estimated total effort:** ~12–18 working days
+
+**Blockers before starting:**
+- New `docs/design-system.md` must be authored by user (blocks FND-006)
+- Sportmonks IPL 2026 IDs must be fetched live (blocks FND-DB-005)
+
+**Ship readiness:**
+- ✅ web-app-2/ scaffold with Next.js 16, TypeScript, Tailwind v4, shadcn/ui
+- ✅ Supabase clients (server, client, middleware, service-role with two-layer defense)
+- ✅ PostHog analytics with autocapture, custom events, error reporting, Web Vitals
+- ✅ Design system tokens + Storybook with baseline component stories
+- ✅ Complete v2 schema (19 tables, 7 enums, all indexes, RLS policies, triggers)
+- ✅ Seed data (1 sport, 1 league, 1 season, 10 teams, 20 scenario templates)
+- ✅ v1→v2 data migration (profiles, gangs, memberships)
+- ⏳ Auth flow comes in Phase 1
+- ⏳ UI features start in Phase 1+

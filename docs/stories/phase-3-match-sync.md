@@ -396,7 +396,7 @@ The Gang Page had a placeholder for Upcoming Matches in Phase 2. Now that fixtur
 
 Phase 3 delivers the match data pipeline. After this phase, the gang page shows real IPL fixtures and the system is ready for predictions.
 
-**Story count:** 6 stories (1 library, 1 DB function, 3 cron jobs, 1 UI)
+**Story count:** 5 stories (1 library, 3 cron jobs, 1 UI) — DB seeding function moved to Phase 2 as GANG-DB-001
 **Estimated total effort:** ~8–12 working days
 
 **Ship readiness:**
