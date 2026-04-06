@@ -1,0 +1,2585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bragg — Visual Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ========================================
+     CSS Custom Properties (Design Tokens)
+     ======================================== */
+  :root {
+    /* Brand */
+    --brand: #D4F34A;
+    --brand-hover: #E0F76E;
+    --brand-muted: rgba(212, 243, 74, 0.15);
+    --brand-on: #0A0A0F;
+
+    /* Surfaces */
+    --bg-base: #0A0A0F;
+    --bg-raised: #141418;
+    --bg-overlay: #1C1C22;
+    --bg-inset: #08080C;
+
+    /* Text */
+    --text-primary: #F0F0F5;
+    --text-secondary: #9898A6;
+    --text-tertiary: #5A5A6E;
+    --text-inverse: #0A0A0F;
+
+    /* Borders */
+    --border-default: rgba(255, 255, 255, 0.06);
+    --border-strong: rgba(255, 255, 255, 0.10);
+    --border-focus: #D4F34A;
+
+    /* Semantic */
+    --success: #22C55E;
+    --success-muted: rgba(34, 197, 94, 0.10);
+    --error: #EF4444;
+    --error-muted: rgba(239, 68, 68, 0.10);
+    --warning: #F59E0B;
+    --warning-muted: rgba(245, 158, 11, 0.10);
+    --info: #3B82F6;
+    --info-muted: rgba(59, 130, 246, 0.10);
+
+    /* Match */
+    --live: #EF4444;
+    --rank-gold: #FFD700;
+    --rank-silver: #C0C0C0;
+    --rank-bronze: #CD7F32;
+    --prediction-correct: #22C55E;
+    --prediction-incorrect: #EF4444;
+    --prediction-pending: #F59E0B;
+
+    /* Typography */
+    --font-heading: 'Space Grotesk', sans-serif;
+    --font-body: 'Inter', sans-serif;
+
+    /* Spacing */
+    --sp-1: 4px;
+    --sp-2: 8px;
+    --sp-3: 12px;
+    --sp-4: 16px;
+    --sp-5: 20px;
+    --sp-6: 24px;
+    --sp-8: 32px;
+    --sp-10: 40px;
+    --sp-12: 48px;
+    --sp-16: 64px;
+
+    /* Radius */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-xl: 20px;
+    --radius-full: 9999px;
+  }
+
+  /* ========================================
+     Base & Reset
+     ======================================== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--text-primary);
+    background: var(--bg-base);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ========================================
+     Layout
+     ======================================== */
+  .ds-page {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: var(--sp-8) var(--sp-6);
+  }
+
+  .ds-header {
+    text-align: center;
+    padding: var(--sp-16) 0 var(--sp-12);
+    border-bottom: 1px solid var(--border-default);
+    margin-bottom: var(--sp-12);
+  }
+
+  .ds-header__logo {
+    width: 72px;
+    height: 72px;
+    margin-bottom: var(--sp-4);
+  }
+
+  .ds-header h1 {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 2.5rem;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    margin-bottom: var(--sp-2);
+  }
+
+  .ds-header h1 span { color: var(--brand); }
+
+  .ds-header p {
+    color: var(--text-secondary);
+    font-size: 1.125rem;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  /* Section */
+  .ds-section {
+    margin-bottom: var(--sp-16);
+  }
+
+  .ds-section__title {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 2rem;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    margin-bottom: var(--sp-2);
+  }
+
+  .ds-section__subtitle {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-bottom: var(--sp-8);
+  }
+
+  .ds-subsection {
+    margin-bottom: var(--sp-10);
+  }
+
+  .ds-subsection__title {
+    font-family: var(--font-heading);
+    font-weight: 600;
+    font-size: 1.25rem;
+    letter-spacing: -0.01em;
+    margin-bottom: var(--sp-4);
+    color: var(--text-secondary);
+  }
+
+  /* Divider */
+  .ds-divider {
+    border: none;
+    border-top: 1px solid var(--border-default);
+    margin: var(--sp-12) 0;
+  }
+
+  /* ========================================
+     Color Swatches
+     ======================================== */
+  .ds-colors {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: var(--sp-3);
+  }
+
+  .ds-swatch {
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--border-default);
+    background: var(--bg-raised);
+  }
+
+  .ds-swatch__color {
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ds-swatch__info {
+    padding: var(--sp-3);
+  }
+
+  .ds-swatch__name {
+    font-weight: 600;
+    font-size: 0.8125rem;
+    margin-bottom: 2px;
+    word-break: break-all;
+  }
+
+  .ds-swatch__hex {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+
+  /* Color row (for surfaces) */
+  .ds-color-row {
+    display: flex;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--border-default);
+    margin-bottom: var(--sp-3);
+  }
+
+  .ds-color-row__item {
+    flex: 1;
+    padding: var(--sp-6) var(--sp-4);
+    text-align: center;
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 4px;
+  }
+
+  .ds-color-row__label {
+    font-weight: 600;
+    font-size: 0.8125rem;
+  }
+
+  .ds-color-row__hex {
+    font-size: 0.6875rem;
+    opacity: 0.7;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+
+  /* ========================================
+     Typography Specimens
+     ======================================== */
+  .ds-type-specimen {
+    margin-bottom: var(--sp-6);
+    padding: var(--sp-6);
+    background: var(--bg-raised);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-default);
+  }
+
+  .ds-type-specimen__meta {
+    display: flex;
+    gap: var(--sp-4);
+    flex-wrap: wrap;
+    margin-bottom: var(--sp-3);
+  }
+
+  .ds-type-specimen__tag {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--brand);
+    background: var(--brand-muted);
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .ds-type-scale {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+  }
+
+  .ds-type-scale__row {
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-4);
+    padding: var(--sp-3) 0;
+    border-bottom: 1px solid var(--border-default);
+  }
+
+  .ds-type-scale__row:last-child {
+    border-bottom: none;
+  }
+
+  .ds-type-scale__label {
+    flex-shrink: 0;
+    width: 100px;
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .ds-type-scale__size {
+    flex-shrink: 0;
+    width: 50px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    text-align: right;
+  }
+
+  /* ========================================
+     Spacing
+     ======================================== */
+  .ds-spacing-scale {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+  }
+
+  .ds-spacing-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4);
+  }
+
+  .ds-spacing-row__label {
+    flex-shrink: 0;
+    width: 64px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+
+  .ds-spacing-row__bar {
+    height: 24px;
+    background: var(--brand-muted);
+    border-left: 3px solid var(--brand);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    transition: width 0.3s ease-out;
+  }
+
+  .ds-spacing-row__value {
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+
+  /* ========================================
+     Radius
+     ======================================== */
+  .ds-radius-grid {
+    display: flex;
+    gap: var(--sp-6);
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+
+  .ds-radius-item {
+    text-align: center;
+  }
+
+  .ds-radius-item__box {
+    width: 72px;
+    height: 72px;
+    background: var(--bg-overlay);
+    border: 2px solid var(--brand);
+    margin-bottom: var(--sp-2);
+  }
+
+  .ds-radius-item__label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+
+  .ds-radius-item__value {
+    font-size: 0.6875rem;
+    color: var(--text-tertiary);
+  }
+
+  /* ========================================
+     Buttons
+     ======================================== */
+  .ds-button-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-4);
+    align-items: center;
+  }
+
+  .ds-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-2);
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 12px 24px;
+    min-height: 48px;
+    border-radius: var(--radius-md);
+    border: none;
+    cursor: pointer;
+    transition: all 150ms ease-out;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .ds-btn:active { transform: scale(0.97); }
+
+  /* Primary */
+  .ds-btn--primary {
+    background: var(--brand);
+    color: var(--brand-on);
+  }
+  .ds-btn--primary:hover { background: var(--brand-hover); }
+
+  /* Secondary */
+  .ds-btn--secondary {
+    background: transparent;
+    color: var(--text-primary);
+    border: 1px solid var(--border-strong);
+  }
+  .ds-btn--secondary:hover { background: var(--bg-overlay); }
+
+  /* Destructive */
+  .ds-btn--destructive {
+    background: var(--error);
+    color: #FFFFFF;
+  }
+  .ds-btn--destructive:hover { filter: brightness(1.1); }
+
+  /* Ghost */
+  .ds-btn--ghost {
+    background: transparent;
+    color: var(--text-secondary);
+  }
+  .ds-btn--ghost:hover { background: var(--bg-overlay); color: var(--text-primary); }
+
+  /* Disabled */
+  .ds-btn--disabled {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  /* Loading */
+  .ds-btn--loading {
+    position: relative;
+    color: transparent;
+  }
+  .ds-btn--loading::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--brand-on);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* ========================================
+     Cards
+     ======================================== */
+  .ds-card {
+    background: var(--bg-raised);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: var(--sp-4);
+    transition: border-color 150ms ease-out;
+  }
+
+  .ds-card:hover {
+    border-color: var(--border-strong);
+  }
+
+  .ds-card--selected {
+    border-color: var(--brand);
+    background: var(--brand-muted);
+  }
+
+  .ds-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--sp-3);
+  }
+
+  /* ========================================
+     Inputs
+     ======================================== */
+  .ds-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1);
+    max-width: 400px;
+  }
+
+  .ds-input-group + .ds-input-group { margin-top: var(--sp-4); }
+
+  .ds-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .ds-input {
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.6;
+    color: var(--text-primary);
+    background: var(--bg-inset);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    min-height: 48px;
+    outline: none;
+    transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
+    width: 100%;
+  }
+
+  .ds-input::placeholder { color: var(--text-tertiary); }
+
+  .ds-input:focus {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 2px var(--brand-muted);
+  }
+
+  .ds-input--error {
+    border-color: var(--error);
+  }
+
+  .ds-input--error:focus {
+    box-shadow: 0 0 0 2px var(--error-muted);
+  }
+
+  .ds-helper {
+    font-size: 0.8125rem;
+    color: var(--text-tertiary);
+  }
+
+  .ds-helper--error {
+    color: var(--error);
+  }
+
+  /* ========================================
+     Avatars
+     ======================================== */
+  .ds-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-overlay);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-full);
+    font-family: var(--font-body);
+    font-weight: 600;
+    color: var(--text-primary);
+    flex-shrink: 0;
+  }
+
+  .ds-avatar--sm { width: 28px; height: 28px; font-size: 0.6875rem; }
+  .ds-avatar--md { width: 36px; height: 36px; font-size: 0.8125rem; }
+  .ds-avatar--lg { width: 44px; height: 44px; font-size: 1rem; }
+
+  .ds-avatar-row {
+    display: flex;
+    gap: var(--sp-4);
+    align-items: center;
+  }
+
+  /* ========================================
+     Badges
+     ======================================== */
+  .ds-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
+  }
+
+  .ds-badge--brand { background: var(--brand-muted); color: var(--brand); }
+  .ds-badge--success { background: var(--success-muted); color: var(--success); }
+  .ds-badge--error { background: var(--error-muted); color: var(--error); }
+  .ds-badge--warning { background: var(--warning-muted); color: var(--warning); }
+  .ds-badge--neutral { background: var(--bg-overlay); color: var(--text-secondary); }
+  .ds-badge--live {
+    background: var(--error-muted);
+    color: var(--live);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .ds-badge-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+    align-items: center;
+  }
+
+  /* Live pulse dot */
+  .ds-pulse-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--live);
+    animation: pulse-live 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse-live {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* ========================================
+     Navigation Bar (Demo)
+     ======================================== */
+  .ds-navbar-demo {
+    position: relative;
+    background: rgba(10, 10, 15, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    height: 56px;
+    padding: 0 var(--sp-5);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .ds-navbar-demo__left {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+  }
+
+  .ds-navbar-demo__logo {
+    width: 28px;
+    height: 28px;
+  }
+
+  .ds-navbar-demo__brand {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 1.125rem;
+  }
+
+  .ds-navbar-demo__right {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4);
+  }
+
+  .ds-navbar-demo__icon-btn {
+    position: relative;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: var(--radius-full);
+    transition: background 150ms ease-out;
+  }
+  .ds-navbar-demo__icon-btn:hover {
+    background: var(--bg-overlay);
+    color: var(--text-primary);
+  }
+
+  .ds-navbar-demo__notif-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-width: 18px;
+    height: 18px;
+    background: var(--error);
+    color: #fff;
+    font-size: 0.625rem;
+    font-weight: 700;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+  }
+
+  /* ========================================
+     Toasts
+     ======================================== */
+  .ds-toast-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    max-width: 400px;
+  }
+
+  .ds-toast {
+    background: var(--bg-overlay);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    border-left: 3px solid;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  .ds-toast--success { border-left-color: var(--success); }
+  .ds-toast--error { border-left-color: var(--error); }
+  .ds-toast--warning { border-left-color: var(--warning); }
+  .ds-toast--info { border-left-color: var(--info); }
+
+  .ds-toast__icon {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+  }
+
+  /* ========================================
+     Leaderboard
+     ======================================== */
+  .ds-leaderboard {
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--border-default);
+  }
+
+  .ds-leaderboard__row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: var(--sp-3) var(--sp-4);
+    min-height: 56px;
+    background: var(--bg-raised);
+    border-bottom: 1px solid var(--border-default);
+    transition: background 150ms ease-out;
+  }
+
+  .ds-leaderboard__row:last-child { border-bottom: none; }
+
+  .ds-leaderboard__row:hover {
+    background: var(--bg-overlay);
+  }
+
+  .ds-leaderboard__row--current {
+    background: var(--brand-muted);
+    border-left: 3px solid var(--brand);
+    padding-left: calc(var(--sp-4) - 3px);
+  }
+
+  .ds-leaderboard__rank {
+    width: 32px;
+    text-align: right;
+    font-weight: 700;
+    font-size: 1.125rem;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
+
+  .ds-leaderboard__rank--gold { color: var(--rank-gold); }
+  .ds-leaderboard__rank--silver { color: var(--rank-silver); }
+  .ds-leaderboard__rank--bronze { color: var(--rank-bronze); }
+
+  .ds-leaderboard__name {
+    flex: 1;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ds-leaderboard__stat {
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
+
+  .ds-leaderboard__points {
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: var(--brand);
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+    min-width: 48px;
+    text-align: right;
+  }
+
+  /* ========================================
+     Stats Cards
+     ======================================== */
+  .ds-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--sp-3);
+    max-width: 480px;
+  }
+
+  .ds-stat-card {
+    background: var(--bg-raised);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: var(--sp-4);
+  }
+
+  .ds-stat-card__value {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 2rem;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+    margin-bottom: var(--sp-1);
+  }
+
+  .ds-stat-card__label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* ========================================
+     Match Card
+     ======================================== */
+  .ds-match-card {
+    background: var(--bg-raised);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: var(--sp-4);
+    max-width: 400px;
+  }
+
+  .ds-match-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--sp-3);
+  }
+
+  .ds-match-card__match-num {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .ds-match-card__teams {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-4);
+    margin-bottom: var(--sp-3);
+  }
+
+  .ds-match-card__team {
+    text-align: center;
+    flex: 1;
+  }
+
+  .ds-match-card__team-abbr {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 1.5rem;
+  }
+
+  .ds-match-card__team-name {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+  }
+
+  .ds-match-card__vs {
+    font-size: 0.875rem;
+    color: var(--text-tertiary);
+    font-weight: 600;
+  }
+
+  .ds-match-card__meta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+  }
+
+  .ds-match-card__deadline {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+    font-size: 0.8125rem;
+    color: var(--warning);
+    margin-top: var(--sp-3);
+    padding-top: var(--sp-3);
+    border-top: 1px solid var(--border-default);
+  }
+
+  /* ========================================
+     Prediction Table
+     ======================================== */
+  .ds-pred-table-wrapper {
+    overflow-x: auto;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-default);
+  }
+
+  .ds-pred-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+  }
+
+  .ds-pred-table th {
+    background: var(--bg-overlay);
+    padding: var(--sp-3) var(--sp-3);
+    font-weight: 600;
+    text-align: center;
+    border-bottom: 1px solid var(--border-default);
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+  }
+
+  .ds-pred-table th:first-child {
+    text-align: left;
+    position: sticky;
+    left: 0;
+    background: var(--bg-overlay);
+    z-index: 2;
+  }
+
+  .ds-pred-table td {
+    padding: var(--sp-3);
+    text-align: center;
+    border-bottom: 1px solid var(--border-default);
+    min-height: 44px;
+    min-width: 80px;
+  }
+
+  .ds-pred-table td:first-child {
+    text-align: left;
+    font-weight: 500;
+    color: var(--text-secondary);
+    position: sticky;
+    left: 0;
+    background: var(--bg-raised);
+    z-index: 1;
+    min-width: 140px;
+  }
+
+  .ds-pred-table tr:last-child td { border-bottom: none; }
+
+  .ds-pred-table tbody tr {
+    background: var(--bg-raised);
+  }
+
+  .ds-pred-cell--correct {
+    background: var(--success-muted);
+    color: var(--success);
+    font-weight: 600;
+  }
+
+  .ds-pred-cell--incorrect {
+    background: var(--error-muted);
+    color: var(--error);
+    font-weight: 600;
+  }
+
+  .ds-pred-cell--pending {
+    color: var(--text-secondary);
+  }
+
+  .ds-pred-cell--empty {
+    color: var(--text-tertiary);
+  }
+
+  .ds-pred-cell--current {
+    background: var(--brand-muted);
+  }
+
+  /* ========================================
+     Ball-by-Ball Pills
+     ======================================== */
+  .ds-balls {
+    display: flex;
+    gap: var(--sp-1);
+    flex-wrap: wrap;
+  }
+
+  .ds-ball {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ds-ball--dot { background: var(--bg-overlay); color: var(--text-tertiary); }
+  .ds-ball--run { background: var(--bg-overlay); color: var(--text-primary); }
+  .ds-ball--four { background: var(--info-muted); color: var(--info); }
+  .ds-ball--six { background: var(--brand-muted); color: var(--brand); }
+  .ds-ball--wicket { background: var(--error-muted); color: var(--error); }
+  .ds-ball--extra { background: var(--warning-muted); color: var(--warning); }
+
+  /* ========================================
+     Confirmation Dialog
+     ======================================== */
+  .ds-dialog-demo {
+    max-width: 400px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: var(--sp-6);
+  }
+
+  .ds-dialog-demo__icon {
+    color: var(--warning);
+    margin-bottom: var(--sp-4);
+  }
+
+  .ds-dialog-demo h3 {
+    font-family: var(--font-heading);
+    font-weight: 600;
+    font-size: 1.25rem;
+    margin-bottom: var(--sp-2);
+  }
+
+  .ds-dialog-demo p {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--sp-4);
+    line-height: 1.5;
+  }
+
+  .ds-dialog-demo__actions {
+    display: flex;
+    gap: var(--sp-3);
+    margin-top: var(--sp-4);
+  }
+
+  .ds-dialog-demo__actions .ds-btn { flex: 1; }
+
+  /* ========================================
+     Skeleton Loaders
+     ======================================== */
+  .ds-skeleton {
+    background: var(--bg-raised);
+    border-radius: var(--radius-lg);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ds-skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--bg-overlay) 50%,
+      transparent 100%
+    );
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  .ds-skeleton--text { height: 16px; border-radius: var(--radius-sm); }
+  .ds-skeleton--text-lg { height: 24px; width: 60%; border-radius: var(--radius-sm); }
+  .ds-skeleton--avatar { width: 36px; height: 36px; border-radius: var(--radius-full); }
+  .ds-skeleton--card { height: 120px; }
+  .ds-skeleton--btn { height: 48px; width: 140px; border-radius: var(--radius-md); }
+
+  .ds-skeleton-row {
+    display: flex;
+    gap: var(--sp-3);
+    align-items: center;
+  }
+
+  .ds-skeleton-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    flex: 1;
+  }
+
+  /* ========================================
+     Footer Demo
+     ======================================== */
+  .ds-footer-demo {
+    padding: var(--sp-6) var(--sp-5);
+    border-top: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-default);
+  }
+
+  .ds-footer-demo p {
+    font-size: 0.875rem;
+    color: var(--text-tertiary);
+    margin-bottom: var(--sp-2);
+  }
+
+  .ds-footer-demo a {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+  }
+  .ds-footer-demo a:hover { text-decoration: underline; }
+  .ds-footer-demo__links {
+    display: flex;
+    gap: var(--sp-4);
+  }
+
+  /* ========================================
+     Gang Card Demo
+     ======================================== */
+  .ds-gang-card {
+    background: var(--bg-raised);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: var(--sp-4);
+    cursor: pointer;
+    transition: border-color 150ms ease-out;
+    min-height: 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--sp-2);
+  }
+
+  .ds-gang-card:hover { border-color: var(--border-strong); }
+
+  .ds-gang-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .ds-gang-card__name {
+    font-weight: 600;
+    font-size: 1.125rem;
+  }
+
+  .ds-gang-card__members {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+  }
+
+  /* ========================================
+     Empty State
+     ======================================== */
+  .ds-empty-state {
+    text-align: center;
+    padding: var(--sp-12) var(--sp-6);
+  }
+
+  .ds-empty-state__icon {
+    color: var(--text-tertiary);
+    margin-bottom: var(--sp-4);
+  }
+
+  .ds-empty-state h3 {
+    font-family: var(--font-heading);
+    font-weight: 600;
+    font-size: 1.25rem;
+    margin-bottom: var(--sp-2);
+  }
+
+  .ds-empty-state p {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    max-width: 320px;
+    margin: 0 auto var(--sp-6);
+  }
+
+  /* ========================================
+     Icons Reference
+     ======================================== */
+  .ds-icon-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: var(--sp-3);
+  }
+
+  .ds-icon-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: var(--sp-4);
+    background: var(--bg-raised);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    transition: border-color 150ms ease-out;
+  }
+  .ds-icon-item:hover { border-color: var(--border-strong); }
+
+  .ds-icon-item svg { color: var(--text-primary); }
+
+  .ds-icon-item__label {
+    font-size: 0.6875rem;
+    color: var(--text-secondary);
+    text-align: center;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+
+  /* ========================================
+     Sticky Submit Bar
+     ======================================== */
+  .ds-sticky-bar-demo {
+    background: rgba(10, 10, 15, 0.9);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: var(--sp-3) var(--sp-5);
+  }
+
+  .ds-sticky-bar-demo__progress {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-bottom: var(--sp-3);
+  }
+
+  /* ========================================
+     Copy/Voice Section
+     ======================================== */
+  .ds-copy-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--sp-3);
+    max-width: 600px;
+  }
+
+  .ds-copy-do, .ds-copy-dont {
+    padding: var(--sp-4);
+    border-radius: var(--radius-md);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+  }
+
+  .ds-copy-do {
+    background: var(--success-muted);
+    border-left: 3px solid var(--success);
+    color: var(--text-primary);
+  }
+
+  .ds-copy-dont {
+    background: var(--error-muted);
+    border-left: 3px solid var(--error);
+    color: var(--text-secondary);
+    text-decoration: line-through;
+    text-decoration-color: var(--text-tertiary);
+  }
+
+  .ds-copy-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: var(--sp-2);
+    display: block;
+  }
+
+  .ds-copy-do .ds-copy-label { color: var(--success); text-decoration: none; }
+  .ds-copy-dont .ds-copy-label { color: var(--error); text-decoration: none; }
+
+  /* ========================================
+     Animation demos
+     ======================================== */
+  .ds-anim-demo {
+    display: flex;
+    gap: var(--sp-6);
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .ds-anim-card {
+    background: var(--bg-raised);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: var(--sp-6);
+    text-align: center;
+    min-width: 160px;
+  }
+
+  .ds-anim-card__label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: var(--sp-3);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+  }
+
+  /* Live pulse demo */
+  .ds-live-dot-demo {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--live);
+    animation: pulse-live 1.5s ease-in-out infinite;
+    margin: 0 auto;
+  }
+
+  /* Score counter demo */
+  .ds-score-counter {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 2.5rem;
+    color: var(--brand);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .ds-page { padding: var(--sp-5); }
+    .ds-header h1 { font-size: 2rem; }
+    .ds-section__title { font-size: 1.5rem; }
+    .ds-colors { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+    .ds-color-row { flex-direction: column; }
+    .ds-card-grid { grid-template-columns: 1fr; }
+    .ds-copy-grid { grid-template-columns: 1fr; }
+    .ds-icon-grid { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); }
+  }
+</style>
+</head>
+<body>
+
+<div class="ds-page">
+
+  <!-- ============================
+       HEADER
+       ============================ -->
+  <header class="ds-header">
+    <img src="logo.png" alt="Bragg logo" class="ds-header__logo">
+    <h1><span>Bragg</span> Design System</h1>
+    <p>The visual and interaction language for Bragg. Dark mode only. Confident, competitive, a little cheeky.</p>
+  </header>
+
+  <!-- ============================
+       1. COLORS
+       ============================ -->
+  <section class="ds-section" id="colors">
+    <h2 class="ds-section__title">Colors</h2>
+    <p class="ds-section__subtitle">Dark mode by default. The brand pops hardest against deep backgrounds.</p>
+
+    <!-- Brand -->
+    <div class="ds-subsection">
+      <h3 class="ds-subsection__title">Brand</h3>
+      <div class="ds-colors">
+        <div class="ds-swatch">
+          <div class="ds-swatch__color" style="background: #D4F34A"></div>
+          <div class="ds-swatch__info">
+            <div class="ds-swatch__name">--brand</div>
+            <div class="ds-swatch__hex">#D4F34A</div>
+          </div>
+        </div>
+        <div class="ds-swatch">
+          <div class="ds-swatch__color" style="background: #E0F76E"></div>
+          <div class="ds-swatch__info">
+            <div class="ds-swatch__name">--brand-hover</div>
+            <div class="ds-swatch__hex">#E0F76E</div>
+          </div>
+        </div>
+        <div class="ds-swatch">
+          <div class="ds-swatch__color" style="background: rgba(212,243,74,0.15)"></div>
+          <div class="ds-swatch__info">
+            <div class="ds-swatch__name">--brand-muted</div>
+            <div class="ds-swatch__hex">#D4F34A26</div>
+          </div>
+        </div>
+        <div class="ds-swatch">
+          <div class="ds-swatch__color" style="background: #0A0A0F"></div>
+          <div class="ds-swatch__info">
+            <div class="ds-swatch__name">--brand-on</div>
+            <div class="ds-swatch__hex">#0A0A0F</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Surfaces -->
+    <div class="ds-subsection">
+      <h3 class="ds-subsection__title">Surfaces</h3>
+      <div class="ds-color-row">
+        <div class="ds-color-row__item" style="background: #08080C; color: var(--text-primary)">
+          <div class="ds-color-row__label">--bg-inset</div>
+          <div class="ds-color-row__hex">#08080C</div>
+        </div>
+        <div class="ds-color-row__item" style="background: #0A0A0F; color: var(--text-primary)">
+          <div class="ds-color-row__label">--bg-base</div>
+          <div class="ds-color-row__hex">#0A0A0F</div>
+        </div>
+        <div class="ds-color-row__item" style="background: #141418; color: var(--text-primary)">
+          <div class="ds-color-row__label">--bg-raised</div>
+          <div class="ds-color-row__hex">#141418</div>
+        </div>
+        <div class="ds-color-row__item" style="background: #1C1C22; color: var(--text-primary)">
+          <div class="ds-color-row__label">--bg-overlay</div>
+          <div class="ds-color-row__hex">#1C1C22</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Text -->
+    <div class="ds-subsection">
+      <h3 class="ds-subsection__title">Text</h3>
+      <div class="ds-colors">
+        <div class="ds-swatch">
+          <div class="ds-swatch__color" style="background: var(--bg-raised)">
+            <span style="color: #F0F0F5; font-weight: 600; font-size: 1.25rem">Aa</span>
+          </div>
+          <div class="ds-swatch__info">
+            <div class="ds-swatch__name">--text-primary</div>
+            <div class="ds-swatch__hex">#F0F0F5</div>
+          </div>
+        </div>
+        <div class="ds-swatch">
+          <div class="ds-swatch__color" style="background: var(--bg-raised)">
+            <span style="color: #9898A6; font-weight: 500; font-size: 1.25rem">Aa</span>
+          </div>
+          <div class="ds-swatch__info">
+            <div class="ds-swatch__name">--text-secondary</div>
+            <div class="ds-swatch__hex">#9898A6</div>
+          </div>
+        </div>
+        <div class="ds-swatch">
+          <div class="ds-swatch__color" style="background: var(--bg-raised)">
+            <span style="color: #5A5A6E; font-weight: 500; font-size: 1.25rem">Aa</span>
+          </div>
+          <div class="ds-swatch__info">
+            <div class="ds-swatch__name">--text-tertiary</div>
+            <div class="ds-swatch__hex">#5A5A6E</div>
+          </div>
+        </div>
+        <div class="ds-swatch">
+          <div class="ds-swatch__color" style="background: var(--brand)">
+            <span style="color: #0A0A0F; font-weight: 600; font-size: 1.25rem">Aa</span>
+          </div>
+          <div class="ds-swatch__info">
+            <div class="ds-swatch__name">--text-inverse</div>
+            <div class="ds-swatch__hex">#0A0A0F</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Semantic -->
+    <div class="ds-subsection">
+      <h3 class="ds-subsection__title">Semantic</h3>
+      <div class="ds-colors">
+        <div class="ds-swatch">
+          <div class="ds-swatch__color" style="background: #22C55E"></div>
+          <div class="ds-swatch__info">
+            <div class="ds-swatch__name">--success</div>
+            <div class="ds-swatch__hex">#22C55E</div>
+          </div>
+        </div>
+        <div class="ds-swatch">
+          <div class="ds-swatch__color" style="background: #EF4444"></div>
+          <div class="ds-swatch__info">
+            <div class="ds-swatch__name">--error</div>
+            <div class="ds-swatch__hex">#EF4444</div>
+          </div>
+        </div>
+        <div class="ds-swatch">
+          <div class="ds-swatch__color" style="background: #F59E0B"></div>
+          <div class="ds-swatch__info">
+            <div class="ds-swatch__name">--warning</div>
+            <div class="ds-swatch__hex">#F59E0B</div>
+          </div>
+        </div>
+        <div class="ds-swatch">
+          <div class="ds-swatch__color" style="background: #3B82F6"></div>
+          <div class="ds-swatch__info">
+            <div class="ds-swatch__name">--info</div>
+            <div class="ds-swatch__hex">#3B82F6</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Match & Competition -->
+    <div class="ds-subsection">
+      <h3 class="ds-subsection__title">Match & Competition</h3>
+      <div class="ds-colors">
+        <div class="ds-swatch">
+          <div class="ds-swatch__color" style="background: var(--bg-raised); display: flex; gap: 8px; align-items: center; justify-content: center;">
+            <div class="ds-pulse-dot"></div>
+            <span style="color: var(--live); font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">LIVE</span>
+          </div>
+          <div class="ds-swatch__info">
+            <div class="ds-swatch__name">--live</div>
+            <div class="ds-swatch__hex">#EF4444</div>
+          </div>
+        </div>
+        <div class="ds-swatch">
+          <div class="ds-swatch__color" style="background: var(--bg-raised)">
+            <span style="color: #FFD700; font-family: var(--font-heading); font-weight: 700; font-size: 1.5rem">1st</span>
+          </div>
+          <div class="ds-swatch__info">
+            <div class="ds-swatch__name">--rank-gold</div>
+            <div class="ds-swatch__hex">#FFD700</div>
+          </div>
+        </div>
+        <div class="ds-swatch">
+          <div class="ds-swatch__color" style="background: var(--bg-raised)">
+            <span style="color: #C0C0C0; font-family: var(--font-heading); font-weight: 700; font-size: 1.5rem">2nd</span>
+          </div>
+          <div class="ds-swatch__info">
+            <div class="ds-swatch__name">--rank-silver</div>
+            <div class="ds-swatch__hex">#C0C0C0</div>
+          </div>
+        </div>
+        <div class="ds-swatch">
+          <div class="ds-swatch__color" style="background: var(--bg-raised)">
+            <span style="color: #CD7F32; font-family: var(--font-heading); font-weight: 700; font-size: 1.5rem">3rd</span>
+          </div>
+          <div class="ds-swatch__info">
+            <div class="ds-swatch__name">--rank-bronze</div>
+            <div class="ds-swatch__hex">#CD7F32</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="ds-divider">
+
+  <!-- ============================
+       2. TYPOGRAPHY
+       ============================ -->
+  <section class="ds-section" id="typography">
+    <h2 class="ds-section__title">Typography</h2>
+    <p class="ds-section__subtitle">Space Grotesk for headings, Inter for body and data. Tabular figures for all numbers.</p>
+
+    <!-- Heading specimen -->
+    <div class="ds-subsection">
+      <h3 class="ds-subsection__title">Heading Font — Space Grotesk</h3>
+      <div class="ds-type-specimen">
+        <div class="ds-type-specimen__meta">
+          <span class="ds-type-specimen__tag">Weights: 500 / 600 / 700</span>
+          <span class="ds-type-specimen__tag">Headings & Display</span>
+        </div>
+        <div style="font-family: var(--font-heading);">
+          <div style="font-weight: 700; font-size: 3rem; line-height: 1.0; letter-spacing: -0.03em; margin-bottom: 8px;">Predict right. Prove it. Bragg.</div>
+          <div style="font-weight: 600; font-size: 1.5rem; line-height: 1.3; letter-spacing: -0.02em; margin-bottom: 8px; color: var(--text-secondary);">Season Standings</div>
+          <div style="font-weight: 500; font-size: 1.125rem; line-height: 1.5; letter-spacing: -0.01em; color: var(--text-secondary);">Match 42 &middot; CSK vs MI</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Body specimen -->
+    <div class="ds-subsection">
+      <h3 class="ds-subsection__title">Body Font — Inter</h3>
+      <div class="ds-type-specimen">
+        <div class="ds-type-specimen__meta">
+          <span class="ds-type-specimen__tag">Weights: 400 / 500 / 600 / 700</span>
+          <span class="ds-type-specimen__tag">Body, Labels & Data</span>
+        </div>
+        <div style="font-family: var(--font-body);">
+          <div style="font-weight: 400; font-size: 1rem; line-height: 1.6; margin-bottom: 12px;">Friends form private groups called gangs, predict outcomes across 19 scenarios per match, and compete on live leaderboards as each match unfolds. No real money, no betting — just bragging rights.</div>
+          <div style="font-weight: 500; font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 8px;">Prediction deadline: 45 min before match start</div>
+          <div style="font-weight: 700; font-size: 1.5rem; font-variant-numeric: tabular-nums; color: var(--brand);">1,247 pts</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Type Scale -->
+    <div class="ds-subsection">
+      <h3 class="ds-subsection__title">Type Scale</h3>
+      <div class="ds-type-scale">
+        <div class="ds-type-scale__row">
+          <span class="ds-type-scale__label">text-5xl</span>
+          <span class="ds-type-scale__size">48px</span>
+          <span style="font-family: var(--font-heading); font-weight: 700; font-size: 3rem; line-height: 1.0; letter-spacing: -0.03em;">Bragg</span>
+        </div>
+        <div class="ds-type-scale__row">
+          <span class="ds-type-scale__label">text-4xl</span>
+          <span class="ds-type-scale__size">40px</span>
+          <span style="font-family: var(--font-heading); font-weight: 700; font-size: 2.5rem; line-height: 1.1; letter-spacing: -0.03em;">247</span>
+        </div>
+        <div class="ds-type-scale__row">
+          <span class="ds-type-scale__label">text-3xl</span>
+          <span class="ds-type-scale__size">32px</span>
+          <span style="font-family: var(--font-heading); font-weight: 700; font-size: 2rem; line-height: 1.2; letter-spacing: -0.02em;">Dashboard</span>
+        </div>
+        <div class="ds-type-scale__row">
+          <span class="ds-type-scale__label">text-2xl</span>
+          <span class="ds-type-scale__size">24px</span>
+          <span style="font-family: var(--font-heading); font-weight: 600; font-size: 1.5rem; line-height: 1.3; letter-spacing: -0.02em;">Season Standings</span>
+        </div>
+        <div class="ds-type-scale__row">
+          <span class="ds-type-scale__label">text-xl</span>
+          <span class="ds-type-scale__size">20px</span>
+          <span style="font-family: var(--font-heading); font-weight: 600; font-size: 1.25rem; line-height: 1.4; letter-spacing: -0.01em;">Upcoming Matches</span>
+        </div>
+        <div class="ds-type-scale__row">
+          <span class="ds-type-scale__label">text-lg</span>
+          <span class="ds-type-scale__size">18px</span>
+          <span style="font-weight: 500; font-size: 1.125rem; line-height: 1.5; letter-spacing: -0.01em;">The Cricket Legends</span>
+        </div>
+        <div class="ds-type-scale__row">
+          <span class="ds-type-scale__label">text-base</span>
+          <span class="ds-type-scale__size">16px</span>
+          <span style="font-weight: 400; font-size: 1rem; line-height: 1.6;">Predict right. Prove it. Bragg.</span>
+        </div>
+        <div class="ds-type-scale__row">
+          <span class="ds-type-scale__label">text-sm</span>
+          <span class="ds-type-scale__size">14px</span>
+          <span style="font-weight: 400; font-size: 0.875rem; line-height: 1.5; letter-spacing: 0.01em; color: var(--text-secondary);">Match starts in 2 hours</span>
+        </div>
+        <div class="ds-type-scale__row">
+          <span class="ds-type-scale__label">text-xs</span>
+          <span class="ds-type-scale__size">12px</span>
+          <span style="font-weight: 500; font-size: 0.75rem; line-height: 1.5; letter-spacing: 0.02em; text-transform: uppercase; color: var(--text-secondary);">ADMIN &middot; 12 MEMBERS</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="ds-divider">
+
+  <!-- ============================
+       3. SPACING
+       ============================ -->
+  <section class="ds-section" id="spacing">
+    <h2 class="ds-section__title">Spacing</h2>
+    <p class="ds-section__subtitle">4px base unit. Only these values for all padding, margins, and gaps.</p>
+
+    <div class="ds-spacing-scale">
+      <div class="ds-spacing-row">
+        <span class="ds-spacing-row__label">--sp-1</span>
+        <div class="ds-spacing-row__bar" style="width: 4px;"></div>
+        <span class="ds-spacing-row__value">4px</span>
+      </div>
+      <div class="ds-spacing-row">
+        <span class="ds-spacing-row__label">--sp-2</span>
+        <div class="ds-spacing-row__bar" style="width: 8px;"></div>
+        <span class="ds-spacing-row__value">8px</span>
+      </div>
+      <div class="ds-spacing-row">
+        <span class="ds-spacing-row__label">--sp-3</span>
+        <div class="ds-spacing-row__bar" style="width: 12px;"></div>
+        <span class="ds-spacing-row__value">12px</span>
+      </div>
+      <div class="ds-spacing-row">
+        <span class="ds-spacing-row__label">--sp-4</span>
+        <div class="ds-spacing-row__bar" style="width: 16px;"></div>
+        <span class="ds-spacing-row__value">16px</span>
+      </div>
+      <div class="ds-spacing-row">
+        <span class="ds-spacing-row__label">--sp-5</span>
+        <div class="ds-spacing-row__bar" style="width: 20px;"></div>
+        <span class="ds-spacing-row__value">20px</span>
+      </div>
+      <div class="ds-spacing-row">
+        <span class="ds-spacing-row__label">--sp-6</span>
+        <div class="ds-spacing-row__bar" style="width: 24px;"></div>
+        <span class="ds-spacing-row__value">24px</span>
+      </div>
+      <div class="ds-spacing-row">
+        <span class="ds-spacing-row__label">--sp-8</span>
+        <div class="ds-spacing-row__bar" style="width: 32px;"></div>
+        <span class="ds-spacing-row__value">32px</span>
+      </div>
+      <div class="ds-spacing-row">
+        <span class="ds-spacing-row__label">--sp-10</span>
+        <div class="ds-spacing-row__bar" style="width: 40px;"></div>
+        <span class="ds-spacing-row__value">40px</span>
+      </div>
+      <div class="ds-spacing-row">
+        <span class="ds-spacing-row__label">--sp-12</span>
+        <div class="ds-spacing-row__bar" style="width: 48px;"></div>
+        <span class="ds-spacing-row__value">48px</span>
+      </div>
+      <div class="ds-spacing-row">
+        <span class="ds-spacing-row__label">--sp-16</span>
+        <div class="ds-spacing-row__bar" style="width: 64px;"></div>
+        <span class="ds-spacing-row__value">64px</span>
+      </div>
+    </div>
+  </section>
+
+  <hr class="ds-divider">
+
+  <!-- ============================
+       4. BORDER RADIUS
+       ============================ -->
+  <section class="ds-section" id="radius">
+    <h2 class="ds-section__title">Border Radius</h2>
+    <p class="ds-section__subtitle">Consistent rounding across all components.</p>
+
+    <div class="ds-radius-grid">
+      <div class="ds-radius-item">
+        <div class="ds-radius-item__box" style="border-radius: 6px;"></div>
+        <div class="ds-radius-item__label">--radius-sm</div>
+        <div class="ds-radius-item__value">6px</div>
+      </div>
+      <div class="ds-radius-item">
+        <div class="ds-radius-item__box" style="border-radius: 10px;"></div>
+        <div class="ds-radius-item__label">--radius-md</div>
+        <div class="ds-radius-item__value">10px</div>
+      </div>
+      <div class="ds-radius-item">
+        <div class="ds-radius-item__box" style="border-radius: 14px;"></div>
+        <div class="ds-radius-item__label">--radius-lg</div>
+        <div class="ds-radius-item__value">14px</div>
+      </div>
+      <div class="ds-radius-item">
+        <div class="ds-radius-item__box" style="border-radius: 20px;"></div>
+        <div class="ds-radius-item__label">--radius-xl</div>
+        <div class="ds-radius-item__value">20px</div>
+      </div>
+      <div class="ds-radius-item">
+        <div class="ds-radius-item__box" style="border-radius: 9999px;"></div>
+        <div class="ds-radius-item__label">--radius-full</div>
+        <div class="ds-radius-item__value">9999px</div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="ds-divider">
+
+  <!-- ============================
+       5. BUTTONS
+       ============================ -->
+  <section class="ds-section" id="buttons">
+    <h2 class="ds-section__title">Buttons</h2>
+    <p class="ds-section__subtitle">Min 48px height. Primary = brand CTA. Never two primaries side by side.</p>
+
+    <div class="ds-subsection">
+      <h3 class="ds-subsection__title">Variants</h3>
+      <div class="ds-button-grid">
+        <button class="ds-btn ds-btn--primary">Create gang</button>
+        <button class="ds-btn ds-btn--secondary">Copy invite link</button>
+        <button class="ds-btn ds-btn--destructive">Delete gang</button>
+        <button class="ds-btn ds-btn--ghost">Cancel</button>
+      </div>
+    </div>
+
+    <div class="ds-subsection">
+      <h3 class="ds-subsection__title">States</h3>
+      <div class="ds-button-grid">
+        <button class="ds-btn ds-btn--primary">Default</button>
+        <button class="ds-btn ds-btn--primary" style="background: var(--brand-hover)">Hover</button>
+        <button class="ds-btn ds-btn--primary ds-btn--disabled">Disabled</button>
+        <button class="ds-btn ds-btn--primary ds-btn--loading">Loading</button>
+      </div>
+    </div>
+  </section>
+
+  <hr class="ds-divider">
+
+  <!-- ============================
+       6. CARDS
+       ============================ -->
+  <section class="ds-section" id="cards">
+    <h2 class="ds-section__title">Cards</h2>
+    <p class="ds-section__subtitle">Flat on dark backgrounds. No shadows. Border transitions on hover.</p>
+
+    <div class="ds-card-grid">
+      <!-- Gang card -->
+      <div class="ds-gang-card">
+        <div class="ds-gang-card__header">
+          <span class="ds-gang-card__name">The Cricket Legends</span>
+          <span class="ds-badge ds-badge--brand">Admin</span>
+        </div>
+        <div class="ds-gang-card__members">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          8 of 20 members
+        </div>
+      </div>
+
+      <!-- Gang card 2 -->
+      <div class="ds-gang-card">
+        <div class="ds-gang-card__header">
+          <span class="ds-gang-card__name">Office Warriors</span>
+          <span class="ds-badge ds-badge--neutral">Member</span>
+        </div>
+        <div class="ds-gang-card__members">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          14 of 20 members
+        </div>
+      </div>
+
+      <!-- Selected card -->
+      <div class="ds-gang-card ds-card--selected">
+        <div class="ds-gang-card__header">
+          <span class="ds-gang-card__name">Selected State</span>
+          <span class="ds-badge ds-badge--brand">Active</span>
+        </div>
+        <div class="ds-gang-card__members" style="color: var(--brand);">Brand border + muted bg</div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="ds-divider">
+
+  <!-- ============================
+       7. INPUTS
+       ============================ -->
+  <section class="ds-section" id="inputs">
+    <h2 class="ds-section__title">Inputs</h2>
+    <p class="ds-section__subtitle">Inset background. Brand focus ring. Error state with helper text below.</p>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--sp-8);">
+      <!-- Default -->
+      <div>
+        <div class="ds-input-group">
+          <label class="ds-label">Gang name</label>
+          <input type="text" class="ds-input" placeholder="Enter gang name...">
+          <span class="ds-helper">3-50 characters</span>
+        </div>
+
+        <div class="ds-input-group">
+          <label class="ds-label">Email address</label>
+          <input type="email" class="ds-input" value="virat@example.com">
+        </div>
+      </div>
+
+      <!-- Error & Focus states -->
+      <div>
+        <div class="ds-input-group">
+          <label class="ds-label">Display name</label>
+          <input type="text" class="ds-input ds-input--error" value="AB">
+          <span class="ds-helper ds-helper--error">Must be at least 2 characters</span>
+        </div>
+
+        <div class="ds-input-group">
+          <label class="ds-label">Invite code</label>
+          <input type="text" class="ds-input" placeholder="e.g. ABC123" style="border-color: var(--border-focus); box-shadow: 0 0 0 2px var(--brand-muted);">
+          <span class="ds-helper">Focus state shown</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="ds-divider">
+
+  <!-- ============================
+       8. AVATARS
+       ============================ -->
+  <section class="ds-section" id="avatars">
+    <h2 class="ds-section__title">Avatars</h2>
+    <p class="ds-section__subtitle">Initials in a circle. Three sizes for different contexts.</p>
+
+    <div class="ds-avatar-row">
+      <div style="text-align: center;">
+        <div class="ds-avatar ds-avatar--sm">V</div>
+        <div style="font-size: 0.6875rem; color: var(--text-tertiary); margin-top: 4px;">28px</div>
+      </div>
+      <div style="text-align: center;">
+        <div class="ds-avatar ds-avatar--md">R</div>
+        <div style="font-size: 0.6875rem; color: var(--text-tertiary); margin-top: 4px;">36px</div>
+      </div>
+      <div style="text-align: center;">
+        <div class="ds-avatar ds-avatar--lg">M</div>
+        <div style="font-size: 0.6875rem; color: var(--text-tertiary); margin-top: 4px;">44px</div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="ds-divider">
+
+  <!-- ============================
+       9. BADGES
+       ============================ -->
+  <section class="ds-section" id="badges">
+    <h2 class="ds-section__title">Badges & Chips</h2>
+    <p class="ds-section__subtitle">Small, uppercase, rounded. Color-coded by semantic meaning.</p>
+
+    <div class="ds-badge-grid">
+      <span class="ds-badge ds-badge--brand">+25 PTS</span>
+      <span class="ds-badge ds-badge--success">Correct</span>
+      <span class="ds-badge ds-badge--error">Wrong</span>
+      <span class="ds-badge ds-badge--warning">Deadline 2h</span>
+      <span class="ds-badge ds-badge--neutral">Member</span>
+      <span class="ds-badge ds-badge--live"><span class="ds-pulse-dot"></span>LIVE</span>
+    </div>
+  </section>
+
+  <hr class="ds-divider">
+
+  <!-- ============================
+       10. NAVIGATION BAR
+       ============================ -->
+  <section class="ds-section" id="navbar">
+    <h2 class="ds-section__title">Navigation Bar</h2>
+    <p class="ds-section__subtitle">Fixed top, blurred backdrop. Logo left, actions right.</p>
+
+    <div class="ds-navbar-demo">
+      <div class="ds-navbar-demo__left">
+        <img src="logo.png" alt="Bragg" class="ds-navbar-demo__logo">
+        <span class="ds-navbar-demo__brand">Bragg</span>
+      </div>
+      <div class="ds-navbar-demo__right">
+        <div class="ds-navbar-demo__icon-btn">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          <span class="ds-navbar-demo__notif-badge">3</span>
+        </div>
+        <div class="ds-avatar ds-avatar--sm">R</div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="ds-divider">
+
+  <!-- ============================
+       11. TOASTS
+       ============================ -->
+  <section class="ds-section" id="toasts">
+    <h2 class="ds-section__title">Toasts</h2>
+    <p class="ds-section__subtitle">Bottom center. Left accent border. Auto-dismiss in 4s.</p>
+
+    <div class="ds-toast-grid">
+      <div class="ds-toast ds-toast--success">
+        <svg class="ds-toast__icon" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        You're in! Welcome to The Cricket Legends.
+      </div>
+      <div class="ds-toast ds-toast--error">
+        <svg class="ds-toast__icon" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        Couldn't save predictions. Try again.
+      </div>
+      <div class="ds-toast ds-toast--warning">
+        <svg class="ds-toast__icon" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Predictions lock in 30 minutes.
+      </div>
+      <div class="ds-toast ds-toast--info">
+        <svg class="ds-toast__icon" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        Invite link copied to clipboard.
+      </div>
+    </div>
+  </section>
+
+  <hr class="ds-divider">
+
+  <!-- ============================
+       12. LEADERBOARD
+       ============================ -->
+  <section class="ds-section" id="leaderboard">
+    <h2 class="ds-section__title">Leaderboard</h2>
+    <p class="ds-section__subtitle">The star of the app. Tabular numbers, rank medals, current user highlighted.</p>
+
+    <div class="ds-leaderboard" style="max-width: 480px;">
+      <div class="ds-leaderboard__row">
+        <span class="ds-leaderboard__rank ds-leaderboard__rank--gold">1</span>
+        <div class="ds-avatar ds-avatar--sm">V</div>
+        <span class="ds-leaderboard__name">Virat K.</span>
+        <span class="ds-leaderboard__stat">14/19</span>
+        <span class="ds-leaderboard__points">247</span>
+      </div>
+      <div class="ds-leaderboard__row">
+        <span class="ds-leaderboard__rank ds-leaderboard__rank--silver">2</span>
+        <div class="ds-avatar ds-avatar--sm">R</div>
+        <span class="ds-leaderboard__name">Rohit S.</span>
+        <span class="ds-leaderboard__stat">12/19</span>
+        <span class="ds-leaderboard__points">215</span>
+      </div>
+      <div class="ds-leaderboard__row ds-leaderboard__row--current">
+        <span class="ds-leaderboard__rank ds-leaderboard__rank--bronze">3</span>
+        <div class="ds-avatar ds-avatar--sm">Y</div>
+        <span class="ds-leaderboard__name">You</span>
+        <span class="ds-leaderboard__stat">11/19</span>
+        <span class="ds-leaderboard__points">198</span>
+      </div>
+      <div class="ds-leaderboard__row">
+        <span class="ds-leaderboard__rank">4</span>
+        <div class="ds-avatar ds-avatar--sm">M</div>
+        <span class="ds-leaderboard__name">MS Dhoni</span>
+        <span class="ds-leaderboard__stat">10/19</span>
+        <span class="ds-leaderboard__points">176</span>
+      </div>
+      <div class="ds-leaderboard__row">
+        <span class="ds-leaderboard__rank">5</span>
+        <div class="ds-avatar ds-avatar--sm">J</div>
+        <span class="ds-leaderboard__name">Jasprit B.</span>
+        <span class="ds-leaderboard__stat">9/19</span>
+        <span class="ds-leaderboard__points">152</span>
+      </div>
+    </div>
+  </section>
+
+  <hr class="ds-divider">
+
+  <!-- ============================
+       13. STATS CARDS
+       ============================ -->
+  <section class="ds-section" id="stats">
+    <h2 class="ds-section__title">Stats Cards</h2>
+    <p class="ds-section__subtitle">Numbers are the star. Space Grotesk bold values, uppercase labels.</p>
+
+    <div class="ds-stats-grid">
+      <div class="ds-stat-card">
+        <div class="ds-stat-card__value" style="color: var(--brand);">1,247</div>
+        <div class="ds-stat-card__label">Total Points</div>
+      </div>
+      <div class="ds-stat-card">
+        <div class="ds-stat-card__value">73%</div>
+        <div class="ds-stat-card__label">Accuracy</div>
+      </div>
+      <div class="ds-stat-card">
+        <div class="ds-stat-card__value">42</div>
+        <div class="ds-stat-card__label">Matches Predicted</div>
+      </div>
+      <div class="ds-stat-card">
+        <div class="ds-stat-card__value">5</div>
+        <div class="ds-stat-card__label">Gangs Joined</div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="ds-divider">
+
+  <!-- ============================
+       14. MATCH CARD
+       ============================ -->
+  <section class="ds-section" id="match-card">
+    <h2 class="ds-section__title">Match Card</h2>
+    <p class="ds-section__subtitle">Teams, venue, deadline. Live badge with pulsing dot.</p>
+
+    <div style="display: flex; gap: var(--sp-4); flex-wrap: wrap;">
+      <!-- Upcoming -->
+      <div class="ds-match-card">
+        <div class="ds-match-card__header">
+          <span class="ds-match-card__match-num">Match 42</span>
+          <span class="ds-badge ds-badge--warning">Deadline 2h</span>
+        </div>
+        <div class="ds-match-card__teams">
+          <div class="ds-match-card__team">
+            <div class="ds-match-card__team-abbr">CSK</div>
+            <div class="ds-match-card__team-name">Chennai Super Kings</div>
+          </div>
+          <div class="ds-match-card__vs">vs</div>
+          <div class="ds-match-card__team">
+            <div class="ds-match-card__team-abbr">MI</div>
+            <div class="ds-match-card__team-name">Mumbai Indians</div>
+          </div>
+        </div>
+        <div class="ds-match-card__meta">
+          <span>Sun, 6 Apr &middot; 7:30 PM</span>
+          <span style="color: var(--text-tertiary);">Wankhede Stadium, Mumbai</span>
+        </div>
+        <div class="ds-match-card__deadline">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Predictions close at 6:45 PM
+        </div>
+      </div>
+
+      <!-- Live -->
+      <div class="ds-match-card">
+        <div class="ds-match-card__header">
+          <span class="ds-match-card__match-num">Match 41</span>
+          <span class="ds-badge ds-badge--live"><span class="ds-pulse-dot"></span>LIVE</span>
+        </div>
+        <div class="ds-match-card__teams">
+          <div class="ds-match-card__team">
+            <div class="ds-match-card__team-abbr">RCB</div>
+            <div class="ds-match-card__team-name">Royal Challengers</div>
+          </div>
+          <div class="ds-match-card__vs">vs</div>
+          <div class="ds-match-card__team">
+            <div class="ds-match-card__team-abbr">DC</div>
+            <div class="ds-match-card__team-name">Delhi Capitals</div>
+          </div>
+        </div>
+        <div style="text-align: center; margin-top: var(--sp-2);">
+          <span style="font-family: var(--font-heading); font-weight: 700; font-size: 1.5rem; font-variant-numeric: tabular-nums;">186/4</span>
+          <span style="font-size: 0.875rem; color: var(--text-secondary); margin-left: 8px;">(17.2 ov)</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="ds-divider">
+
+  <!-- ============================
+       15. BALL-BY-BALL
+       ============================ -->
+  <section class="ds-section" id="balls">
+    <h2 class="ds-section__title">Ball-by-Ball Pills</h2>
+    <p class="ds-section__subtitle">Last 6 balls. Color-coded by outcome type.</p>
+
+    <div class="ds-balls">
+      <div class="ds-ball ds-ball--dot">0</div>
+      <div class="ds-ball ds-ball--run">1</div>
+      <div class="ds-ball ds-ball--run">2</div>
+      <div class="ds-ball ds-ball--four">4</div>
+      <div class="ds-ball ds-ball--six">6</div>
+      <div class="ds-ball ds-ball--wicket">W</div>
+      <div class="ds-ball ds-ball--extra">WD</div>
+      <div class="ds-ball ds-ball--run">3</div>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: var(--sp-4); margin-top: var(--sp-4); font-size: 0.8125rem; color: var(--text-secondary);">
+      <span><span class="ds-ball ds-ball--dot" style="width: 20px; height: 20px; font-size: 0.625rem; display: inline-flex;">0</span> Dot</span>
+      <span><span class="ds-ball ds-ball--run" style="width: 20px; height: 20px; font-size: 0.625rem; display: inline-flex;">1</span> Runs</span>
+      <span><span class="ds-ball ds-ball--four" style="width: 20px; height: 20px; font-size: 0.625rem; display: inline-flex;">4</span> Four</span>
+      <span><span class="ds-ball ds-ball--six" style="width: 20px; height: 20px; font-size: 0.625rem; display: inline-flex;">6</span> Six</span>
+      <span><span class="ds-ball ds-ball--wicket" style="width: 20px; height: 20px; font-size: 0.625rem; display: inline-flex;">W</span> Wicket</span>
+      <span><span class="ds-ball ds-ball--extra" style="width: 20px; height: 20px; font-size: 0.625rem; display: inline-flex;">WD</span> Extra</span>
+    </div>
+  </section>
+
+  <hr class="ds-divider">
+
+  <!-- ============================
+       16. PREDICTION TABLE
+       ============================ -->
+  <section class="ds-section" id="prediction-table">
+    <h2 class="ds-section__title">Prediction Reveal Table</h2>
+    <p class="ds-section__subtitle">Matrix of members' predictions per scenario. Color-coded cells, current user highlighted.</p>
+
+    <div class="ds-pred-table-wrapper" style="max-width: 600px;">
+      <table class="ds-pred-table">
+        <thead>
+          <tr>
+            <th>Scenario</th>
+            <th>Virat K.</th>
+            <th style="background: var(--brand-muted);">You</th>
+            <th>Rohit S.</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Match Winner</td>
+            <td class="ds-pred-cell--correct">CSK</td>
+            <td class="ds-pred-cell--correct ds-pred-cell--current">CSK</td>
+            <td class="ds-pred-cell--incorrect">MI</td>
+          </tr>
+          <tr>
+            <td>Top Scorer</td>
+            <td class="ds-pred-cell--incorrect">Kohli</td>
+            <td class="ds-pred-cell--correct ds-pred-cell--current">Dhoni</td>
+            <td class="ds-pred-cell--correct">Dhoni</td>
+          </tr>
+          <tr>
+            <td>Powerplay Runs</td>
+            <td class="ds-pred-cell--pending">50-60</td>
+            <td class="ds-pred-cell--pending ds-pred-cell--current">40-50</td>
+            <td class="ds-pred-cell--pending">60-70</td>
+          </tr>
+          <tr>
+            <td>First Wicket</td>
+            <td class="ds-pred-cell--correct">Over 1-4</td>
+            <td class="ds-pred-cell--incorrect ds-pred-cell--current">Over 5-8</td>
+            <td class="ds-pred-cell--empty">--</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="ds-divider">
+
+  <!-- ============================
+       17. CONFIRMATION DIALOG
+       ============================ -->
+  <section class="ds-section" id="dialog">
+    <h2 class="ds-section__title">Confirmation Dialog</h2>
+    <p class="ds-section__subtitle">Type-to-confirm for destructive actions. Warning icon, clear consequences.</p>
+
+    <div class="ds-dialog-demo">
+      <div class="ds-dialog-demo__icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <h3>Delete gang?</h3>
+      <p>This will permanently delete "The Cricket Legends" and all associated data. This cannot be undone.</p>
+      <div class="ds-input-group" style="max-width: 100%;">
+        <label class="ds-label">Type the gang name to confirm</label>
+        <input type="text" class="ds-input" placeholder="The Cricket Legends">
+      </div>
+      <div class="ds-dialog-demo__actions">
+        <button class="ds-btn ds-btn--ghost">Cancel</button>
+        <button class="ds-btn ds-btn--destructive ds-btn--disabled">Delete gang</button>
+      </div>
+    </div>
+  </section>
+
+  <hr class="ds-divider">
+
+  <!-- ============================
+       18. SKELETON LOADERS
+       ============================ -->
+  <section class="ds-section" id="skeletons">
+    <h2 class="ds-section__title">Skeleton Loaders</h2>
+    <p class="ds-section__subtitle">Shimmer animation. Match the shape of real content. Use for >300ms loads.</p>
+
+    <div style="display: flex; flex-direction: column; gap: var(--sp-4); max-width: 400px;">
+      <!-- Card skeleton -->
+      <div class="ds-skeleton ds-skeleton--card" style="padding: var(--sp-4);">
+        <div class="ds-skeleton-row" style="margin-bottom: var(--sp-3);">
+          <div class="ds-skeleton ds-skeleton--avatar"></div>
+          <div class="ds-skeleton-stack">
+            <div class="ds-skeleton ds-skeleton--text" style="width: 60%;"></div>
+            <div class="ds-skeleton ds-skeleton--text" style="width: 40%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row skeletons -->
+      <div style="display: flex; flex-direction: column; gap: var(--sp-2);">
+        <div class="ds-skeleton ds-skeleton--text" style="width: 100%;"></div>
+        <div class="ds-skeleton ds-skeleton--text" style="width: 80%;"></div>
+        <div class="ds-skeleton ds-skeleton--text" style="width: 90%;"></div>
+      </div>
+
+      <!-- Button skeleton -->
+      <div class="ds-skeleton ds-skeleton--btn"></div>
+    </div>
+  </section>
+
+  <hr class="ds-divider">
+
+  <!-- ============================
+       19. STICKY SUBMIT BAR
+       ============================ -->
+  <section class="ds-section" id="sticky-bar">
+    <h2 class="ds-section__title">Sticky Submit Bar</h2>
+    <p class="ds-section__subtitle">Fixed bottom on predict page. Progress counter + submit button.</p>
+
+    <div class="ds-sticky-bar-demo" style="max-width: 480px;">
+      <div class="ds-sticky-bar-demo__progress">7 of 19 picked</div>
+      <button class="ds-btn ds-btn--primary" style="width: 100%;">Submit predictions</button>
+    </div>
+  </section>
+
+  <hr class="ds-divider">
+
+  <!-- ============================
+       20. EMPTY STATE
+       ============================ -->
+  <section class="ds-section" id="empty-state">
+    <h2 class="ds-section__title">Empty State</h2>
+    <p class="ds-section__subtitle">Encouraging, not scolding. Always provide a next action.</p>
+
+    <div class="ds-card" style="max-width: 480px;">
+      <div class="ds-empty-state">
+        <div class="ds-empty-state__icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <h3>No gangs yet</h3>
+        <p>Create a gang and invite your friends, or join one with an invite code.</p>
+        <button class="ds-btn ds-btn--primary">Create gang</button>
+      </div>
+    </div>
+  </section>
+
+  <hr class="ds-divider">
+
+  <!-- ============================
+       21. FOOTER
+       ============================ -->
+  <section class="ds-section" id="footer">
+    <h2 class="ds-section__title">Footer</h2>
+    <p class="ds-section__subtitle">Disclaimer, legal links. Tertiary text, secondary link color.</p>
+
+    <div class="ds-footer-demo">
+      <p>Bragg is a free prediction game for entertainment only. No real money, betting, or prizes involved.</p>
+      <div class="ds-footer-demo__links">
+        <a href="#">Privacy Policy</a>
+        <a href="#">Terms & Conditions</a>
+      </div>
+    </div>
+  </section>
+
+  <hr class="ds-divider">
+
+  <!-- ============================
+       22. ICONS
+       ============================ -->
+  <section class="ds-section" id="icons">
+    <h2 class="ds-section__title">Iconography</h2>
+    <p class="ds-section__subtitle">Lucide Icons. Outline style, 1.5px stroke. Four size tokens.</p>
+
+    <!-- Size reference -->
+    <div class="ds-subsection">
+      <h3 class="ds-subsection__title">Sizes</h3>
+      <div style="display: flex; gap: var(--sp-6); align-items: flex-end; margin-bottom: var(--sp-8);">
+        <div style="text-align: center;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          <div style="font-size: 0.6875rem; color: var(--text-tertiary); margin-top: 4px;">16px</div>
+        </div>
+        <div style="text-align: center;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          <div style="font-size: 0.6875rem; color: var(--text-tertiary); margin-top: 4px;">20px</div>
+        </div>
+        <div style="text-align: center;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          <div style="font-size: 0.6875rem; color: var(--text-tertiary); margin-top: 4px;">24px</div>
+        </div>
+        <div style="text-align: center;">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          <div style="font-size: 0.6875rem; color: var(--text-tertiary); margin-top: 4px;">32px</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Common icons grid -->
+    <div class="ds-subsection">
+      <h3 class="ds-subsection__title">Common Icons</h3>
+      <div class="ds-icon-grid">
+        <div class="ds-icon-item">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          <span class="ds-icon-item__label">bell</span>
+        </div>
+        <div class="ds-icon-item">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span class="ds-icon-item__label">user</span>
+        </div>
+        <div class="ds-icon-item">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span class="ds-icon-item__label">settings</span>
+        </div>
+        <div class="ds-icon-item">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          <span class="ds-icon-item__label">share-2</span>
+        </div>
+        <div class="ds-icon-item">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          <span class="ds-icon-item__label">copy</span>
+        </div>
+        <div class="ds-icon-item">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span class="ds-icon-item__label">check</span>
+        </div>
+        <div class="ds-icon-item">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <span class="ds-icon-item__label">x</span>
+        </div>
+        <div class="ds-icon-item">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span class="ds-icon-item__label">lock</span>
+        </div>
+        <div class="ds-icon-item">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span class="ds-icon-item__label">clock</span>
+        </div>
+        <div class="ds-icon-item">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 9 8 12 8s5-4 7.5-4a2.5 2.5 0 0 1 0 5H18"/><path d="m14 5-2 3-2-3"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-2"/><path d="M6 12v-2a6 6 0 0 1 12 0v2"/></svg>
+          <span class="ds-icon-item__label">trophy</span>
+        </div>
+        <div class="ds-icon-item">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span class="ds-icon-item__label">users</span>
+        </div>
+        <div class="ds-icon-item">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span class="ds-icon-item__label">plus</span>
+        </div>
+        <div class="ds-icon-item">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+          <span class="ds-icon-item__label">trash-2</span>
+        </div>
+        <div class="ds-icon-item">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span class="ds-icon-item__label">log-out</span>
+        </div>
+        <div class="ds-icon-item">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span class="ds-icon-item__label">alert-triangle</span>
+        </div>
+        <div class="ds-icon-item">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <span class="ds-icon-item__label">info</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="ds-divider">
+
+  <!-- ============================
+       23. ANIMATIONS
+       ============================ -->
+  <section class="ds-section" id="animations">
+    <h2 class="ds-section__title">Motion & Animation</h2>
+    <p class="ds-section__subtitle">Fast and snappy. 100-300ms range. Purposeful, interruptible.</p>
+
+    <div class="ds-anim-demo">
+      <div class="ds-anim-card">
+        <div class="ds-live-dot-demo"></div>
+        <div class="ds-anim-card__label">Live Pulse</div>
+        <div style="font-size: 0.6875rem; color: var(--text-tertiary); margin-top: 2px;">1.5s infinite</div>
+      </div>
+
+      <div class="ds-anim-card">
+        <div class="ds-score-counter" id="scoreCounter">0</div>
+        <div class="ds-anim-card__label">Score Counter</div>
+        <div style="font-size: 0.6875rem; color: var(--text-tertiary); margin-top: 2px;">300ms ease-out</div>
+        <button class="ds-btn ds-btn--ghost" style="margin-top: 8px; padding: 4px 12px; min-height: 32px; font-size: 0.75rem;" onclick="animateCounter()">Trigger</button>
+      </div>
+
+      <div class="ds-anim-card">
+        <div style="width: 48px; height: 48px; margin: 0 auto;">
+          <div class="ds-skeleton" style="width: 100%; height: 100%; border-radius: var(--radius-md);"></div>
+        </div>
+        <div class="ds-anim-card__label">Skeleton Shimmer</div>
+        <div style="font-size: 0.6875rem; color: var(--text-tertiary); margin-top: 2px;">1.5s infinite</div>
+      </div>
+
+      <div class="ds-anim-card">
+        <button class="ds-btn ds-btn--primary" style="padding: 8px 16px; min-height: 36px; font-size: 0.875rem;">Press me</button>
+        <div class="ds-anim-card__label">Button Press</div>
+        <div style="font-size: 0.6875rem; color: var(--text-tertiary); margin-top: 2px;">100ms scale(0.97)</div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="ds-divider">
+
+  <!-- ============================
+       24. COPY & VOICE
+       ============================ -->
+  <section class="ds-section" id="copy">
+    <h2 class="ds-section__title">Copy & Voice</h2>
+    <p class="ds-section__subtitle">Direct, confident, competitive, casual. Short sentences. No hedging.</p>
+
+    <div class="ds-copy-grid">
+      <div class="ds-copy-do">
+        <span class="ds-copy-label">Do</span>
+        "You're in!"
+      </div>
+      <div class="ds-copy-dont">
+        <span class="ds-copy-label">Don't</span>
+        "You have successfully joined."
+      </div>
+
+      <div class="ds-copy-do">
+        <span class="ds-copy-label">Do</span>
+        "Predictions locked"
+      </div>
+      <div class="ds-copy-dont">
+        <span class="ds-copy-label">Don't</span>
+        "The prediction window has closed."
+      </div>
+
+      <div class="ds-copy-do">
+        <span class="ds-copy-label">Do</span>
+        "3 of 19 picked"
+      </div>
+      <div class="ds-copy-dont">
+        <span class="ds-copy-label">Don't</span>
+        "You have completed 3 out of 19."
+      </div>
+
+      <div class="ds-copy-do">
+        <span class="ds-copy-label">Do</span>
+        "Wrong call."
+      </div>
+      <div class="ds-copy-dont">
+        <span class="ds-copy-label">Don't</span>
+        "Unfortunately, your prediction..."
+      </div>
+
+      <div class="ds-copy-do">
+        <span class="ds-copy-label">Do</span>
+        "Nailed it."
+      </div>
+      <div class="ds-copy-dont">
+        <span class="ds-copy-label">Don't</span>
+        "Great job! Your prediction was..."
+      </div>
+
+      <div class="ds-copy-do">
+        <span class="ds-copy-label">Do</span>
+        "Dead last."
+      </div>
+      <div class="ds-copy-dont">
+        <span class="ds-copy-label">Don't</span>
+        "You are currently in the last..."
+      </div>
+    </div>
+  </section>
+
+  <hr class="ds-divider">
+
+  <!-- ============================
+       25. ACCESSIBILITY
+       ============================ -->
+  <section class="ds-section" id="accessibility">
+    <h2 class="ds-section__title">Accessibility</h2>
+    <p class="ds-section__subtitle">WCAG AA minimum. Touch targets, focus states, color independence.</p>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--sp-4);">
+      <div class="ds-card" style="padding: var(--sp-6);">
+        <div style="font-size: 2rem; margin-bottom: var(--sp-2);">48px</div>
+        <div style="font-weight: 600; margin-bottom: var(--sp-1);">Touch Targets</div>
+        <div style="font-size: 0.875rem; color: var(--text-secondary);">Minimum 48x48px for all interactive elements. 8px gap minimum between targets.</div>
+      </div>
+
+      <div class="ds-card" style="padding: var(--sp-6);">
+        <div style="width: 48px; height: 48px; border: 2px solid var(--brand); border-radius: var(--radius-md); margin-bottom: var(--sp-2); outline: 2px solid var(--brand); outline-offset: 2px;"></div>
+        <div style="font-weight: 600; margin-bottom: var(--sp-1);">Focus Rings</div>
+        <div style="font-size: 0.875rem; color: var(--text-secondary);">2px solid brand color, 2px offset. Never hidden, always styled.</div>
+      </div>
+
+      <div class="ds-card" style="padding: var(--sp-6);">
+        <div style="display: flex; gap: var(--sp-2); align-items: center; margin-bottom: var(--sp-2);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span style="color: var(--success); font-weight: 600;">Correct</span>
+        </div>
+        <div style="font-weight: 600; margin-bottom: var(--sp-1);">Color + Icon</div>
+        <div style="font-size: 0.875rem; color: var(--text-secondary);">Never convey meaning through color alone. Always pair with icon or text.</div>
+      </div>
+
+      <div class="ds-card" style="padding: var(--sp-6);">
+        <div style="font-size: 0.875rem; margin-bottom: var(--sp-2);">
+          <span style="color: var(--text-primary);">4.5:1</span>
+          <span style="color: var(--text-secondary);"> min for body text</span>
+        </div>
+        <div style="font-weight: 600; margin-bottom: var(--sp-1);">Contrast Ratios</div>
+        <div style="font-size: 0.875rem; color: var(--text-secondary);">All text meets WCAG AA. Primary text achieves AAA (17:1+).</div>
+      </div>
+    </div>
+  </section>
+
+</div><!-- .ds-page -->
+
+<script>
+  // Score counter animation demo
+  let currentScore = 0;
+  function animateCounter() {
+    const target = currentScore === 0 ? 247 : 0;
+    const el = document.getElementById('scoreCounter');
+    const start = currentScore;
+    const diff = target - start;
+    const duration = 300;
+    const startTime = performance.now();
+
+    function step(time) {
+      const elapsed = time - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // ease-out: 1 - (1 - t)^3
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const value = Math.round(start + diff * eased);
+      el.textContent = value.toLocaleString();
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      } else {
+        currentScore = target;
+      }
+    }
+    requestAnimationFrame(step);
+  }
+</script>
+
+</body>
+</html>
