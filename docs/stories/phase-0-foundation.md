@@ -332,6 +332,7 @@ PRD specifies PostHog for analytics (autocapture + custom events + error reporti
   - `WEB_VITALS_*` — LCP, INP, CLS
   - `PAGE_LOAD_TIME`, `SERVER_ACTION_DURATION`
   - `ERROR_BOUNDARY_CAUGHT`, `ERROR_LOGGED`, `UNHANDLED_ERROR`
+  - `RATE_LIMIT_HIT` — `{ user_id, action, count, window_start }` (Phase 8, POL-SEC-001)
 - Pre-auth hashing: `crypto.subtle.digest('SHA-256', email)` → hex string (distinct_id)
 - Session recording rollout plan (post-launch, no code change needed):
   1. Create feature flag `session-recording-enabled` in PostHog dashboard (default: off, 0% rollout)

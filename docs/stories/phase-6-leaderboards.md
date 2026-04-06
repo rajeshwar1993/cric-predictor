@@ -380,6 +380,7 @@ One of the most satisfying views in the app — full transparency of picks for b
 - [ ] Mobile-responsive (hide some columns on narrow screens)
 - [ ] Future-ready for season selector dropdown (placeholder or disabled in phase 6)
 - [ ] Page metadata: `<title>Standings — {gangName} | Bragg</title>`
+- [ ] **Update GANG-UI-005 (Gang Page shell):** replace the Phase 2 placeholder Standings link in the gang header with a real `<Link href="/group/{groupId}/standings">` pointing to this page
 
 **Out of scope:**
 - Multi-season support (UI has placeholder; multi-season is a pending item)

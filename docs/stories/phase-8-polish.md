@@ -340,6 +340,84 @@ Before final QA, everything needs to work on STG. This story is a checklist of d
 
 ---
 
+## POL-SEC-001: Per-user rate limiting for mutation server actions
+
+**Phase:** Phase 8 — Polish
+**Priority:** P1
+**Estimated effort:** Small (4–6 hours)
+**Status:** Not started
+
+**User story:**
+> As the platform,
+> I want per-user rate limits on all mutation server actions,
+> So that a bad actor or buggy client can't spam gang creation, join requests, predictions, or profile edits and degrade the experience for everyone else.
+
+**Context / Why:**
+Per PRD Security § Rate limiting: "Server actions: per-user rate limits on mutations (gang creation, join requests, prediction submissions, profile edits) — specific limits TBD during implementation." Magic link already has Supabase's built-in rate limit + 60s cooldown (AUTH-API-001). Sportmonks API has 429 handling (SYNC-LIB-001). But our own mutation endpoints have **no** rate limiting — a scripted client could create hundreds of gangs or flood join requests. This story closes that gap.
+
+**Acceptance criteria:**
+- [ ] Rate limit helper: `src/lib/rate-limit.ts` — `rateLimit(userId: string, action: string, opts: { max: number, windowSeconds: number }): Promise<{ allowed: boolean, retryAfterMs?: number }>`
+- [ ] Implementation: Supabase table `v2_rate_limits` with columns:
+  - `user_id` (UUID, NOT NULL)
+  - `action` (TEXT, NOT NULL) — e.g., `'create_gang'`, `'join_gang'`, `'submit_predictions'`, `'update_profile'`, `'delete_gang'`
+  - `window_start` (TIMESTAMPTZ, NOT NULL)
+  - `count` (INTEGER, default 0)
+  - PRIMARY KEY: `(user_id, action, window_start)`
+  - Automatic cleanup: rows older than 24h are deleted by a lightweight `pg_cron` job (daily) or by the helper itself on each call (`DELETE WHERE window_start < now() - INTERVAL '24 hours'` as a fire-and-forget side effect)
+- [ ] Alternative accepted: in-memory LRU (`lru-cache` or `Map` with TTL) if you prefer zero-DB-overhead for launch. Trade-off: resets on Vercel cold start, so limits are per-instance not truly global. Acceptable at launch scale (~100 users).
+- [ ] Rate limit applied to the following server actions (called at the top of each action, before any DB writes):
+
+| Server Action | Action Key | Max | Window | Rationale |
+|---|---|---|---|---|
+| `createGang` (GANG-API-001) | `create_gang` | 10 | 1 hour | Prevents spam gang creation |
+| `requestJoinGang` (GANG-API-002) | `join_gang` | 20 | 1 hour | Prevents mass-joining gangs |
+| `submitPredictions` (PRED-API-001) | `submit_predictions` | 60 | 1 hour | Generous — 20 scenarios × 3 matches |
+| `updateProfile` (LB-API-001) | `update_profile` | 10 | 1 hour | Prevents name-change spam |
+| `deleteGang` (GANG-API-005) | `delete_gang` | 5 | 1 hour | Destructive action — tight limit |
+| `leaveGang` (GANG-API-004) | `leave_gang` | 10 | 1 hour | Prevents join/leave cycling |
+
+- [ ] When rate limited: return `{ success: false, error: 'Too many requests. Please try again in X minutes.' }` — the UI toast / error banner displays the message. HTTP semantics (429) not needed since these are server actions, not API routes.
+- [ ] Rate limit helper is unit-tested with mocked time
+- [ ] Limits are defined as constants in `src/lib/rate-limit.ts` (not env vars) — easy to tune in code, no config drift
+- [ ] RLS on `v2_rate_limits`: users can only see/modify their own rows (if using DB approach). Service role bypasses for cleanup cron.
+
+**Out of scope:**
+- Rate limiting on read operations (fetching data, loading pages) — autocapture + Vercel's built-in DDoS protection handle this
+- Rate limiting on magic link (Supabase handles it natively — AUTH-API-001)
+- IP-based rate limiting (out of scope for launch — Vercel's edge handles basic IP throttling)
+- Rate limiting on admin actions (approve/reject/remove member) — low volume, trusted user
+
+**Dependencies:** FND-004, FND-DB-001 (if using DB approach)
+**Blocks:** POL-LAUNCH-001 (launch readiness should verify rate limits are deployed)
+
+**PRD references:**
+- [Security § Rate limiting](../PRD.V2.md#security) — "per-user rate limits on mutations"
+
+**Technical notes:**
+- Decision: DB table vs. in-memory LRU is an implementation-time call. For launch scale (~100 users, single Vercel region), in-memory LRU is simpler and sufficient. If you plan multi-region or expect >1K users at launch, use the DB table.
+- If using DB approach, add `v2_rate_limits` to the schema migration (a tiny follow-up migration file `supabase-2/migrations/013_rate_limits.sql`). This table does NOT need RLS if only accessed via service-role.
+- Vercel serverless functions have per-invocation isolation, so a `Map`-based rate limiter won't persist across invocations. Use `lru-cache` with a singleton pattern (`globalThis.__rateLimitCache`) or Redis if available. For Vercel, the DB approach is more reliable.
+- The rate limit values above are launch defaults. If any feel wrong during QA, tune them — the constants are all in one file.
+
+**Analytics events:**
+- `RATE_LIMIT_HIT` — `{ user_id, action, count, window_start }` — fire when a user is rate-limited (useful for detecting abuse patterns in PostHog)
+
+**Unit tests:**
+- [ ] Helper allows requests within limit
+- [ ] Helper blocks requests exceeding limit and returns correct `retryAfterMs`
+- [ ] Helper resets after window expires
+- [ ] Each protected server action returns rate-limit error when limit exceeded (integration test or mock)
+
+**Test plan:**
+- [ ] Manually call `createGang` 11 times rapidly — 11th should fail with rate limit error
+- [ ] Wait for window expiry, retry — should succeed
+- [ ] Verify `RATE_LIMIT_HIT` event fires in PostHog when blocked
+- [ ] Verify other actions (join, predict, profile) are also protected
+
+**Open questions:** None (limits are launch defaults and can be tuned; DB vs. LRU is implementer's choice at build time)
+
+---
+
 ## POL-QA-001: End-to-end smoke test
 
 **Phase:** Phase 8 — Polish
@@ -437,6 +515,7 @@ Final gate before production. Covers technical, business, and legal checks.
     - [ ] Web Vitals targets met (verify via Lighthouse)
     - [ ] Accessibility audit passed (axe-core, keyboard, screen reader)
     - [ ] Error monitoring live (PostHog verified)
+    - [ ] Per-user rate limiting deployed on all mutation server actions (POL-SEC-001)
     - [ ] Database backup enabled (Supabase managed)
     - [ ] DNS configured for production domain
     - [ ] SSL certificates valid
@@ -499,8 +578,8 @@ Final gate before production. Covers technical, business, and legal checks.
 
 Phase 8 delivers the final polish that takes Bragg from "feature-complete" to "ship-ready". It's lower in story count but critical — skipping this phase would mean launching with rough edges.
 
-**Story count:** 7 stories (1 UI landing, 1 loading states, 1 error boundaries, 1 SEO, 1 ops, 1 QA, 1 launch checklist)
-**Estimated total effort:** ~6–10 working days
+**Story count:** 8 stories (1 UI landing, 1 loading states, 1 error boundaries, 1 SEO, 1 ops, 1 security/rate-limiting, 1 QA, 1 launch checklist)
+**Estimated total effort:** ~7–11 working days
 
 **Ship readiness:**
 - ✅ Real landing page
@@ -508,6 +587,7 @@ Phase 8 delivers the final polish that takes Bragg from "feature-complete" to "s
 - ✅ Error boundaries
 - ✅ SEO + Open Graph
 - ✅ STG deployed with all env vars
+- ✅ Per-user rate limiting on mutations
 - ✅ E2E smoke tests passing
 - ✅ Launch checklist complete
 

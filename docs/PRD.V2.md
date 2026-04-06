@@ -605,6 +605,7 @@ All data available via single call: `GET /fixtures/{id}?include=batting,bowling,
   - **Predictions:** submitted, pick changed, predict page viewed/revisited
   - **Notifications:** bell opened, notification clicked, marked read, all marked read
   - **Performance:** Web Vitals (LCP, INP, CLS), page load time, server action duration
+  - **Security:** rate limit hit (user_id, action, count, window) — fires when a user exceeds a per-action rate limit
 - **Error Reporting:**
   - All client-side errors captured (error boundaries, unhandled errors)
   - All Next.js server action errors captured
