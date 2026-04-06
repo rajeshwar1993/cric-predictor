@@ -301,8 +301,7 @@ Handles both auto-accept gangs (immediate join) and manual-approval gangs (pendi
 - [ ] Test all states from the Join Page (happy path, gang full, blocked, already member, deleted)
 - [ ] Test rejoin flow: leave a gang, rejoin, verify status is `pending` again
 
-**Open questions:**
-- What if display name collision occurs — should user be asked to change display name, or rejected outright? (For launch: rejected; they can edit name on Profile and retry.)
+**Open questions:** None (decided: reject outright — user can edit name on Profile and retry)
 
 ---
 
@@ -1289,8 +1288,7 @@ Public route. Handles both authenticated and unauthenticated visitors. Unauthent
 - [ ] Visit `/join/ABC123` while logged in → join button appears
 - [ ] Click join → appropriate state per auto-accept setting
 
-**Open questions:**
-- Should OG previews include gang creator's name? (Privacy concern — may leak user info to anyone with a shared link. Recommendation: just gang name.)
+**Open questions:** None (decided: no — just gang name in OG preview, no creator name for privacy)
 
 ---
 
@@ -1419,8 +1417,7 @@ Different from the gang page's member list — this one shows ALL statuses (incl
 - [ ] Verify admin can't remove self
 - [ ] Verify blocked user can't rejoin
 
-**Open questions:**
-- Should block be confirmable with a dialog? (PRD doesn't require it; simple button is fine.)
+**Open questions:** None (decided: no dialog for block — simple button is fine)
 
 ---
 
@@ -1428,7 +1425,7 @@ Different from the gang page's member list — this one shows ALL statuses (incl
 
 Phase 2 delivers the full gangs experience. After this phase, the app supports the entire gang lifecycle: create, invite, join, manage members, update settings, leave, delete.
 
-**Story count:** 20 stories (1 DB RPC, 6 server actions, 13 UI)
+**Story count:** 22 stories (3 DB, 6 API, 13 UI)
 **Estimated total effort:** ~20–30 working days
 
 **Ship readiness:**

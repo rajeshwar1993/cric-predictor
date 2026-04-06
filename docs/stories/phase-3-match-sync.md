@@ -80,8 +80,7 @@ Hardcoding Sportmonks endpoints and field names in every cron function creates m
 - [ ] Deploy to STG, call each method against live Sportmonks, verify data comes through
 - [ ] Temporarily set an invalid token and verify error handling
 
-**Open questions:**
-- Should we cache responses briefly (e.g., 10 seconds) to avoid redundant calls in parallel cron steps? (Recommendation: no caching for launch; add only if quota becomes a problem)
+**Open questions:** None (decided: no caching for launch — add only if quota becomes a problem)
 
 ---
 
@@ -169,8 +168,7 @@ The core data pipeline. Per PRD, runs once a day at 5 AM IST (23:30 UTC prior da
 - [ ] Verify `v2_players` has ~250 players (25 per team × 10)
 - [ ] Re-run, verify no duplicates
 
-**Open questions:**
-- How do we handle a team that's dropped from the league mid-season? (Edge case — for IPL this never happens; skip for launch)
+**Open questions:** None (decided: skip — IPL teams never get dropped mid-season)
 
 ---
 
@@ -314,8 +312,7 @@ Per PRD, scenarios must be seeded at least 12 hours before each match. The cron 
 - [ ] Verify `v2_fixture_scenarios` rows created
 - [ ] Run again, verify no duplicates
 
-**Open questions:**
-- Should we emit an event when this cron creates > N scenarios for observability? (Recommendation: log to `RAISE NOTICE` for now)
+**Open questions:** None (decided: `RAISE NOTICE` logging for now — no PostHog event needed)
 
 ---
 
@@ -387,8 +384,7 @@ The Gang Page had a placeholder for Upcoming Matches in Phase 2. Now that fixtur
 - [ ] Verify timezone and date format look correct on mobile
 - [ ] Click the CTA — goes to predict page URL (dead link until Phase 4)
 
-**Open questions:**
-- Should we show more than 3 matches if there's a doubleheader day? (Per PRD: exactly 3 chronologically; stick with that.)
+**Open questions:** None (decided: exactly 3 matches chronologically, per PRD)
 
 ---
 

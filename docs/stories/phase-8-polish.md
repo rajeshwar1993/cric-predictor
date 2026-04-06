@@ -272,8 +272,7 @@ Per PRD, landing page and join invite pages need meta tags and Open Graph for ri
 - [ ] Share a join link, verify gang name appears in preview
 - [ ] Run `curl` or Open Graph checker tool to verify meta tags
 
-**Open questions:**
-- Do we need localized meta tags? (No — English only per PRD)
+**Open questions:** None (decided: no — English only per PRD)
 
 ---
 

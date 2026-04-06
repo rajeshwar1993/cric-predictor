@@ -273,8 +273,7 @@ The core data processing engine for match days. This is the single most complex 
 - [ ] Verify scenarios resolve progressively across multiple runs
 - [ ] Verify all scenarios from the GT vs RR test match resolve correctly
 
-**Open questions:**
-- How do we handle a brief Sportmonks outage during live polling? (Current plan: log, skip, retry next cycle — acceptable)
+**Open questions:** None (decided: log, skip, retry next cycle — acceptable for 15s poll interval)
 
 ---
 

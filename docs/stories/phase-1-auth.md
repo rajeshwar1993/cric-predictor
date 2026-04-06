@@ -341,8 +341,7 @@ After first sign-in, the profile row exists (created by trigger) but `display_na
 - [ ] Complete onboarding from UI, verify profile row updated and cookies set
 - [ ] Verify redirect respects cached intent (sign in via `/join/[code]` flow)
 
-**Open questions:**
-- Should display name uniqueness be checked globally? (Per PRD, it's unique per gang, not globally)
+**Open questions:** None (decided: unique per gang, not globally — per PRD)
 
 ---
 
@@ -1147,7 +1146,7 @@ Next.js provides a global error boundary via `error.tsx`. Wrap it to match brand
 
 Phase 1 delivers the full auth + onboarding experience. After this phase, you can sign in, complete onboarding, see a blank dashboard page, sign out, and all the shared UI components (nav, footer, destructive dialog) are ready for use in later phases.
 
-**Story count:** 17 stories (6 API, 1 middleware, 10 UI)
+**Story count:** 18 stories (1 DB, 6 API, 1 middleware, 10 UI)
 **Estimated total effort:** ~15–25 working days
 
 **Ship readiness:**

@@ -184,8 +184,7 @@ The v2 database is large (20+ tables, many triggers, RLS policies). Proper migra
 - [ ] Run `supabase db push --dry-run` and verify no errors
 - [ ] Confirm STG project is linked (does not confuse with existing `supabase/` folder)
 
-**Open questions:**
-- Should we use local Supabase dev or go straight to STG? (Recommendation: straight to STG since we're doing a big-bang migration)
+**Open questions:** None (decided: straight to STG — big-bang migration, no local dev needed)
 
 ---
 
@@ -526,8 +525,7 @@ The PRD defines 17 v2 tables (plus `v2_scenario_templates` and `v2_league_season
 - [ ] Verify via Supabase Studio that all tables exist with expected columns
 - [ ] Try an INSERT that violates the CHECK constraint — should fail
 
-**Open questions:**
-- Should we use `public` schema or a dedicated `v2` schema? (Recommendation: `public`, matching existing patterns, but with `v2_` prefix on all tables)
+**Open questions:** None (decided: `public` schema with `v2_` prefix on all tables)
 
 ---
 
@@ -599,8 +597,7 @@ PRD specifies detailed RLS policies for every table. These MUST be in place befo
 - [ ] Manually test SELECT/INSERT/UPDATE on each table as different users (anon, authenticated, member, admin)
 - [ ] Verify realtime subscription works on `v2_notifications`
 
-**Open questions:**
-- Do we need separate RLS policies for anon (logged out) users? (Probably not — all non-reference tables require auth)
+**Open questions:** None (decided: no anon RLS policies — all non-reference tables require auth)
 
 ---
 
@@ -744,8 +741,7 @@ The PRD defines many triggers that enforce business rules (max members, max gang
 - [ ] Submit predictions, resolve scenarios, verify standings populate correctly with ranks
 - [ ] Mark a scenario as voided, verify standings recalculate excluding it
 
-**Open questions:**
-- Do we need advisory locks on the rank recalc function to prevent concurrent UPDATE races? (Low risk given scale, but noted as potential issue.)
+**Open questions:** None (decided: no advisory locks on rank recalc — low risk at launch scale)
 
 ---
 
@@ -754,7 +750,7 @@ The PRD defines many triggers that enforce business rules (max members, max gang
 **Phase:** Phase 0 — Foundation
 **Priority:** P0
 **Estimated effort:** Medium (4–8 hours)
-**Status:** Blocked — waiting on IPL 2026 Sportmonks IDs (fetch as pre-implementation step, see below)
+**Status:** Not started — IDs verified live on 2026-04-06 (see `docs/sportmonks-seed-ids.md`)
 
 **User story:**
 > As the developer,
@@ -917,9 +913,7 @@ Per PRD Implementation Plan, we migrate profiles and gangs but not predictions. 
 - [ ] Run migration a second time — confirm no duplicates
 - [ ] Confirm old tables are dropped
 
-**Open questions:**
-- Do we need to preserve v1 profile `avatar_url` or other fields that don't exist in v2? (Decision: no, v2 uses initials-only avatars)
-- What if a v1 gang has 0 `approved` members after filtering? Do we still create the gang? (Recommendation: skip — empty gangs serve no purpose)
+**Open questions:** None (decided: no — v2 uses initials-only avatars, no avatar_url needed; v1 gangs with 0 approved members are skipped — empty gangs serve no purpose)
 
 ---
 
@@ -932,7 +926,7 @@ Phase 0 builds the entire foundation — project scaffolding, Supabase clients, 
 
 **Blockers before starting:**
 - ~~New `docs/design-system.md` must be authored by user (blocks FND-006)~~ — **DONE** (`docs/design-system.md` + `docs/design-system-visual.html` authored)
-- Sportmonks IPL 2026 IDs must be fetched live (blocks FND-DB-005)
+- ~~Sportmonks IPL 2026 IDs must be fetched live (blocks FND-DB-005)~~ — **DONE** (verified live 2026-04-06, see `docs/sportmonks-seed-ids.md`)
 
 **Ship readiness:**
 - ✅ web-app-2/ scaffold with Next.js 16, TypeScript, Tailwind v4, shadcn/ui

@@ -311,8 +311,7 @@ The client-side form manages all the scenario picks, submits the batch, and hand
 - [ ] Update a pick, submit, verify row updated
 - [ ] Visit after deadline, verify locked state
 
-**Open questions:**
-- Should we auto-save on each pick change? (For launch: no — explicit save via button. Could add later.)
+**Open questions:** None (decided: no auto-save — explicit save via button for launch)
 
 ---
 
@@ -481,8 +480,7 @@ With 50 players (25 per team × 2 teams), a searchable dropdown is necessary.
 - [ ] Search for a player, select them, verify state
 - [ ] Test on mobile (touch interactions)
 
-**Open questions:**
-- Should we show team indicator icon next to player name? (Recommend yes for clarity — team code in parens)
+**Open questions:** None (decided: yes — show team code in parens next to player name for clarity)
 
 ---
 

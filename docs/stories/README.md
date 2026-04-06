@@ -97,9 +97,11 @@ Stories listed in dependency order. Within each step, stories separated by `∥`
 
 > **Blockers to clear before starting Phase 0:**
 > 1. ~~Author new `docs/design-system.md`~~ — **DONE** (`docs/design-system.md` + `docs/design-system-visual.html` authored)
-> 2. Fetch live Sportmonks IPL 2026 IDs — blocks FND-DB-005 → blocks seed data
+> 2. ~~Fetch live Sportmonks IPL 2026 IDs~~ — **DONE** (verified live 2026-04-06, see `docs/sportmonks-seed-ids.md`)
+>
+> **All blockers cleared. Phase 0 is ready to start.**
 
-**92 stories across 43 steps.**
+**94 stories across 43 steps.**
 
 ---
 
@@ -134,7 +136,7 @@ Stories listed in dependency order. Within each step, stories separated by `∥`
 
 ---
 
-### Phase 2 — Gangs (21 stories)
+### Phase 2 — Gangs (22 stories)
 
 | Step | Stories | What gets done |
 |------|---------|----------------|
@@ -188,7 +190,7 @@ Stories listed in dependency order. Within each step, stories separated by `∥`
 
 ---
 
-### Phase 6 — Leaderboards & Profile (7 stories)
+### Phase 6 — Leaderboards & Profile (8 stories)
 
 | Step | Stories | What gets done |
 |------|---------|----------------|

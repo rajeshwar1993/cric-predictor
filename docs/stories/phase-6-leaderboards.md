@@ -342,8 +342,7 @@ One of the most satisfying views in the app — full transparency of picks for b
 - [ ] Test during live match with progressive resolution
 - [ ] Test on mobile with horizontal scroll
 
-**Open questions:**
-- Should unresolved cells show the user's pick (yes, so others know what they picked) but no correct/incorrect indicator? (Yes — per PRD, shows picks with status "per cell")
+**Open questions:** None (decided: yes — show the user's pick in unresolved cells, but no correct/incorrect indicator until resolved)
 
 ---
 
@@ -481,8 +480,7 @@ One of the most satisfying views in the app — full transparency of picks for b
 - [ ] Verify stats match actual predictions + standings
 - [ ] Delete account flow end-to-end
 
-**Open questions:**
-- Should we show a breakdown of stats per gang (not just overall)? (Out of scope for launch — overall only)
+**Open questions:** None (decided: overall stats only for launch — per-gang breakdown is post-launch)
 
 ---
 
@@ -538,7 +536,7 @@ Phase 2's GANG-UI-009 was a placeholder showing "0 pts". This story wires in rea
 
 Phase 6 completes all leaderboards, standings, and the profile page. This is the "rewards" layer — users see their wins, compare against friends, and talk trash.
 
-**Story count:** 7 stories (1 DAL, 1 API, 5 UI)
+**Story count:** 8 stories (1 DAL, 1 API, 6 UI)
 **Estimated total effort:** ~10–15 working days
 
 **Ship readiness:**
