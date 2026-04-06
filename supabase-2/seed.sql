@@ -1,0 +1,3 @@
+-- Bragg v2 seed data
+-- Populated by FND-DB-005 (reference data) and FND-DB-006 (v1 migration)
+-- See docs/sportmonks-seed-ids.md for verified Sportmonks IDs
