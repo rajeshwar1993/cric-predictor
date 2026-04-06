@@ -93,13 +93,23 @@ When a UI story's implementation is reviewed, missing any of the above is a revi
 
 ## Implementation order
 
-Stories listed in dependency order. Within each step, stories separated by `∥` can be done in parallel. Complete all stories in a step before moving to the next.
+Stories listed in dependency order. Complete all stories in a step before moving to the next.
+
+**Symbols:**
+- `∥` = can be done in parallel (different files, safe to branch independently)
+- `→` = must be done sequentially (shared file, do on one branch or back-to-back PRs to avoid merge conflicts)
 
 > **Blockers to clear before starting Phase 0:**
 > 1. ~~Author new `docs/design-system.md`~~ — **DONE** (`docs/design-system.md` + `docs/design-system-visual.html` authored)
 > 2. ~~Fetch live Sportmonks IPL 2026 IDs~~ — **DONE** (verified live 2026-04-06, see `docs/sportmonks-seed-ids.md`)
 >
 > **All blockers cleared. Phase 0 is ready to start.**
+
+**Branching model:**
+- **Epic branch:** `epic/web-app-v2` — all story PRs merge here
+- **Story branches:** `feature/{story-id}-short-desc` — cut from latest `epic/web-app-v2`
+- **Before starting a new step:** merge all PRs from the previous step into the epic branch first
+- **Testable chunks:** after completing a phase, the user merges `epic/web-app-v2` → `staging` for manual testing
 
 **94 stories across 43 steps.**
 
@@ -125,8 +135,8 @@ Stories listed in dependency order. Within each step, stories separated by `∥`
 
 | Step | Stories | What gets done |
 |------|---------|----------------|
-| 8 | AUTH-API-001 ∥ AUTH-API-003 ∥ AUTH-API-005 ∥ AUTH-DB-001 | Magic link action ∥ Sign out action ∥ Accept terms action ∥ delete_account RPC |
-| 9 | AUTH-API-002 ∥ AUTH-API-004 ∥ AUTH-API-006 | Auth callback ∥ Complete onboarding action ∥ Delete account action |
+| 8 | AUTH-API-001 → AUTH-API-003 → AUTH-API-005 ∥ AUTH-DB-001 | Magic link → Sign out → Accept terms (sequential — shared `actions/auth.ts`) ∥ delete_account RPC (separate SQL file) |
+| 9 | AUTH-API-002 ∥ AUTH-API-004 → AUTH-API-006 | Auth callback (separate `route.ts`) ∥ Complete onboarding → Delete account (sequential — shared `actions/auth.ts`) |
 | 10 | AUTH-MW-001 | Auth + onboarding + terms middleware |
 | 11 | AUTH-UI-005 ∥ AUTH-UI-006 ∥ AUTH-UI-009 ∥ AUTH-UI-010 | Footer ∥ Destructive action dialog ∥ 404 page ∥ Error page |
 | 12 | AUTH-UI-001 ∥ AUTH-UI-003 ∥ AUTH-UI-004 | Login page ∥ Accept terms page ∥ Global nav bar |
@@ -142,7 +152,7 @@ Stories listed in dependency order. Within each step, stories separated by `∥`
 |------|---------|----------------|
 | 14 | GANG-DB-001 | Scenario seeding Postgres function |
 | 15 | GANG-DB-002 ∥ GANG-DB-003 | create_gang RPC ∥ delete_gang RPC |
-| 16 | GANG-API-001 ∥ GANG-API-002 ∥ GANG-API-003 ∥ GANG-API-004 ∥ GANG-API-005 ∥ GANG-API-006 | All 6 gang server actions (create, join, member mgmt, leave, delete, settings) |
+| 16 | GANG-API-001 → GANG-API-002 → GANG-API-003 → GANG-API-004 → GANG-API-005 → GANG-API-006 | All 6 gang server actions — sequential (shared `actions/gangs.ts`) |
 | 17 | GANG-UI-002 ∥ GANG-UI-003 ∥ GANG-UI-004 ∥ GANG-UI-006 ∥ GANG-UI-007 ∥ GANG-UI-008 ∥ GANG-UI-009 ∥ GANG-UI-010 ∥ GANG-UI-013 | All standalone gang components (9 in parallel) |
 | 18 | GANG-UI-001 ∥ GANG-UI-005 | Dashboard page ∥ Gang page shell (compose step 17 components) |
 | 19 | GANG-UI-011 ∥ GANG-UI-012 | Join page ∥ Gang settings page |
@@ -226,3 +236,20 @@ Stories listed in dependency order. Within each step, stories separated by `∥`
 | 43 | POL-LAUNCH-001 | Launch readiness checklist |
 
 > **Milestone:** Production-ready. **LAUNCH.**
+
+---
+
+### Testable chunks (merge epic → staging)
+
+After completing each chunk, merge `epic/web-app-v2` into `staging` for manual testing before starting the next chunk.
+
+| Chunk | After step | What to test on staging |
+|-------|-----------|------------------------|
+| 1. Foundation | Step 7 | App loads, schema deployed, seed data correct, Storybook runs |
+| 2. Auth | Step 13 | Full sign-in → onboard → dashboard → sign out flow |
+| 3. Gangs | Step 19 | Create gang, join via link, manage members, settings |
+| 4. Match data | Step 22 | Fixtures visible on gang page, scenarios seeded |
+| 5. Predictions | Step 27 | Make predictions, deadline enforced, status shown |
+| 6. Live + Leaderboards | Step 34 | Live scores, resolution, match + season leaderboards |
+| 7. Notifications | Step 38 | Bell, panel, deadline reminders, realtime updates |
+| 8. Launch-ready | Step 43 | Landing page, E2E passing, rate limiting, full polish |
