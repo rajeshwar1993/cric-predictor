@@ -110,8 +110,4 @@ export async function signOut(): Promise<void> {
   redirect('/')
 }
 
-// ---------------------------------------------------------------------------
-// AUTH-API-005: acceptUpdatedTerms
-// ---------------------------------------------------------------------------
-
-export { acceptUpdatedTerms } from './onboarding'
+// AUTH-API-005: acceptUpdatedTerms is exported from ./onboarding.ts
