@@ -36,3 +36,4 @@ web-app-2/.env.production.local
 # Supabase v2 local
 supabase-2/.temp/
 supabase-2/.env*
+/supabase-2/supabase/.temp

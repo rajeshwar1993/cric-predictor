@@ -9,7 +9,6 @@
 -- Extensions
 -- ---------------------------------------------------------------------------
 
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- ---------------------------------------------------------------------------
@@ -73,7 +72,7 @@ END $$;
 -- ===== v2_sports =====
 
 CREATE TABLE IF NOT EXISTS v2_sports (
-  id              UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   api_id          TEXT        NOT NULL UNIQUE,
   name            TEXT        NOT NULL UNIQUE,
   code            TEXT        NOT NULL UNIQUE,
@@ -86,7 +85,7 @@ COMMENT ON TABLE v2_sports IS 'Sport definitions (e.g., Cricket). Top of the hie
 -- ===== v2_leagues =====
 
 CREATE TABLE IF NOT EXISTS v2_leagues (
-  id              UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   api_id          TEXT        NOT NULL UNIQUE,
   sport_id        UUID        NOT NULL REFERENCES v2_sports(id) ON DELETE RESTRICT,
   name            TEXT        NOT NULL,
@@ -100,7 +99,7 @@ COMMENT ON TABLE v2_leagues IS 'Leagues within a sport (e.g., Indian Premier Lea
 -- ===== v2_seasons =====
 
 CREATE TABLE IF NOT EXISTS v2_seasons (
-  id              UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   api_id          TEXT        NOT NULL UNIQUE,
   league_id       UUID        NOT NULL REFERENCES v2_leagues(id) ON DELETE RESTRICT,
   name            TEXT        NOT NULL,
@@ -148,7 +147,7 @@ COMMENT ON TABLE v2_profiles IS 'User accounts. References auth.users. Soft-dele
 -- ===== v2_gangs =====
 
 CREATE TABLE IF NOT EXISTS v2_gangs (
-  id              UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   name            TEXT        NOT NULL,
   invite_code     TEXT        NOT NULL UNIQUE,
   created_by      UUID        NOT NULL REFERENCES v2_profiles(id) ON DELETE RESTRICT,
@@ -195,7 +194,7 @@ COMMENT ON TABLE v2_gang_league_seasons IS 'Gang enrolled in a league season, wi
 -- ===== v2_league_teams =====
 
 CREATE TABLE IF NOT EXISTS v2_league_teams (
-  id              UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   api_id          TEXT        NOT NULL UNIQUE,
   league_id       UUID        NOT NULL REFERENCES v2_leagues(id) ON DELETE RESTRICT,
   name            TEXT        NOT NULL,
@@ -214,7 +213,7 @@ COMMENT ON TABLE v2_league_teams IS 'Teams within a league (e.g., Chennai Super 
 -- (Defined before v2_fixture_results which references it)
 
 CREATE TABLE IF NOT EXISTS v2_players (
-  id              UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   api_id          TEXT        NOT NULL UNIQUE,
   name            TEXT        NOT NULL,
   role            TEXT,
@@ -229,7 +228,7 @@ COMMENT ON TABLE v2_players IS 'Player database populated from data provider.';
 -- ===== v2_league_season_fixtures =====
 
 CREATE TABLE IF NOT EXISTS v2_league_season_fixtures (
-  id                  UUID            PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id                  UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
   api_id              TEXT            NOT NULL UNIQUE,
   league_id           UUID            NOT NULL REFERENCES v2_leagues(id) ON DELETE RESTRICT,
   season_id           UUID            NOT NULL REFERENCES v2_seasons(id) ON DELETE RESTRICT,
@@ -308,7 +307,7 @@ COMMENT ON TABLE v2_fixture_live_scores IS 'Live scorecard data for in-progress 
 -- ===== v2_scenario_templates =====
 
 CREATE TABLE IF NOT EXISTS v2_scenario_templates (
-  id                UUID                    PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id                UUID                    PRIMARY KEY DEFAULT gen_random_uuid(),
   sport_id          UUID                    NOT NULL REFERENCES v2_sports(id) ON DELETE RESTRICT,
   slug              TEXT                    NOT NULL UNIQUE,
   title             TEXT                    NOT NULL,
@@ -325,7 +324,7 @@ COMMENT ON TABLE v2_scenario_templates IS 'System scenario definitions (referenc
 -- ===== v2_fixture_scenarios =====
 
 CREATE TABLE IF NOT EXISTS v2_fixture_scenarios (
-  id                UUID                    PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id                UUID                    PRIMARY KEY DEFAULT gen_random_uuid(),
   template_id       UUID                    REFERENCES v2_scenario_templates(id) ON DELETE RESTRICT,
   league_id         UUID                    NOT NULL REFERENCES v2_leagues(id) ON DELETE RESTRICT,
   season_id         UUID                    NOT NULL REFERENCES v2_seasons(id) ON DELETE RESTRICT,
@@ -351,7 +350,7 @@ COMMENT ON TABLE v2_fixture_scenarios IS 'Prediction questions for a fixture, se
 -- ===== v2_predictions =====
 
 CREATE TABLE IF NOT EXISTS v2_predictions (
-  id              UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id         UUID        NOT NULL REFERENCES v2_profiles(id) ON DELETE CASCADE,
   scenario_id     UUID        NOT NULL REFERENCES v2_fixture_scenarios(id) ON DELETE CASCADE,
   gang_id         UUID        NOT NULL REFERENCES v2_gangs(id) ON DELETE CASCADE,
@@ -426,7 +425,7 @@ COMMENT ON TABLE v2_gang_season_standings IS 'Season leaderboard per gang (mater
 -- ===== v2_notifications =====
 
 CREATE TABLE IF NOT EXISTS v2_notifications (
-  id              UUID                PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id              UUID                PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id         UUID                NOT NULL REFERENCES v2_profiles(id) ON DELETE CASCADE,
   type            v2_notification_type NOT NULL,
   message         TEXT                NOT NULL,
