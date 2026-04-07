@@ -22,7 +22,10 @@ export const GANG_MEMBER_APPROVED = 'gang_member_approved' as const
 export const GANG_MEMBER_REJECTED = 'gang_member_rejected' as const
 export const GANG_MEMBER_REMOVED = 'gang_member_removed' as const
 export const GANG_MEMBER_LEFT = 'gang_member_left' as const
+export const GANG_MEMBER_BLOCKED = 'gang_member_blocked' as const
+export const GANG_MEMBER_UNBLOCKED = 'gang_member_unblocked' as const
 export const GANG_DELETED = 'gang_deleted' as const
+export const GANG_SETTINGS_UPDATED = 'gang_settings_updated' as const
 
 // Predictions
 export const PREDICTION_SUBMITTED = 'prediction_submitted' as const
