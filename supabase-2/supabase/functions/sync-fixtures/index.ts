@@ -533,21 +533,22 @@ async function upsertPlayer(
 
 Deno.serve(async (req: Request) => {
   try {
-    // Use service role key from env (set via `supabase secrets set`)
-    // Supabase gateway handles caller auth via the Authorization header.
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    // Service role key: try custom secret first, then auto-injected, then Authorization header
+    // Supabase reserves SUPABASE_* prefix so custom secret uses SB_SERVICE_ROLE_KEY
+    const serviceRoleKey =
+      Deno.env.get('SB_SERVICE_ROLE_KEY') ??
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ??
+      req.headers.get('Authorization')?.replace('Bearer ', '');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
-
-    // Debug: log key lengths to diagnose which keys are available
-    console.log(`[sync-fixtures] URL len: ${String(supabaseUrl?.length ?? 0)}, SRK len: ${String(serviceRoleKey?.length ?? 0)}, ANON len: ${String(anonKey?.length ?? 0)}`);
 
     if (!supabaseUrl || !serviceRoleKey) {
       return new Response(
-        JSON.stringify({ error: 'Server misconfiguration: missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY' }),
+        JSON.stringify({ error: 'Missing SUPABASE_URL or service role key. Set SB_SERVICE_ROLE_KEY via: supabase secrets set SB_SERVICE_ROLE_KEY=eyJ...' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log(`[sync-fixtures] Using key length: ${String(serviceRoleKey.length)}`);
 
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { autoRefreshToken: false, persistSession: false },
