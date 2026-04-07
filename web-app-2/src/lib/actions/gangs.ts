@@ -245,6 +245,7 @@ export async function joinGang(inviteCode: string): Promise<JoinGangResult> {
       })
       .eq('gang_id', gangId)
       .eq('user_id', user.id)
+      .eq('is_blocked', false)
 
     if (rejoinError !== null) {
       const msg = rejoinError.message
@@ -366,7 +367,8 @@ export async function joinGang(inviteCode: string): Promise<JoinGangResult> {
         user_id: gangAdminId,
         type: 'new_member',
         gang_id: gangId,
-        triggered_by: user.id,
+        message: 'A new member joined your gang.',
+        is_read: false,
       })
 
       trackServerEvent(user.id, GANG_JOIN_REQUESTED, {
@@ -403,7 +405,8 @@ export async function joinGang(inviteCode: string): Promise<JoinGangResult> {
     user_id: gangAdminId,
     type: 'join_request',
     gang_id: gangId,
-    triggered_by: user.id,
+    message: 'Someone requested to join your gang.',
+    is_read: false,
   })
 
   trackServerEvent(user.id, GANG_JOIN_REQUESTED, {

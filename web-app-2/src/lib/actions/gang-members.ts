@@ -101,7 +101,8 @@ export async function approveMember(gangId: string, targetUserId: string): Promi
     user_id: targetUserId,
     type: 'join_approved',
     gang_id: gangId,
-    triggered_by: adminId,
+    message: 'Your request to join the gang was approved.',
+    is_read: false,
   })
 
   trackServerEvent(adminId, GANG_MEMBER_APPROVED, {
@@ -146,7 +147,8 @@ export async function rejectMember(gangId: string, targetUserId: string): Promis
     user_id: targetUserId,
     type: 'join_rejected',
     gang_id: gangId,
-    triggered_by: adminId,
+    message: 'Your request to join the gang was rejected.',
+    is_read: false,
   })
 
   trackServerEvent(adminId, GANG_MEMBER_REJECTED, {
