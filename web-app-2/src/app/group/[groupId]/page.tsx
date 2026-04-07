@@ -5,6 +5,7 @@ import { Settings, Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getGangDetails, getPendingRequests } from '@/lib/actions/dal-gangs'
 import { Card, CardContent } from '@/components/ui/card'
+import { UpcomingMatchesSection } from '@/components/matches/upcoming-matches-section'
 import { InviteShare } from '@/components/gangs/invite-share'
 import { PendingRequests } from '@/components/gangs/pending-requests'
 import { MemberList } from '@/components/gangs/member-list'
@@ -105,21 +106,11 @@ export default async function GroupPage({ params }: GroupPageProps) {
         <PendingRequests gangId={groupId} requests={pendingRequests} />
       )}
 
+      {/* Upcoming matches */}
+      <UpcomingMatchesSection gangId={groupId} />
+
       {/* Placeholder sections */}
       <section className="flex flex-col gap-[var(--sp-3)]" aria-label="Match sections">
-        <Card>
-          <CardContent>
-            <h3
-              className="font-heading text-lg font-semibold"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              Upcoming Matches
-            </h3>
-            <p className="mt-[var(--sp-1)] text-sm" style={{ color: 'var(--text-tertiary)' }}>
-              Coming soon
-            </p>
-          </CardContent>
-        </Card>
         <Card>
           <CardContent>
             <h3
