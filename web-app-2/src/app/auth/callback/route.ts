@@ -84,12 +84,23 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/login?error=auth_callback_failed', origin))
   }
 
-  // Fetch profile
-  const { data: profile } = await supabase
+  // Fetch profile — retry once if null (handle_new_user trigger race condition)
+  let { data: profile } = await supabase
     .from('v2_profiles')
     .select('onboarding_completed, is_deleted')
     .eq('id', user.id)
     .single()
+
+  if (profile === null) {
+    // Trigger may not have fired yet — wait briefly and retry
+    await new Promise((resolve) => setTimeout(resolve, 500))
+    const retry = await supabase
+      .from('v2_profiles')
+      .select('onboarding_completed, is_deleted')
+      .eq('id', user.id)
+      .single()
+    profile = retry.data
+  }
 
   // Restore deleted profile on re-sign-in
   if (profile?.is_deleted === true) {
