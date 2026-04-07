@@ -535,11 +535,18 @@ Deno.serve(async (req: Request) => {
   try {
     // Use service role key from env (set via `supabase secrets set`)
     // Supabase gateway handles caller auth via the Authorization header.
+    // Debug: log all available env var names (not values) to find the correct key name
+    const envKeys = [...Deno.env.toObject()].map(([k]) => k).filter(k => k.includes('SUPABASE'));
+    console.log('[sync-fixtures] Available SUPABASE env vars:', JSON.stringify(envKeys));
+
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
+
+    console.log(`[sync-fixtures] SUPABASE_URL length: ${supabaseUrl?.length ?? 0}, SERVICE_ROLE_KEY length: ${serviceRoleKey?.length ?? 0}, ANON_KEY length: ${Deno.env.get('SUPABASE_ANON_KEY')?.length ?? 0}`);
+
     if (!supabaseUrl || !serviceRoleKey) {
       return new Response(
-        JSON.stringify({ error: 'Server misconfiguration: missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY. Set via: supabase secrets set SUPABASE_SERVICE_ROLE_KEY=...' }),
+        JSON.stringify({ error: 'Server misconfiguration: missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
