@@ -4,7 +4,12 @@ import { createServerClient } from '@supabase/ssr'
 import { createHash } from 'crypto'
 import { trackServerEvent } from '@/lib/analytics/server'
 import { AUTH_CALLBACK_FAILED, AUTH_CALLBACK_SUCCESS } from '@/lib/analytics/events'
-import { COOKIES, LONG_COOKIE_OPTIONS, SHORT_COOKIE_OPTIONS } from '@/lib/constants'
+import {
+  COOKIES,
+  CURRENT_TERMS_VERSION,
+  LONG_COOKIE_OPTIONS,
+  SHORT_COOKIE_OPTIONS,
+} from '@/lib/constants'
 import { env } from '@/lib/env'
 
 /**
@@ -109,7 +114,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/onboarding', origin))
   }
 
-  // Fully onboarded — set cookie and redirect
+  // Fully onboarded — set cookies and redirect
   cookieStore.set(COOKIES.ONBOARDED, '1', LONG_COOKIE_OPTIONS)
+  cookieStore.set(COOKIES.TERMS_VERSION, CURRENT_TERMS_VERSION, LONG_COOKIE_OPTIONS)
   return NextResponse.redirect(new URL(redirectTo, origin))
 }
