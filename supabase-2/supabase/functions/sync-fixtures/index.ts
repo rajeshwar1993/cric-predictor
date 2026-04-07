@@ -533,20 +533,14 @@ async function upsertPlayer(
 
 Deno.serve(async (req: Request) => {
   try {
-    // Auth: verify service role key in Authorization header
+    // Supabase gateway handles JWT auth — service role key in Authorization header
+    // gives full access. Extract it for the Supabase client.
     const authHeader = req.headers.get('Authorization');
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const serviceRoleKey = authHeader?.replace('Bearer ', '') ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
     if (!serviceRoleKey) {
       return new Response(
-        JSON.stringify({ error: 'Server misconfiguration: missing service role key' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    if (!authHeader || authHeader !== `Bearer ${serviceRoleKey}`) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ error: 'Missing authorization' }),
         { status: 401, headers: { 'Content-Type': 'application/json' } }
       );
     }
