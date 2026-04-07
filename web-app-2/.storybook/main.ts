@@ -22,6 +22,7 @@ const config: StorybookConfig = {
       // Mock server-only modules that crash in the browser
       'posthog-node': path.resolve(__dirname, './mocks/posthog-node.ts'),
       'server-only': path.resolve(__dirname, './mocks/server-only.ts'),
+      crypto: path.resolve(__dirname, './mocks/crypto.ts'),
     }
     return config
   },
