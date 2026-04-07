@@ -228,12 +228,14 @@ async function syncFixtures(supabase: SupabaseClient): Promise<SyncSummary> {
       const newStartDatetime = smFixture.starting_at;
       const matchNumber = parseMatchNumber(smFixture.round);
       const venueName = smFixture.venue?.name ?? 'TBD';
+      const roundStr = smFixture.round;
 
       if (existingFixture) {
         // Update existing fixture — respect protected statuses
         const updateData: Record<string, unknown> = {
           venue_name: venueName,
           match_number: matchNumber,
+          round: roundStr,
         };
 
         // Detect start_datetime change → reset pre_match_synced
@@ -270,6 +272,7 @@ async function syncFixtures(supabase: SupabaseClient): Promise<SyncSummary> {
             api_id: fixtureApiIdStr,
             league_id: activeSeason.league_id,
             season_id: activeSeason.id,
+            round: roundStr,
             match_number: matchNumber,
             home_team_id: homeTeamId,
             away_team_id: awayTeamId,
