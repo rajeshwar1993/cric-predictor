@@ -149,22 +149,12 @@ async function syncPreMatch(supabase: SupabaseClient): Promise<PreMatchSummary> 
 
 Deno.serve(async (req: Request) => {
   try {
-    // Supabase gateway handles JWT auth — extract service role key from header
-    const authHeader = req.headers.get('Authorization');
-    const serviceRoleKey = authHeader?.replace('Bearer ', '') ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-
-    if (!serviceRoleKey) {
-      return new Response(
-        JSON.stringify({ error: 'Missing authorization' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Create Supabase client with service role
+    // Use service role key from env (set via `supabase secrets set`)
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    if (!supabaseUrl) {
+    if (!supabaseUrl || !serviceRoleKey) {
       return new Response(
-        JSON.stringify({ error: 'Server misconfiguration: missing Supabase URL' }),
+        JSON.stringify({ error: 'Server misconfiguration: missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
