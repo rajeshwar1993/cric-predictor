@@ -192,8 +192,17 @@ async function syncFixtures(supabase: SupabaseClient): Promise<SyncSummary> {
   // -----------------------------------------------------------------------
   // Step 4: Process each fixture
   // -----------------------------------------------------------------------
+  // TBC team ID in Sportmonks — placeholder for undecided playoff matchups
+  const TBC_TEAM_ID = 2732;
+
   for (const smFixture of smFixtures) {
     try {
+      // Skip playoff fixtures with TBC (to-be-confirmed) teams
+      if (smFixture.localteam_id === TBC_TEAM_ID || smFixture.visitorteam_id === TBC_TEAM_ID) {
+        console.log(`[sync-fixtures] Skipping TBC fixture ${String(smFixture.id)} (playoff placeholder)`);
+        continue;
+      }
+
       // --- Upsert local team ---
       const homeTeamId = await upsertTeamFromFixture(
         supabase,
@@ -262,8 +271,7 @@ async function syncFixtures(supabase: SupabaseClient): Promise<SyncSummary> {
           fixturesSynced++;
         }
       } else {
-        // Insert new fixture — use upsert on api_id to handle re-runs
-        // and playoff fixtures that may share match_number with regular season
+        // Insert new fixture (api_id is UNIQUE — safe for re-runs via ON CONFLICT)
         const { error: insertErr } = await supabase
           .from('v2_league_season_fixtures')
           .upsert({
@@ -282,7 +290,7 @@ async function syncFixtures(supabase: SupabaseClient): Promise<SyncSummary> {
           }, { onConflict: 'api_id' });
 
         if (insertErr) {
-          errors.push(`Failed to upsert fixture ${String(smFixture.id)}: ${insertErr.message}`);
+          errors.push(`Failed to insert fixture ${String(smFixture.id)}: ${insertErr.message}`);
         } else {
           fixturesSynced++;
         }
