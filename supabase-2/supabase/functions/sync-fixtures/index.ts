@@ -262,10 +262,11 @@ async function syncFixtures(supabase: SupabaseClient): Promise<SyncSummary> {
           fixturesSynced++;
         }
       } else {
-        // Insert new fixture
+        // Insert new fixture — use upsert on api_id to handle re-runs
+        // and playoff fixtures that may share match_number with regular season
         const { error: insertErr } = await supabase
           .from('v2_league_season_fixtures')
-          .insert({
+          .upsert({
             api_id: fixtureApiIdStr,
             league_id: activeSeason.league_id,
             season_id: activeSeason.id,
@@ -274,14 +275,14 @@ async function syncFixtures(supabase: SupabaseClient): Promise<SyncSummary> {
             away_team_id: awayTeamId,
             start_datetime: newStartDatetime,
             venue_name: venueName,
-            venue_id: null, // No v2_venues table yet; Sportmonks venue_id is numeric, not UUID
+            venue_id: null,
             status: newStatus,
             status_changed_at: new Date().toISOString(),
             pre_match_synced: false,
-          });
+          }, { onConflict: 'api_id' });
 
         if (insertErr) {
-          errors.push(`Failed to insert fixture ${smFixture.id}: ${insertErr.message}`);
+          errors.push(`Failed to upsert fixture ${String(smFixture.id)}: ${insertErr.message}`);
         } else {
           fixturesSynced++;
         }
