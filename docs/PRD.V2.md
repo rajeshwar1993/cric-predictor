@@ -659,6 +659,7 @@ Both files must be consulted together when building or reviewing UI components. 
   - Analytics use hashed identifiers for pre-auth events (no PII leak)
   - Date of birth stored but never displayed publicly
 - **Service role key:** stored as environment variable on server only (edge functions and server actions); never exposed to client. Used to bypass RLS for system operations (cron functions, profile creation trigger, gang creation enrollment).
+- **Table-level GRANT permissions:** In addition to RLS, Supabase requires explicit table-level GRANT permissions. Without `GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role`, even service_role queries fail with "permission denied". This is separate from RLS and must be applied via migration (see `20260407000012_grant_table_permissions.sql`).
 - **CSRF:** protected by Supabase's built-in token handling
 - **XSS:** React's default escaping + no `dangerouslySetInnerHTML` usage
 
@@ -785,7 +786,8 @@ All tables prefixed with `v2_`. Hierarchy: Sport → League → Season → Match
 | `api_id` | TEXT, NOT NULL, UNIQUE | Data provider identifier |
 | `league_id` | UUID, FK → v2_leagues | |
 | `season_id` | UUID, FK → v2_seasons | |
-| `match_number` | INT, NOT NULL | Match number in the season |
+| `round` | TEXT, NOT NULL | Sportmonks round string (e.g., "1st Match", "Qualifier 1", "Final") — naturally unique per season |
+| `match_number` | INT, NOT NULL | Match number in the season (used for display sorting) |
 | `home_team_id` | UUID, FK → v2_league_teams | |
 | `away_team_id` | UUID, FK → v2_league_teams | |
 | `start_datetime` | TIMESTAMPTZ, NOT NULL | Match start time with timezone |
@@ -796,7 +798,7 @@ All tables prefixed with `v2_`. Hierarchy: Sport → League → Season → Match
 | `pre_match_synced` | BOOLEAN, default false | Set to true after pre-match delta sync runs; reset by daily sync if fixture is rescheduled |
 | `created_at` | TIMESTAMPTZ, default now() | |
 
-**Unique constraint:** (season_id, match_number)
+**Unique constraint:** (season_id, round) — playoff fixtures share `match_number` with regular season matches, but `round` values (from Sportmonks) are naturally unique within a season.
 
 **Status change trigger:** A Postgres trigger `BEFORE UPDATE ON v2_league_season_fixtures FOR EACH ROW WHEN OLD.status IS DISTINCT FROM NEW.status` automatically updates `status_changed_at = now()`.
 

@@ -170,6 +170,47 @@ npm run dev    # http://localhost:3001
 
 ---
 
+## 6. Edge Function Deployment (Phase 3+)
+
+### Set secrets
+
+Supabase reserves the `SUPABASE_*` env prefix — you **cannot** set `SUPABASE_SERVICE_ROLE_KEY` via `supabase secrets set`. Use a custom name:
+
+```bash
+supabase secrets set SB_SERVICE_ROLE_KEY=<service-role-key> --project-ref <project-ref>
+supabase secrets set SPORTMONKS_API_TOKEN=<token> --project-ref <project-ref>
+```
+
+In edge function code, resolve the key with a fallback chain:
+
+```ts
+const serviceRoleKey =
+  Deno.env.get('SB_SERVICE_ROLE_KEY') ??
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ??
+  req.headers.get('Authorization')?.replace('Bearer ', '');
+```
+
+### Deploy functions
+
+```bash
+supabase functions deploy sync-fixtures --project-ref <project-ref>
+supabase functions deploy sync-fixtures-pre-match --project-ref <project-ref>
+```
+
+### Table-level GRANT permissions
+
+Migration `20260407000012_grant_table_permissions.sql` grants `SELECT, INSERT, UPDATE, DELETE` on all public tables to `anon`, `authenticated`, and `service_role`. Without this, even service_role queries fail with "permission denied" (this is separate from RLS). Verify after pushing migrations:
+
+```sql
+-- Should return grants for anon, authenticated, service_role on each table
+SELECT grantee, table_name, privilege_type
+FROM information_schema.role_table_grants
+WHERE table_schema = 'public' AND table_name LIKE 'v2_%'
+ORDER BY table_name, grantee;
+```
+
+---
+
 ## Migration File Naming
 
 Supabase CLI requires timestamp-prefixed migration files:
@@ -182,7 +223,8 @@ supabase-2/supabase/migrations/
 ├── 20260406000004_triggers.sql
 ├── 20260406000005_seed_data.sql
 ├── 20260406000006_migrate_from_v1.sql
-└── 20260406000012_delete_account_rpc.sql
+├── 20260406000012_delete_account_rpc.sql
+└── 20260407000012_grant_table_permissions.sql
 ```
 
 New migrations: use `supabase migration new <name> --workdir supabase-2` to auto-generate the timestamp prefix.

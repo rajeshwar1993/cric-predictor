@@ -528,6 +528,7 @@ The PRD defines 17 v2 tables (plus `v2_scenario_templates` and `v2_league_season
   - `v2_players`, `v2_league_season_team_players`
   - `v2_gang_fixture_standings`, `v2_gang_season_standings`
   - `v2_notifications`
+- [ ] `v2_league_season_fixtures` includes `round TEXT NOT NULL` column (Sportmonks round string) with unique constraint on `(season_id, round)` instead of `(season_id, match_number)` — playoff fixtures share `match_number` with regular season; `round` values are naturally unique
 - [ ] All columns match PRD exactly: names, types, nullability, defaults
 - [ ] All foreign keys defined with proper ON DELETE behavior (CASCADE where appropriate, default RESTRICT otherwise)
 - [ ] All unique constraints created (including partial unique indexes for `uniq_one_active_season_per_league` and `uniq_notifications_dedup`)
