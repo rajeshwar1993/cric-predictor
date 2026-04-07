@@ -350,3 +350,66 @@ export async function getPendingRequests(gangId: string): Promise<PendingRequest
     requestedAt: toStr(m.requested_at ?? new Date().toISOString()),
   }))
 }
+
+// ---------------------------------------------------------------------------
+// getGangByInviteCode
+// ---------------------------------------------------------------------------
+
+export interface GangByInviteCode {
+  id: string
+  name: string
+  inviteCode: string
+}
+
+/**
+ * Looks up a gang by invite code using the service-role client (bypasses RLS).
+ * Returns null if the gang is not found or is deleted.
+ */
+export async function getGangByInviteCode(code: string): Promise<GangByInviteCode | null> {
+  const serviceClient = createServiceRoleClient()
+
+  const { data, error } = await serviceClient
+    .from('v2_gangs')
+    .select('id, name, is_deleted, invite_code')
+    .eq('invite_code', code.toUpperCase())
+    .maybeSingle()
+
+  if (error !== null || data === null) return null
+
+  const gang = data as {
+    id: unknown
+    name: unknown
+    is_deleted: unknown
+    invite_code: unknown
+  }
+
+  if (toBool(gang.is_deleted)) return null
+
+  return {
+    id: toStr(gang.id),
+    name: toStr(gang.name),
+    inviteCode: toStr(gang.invite_code),
+  }
+}
+
+// ---------------------------------------------------------------------------
+// getMembershipStatus
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns the membership status of a user in a gang, or null if no membership exists.
+ */
+export async function getMembershipStatus(gangId: string, userId: string): Promise<string | null> {
+  const serviceClient = createServiceRoleClient()
+
+  const { data, error } = await serviceClient
+    .from('v2_gang_members')
+    .select('status')
+    .eq('gang_id', gangId)
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (error !== null || data === null) return null
+
+  return toStr((data as { status: unknown }).status)
+}
