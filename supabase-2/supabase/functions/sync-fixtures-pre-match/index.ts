@@ -161,6 +161,7 @@ Deno.serve(async (req: Request) => {
 
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { autoRefreshToken: false, persistSession: false },
+      global: { headers: { Authorization: `Bearer ${serviceRoleKey}` } },
     });
 
     console.log('[sync-pre-match] Starting pre-match delta sync...');

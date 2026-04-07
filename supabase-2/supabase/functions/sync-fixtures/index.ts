@@ -546,9 +546,10 @@ Deno.serve(async (req: Request) => {
 
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { autoRefreshToken: false, persistSession: false },
+      global: { headers: { Authorization: `Bearer ${serviceRoleKey}` } },
     });
 
-    console.log('[sync-fixtures] Starting daily fixture sync...');
+    console.log(`[sync-fixtures] Starting daily fixture sync... (URL: ${supabaseUrl}, key length: ${serviceRoleKey.length})`);
     const summary = await syncFixtures(supabase);
 
     const hasErrors = summary.errors.length > 0;
