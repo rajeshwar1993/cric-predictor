@@ -18,6 +18,7 @@ const eslintConfig = defineConfig([
     'next-env.d.ts',
     'src/stories/**',
     '.storybook/**',
+    'storybook-static/**',
   ]),
   // Strict TypeScript rules (type-aware)
   ...tseslint.configs.strictTypeChecked.map((config) => ({

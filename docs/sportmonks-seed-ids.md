@@ -139,6 +139,38 @@ ON CONFLICT DO NOTHING;
 
 ---
 
+## TBC Team (Playoffs)
+
+Sportmonks uses a placeholder team for undecided playoff matchups:
+
+| Field | Value |
+|-------|-------|
+| `api_id` | `2732` |
+| `code` | `TBC` |
+| `name` | To Be Confirmed |
+
+This team appears in playoff fixtures (Qualifier 1, Eliminator, Qualifier 2, Final) before the participating teams are determined. These fixtures sync normally into `v2_league_season_fixtures` — the `round` column (e.g., "Qualifier 1", "Final") makes each fixture unique within the season even when teams are TBC.
+
+---
+
+## Round Values
+
+Each fixture in Sportmonks has a `round` string that identifies the match within the season. Examples:
+
+| Round | Type |
+|-------|------|
+| `1st Match` | Regular season |
+| `2nd Match` | Regular season |
+| `70th Match` | Regular season |
+| `Qualifier 1` | Playoff |
+| `Eliminator` | Playoff |
+| `Qualifier 2` | Playoff |
+| `Final` | Playoff |
+
+The `round` value is stored in `v2_league_season_fixtures.round` and used as the unique constraint `(season_id, round)` instead of `(season_id, match_number)`, because playoff fixtures can share `match_number` values with regular season matches.
+
+---
+
 ## Notes
 
 - **Team colors** are NOT from Sportmonks (they don't provide brand colors). Colors are from the existing `web-app/src/lib/constants.ts` and should not be overwritten by the sync cron (per SYNC-CRON-001 story).

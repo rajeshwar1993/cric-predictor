@@ -141,7 +141,8 @@ The core data pipeline. Per PRD, runs once a day at 5 AM IST (23:30 UTC prior da
 
 **Technical notes:**
 - Deno edge function runtime
-- Use `createClient` with service role key from `Deno.env`
+- Use `createClient` with service role key from `Deno.env`. **Important:** Supabase reserves the `SUPABASE_*` env prefix — you cannot set `SUPABASE_SERVICE_ROLE_KEY` via `supabase secrets set`. Use `SB_SERVICE_ROLE_KEY` as the custom secret name, with fallback chain: `SB_SERVICE_ROLE_KEY` → auto-injected `SUPABASE_SERVICE_ROLE_KEY` → `Authorization` header.
+- Store the Sportmonks `round` value (e.g., "1st Match", "Qualifier 1", "Final") in the `round` column of `v2_league_season_fixtures`. This is the upsert key for uniqueness within a season (not `match_number`).
 - `pg_cron` schedule must use UTC — 5 AM IST = 23:30 UTC (prior day)
 - Mid-season trade handling: delete stale rows per (season_id, team_id), insert fresh
 - Don't overwrite fixture `status` if it's already been updated by live-polling (`live`, `completed`, etc.)
@@ -219,6 +220,7 @@ Per PRD, the daily sync runs once at 5 AM. Fixtures can get rescheduled close to
 - Flag reset on any start_datetime change — will re-fire next cron cycle until timing is stable
 - Idempotent
 - Function timeout: 2 minutes
+- **Service role key:** Use `SB_SERVICE_ROLE_KEY` custom secret (same pattern as SYNC-CRON-001). Supabase reserves the `SUPABASE_*` prefix for auto-injected vars.
 
 **Analytics events:**
 - `CRON_SYNC_PRE_MATCH_STARTED`
