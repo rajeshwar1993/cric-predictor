@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceRoleClient } from '@/lib/supabase/service-role'
 import { trackServerEvent } from '@/lib/analytics/server'
 import { PREDICTION_SUBMITTED } from '@/lib/analytics/events'
+import { rateLimit, formatRetryAfter, RATE_LIMITS } from '@/lib/rate-limit'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -61,6 +62,15 @@ export async function submitPredictions(
 
   if (user === null) {
     return { success: false, error: 'You must be signed in' }
+  }
+
+  // Rate limit check
+  const rl = rateLimit(user.id, 'submit_predictions', RATE_LIMITS.submit_predictions)
+  if (!rl.allowed) {
+    return {
+      success: false,
+      error: `Too many requests. Please try again in ${formatRetryAfter(rl.retryAfterMs ?? 0)}.`,
+    }
   }
 
   // Validate non-empty picks

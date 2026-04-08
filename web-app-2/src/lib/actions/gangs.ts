@@ -12,6 +12,7 @@ import {
   GANG_DELETED,
   GANG_SETTINGS_UPDATED,
 } from '@/lib/analytics/events'
+import { rateLimit, formatRetryAfter, RATE_LIMITS } from '@/lib/rate-limit'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -80,6 +81,15 @@ export async function createGang(name: string): Promise<CreateGangResult> {
     return { success: false, error: 'You must be signed in' }
   }
 
+  // Rate limit check
+  const rl = rateLimit(user.id, 'create_gang', RATE_LIMITS.create_gang)
+  if (!rl.allowed) {
+    return {
+      success: false,
+      error: `Too many requests. Please try again in ${formatRetryAfter(rl.retryAfterMs ?? 0)}.`,
+    }
+  }
+
   // Validate name
   const trimmedName = name.trim()
   if (trimmedName.length < 3 || trimmedName.length > 50) {
@@ -139,6 +149,16 @@ export async function joinGang(inviteCode: string): Promise<JoinGangResult> {
       success: false,
       error: 'not_authenticated',
       message: 'You must be signed in',
+    }
+  }
+
+  // Rate limit check
+  const rl = rateLimit(user.id, 'join_gang', RATE_LIMITS.join_gang)
+  if (!rl.allowed) {
+    return {
+      success: false,
+      error: 'server_error',
+      message: `Too many requests. Please try again in ${formatRetryAfter(rl.retryAfterMs ?? 0)}.`,
     }
   }
 
@@ -431,6 +451,15 @@ export async function deleteGang(gangId: string): Promise<ActionResult> {
 
   if (user === null) {
     return { success: false, error: 'You must be signed in' }
+  }
+
+  // Rate limit check
+  const rl = rateLimit(user.id, 'delete_gang', RATE_LIMITS.delete_gang)
+  if (!rl.allowed) {
+    return {
+      success: false,
+      error: `Too many requests. Please try again in ${formatRetryAfter(rl.retryAfterMs ?? 0)}.`,
+    }
   }
 
   const { error: rpcError } = await supabase.rpc('delete_gang', {

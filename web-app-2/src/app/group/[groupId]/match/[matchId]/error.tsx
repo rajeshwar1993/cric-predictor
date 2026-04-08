@@ -10,20 +10,18 @@ interface ErrorPageProps {
   reset: () => void
 }
 
-export default function ErrorPage({ error, reset }: ErrorPageProps) {
+export default function MatchLeaderboardError({ error, reset }: ErrorPageProps) {
   useEffect(() => {
     captureErrorBoundary(error, error.digest !== undefined ? { componentStack: error.digest } : {})
   }, [error])
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-[var(--sp-5)]">
+    <div className="flex min-h-[60vh] flex-col items-center justify-center px-[var(--sp-5)]">
       <div className="space-y-6 text-center">
         <Logo size="sm" />
-        <h1 className="font-heading text-3xl font-bold text-[var(--text-primary)]">
-          Clean bowled.
-        </h1>
+        <h1 className="font-heading text-2xl font-bold text-[var(--text-primary)]">Run out.</h1>
         <p className="max-w-xs text-base text-[var(--text-secondary)]">
-          Something went wrong on our end. Give it another shot.
+          The leaderboard hit an error. Try again or head back to your dashboard.
         </p>
         <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
           <button

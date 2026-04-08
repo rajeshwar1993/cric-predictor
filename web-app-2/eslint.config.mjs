@@ -19,6 +19,8 @@ const eslintConfig = defineConfig([
     'src/stories/**',
     '.storybook/**',
     'storybook-static/**',
+    'e2e/**',
+    'playwright.config.ts',
   ]),
   // Strict TypeScript rules (type-aware)
   ...tseslint.configs.strictTypeChecked.map((config) => ({

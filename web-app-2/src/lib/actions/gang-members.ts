@@ -13,6 +13,7 @@ import {
   GANG_MEMBER_UNBLOCKED,
   GANG_MEMBER_LEFT,
 } from '@/lib/analytics/events'
+import { rateLimit, formatRetryAfter, RATE_LIMITS } from '@/lib/rate-limit'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -286,6 +287,15 @@ export async function leaveGang(gangId: string): Promise<ActionResult> {
 
   if (user === null) {
     return { success: false, error: 'You must be signed in' }
+  }
+
+  // Rate limit check
+  const rl = rateLimit(user.id, 'leave_gang', RATE_LIMITS.leave_gang)
+  if (!rl.allowed) {
+    return {
+      success: false,
+      error: `Too many requests. Please try again in ${formatRetryAfter(rl.retryAfterMs ?? 0)}.`,
+    }
   }
 
   // Check if user is admin — admins cannot leave

@@ -16,6 +16,8 @@
     "format:check": "prettier --check .",
     "prepare": "cd .. && husky web-app-2/.husky",
     "db:types": "supabase gen types typescript --workdir ../supabase-2 --linked > src/types/database.ts",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },
@@ -63,6 +65,7 @@
     "vite": "^8.0.5",
     "eslint-plugin-storybook": "^10.3.4",
     "vitest": "^4.1.2",
+    "@playwright/test": "^1.52.0",
     "playwright": "^1.59.1",
     "@vitest/browser-playwright": "^4.1.2",
     "@vitest/coverage-v8": "^4.1.2"
