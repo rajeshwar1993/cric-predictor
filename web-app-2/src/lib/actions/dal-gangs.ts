@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server'
-import { createServiceRoleClient } from '@/lib/supabase/service-role'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -87,7 +86,7 @@ export async function getUserGangs(userId: string): Promise<UserGang[]> {
 
   const gangs = gangResult.data
 
-  const serviceClient = createServiceRoleClient()
+  const serviceClient = await createClient()
   const countResult = await serviceClient
     .from('v2_gang_members')
     .select('gang_id')
@@ -129,7 +128,7 @@ export async function getGangDetails(
   gangId: string,
   currentUserId: string,
 ): Promise<GangDetails | null> {
-  const serviceClient = createServiceRoleClient()
+  const serviceClient = await createClient()
 
   const gangResult = await serviceClient
     .from('v2_gangs')
@@ -250,7 +249,7 @@ export async function getGangDetails(
  * Used by member management in settings.
  */
 export async function getGangMembers(gangId: string, currentUserId: string): Promise<GangMember[]> {
-  const serviceClient = createServiceRoleClient()
+  const serviceClient = await createClient()
 
   const memberResult = await serviceClient
     .from('v2_gang_members')
@@ -309,7 +308,7 @@ export async function getGangMembers(gangId: string, currentUserId: string): Pro
  * Returns pending join requests for a gang.
  */
 export async function getPendingRequests(gangId: string): Promise<PendingRequest[]> {
-  const serviceClient = createServiceRoleClient()
+  const serviceClient = await createClient()
 
   const pendingResult = await serviceClient
     .from('v2_gang_members')
@@ -366,17 +365,17 @@ export interface GangByInviteCode {
  * Returns null if the gang is not found or is deleted.
  */
 export async function getGangByInviteCode(code: string): Promise<GangByInviteCode | null> {
-  const serviceClient = createServiceRoleClient()
+  // Use the SECURITY DEFINER RPC instead of service-role client.
+  // The RPC only exposes the specific gang row — no broader access.
+  const supabase = await createClient()
 
-  const { data, error } = await serviceClient
-    .from('v2_gangs')
-    .select('id, name, is_deleted, invite_code')
-    .eq('invite_code', code.toUpperCase())
-    .maybeSingle()
+  const result = await supabase.rpc('get_gang_by_invite_code', {
+    p_code: code.toUpperCase(),
+  })
 
-  if (error !== null || data === null) return null
+  if (result.error !== null || result.data === null) return null
 
-  const gang = data as {
+  const gang = result.data as {
     id: unknown
     name: unknown
     is_deleted: unknown
@@ -400,7 +399,7 @@ export async function getGangByInviteCode(code: string): Promise<GangByInviteCod
  * Returns the membership status of a user in a gang, or null if no membership exists.
  */
 export async function getMembershipStatus(gangId: string, userId: string): Promise<string | null> {
-  const serviceClient = createServiceRoleClient()
+  const serviceClient = await createClient()
 
   const { data, error } = await serviceClient
     .from('v2_gang_members')
