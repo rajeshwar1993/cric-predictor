@@ -70,6 +70,13 @@ web-app/src/
 
 ## Technical Notes
 
+### Data Flow
+The parent Server Component (predict page from PRED-001) fetches all data via DAL and passes it as props:
+- `scenarios` → from `getFixtureScenarios()` (PRED-001 DAL)
+- `existingPredictions` → from `getUserPredictions()` (PRED-001 DAL)
+- `players` → from `getMatchPlayers()` (PRED-001 DAL)
+- `fixture` → from `getFixtureWithTeams()` (MTCH-001 DAL)
+
 ### Form State Management
 ```tsx
 'use client'

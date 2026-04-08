@@ -15,14 +15,17 @@ Implement the Electric Street design system as CSS custom properties and Tailwin
 ## Acceptance Criteria
 
 - [ ] All Electric Street colors available as CSS custom properties and Tailwind classes
+- [ ] Extra component-level color tokens: `--color-hover-lime` (`#D4F05A` for button hover), `--color-bronze` (`#CD7F32` for #3 rank)
 - [ ] Typography scale implemented (Display through Caption + Stat)
+- [ ] Tailwind `@layer components` utility classes for each type scale level (`.text-display`, `.text-h1`, `.text-h2`, `.text-h3`, `.text-h4`, `.text-body-lg`, `.text-body`, `.text-body-sm`, `.text-caption`, `.text-stat`)
 - [ ] Spacing scale (space-1 through space-20) mapped to Tailwind
+- [ ] Layout tokens defined: `--max-width-mobile` (480px), `--max-width-tablet` (720px), `--page-padding-mobile` (16px), `--page-padding-tablet` (32px), `--safe-area-bottom` (34px)
 - [ ] Border radius tokens (radius-none through radius-full)
 - [ ] Shadow/elevation tokens (elevation-0 through elevation-3 + color-block + highlight)
 - [ ] Space Grotesk loaded via `next/font/google` (weights: 400, 500, 600, 700)
 - [ ] DM Sans loaded via `next/font/google` (weights: 400, 500, 600, 700)
 - [ ] Font CSS variables applied: `--font-display` (Space Grotesk), `--font-body` (DM Sans)
-- [ ] Motion/animation tokens defined (durations, easings, keyframes)
+- [ ] Motion/animation tokens defined (durations, easings, keyframes including rank-reorder)
 - [ ] `prefers-reduced-motion` respected — animations collapse to 150ms opacity
 - [ ] All tokens documented inline with comments referencing Electric Street spec
 
@@ -98,6 +101,10 @@ Apply inside `@theme` block for Tailwind v4, or as `:root` variables:
   --color-warning: #FFD93D;
   --color-error: #FF6B6B;
   --color-info: #4F7DF9;
+
+  /* Component-level (not in core palette but needed by specific components) */
+  --color-hover-lime: #D4F05A;   /* Button primary hover bg */
+  --color-bronze: #CD7F32;       /* Leaderboard #3 rank text */
 }
 ```
 
@@ -129,9 +136,21 @@ Apply inside `@theme` block for Tailwind v4, or as `:root` variables:
 }
 ```
 
+#### Layout
+```css
+:root {
+  --max-width-mobile: 480px;
+  --max-width-tablet: 720px;
+  --page-padding-mobile: 16px;
+  --page-padding-tablet: 32px;
+  --safe-area-bottom: 34px;
+}
+```
+
 #### Shadows
 ```css
 :root {
+  --shadow-elevation-0: none;
   --shadow-elevation-1: 0 2px 4px rgba(0,0,0,0.3);
   --shadow-elevation-2: 0 4px 16px rgba(0,0,0,0.4);
   --shadow-elevation-3: 0 8px 32px rgba(0,0,0,0.5);
@@ -154,6 +173,7 @@ Apply inside `@theme` block for Tailwind v4, or as `:root` variables:
   --ease-out: ease-out;
   --ease-in: ease-in;
   --ease-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-spring: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -187,6 +207,11 @@ Apply inside `@theme` block for Tailwind v4, or as `:root` variables:
   50% { transform: scale(1.15); }
   100% { transform: scale(1); }
 }
+
+@keyframes rank-reorder {
+  0% { opacity: 0.6; transform: translateY(-8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
 ```
 
 ### Tailwind v4 Theme Extension
@@ -205,6 +230,25 @@ In `globals.css`, use `@theme` to extend Tailwind's theme with custom tokens:
 
   /* Tailwind picks these up as utility classes: bg-bragg-lime, text-electric-coral, etc. */
 }
+```
+
+### Typography Utility Classes
+Create reusable Tailwind component classes for each type scale level:
+
+```css
+@layer components {
+  .text-display { @apply text-[44px] leading-[1.05] font-display font-bold uppercase tracking-[-0.02em]; }
+  .text-h1 { @apply text-[34px] leading-[1.1] font-display font-bold uppercase tracking-[-0.02em]; }
+  .text-h2 { @apply text-[26px] leading-[1.15] font-display font-bold uppercase tracking-[-0.02em]; }
+  .text-h3 { @apply text-[20px] leading-[1.25] font-display font-semibold; }
+  .text-h4 { @apply text-[17px] leading-[1.35] font-body font-semibold; }
+  .text-body-lg { @apply text-[18px] leading-[1.6] font-body font-normal; }
+  .text-body { @apply text-base leading-[1.6] font-body font-normal; }
+  .text-body-sm { @apply text-sm leading-[1.5] font-body font-normal; }
+  .text-caption { @apply text-xs leading-[1.4] font-body font-medium uppercase tracking-[0.1em]; }
+  .text-stat { @apply text-[28px] leading-[1.1] font-display font-bold tabular-nums; }
+}
+```
 ```
 
 ### Layout Update

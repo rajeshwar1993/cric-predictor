@@ -61,6 +61,12 @@ web-app/src/components/gangs/
 
 ## Technical Notes
 
+### Approve Action — Required Fields
+On approve, the server action must:
+1. Check display name uniqueness (see below)
+2. Update the member row with **both** `status = 'approved'` AND `approved_at = new Date().toISOString()` — the `approved_at` timestamp is required by the `check_max_gang_members` trigger and is used for admin succession ordering in `delete_account` RPC
+3. Revalidate paths: `/group/{gangId}` and `/group/{gangId}/settings`
+
 ### Display Name Uniqueness Check
 On approve, the server action must check if the pending member's display name collides with any existing approved member in the gang. If collision → reject with error: "A member with the same display name already exists in this gang."
 

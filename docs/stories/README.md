@@ -85,6 +85,7 @@ Stories must be implemented in phase order. Within a phase, stories can be paral
 | [DSN-001](DSN-001-shadcn-primitives.md) | shadcn/ui Primitives | FND-003 |
 | [DSN-002](DSN-002-custom-components.md) | Custom Components (StatBlock, EmptyState, Skeleton, Toast) | DSN-001 |
 | [DSN-003](DSN-003-composite-components.md) | Composite Components (DestructiveDialog, SidePanel, LeaderboardRow) | DSN-001 |
+| [DSN-004](DSN-004-share-card.md) | Share Card (screenshot-worthy result card) | DSN-001, DSN-002 |
 
 ### Phase 3: Layout Shell (LAY)
 | Story | Title | Dependencies |
@@ -180,7 +181,7 @@ Stories must be implemented in phase order. Within a phase, stories can be paral
 | Phase | Stories | Focus |
 |-------|---------|-------|
 | 1. Foundation | 6 | Project setup, tooling, config |
-| 2. Design System | 3 | UI primitives and custom components |
+| 2. Design System | 4 | UI primitives, custom components, share card |
 | 3. Layout | 3 | App shell, nav, footer |
 | 4. Auth | 4 | Login, callback, onboarding, terms |
 | 5. Dashboard | 3 | Dashboard, create/join gang |
@@ -194,7 +195,7 @@ Stories must be implemented in phase order. Within a phase, stories can be paral
 | 13. Notifications | 2 | Bell, panel, realtime |
 | 14. Public | 3 | Landing, privacy, terms, errors |
 | 15. Analytics | 2 | PostHog, Web Vitals, SEO |
-| **Total** | **44** | |
+| **Total** | **45** | |
 
 ---
 

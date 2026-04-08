@@ -80,6 +80,7 @@
       "Bash(command:*)",
       "Bash(docker:*)",
       "Bash(source:*)",
+      "Bash(rm:*)",
       "Read",
       "Edit",
       "Write",
@@ -101,7 +102,12 @@
       "WebFetch(domain:medium.com)",
       "WebFetch(domain:dev.to)",
       "WebFetch(domain:makerkit.dev)",
-      "Skill(update-config)"
+      "Skill(update-config)",
+      "Skill(run-stories)",
+      "Skill(build-feature)",
+      "Skill(frontend-design)",
+      "Skill(ui-ux-pro-max)",
+      "Skill(simplify)"
     ],
     "deny": [
       "Bash(rm -rf:*)",

@@ -22,15 +22,30 @@ This project has 3 specialized agents in `.claude/agents/`:
 - **PSE** (`pse.md`): Principal Software Engineer. Plans, architects, and implements features. Includes UI/UX and copy guidelines. Can be split into PSE-Frontend and PSE-Supabase for cross-domain work.
 - **Reviewer** (`reviewer.md`): Combined code review + QA. Finds bugs, security issues, and missed edge cases. Always spawn as a fresh agent (never the same one that wrote the code).
 
-## Build Feature Workflow
+## Workflows
 
-Use the `build-feature` skill for feature work. It runs 3 phases:
+### Build Feature (interactive, single feature)
+
+Use the `build-feature` skill for ad-hoc feature work where requirements are vague or need discussion. It runs 3 phases:
 
 1. **Plan**: Refine requirements (optionally with PM agent), read the codebase, produce an implementation plan. User approves.
 2. **Build**: PSE agent implements the feature.
 3. **Review**: Fresh reviewer agent checks for issues.
 
 For simple changes (bug fixes, small tweaks), skip the skill and work directly.
+
+### Run Stories (automated, story-driven)
+
+Use the `run-stories` skill to implement stories from `docs/stories/` with minimal human intervention. It processes stories sequentially through an automated pipeline:
+
+1. **PM Resolve**: PM agent reads the story file, resolves ambiguities from PRD/architecture/design docs. Only escalates truly unresolvable questions.
+2. **PSE Implement**: PSE agent plans and implements autonomously (no approval gate). Runs build/lint/tests before declaring done.
+3. **Review + Fix Loop**: Fresh reviewer finds issues → PSE fixes → re-review (max 3 cycles).
+4. **Merge**: Story branch merges back to the epic branch.
+
+Branch model: epic branch (provided by user) → `story/[id]` branches → merge back after each story.
+
+Invoke with: `/run-stories [epic-branch] [story-ids | phase N | all]`
 
 ## Development Rules
 
@@ -75,6 +90,7 @@ When doing any UI or component work:
 ## Conventions
 
 - Feature branches: `feature/[short-description]`
+- Story branches: `story/[story-id-lowercase]` (e.g., `story/fnd-001`)
 - Design system: `docs/design-systems/electric-street.md`
 - PRD: `docs/PRD.V2.md`
 - Stories: `docs/stories/`
