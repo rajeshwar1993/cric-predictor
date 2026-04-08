@@ -5,12 +5,12 @@ import { ERROR_LOGGED } from './events'
 
 let posthogClient: PostHog | null = null
 
-function getPostHogClient(): PostHog {
+function getPostHogClient(): PostHog | null {
   if (posthogClient === null) {
     const key = process.env['NEXT_PUBLIC_POSTHOG_KEY']
     const host = process.env['NEXT_PUBLIC_POSTHOG_HOST']
     if (key === undefined || key === '' || host === undefined || host === '') {
-      throw new Error('Missing PostHog environment variables')
+      return null
     }
     posthogClient = new PostHog(key, { host, flushAt: 1, flushInterval: 0 })
   }
@@ -19,19 +19,22 @@ function getPostHogClient(): PostHog {
 
 /**
  * Track a server-side analytics event.
- * Use in server actions, API routes, and Edge Functions.
+ * No-op if PostHog is not configured.
  */
 export function trackServerEvent(
   distinctId: string,
   name: string,
   properties?: Record<string, unknown>,
 ) {
+  const client = getPostHogClient()
+  if (client === null) return
   const captureArgs = { distinctId, event: name, ...(properties !== undefined && { properties }) }
-  getPostHogClient().capture(captureArgs)
+  client.capture(captureArgs)
 }
 
 /**
  * Capture a server-side error with stack trace.
+ * No-op if PostHog is not configured.
  */
 export function captureServerError(
   distinctId: string,
@@ -48,8 +51,10 @@ export function captureServerError(
 }
 
 /**
- * Flush pending events. Call at the end of server actions if needed.
+ * Flush pending events. No-op if PostHog is not configured.
  */
 export async function flushServerEvents() {
-  await getPostHogClient().flush()
+  const client = getPostHogClient()
+  if (client === null) return
+  await client.flush()
 }
