@@ -114,7 +114,7 @@ export function LiveMatchesSection({ gangId }: { gangId: string }) {
 ## 3. Folder Structure
 
 ```
-web-app-2/
+web-app/
 ├── src/
 │   ├── app/                          # Routes (App Router)
 │   │   ├── layout.tsx                # Root layout (fonts, PostHog provider, dark mode)
@@ -873,7 +873,7 @@ User clicks a notification
 | Server actions | `src/lib/actions/*.test.ts` | Validation, auth checks, error cases, DB writes |
 | DAL functions | `src/lib/dal/*.test.ts` | Query correctness, empty state, error handling |
 | Utility helpers | `src/lib/*.test.ts` | `getAvatarInitials`, `formatTimeAgo`, rate limiter |
-| Postgres functions | `supabase-2/tests/` | `create_gang` RPC, `delete_account` RPC, triggers |
+| Postgres functions | `supabase/tests/` (to be created) | `create_gang` RPC, `delete_account` RPC, triggers |
 | Components | `src/components/**/*.test.tsx` | Render with props, click handlers, accessibility |
 
 ### Storybook (Component Showcase)
@@ -886,7 +886,7 @@ Every UI component ships with `*.stories.tsx`:
 
 ### E2E Tests (Playwright)
 
-Critical-path smoke tests in `web-app-2/e2e/`:
+Critical-path smoke tests in `web-app/e2e/`:
 1. Signup → onboarding → dashboard
 2. Create gang → invite link → join
 3. Predict → submit → verify

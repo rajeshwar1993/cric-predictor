@@ -987,6 +987,18 @@ A player can be on different teams in different seasons (trades, auctions). Popu
 | `is_read` | BOOLEAN, default false | |
 | `created_at` | TIMESTAMPTZ, default now() | |
 
+### `v2_rate_limits` — Rate limiting storage
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `user_id` | UUID | |
+| `action` | TEXT | |
+| `window_start` | TIMESTAMPTZ | |
+| `count` | INT | |
+| **PK** | (user_id, action, window_start) | |
+
+Used by the in-app rate limiter (`src/lib/rate-limit.ts`). A pg_cron job (`cleanup-rate-limits`) runs daily at 03:00 UTC to delete rows older than 24 hours.
+
 ### Database Indexes
 
 | Table | Index | Columns |
@@ -1011,6 +1023,7 @@ A player can be on different teams in different seasons (trades, auctions). Popu
 | `v2_notifications` | `idx_notifications_user` | `(user_id, created_at DESC)` — for fetching latest N per user |
 | `v2_notifications` | `idx_notifications_unread` | `(user_id, is_read) WHERE is_read = false` — partial index for unread count |
 | `v2_notifications` | `uniq_notifications_dedup` | UNIQUE `(user_id, gang_id, fixture_id, type) WHERE type IN ('deadline_reminder', 'results_available')` — prevents duplicate inserts via `ON CONFLICT DO NOTHING` |
+| `v2_rate_limits` | `idx_v2_rate_limits_window_start` | `(window_start)` — for cleanup cron |
 
 ### Row-Level Security (RLS) Policies
 
@@ -1275,7 +1288,7 @@ Admin UI for managing these is a Pending Item (not needed for launch).
 
 | Function | Retry Strategy | Alert Admin |
 |----------|---------------|-------------|
-| `sync-fixtures` | In-function retries: 3 attempts with 15-minute backoff between attempts | After all retries fail |
+| `sync-fixtures` | In-function retries: 2 retries per API call with exponential backoff (1s, 2s) | After all retries fail |
 | `sync-fixtures-pre-match` | No retries (runs every 15 min, next cycle acts as retry) | After 3 consecutive failures |
 | `seed-scenarios` | No retries (next cycle acts as retry) | After 3 consecutive failures |
 | `live-poll-resolve-fixtures` | No retries (next cycle in 15s) | After 10 consecutive failures (~2.5 min down) |
@@ -1286,30 +1299,34 @@ Admin UI for managing these is a Pending Item (not needed for launch).
 
 ### Folder structure
 
-Parallel implementation alongside existing codebase (both kept running during development):
-
 ```
 cric-predictor/
-├── web-app/           # existing — kept for reference
-├── web-app-2/         # new — clean implementation per PRD V2
-├── supabase/          # existing — kept for reference
-├── supabase-2/        # new — clean schema + migrations + edge functions
-├── docs/              # shared
+├── web-app/           # Next.js 16 frontend (App Router, React, TypeScript, Tailwind v4, shadcn/ui)
+├── supabase/          # Supabase project (migrations, Edge Functions, seeds)
+├── docs/              # shared documentation
 └── api-tester/        # shared
 ```
 
-Post-launch: delete `web-app` and `supabase`, rename `web-app-2` → `web-app` and `supabase-2` → `supabase`.
+### Supabase migration files
 
-### Supabase-2 migration files
+16 migration files split by concern (in `supabase/supabase/migrations/`):
 
-1. `001_initial_schema.sql` — all `v2_*` tables, enums, triggers, RLS policies, indexes, helper functions
-2. `002_seed_data.sql` — seed reference data:
-   - `v2_sports` (Cricket)
-   - `v2_leagues` (IPL)
-   - `v2_seasons` (IPL 2026, `is_active = true`)
-   - `v2_league_teams` (10 IPL franchises)
-   - `v2_scenario_templates` (20 scenarios, 19 active + 1 inactive)
-3. `003_migrate_from_v1.sql` — one-time data migration from old schema
+1. `20260406000001_initial_schema.sql` — all `v2_*` tables, enums
+2. `20260406000002_rls_policies.sql` — RLS policies and helper functions
+3. `20260406000003_indexes.sql` — all indexes
+4. `20260406000004_triggers.sql` — trigger functions (standings, status, member limits)
+5. `20260406000005_seed_data.sql` — seed reference data (sports, leagues, seasons, teams, scenario templates)
+6. `20260406000006_migrate_from_v1.sql` — one-time data migration from old schema
+7. `20260407000007_seed_scenarios_function.sql` — scenario seeding functions
+8. `20260407000008_create_gang_rpc.sql` — `create_gang` RPC
+9. `20260407000009_delete_gang_rpc.sql` — `delete_gang` RPC
+10. `20260407000010_seed_scenarios_cron.sql` — `run_seed_scenarios_cron` function
+11. `20260407000011_add_fixture_round.sql` — adds `round` column to fixtures
+12. `20260407000012_grant_table_permissions.sql` — table-level grants
+13. `20260408000013_scenario_resolution_functions.sql` — resolution RPCs
+14. `20260408000014_deadline_reminders_cron.sql` — `run_deadline_reminders_cron` function
+15. `20260408000015_rate_limits_table.sql` — rate limits table and cleanup cron
+16. `20260406000012_delete_account_rpc.sql` — `delete_account` RPC
 
 ### One-time migration strategy
 

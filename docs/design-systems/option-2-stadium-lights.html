@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bragg — Stadium Lights Design System</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Source+Sans+3:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #C8E64A;
+    --primary-hover: #D4F05A;
+    --primary-muted: rgba(200,230,74,0.1);
+    --secondary: #F59E0B;
+    --secondary-light: #FBBF24;
+    --accent: #38BDF8;
+    --warm: #FB7185;
+    --bg: #0F1117;
+    --surface-1: #181B24;
+    --surface-2: #1F2330;
+    --surface-3: #282D3E;
+    --border: #2D3348;
+    --border-subtle: #1F2330;
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
+    --text-muted: #64748B;
+    --success: #22C55E;
+    --warning: #F59E0B;
+    --error: #EF4444;
+    --info: #38BDF8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: 'Source Sans 3', system-ui, sans-serif;
+    line-height: 1.6;
+  }
+
+  .hero {
+    background: linear-gradient(180deg, #181B24 0%, #0F1117 100%);
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 80px 24px 60px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -80px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 300px;
+    background: radial-gradient(ellipse, rgba(245,158,11,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 56px;
+    line-height: 1.0;
+    color: var(--text-primary);
+    letter-spacing: 0.04em;
+    position: relative;
+  }
+  .hero h1 span { color: var(--primary); }
+  .hero .subtitle {
+    font-size: 18px;
+    color: var(--text-secondary);
+    font-weight: 400;
+    margin-top: 8px;
+  }
+  .hero .badge {
+    display: inline-block;
+    background: rgba(245,158,11,0.12);
+    color: var(--secondary);
+    padding: 6px 16px;
+    border-radius: 9999px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-top: 16px;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 48px 24px;
+  }
+
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    color: var(--text-primary);
+    margin-bottom: 32px;
+    letter-spacing: 0.03em;
+  }
+  .section-title span { color: var(--secondary); }
+
+  /* Color Palette */
+  .color-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+  .color-swatch {
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+  }
+  .color-swatch .swatch {
+    height: 80px;
+  }
+  .color-swatch .meta {
+    padding: 12px;
+  }
+  .color-swatch .name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .color-swatch .hex {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Typography */
+  .type-specimen {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 32px;
+    margin-bottom: 16px;
+  }
+  .type-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 12px;
+    font-weight: 600;
+  }
+  .type-display {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 48px;
+    line-height: 1.0;
+    letter-spacing: 0.02em;
+  }
+  .type-h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    line-height: 1.1;
+    letter-spacing: 0.02em;
+  }
+  .type-h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    line-height: 1.15;
+    letter-spacing: 0.02em;
+  }
+  .type-h3 {
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+  .type-body {
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+  }
+  .type-caption {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .type-stat {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    color: var(--text-primary);
+    letter-spacing: 0.02em;
+  }
+
+  .type-grid {
+    display: grid;
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+
+  /* Buttons */
+  .button-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+  .btn {
+    height: 44px;
+    padding: 0 24px;
+    border-radius: 10px;
+    font-family: 'Source Sans 3', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: 0.02em;
+    border: none;
+    cursor: pointer;
+    transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-primary {
+    background: var(--primary);
+    color: var(--bg);
+  }
+  .btn-primary:hover {
+    background: var(--primary-hover);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+  .btn-secondary {
+    background: var(--surface-2);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover {
+    background: var(--surface-3);
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-secondary);
+  }
+  .btn-ghost:hover {
+    background: var(--surface-2);
+    color: var(--text-primary);
+  }
+  .btn-destructive {
+    background: #DC2626;
+    color: #fff;
+  }
+  .btn-disabled {
+    background: var(--surface-1);
+    color: var(--text-muted);
+    cursor: not-allowed;
+  }
+
+  /* Badges */
+  .badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 48px;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 14px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .badge-lime { background: rgba(200,230,74,0.12); color: var(--primary); }
+  .badge-amber { background: rgba(245,158,11,0.12); color: var(--secondary); }
+  .badge-blue { background: rgba(56,189,248,0.12); color: var(--accent); }
+  .badge-coral { background: rgba(251,113,133,0.12); color: var(--warm); }
+  .badge-success { background: rgba(34,197,94,0.12); color: var(--success); }
+  .badge-error { background: rgba(239,68,68,0.12); color: var(--error); }
+
+  /* Inputs */
+  .input-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+  .input-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+  }
+  .input {
+    width: 100%;
+    height: 44px;
+    padding: 0 16px;
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 200ms, box-shadow 200ms;
+  }
+  .input::placeholder { color: var(--text-muted); }
+  .input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(200,230,74,0.1);
+  }
+  .input-error { border-color: var(--error) !important; }
+  .error-text { font-size: 13px; color: var(--error); margin-top: 6px; }
+
+  /* Cards */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.35);
+    border-color: #3D4460;
+  }
+  .card-accent-top {
+    position: relative;
+    overflow: hidden;
+  }
+  .card-accent-top::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary), transparent);
+  }
+  .card-title {
+    font-weight: 600;
+    font-size: 18px;
+    margin-bottom: 8px;
+  }
+  .card-text {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .card-stat {
+    text-align: center;
+    padding: 32px 20px;
+  }
+  .stat-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 44px;
+    color: var(--text-primary);
+    line-height: 1;
+    letter-spacing: 0.02em;
+  }
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-top: 8px;
+    font-weight: 600;
+  }
+  .stat-change {
+    font-size: 14px;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+  .stat-up { color: var(--success); }
+  .stat-down { color: var(--warm); }
+
+  /* Leaderboard */
+  .leaderboard {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 48px;
+  }
+  .lb-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px;
+    letter-spacing: 0.02em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .lb-row {
+    display: flex;
+    align-items: center;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border-subtle);
+    transition: background 200ms;
+    height: 72px;
+  }
+  .lb-row:last-child { border-bottom: none; }
+  .lb-row:hover { background: var(--surface-3); }
+  .lb-rank {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    width: 52px;
+    flex-shrink: 0;
+    letter-spacing: 0.02em;
+  }
+  .lb-rank-gold { color: var(--secondary); }
+  .lb-rank-silver { color: var(--text-secondary); }
+  .lb-rank-bronze { color: #CD7F32; }
+  .lb-rank-default { color: var(--text-muted); }
+  .lb-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 9999px;
+    background: var(--surface-3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    margin-right: 14px;
+    flex-shrink: 0;
+  }
+  .lb-info { flex: 1; }
+  .lb-name {
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .lb-subtitle {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+  .lb-score {
+    font-weight: 700;
+    font-size: 18px;
+  }
+  .lb-you {
+    background: rgba(200,230,74,0.04);
+    border-left: 3px solid var(--primary);
+  }
+  .lb-trophy {
+    display: inline-block;
+    margin-left: 6px;
+    font-size: 14px;
+  }
+
+  /* Navigation */
+  .nav-demo {
+    background: rgba(15,17,23,0.98);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--border-subtle);
+    border-radius: 14px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 32px;
+    margin-bottom: 48px;
+  }
+  .nav-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px;
+    color: var(--primary);
+    letter-spacing: 0.04em;
+  }
+  .nav-item {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-muted);
+    padding: 18px 0;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    transition: all 200ms;
+    border-radius: 0;
+  }
+  .nav-item:hover { color: var(--text-secondary); }
+  .nav-item.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+  }
+  .nav-spacer { flex: 1; }
+  .nav-bell {
+    position: relative;
+    width: 24px;
+    height: 24px;
+    background: var(--surface-3);
+    border-radius: 9999px;
+    cursor: pointer;
+  }
+  .nav-bell-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 16px;
+    height: 16px;
+    background: var(--error);
+    border-radius: 9999px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Match Card */
+  .match-card-demo {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    max-width: 440px;
+    margin-bottom: 48px;
+  }
+  .match-header {
+    padding: 14px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .match-header-text {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+  }
+  .live-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--success);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 9999px;
+    background: var(--success);
+    animation: livePulse 1.5s ease-in-out infinite;
+  }
+  @keyframes livePulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  .match-body {
+    padding: 24px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .team {
+    text-align: center;
+    flex: 1;
+  }
+  .team-logo {
+    width: 52px;
+    height: 52px;
+    border-radius: 9999px;
+    margin: 0 auto 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 15px;
+  }
+  .team-name {
+    font-weight: 600;
+    font-size: 14px;
+  }
+  .team-score {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 0.02em;
+    margin-top: 4px;
+  }
+  .vs-divider {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    color: var(--text-muted);
+    padding: 0 12px;
+    letter-spacing: 0.04em;
+  }
+  .match-footer {
+    padding: 14px 20px;
+    background: var(--surface-2);
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  /* Shadows */
+  .shadow-demo {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    margin-bottom: 48px;
+  }
+  .shadow-item {
+    width: 130px;
+    height: 130px;
+    background: var(--surface-1);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    color: var(--text-muted);
+    text-align: center;
+    gap: 4px;
+  }
+  .sh-e1 { box-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.15); }
+  .sh-e2 { box-shadow: 0 4px 8px rgba(0,0,0,0.35), 0 2px 4px rgba(0,0,0,0.2); }
+  .sh-e3 { box-shadow: 0 12px 32px rgba(0,0,0,0.5); }
+  .sh-amber { box-shadow: 0 0 24px rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.2); }
+  .sh-lime { box-shadow: 0 0 16px rgba(200,230,74,0.12); border: 1px solid rgba(200,230,74,0.15); }
+
+  /* Border Radius */
+  .radius-demo {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+  .radius-item {
+    width: 80px;
+    height: 80px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  /* Spacing */
+  .spacing-demo {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 48px;
+  }
+  .spacing-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .spacing-bar {
+    height: 24px;
+    background: rgba(245,158,11,0.15);
+    border: 1px solid var(--secondary);
+    border-radius: 6px;
+  }
+  .spacing-label {
+    font-size: 13px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  /* Toasts */
+  .toast-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 48px;
+  }
+  .toast {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: 420px;
+  }
+  .toast-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 9999px;
+    flex-shrink: 0;
+  }
+  .toast-text {
+    font-size: 14px;
+    color: var(--text-primary);
+  }
+
+  /* Semantic */
+  .semantic-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 48px;
+  }
+  .semantic-item {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+  }
+  .semantic-dot {
+    width: 32px;
+    height: 32px;
+    border-radius: 9999px;
+    margin: 0 auto 8px;
+  }
+  .semantic-name {
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .semantic-hex {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  /* Score Display */
+  .score-display {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 48px;
+    flex-wrap: wrap;
+  }
+  .score-card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px 32px;
+    text-align: center;
+    min-width: 140px;
+  }
+
+  .footer-note {
+    text-align: center;
+    padding: 40px 24px;
+    border-top: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+  .footer-note .ds-name {
+    font-family: 'Bebas Neue', sans-serif;
+    color: var(--secondary);
+    font-size: 20px;
+    display: block;
+    margin-bottom: 8px;
+    letter-spacing: 0.04em;
+  }
+</style>
+</head>
+<body>
+
+<!-- Hero -->
+<div class="hero">
+  <h1>STADIUM <span>LIGHTS</span></h1>
+  <div class="subtitle">Bragg Design System — Option 2</div>
+  <div class="badge">Premium / Cinematic / Broadcast</div>
+</div>
+
+<div class="container">
+
+  <!-- Colors -->
+  <h2 class="section-title"><span>01</span> COLOR PALETTE</h2>
+
+  <h3 style="font-size:13px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:16px; font-weight:600;">Primary & Accent</h3>
+  <div class="color-grid">
+    <div class="color-swatch">
+      <div class="swatch" style="background:#C8E64A;"></div>
+      <div class="meta"><div class="name">Bragg Lime</div><div class="hex">#C8E64A</div></div>
+    </div>
+    <div class="color-swatch">
+      <div class="swatch" style="background:#D4F05A;"></div>
+      <div class="meta"><div class="name">Lime Bright</div><div class="hex">#D4F05A</div></div>
+    </div>
+    <div class="color-swatch">
+      <div class="swatch" style="background:#F59E0B;"></div>
+      <div class="meta"><div class="name">Stadium Amber</div><div class="hex">#F59E0B</div></div>
+    </div>
+    <div class="color-swatch">
+      <div class="swatch" style="background:#FBBF24;"></div>
+      <div class="meta"><div class="name">Gold Glow</div><div class="hex">#FBBF24</div></div>
+    </div>
+    <div class="color-swatch">
+      <div class="swatch" style="background:#38BDF8;"></div>
+      <div class="meta"><div class="name">Sky Blue</div><div class="hex">#38BDF8</div></div>
+    </div>
+    <div class="color-swatch">
+      <div class="swatch" style="background:#FB7185;"></div>
+      <div class="meta"><div class="name">Coral</div><div class="hex">#FB7185</div></div>
+    </div>
+  </div>
+
+  <h3 style="font-size:13px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:16px; font-weight:600;">Surfaces & Neutrals</h3>
+  <div class="color-grid">
+    <div class="color-swatch">
+      <div class="swatch" style="background:#0F1117;"><span style="color:#F8FAFC;font-size:11px;">BG</span></div>
+      <div class="meta"><div class="name">Deep Charcoal</div><div class="hex">#0F1117</div></div>
+    </div>
+    <div class="color-swatch">
+      <div class="swatch" style="background:#181B24;"><span style="color:#F8FAFC;font-size:11px;">S1</span></div>
+      <div class="meta"><div class="name">Charcoal</div><div class="hex">#181B24</div></div>
+    </div>
+    <div class="color-swatch">
+      <div class="swatch" style="background:#1F2330;"><span style="color:#F8FAFC;font-size:11px;">S2</span></div>
+      <div class="meta"><div class="name">Slate</div><div class="hex">#1F2330</div></div>
+    </div>
+    <div class="color-swatch">
+      <div class="swatch" style="background:#282D3E;"><span style="color:#F8FAFC;font-size:11px;">S3</span></div>
+      <div class="meta"><div class="name">Light Slate</div><div class="hex">#282D3E</div></div>
+    </div>
+    <div class="color-swatch">
+      <div class="swatch" style="background:#2D3348;"><span style="color:#F8FAFC;font-size:11px;">BD</span></div>
+      <div class="meta"><div class="name">Steel</div><div class="hex">#2D3348</div></div>
+    </div>
+  </div>
+
+  <h3 style="font-size:13px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:16px; font-weight:600;">Semantic</h3>
+  <div class="semantic-grid">
+    <div class="semantic-item">
+      <div class="semantic-dot" style="background:#22C55E;"></div>
+      <div class="semantic-name" style="color:#22C55E;">Success</div>
+      <div class="semantic-hex">#22C55E</div>
+    </div>
+    <div class="semantic-item">
+      <div class="semantic-dot" style="background:#F59E0B;"></div>
+      <div class="semantic-name" style="color:#F59E0B;">Warning</div>
+      <div class="semantic-hex">#F59E0B</div>
+    </div>
+    <div class="semantic-item">
+      <div class="semantic-dot" style="background:#EF4444;"></div>
+      <div class="semantic-name" style="color:#EF4444;">Error</div>
+      <div class="semantic-hex">#EF4444</div>
+    </div>
+    <div class="semantic-item">
+      <div class="semantic-dot" style="background:#38BDF8;"></div>
+      <div class="semantic-name" style="color:#38BDF8;">Info</div>
+      <div class="semantic-hex">#38BDF8</div>
+    </div>
+  </div>
+
+  <!-- Typography -->
+  <h2 class="section-title"><span>02</span> TYPOGRAPHY</h2>
+  <div class="type-grid">
+    <div class="type-specimen">
+      <div class="type-label">Display — Bebas Neue 48px</div>
+      <div class="type-display">PREDICT RIGHT. PROVE IT. BRAGG.</div>
+    </div>
+    <div class="type-specimen">
+      <div class="type-label">H1 — Bebas Neue 36px</div>
+      <div class="type-h1">MATCH LEADERBOARD</div>
+    </div>
+    <div class="type-specimen">
+      <div class="type-label">H2 — Bebas Neue 28px</div>
+      <div class="type-h2">YOUR PREDICTIONS FOR TODAY</div>
+    </div>
+    <div class="type-specimen">
+      <div class="type-label">H3 — Source Sans 3, 600, 22px</div>
+      <div class="type-h3">Mumbai Indians vs Chennai Super Kings</div>
+    </div>
+    <div class="type-specimen">
+      <div class="type-label">Body — Source Sans 3, 400, 16px</div>
+      <div class="type-body">Lock in your predictions before the deadline. You have 19 scenarios to predict for each match — from match winner to top scorer to powerplay runs. Your gang is watching.</div>
+    </div>
+    <div class="type-specimen">
+      <div class="type-label">Caption — Source Sans 3, 500, 12px, uppercase</div>
+      <div class="type-caption">Match starts in 2h 34m &bull; Predictions close at 6:45 PM</div>
+    </div>
+    <div class="type-specimen">
+      <div class="type-label">Stat Display — Bebas Neue 36px</div>
+      <div class="type-stat">847 PTS &nbsp;&bull;&nbsp; 14/19 &nbsp;&bull;&nbsp; #2 RANK</div>
+    </div>
+  </div>
+
+  <!-- Score Display -->
+  <h2 class="section-title"><span>03</span> SCORE DISPLAYS</h2>
+  <div class="score-display">
+    <div class="score-card">
+      <div class="stat-label">Your Rank</div>
+      <div class="stat-value" style="color:var(--primary);">#2</div>
+      <div class="stat-change stat-up">+1</div>
+    </div>
+    <div class="score-card">
+      <div class="stat-label">Total Points</div>
+      <div class="stat-value">847</div>
+      <div class="stat-change stat-up">+87</div>
+    </div>
+    <div class="score-card">
+      <div class="stat-label">Accuracy</div>
+      <div class="stat-value">74%</div>
+      <div class="stat-change stat-down">-2%</div>
+    </div>
+    <div class="score-card">
+      <div class="stat-label">Matches Played</div>
+      <div class="stat-value">18</div>
+    </div>
+  </div>
+
+  <!-- Buttons -->
+  <h2 class="section-title"><span>04</span> BUTTONS</h2>
+  <div class="button-row">
+    <button class="btn btn-primary">Lock Predictions</button>
+    <button class="btn btn-secondary">View Match</button>
+    <button class="btn btn-ghost">Cancel</button>
+    <button class="btn btn-destructive">Leave Gang</button>
+    <button class="btn btn-disabled" disabled>Locked</button>
+  </div>
+
+  <!-- Badges -->
+  <h2 class="section-title"><span>05</span> BADGES</h2>
+  <div class="badge-row">
+    <span class="badge badge-lime">LIVE</span>
+    <span class="badge badge-amber">FEATURED</span>
+    <span class="badge badge-blue">UPCOMING</span>
+    <span class="badge badge-coral">LOSS</span>
+    <span class="badge badge-success">CORRECT</span>
+    <span class="badge badge-error">WRONG</span>
+  </div>
+
+  <!-- Inputs -->
+  <h2 class="section-title"><span>06</span> INPUTS</h2>
+  <div class="input-grid">
+    <div class="input-group">
+      <label>Gang Name</label>
+      <input class="input" type="text" placeholder="Enter your gang name">
+    </div>
+    <div class="input-group">
+      <label>Invite Code</label>
+      <input class="input" type="text" value="BRAGG-XK42" style="border-color:var(--primary); box-shadow: 0 0 0 3px rgba(200,230,74,0.1);">
+    </div>
+    <div class="input-group">
+      <label>Display Name</label>
+      <input class="input input-error" type="text" value="ab">
+      <div class="error-text">Must be at least 3 characters</div>
+    </div>
+  </div>
+
+  <!-- Cards -->
+  <h2 class="section-title"><span>07</span> CARDS</h2>
+  <div class="card-grid">
+    <div class="card card-accent-top">
+      <div class="card-title">MI vs CSK</div>
+      <div class="card-text">Match 42 &bull; Wankhede Stadium<br>Apr 15, 2026 &bull; 7:30 PM IST</div>
+      <div style="margin-top:12px;">
+        <span class="badge badge-lime"><span class="live-dot" style="display:inline-block; margin-right:6px;"></span>LIVE</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">RCB vs DC</div>
+      <div class="card-text">Match 43 &bull; M. Chinnaswamy Stadium<br>Apr 16, 2026 &bull; 3:30 PM IST</div>
+      <div style="margin-top:12px;">
+        <span class="badge badge-blue">UPCOMING</span>
+      </div>
+    </div>
+    <div class="card card-stat">
+      <div class="stat-label">Predictions Correct</div>
+      <div class="stat-value">14/19</div>
+    </div>
+  </div>
+
+  <!-- Leaderboard -->
+  <h2 class="section-title"><span>08</span> LEADERBOARD</h2>
+  <div class="leaderboard">
+    <div class="lb-header">
+      <span>GANG LEADERBOARD — SEASON 2026</span>
+      <span class="badge badge-amber" style="font-size:11px;">18 MATCHES</span>
+    </div>
+    <div class="lb-row">
+      <div class="lb-rank lb-rank-gold">#1</div>
+      <div class="lb-avatar" style="background:rgba(245,158,11,0.15); color:#F59E0B;">RK</div>
+      <div class="lb-info">
+        <div class="lb-name">Rohit_King</div>
+        <div class="lb-subtitle">14/19 last match</div>
+      </div>
+      <div class="lb-score">847</div>
+    </div>
+    <div class="lb-row lb-you">
+      <div class="lb-rank lb-rank-silver">#2</div>
+      <div class="lb-avatar" style="background:rgba(200,230,74,0.12); color:#C8E64A;">YO</div>
+      <div class="lb-info">
+        <div class="lb-name">You <span class="badge badge-lime" style="font-size:10px; margin-left:6px;">YOU</span></div>
+        <div class="lb-subtitle">12/19 last match</div>
+      </div>
+      <div class="lb-score">812</div>
+    </div>
+    <div class="lb-row">
+      <div class="lb-rank lb-rank-bronze">#3</div>
+      <div class="lb-avatar" style="background:rgba(205,127,50,0.15); color:#CD7F32;">VK</div>
+      <div class="lb-info">
+        <div class="lb-name">ViratFan_18</div>
+        <div class="lb-subtitle">11/19 last match</div>
+      </div>
+      <div class="lb-score">798</div>
+    </div>
+    <div class="lb-row">
+      <div class="lb-rank lb-rank-default">#4</div>
+      <div class="lb-avatar">MS</div>
+      <div class="lb-info">
+        <div class="lb-name">MSD_Legend</div>
+        <div class="lb-subtitle">10/19 last match</div>
+      </div>
+      <div class="lb-score">764</div>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <h2 class="section-title"><span>09</span> NAVIGATION</h2>
+  <div class="nav-demo">
+    <div class="nav-logo">BRAGG</div>
+    <div class="nav-item active">Dashboard</div>
+    <div class="nav-item">Matches</div>
+    <div class="nav-item">Gangs</div>
+    <div class="nav-spacer"></div>
+    <div class="nav-bell">
+      <div class="nav-bell-badge">3</div>
+    </div>
+  </div>
+
+  <!-- Match Card -->
+  <h2 class="section-title"><span>10</span> MATCH CARD</h2>
+  <div class="match-card-demo">
+    <div class="match-header">
+      <span class="match-header-text">Match 42 &bull; IPL 2026</span>
+      <span class="live-badge"><span class="live-dot"></span> LIVE</span>
+    </div>
+    <div class="match-body">
+      <div class="team">
+        <div class="team-logo" style="background:#004BA0; color:#fff;">MI</div>
+        <div class="team-name">Mumbai Indians</div>
+        <div class="team-score">186/4</div>
+      </div>
+      <div class="vs-divider">VS</div>
+      <div class="team">
+        <div class="team-logo" style="background:#FCCA06; color:#000;">CSK</div>
+        <div class="team-name">Chennai Super Kings</div>
+        <div class="team-score">142/3</div>
+      </div>
+    </div>
+    <div class="match-footer">CSK need 45 runs in 28 balls</div>
+  </div>
+
+  <!-- Shadows -->
+  <h2 class="section-title"><span>11</span> SHADOWS & ELEVATION</h2>
+  <div class="shadow-demo">
+    <div class="shadow-item sh-e1">Elevation 1<br><span style="font-size:11px;">Cards</span></div>
+    <div class="shadow-item sh-e2">Elevation 2<br><span style="font-size:11px;">Hover</span></div>
+    <div class="shadow-item sh-e3">Elevation 3<br><span style="font-size:11px;">Modal</span></div>
+    <div class="shadow-item sh-amber">Amber Glow<br><span style="font-size:11px;">Trophy</span></div>
+    <div class="shadow-item sh-lime">Lime Accent<br><span style="font-size:11px;">Primary</span></div>
+  </div>
+
+  <!-- Border Radius -->
+  <h2 class="section-title"><span>12</span> BORDER RADIUS</h2>
+  <div class="radius-demo">
+    <div class="radius-item" style="border-radius:6px;">6px</div>
+    <div class="radius-item" style="border-radius:10px;">10px</div>
+    <div class="radius-item" style="border-radius:14px;">14px</div>
+    <div class="radius-item" style="border-radius:20px;">20px</div>
+    <div class="radius-item" style="border-radius:9999px;">Full</div>
+  </div>
+
+  <!-- Spacing -->
+  <h2 class="section-title"><span>13</span> SPACING SCALE</h2>
+  <div class="spacing-demo">
+    <div class="spacing-item"><div class="spacing-bar" style="width:4px;"></div><span class="spacing-label">4px — space-1</span></div>
+    <div class="spacing-item"><div class="spacing-bar" style="width:8px;"></div><span class="spacing-label">8px — space-2</span></div>
+    <div class="spacing-item"><div class="spacing-bar" style="width:16px;"></div><span class="spacing-label">16px — space-4</span></div>
+    <div class="spacing-item"><div class="spacing-bar" style="width:24px;"></div><span class="spacing-label">24px — space-6</span></div>
+    <div class="spacing-item"><div class="spacing-bar" style="width:32px;"></div><span class="spacing-label">32px — space-8</span></div>
+    <div class="spacing-item"><div class="spacing-bar" style="width:48px;"></div><span class="spacing-label">48px — space-12</span></div>
+    <div class="spacing-item"><div class="spacing-bar" style="width:64px;"></div><span class="spacing-label">64px — space-16</span></div>
+  </div>
+
+  <!-- Toasts -->
+  <h2 class="section-title"><span>14</span> TOAST NOTIFICATIONS</h2>
+  <div class="toast-stack">
+    <div class="toast">
+      <div class="toast-icon" style="background:#22C55E;"></div>
+      <div class="toast-text">Predictions locked! You're in for MI vs CSK.</div>
+    </div>
+    <div class="toast">
+      <div class="toast-icon" style="background:#EF4444;"></div>
+      <div class="toast-text">Failed to join gang. Invite code expired.</div>
+    </div>
+    <div class="toast">
+      <div class="toast-icon" style="background:#F59E0B;"></div>
+      <div class="toast-text">Prediction deadline in 30 minutes!</div>
+    </div>
+    <div class="toast">
+      <div class="toast-icon" style="background:#38BDF8;"></div>
+      <div class="toast-text">New match available: RCB vs DC</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer-note">
+  <span class="ds-name">STADIUM LIGHTS</span>
+  Bragg Design System &bull; Option 2 &bull; Dark-only &bull; Premium / Cinematic / Broadcast
+</div>
+
+</body>
+</html>
