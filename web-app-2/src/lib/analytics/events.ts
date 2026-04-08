@@ -27,6 +27,9 @@ export const GANG_MEMBER_UNBLOCKED = 'gang_member_unblocked' as const
 export const GANG_DELETED = 'gang_deleted' as const
 export const GANG_SETTINGS_UPDATED = 'gang_settings_updated' as const
 
+// Profile
+export const PROFILE_UPDATED = 'profile_updated' as const
+
 // Predictions
 export const PREDICTION_SUBMITTED = 'prediction_submitted' as const
 export const PREDICTION_PICK_CHANGED = 'prediction_pick_changed' as const
