@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceRoleClient } from '@/lib/supabase/service-role'
 import { trackServerEvent } from '@/lib/analytics/server'
 import { PROFILE_UPDATED } from '@/lib/analytics/events'
+import { rateLimit, formatRetryAfter, RATE_LIMITS } from '@/lib/rate-limit'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -51,6 +52,15 @@ export async function updateProfile(updates: {
 
   if (user === null) {
     return { success: false, error: 'You must be signed in' }
+  }
+
+  // Rate limit check
+  const rl = rateLimit(user.id, 'update_profile', RATE_LIMITS.update_profile)
+  if (!rl.allowed) {
+    return {
+      success: false,
+      error: `Too many requests. Please try again in ${formatRetryAfter(rl.retryAfterMs ?? 0)}.`,
+    }
   }
 
   const changedFields: string[] = []

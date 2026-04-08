@@ -195,6 +195,98 @@ const serviceRoleKey =
 ```bash
 supabase functions deploy sync-fixtures --project-ref <project-ref>
 supabase functions deploy sync-fixtures-pre-match --project-ref <project-ref>
+supabase functions deploy live-poll-resolve-fixtures --project-ref <project-ref>
+```
+
+### Configure pg_cron Schedules
+
+After deploying edge functions, set up the 6 scheduled jobs. Run the following SQL in **Supabase Dashboard > SQL Editor**.
+
+> **Important:** pg_cron uses UTC. IST times must be converted (IST = UTC + 5:30).
+
+#### Edge Function jobs (via pg_net HTTP POST)
+
+Replace `<project-ref>` and `<service-role-key>` with your actual values.
+
+```sql
+-- 1. sync-fixtures: Daily at 5 AM IST (23:30 UTC previous day)
+SELECT cron.schedule(
+  'sync-fixtures',
+  '30 23 * * *',
+  $$SELECT net.http_post(
+    url := 'https://<project-ref>.supabase.co/functions/v1/sync-fixtures',
+    headers := '{"Authorization": "Bearer <service-role-key>"}'::jsonb
+  )$$
+);
+
+-- 2. sync-fixtures-pre-match: Every 15 minutes
+SELECT cron.schedule(
+  'sync-fixtures-pre-match',
+  '*/15 * * * *',
+  $$SELECT net.http_post(
+    url := 'https://<project-ref>.supabase.co/functions/v1/sync-fixtures-pre-match',
+    headers := '{"Authorization": "Bearer <service-role-key>"}'::jsonb
+  )$$
+);
+
+-- 3. live-poll-resolve-fixtures: Every 15 seconds
+SELECT cron.schedule(
+  'live-poll-resolve-fixtures',
+  '15 seconds',
+  $$SELECT net.http_post(
+    url := 'https://<project-ref>.supabase.co/functions/v1/live-poll-resolve-fixtures',
+    headers := '{"Authorization": "Bearer <service-role-key>"}'::jsonb
+  )$$
+);
+```
+
+#### DB-only jobs (Postgres functions called directly)
+
+```sql
+-- 4. seed-scenarios: Every 30 minutes
+SELECT cron.schedule(
+  'seed-scenarios',
+  '*/30 * * * *',
+  $$SELECT run_seed_scenarios_cron()$$
+);
+
+-- 5. deadline-reminders: Every 15 minutes
+SELECT cron.schedule(
+  'deadline-reminders',
+  '*/15 * * * *',
+  $$SELECT run_deadline_reminders_cron()$$
+);
+
+-- 6. rate-limit-cleanup: Daily at midnight UTC
+SELECT cron.schedule(
+  'rate-limit-cleanup',
+  '0 0 * * *',
+  $$DELETE FROM v2_rate_limits WHERE window_start < now() - INTERVAL '24 hours'$$
+);
+```
+
+#### Verify all jobs are active
+
+```sql
+SELECT jobid, jobname, schedule, command, active
+FROM cron.job
+ORDER BY jobid;
+```
+
+You should see 6 rows, all with `active = true`.
+
+#### Managing cron jobs
+
+```sql
+-- Disable a job (e.g., during maintenance)
+SELECT cron.unschedule('job-name');
+
+-- Re-enable by re-running the cron.schedule() call above
+
+-- View recent execution history
+SELECT * FROM cron.job_run_details
+ORDER BY start_time DESC
+LIMIT 20;
 ```
 
 ### Table-level GRANT permissions
