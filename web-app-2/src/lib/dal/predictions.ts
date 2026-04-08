@@ -176,21 +176,25 @@ export async function getScenariosForFixture(
 // ---------------------------------------------------------------------------
 
 /**
- * Returns existing predictions for the user across the given scenario IDs.
- * Used to pre-fill the prediction form.
+ * Returns existing predictions for the current authenticated user across
+ * the given scenario IDs. Used to pre-fill the prediction form.
+ * Always scoped to the session user — never accepts an arbitrary userId.
  */
-export async function getUserPredictions(
-  userId: string,
-  scenarioIds: string[],
-): Promise<UserPrediction[]> {
+export async function getUserPredictions(scenarioIds: string[]): Promise<UserPrediction[]> {
   if (scenarioIds.length === 0) return []
 
   const supabase = await createClient()
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (user === null) return []
+
   const result = await supabase
     .from('v2_predictions')
     .select('id, scenario_id, value, submitted_at')
-    .eq('user_id', userId)
+    .eq('user_id', user.id)
     .in('scenario_id', scenarioIds)
 
   if (hasError(result)) return []

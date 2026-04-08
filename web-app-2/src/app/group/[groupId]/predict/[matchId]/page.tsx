@@ -204,7 +204,7 @@ export default async function PredictPage({ params }: PredictPageProps) {
   const scenarioIds = scenarios.map((s) => s.id)
 
   const [existingPredictions, players] = await Promise.all([
-    getUserPredictions(user.id, scenarioIds),
+    getUserPredictions(scenarioIds),
     getPlayersForFixture(matchId),
   ])
 
