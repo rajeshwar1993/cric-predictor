@@ -4,8 +4,9 @@ import Link from 'next/link'
 import { Settings, Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getGangDetails, getPendingRequests } from '@/lib/actions/dal-gangs'
-import { Card, CardContent } from '@/components/ui/card'
 import { UpcomingMatchesSection } from '@/components/matches/upcoming-matches-section'
+import { LiveMatchesSection } from '@/components/matches/live-matches-section'
+import { RecentResultsSection } from '@/components/matches/recent-results-section'
 import { InviteShare } from '@/components/gangs/invite-share'
 import { PendingRequests } from '@/components/gangs/pending-requests'
 import { MemberList } from '@/components/gangs/member-list'
@@ -115,35 +116,11 @@ export default async function GroupPage({ params }: GroupPageProps) {
         }))}
       />
 
-      {/* Placeholder sections */}
-      <section className="flex flex-col gap-[var(--sp-3)]" aria-label="Match sections">
-        <Card>
-          <CardContent>
-            <h3
-              className="font-heading text-lg font-semibold"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              Live Matches
-            </h3>
-            <p className="mt-[var(--sp-1)] text-sm" style={{ color: 'var(--text-tertiary)' }}>
-              Coming soon
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent>
-            <h3
-              className="font-heading text-lg font-semibold"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              Recent Results
-            </h3>
-            <p className="mt-[var(--sp-1)] text-sm" style={{ color: 'var(--text-tertiary)' }}>
-              Coming soon
-            </p>
-          </CardContent>
-        </Card>
-      </section>
+      {/* Live matches (hidden when none) */}
+      <LiveMatchesSection gangId={groupId} />
+
+      {/* Recent results (hidden when none) */}
+      <RecentResultsSection gangId={groupId} userId={user.id} />
 
       {/* Member list */}
       <section aria-label="Gang members">

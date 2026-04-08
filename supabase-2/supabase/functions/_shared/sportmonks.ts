@@ -120,10 +120,18 @@ export interface SmBatting {
   active: boolean;
   scoreboard: string;
   player_id: number;
+  wicket_id: number | null;
   ball: number;
+  score_id: number | null;
   score: number;
   four_x: number;
   six_x: number;
+  catch_stump_player_id: number | null;
+  runout_by_id: number | null;
+  batsmanout_id: number | null;
+  bowling_player_id: number | null;
+  fow_score: number;
+  fow_balls: number;
   rate: number;
   updated_at: string;
 }
