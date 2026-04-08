@@ -107,7 +107,13 @@ export default async function GroupPage({ params }: GroupPageProps) {
       )}
 
       {/* Upcoming matches */}
-      <UpcomingMatchesSection gangId={groupId} />
+      <UpcomingMatchesSection
+        gangId={groupId}
+        members={gang.members.map((m) => ({
+          userId: m.userId,
+          displayName: m.displayName,
+        }))}
+      />
 
       {/* Placeholder sections */}
       <section className="flex flex-col gap-[var(--sp-3)]" aria-label="Match sections">

@@ -1,5 +1,6 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { Clock, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -12,6 +13,8 @@ import type { UpcomingMatch } from '@/lib/actions/dal-matches'
 interface UpcomingMatchCardProps {
   match: UpcomingMatch
   gangId: string
+  /** Optional slot for prediction status indicator (server component) */
+  statusIndicator?: ReactNode
 }
 
 // ---------------------------------------------------------------------------
@@ -66,7 +69,7 @@ function isDeadlineUrgent(startDatetime: string, deadlineMins: number): boolean 
 // Component
 // ---------------------------------------------------------------------------
 
-export function UpcomingMatchCard({ match, gangId }: UpcomingMatchCardProps) {
+export function UpcomingMatchCard({ match, gangId, statusIndicator }: UpcomingMatchCardProps) {
   const isLive = match.status === 'live'
   const deadlineText = isLive
     ? 'Predictions locked'
@@ -139,6 +142,9 @@ export function UpcomingMatchCard({ match, gangId }: UpcomingMatchCardProps) {
         <Clock size={12} strokeWidth={1.5} aria-hidden="true" />
         <span>{deadlineText}</span>
       </div>
+
+      {/* Prediction status indicator slot */}
+      {statusIndicator !== undefined && statusIndicator}
 
       {/* CTA */}
       {!isLive && deadlineText !== 'Predictions locked' && (
