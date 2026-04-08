@@ -31,8 +31,7 @@ export function LeaveGangButton({ gangId, gangName }: LeaveGangButtonProps) {
         onClick={() => {
           setDialogOpen(true)
         }}
-        className="w-full justify-start"
-        style={{ color: 'var(--error)' }}
+        className="w-full justify-start text-[var(--error)]"
         aria-label={`Leave ${gangName}`}
       >
         <LogOut size={20} strokeWidth={1.5} aria-hidden="true" />
@@ -50,7 +49,7 @@ export function LeaveGangButton({ gangId, gangName }: LeaveGangButtonProps) {
       />
 
       {error !== null && (
-        <p className="mt-2 text-sm" style={{ color: 'var(--error)' }} role="alert">
+        <p className="mt-2 text-sm text-[var(--error)]" role="alert">
           {error}
         </p>
       )}

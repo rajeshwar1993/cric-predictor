@@ -145,8 +145,7 @@ export default async function PredictPage({ params }: PredictPageProps) {
         {/* Back link */}
         <Link
           href={`/group/${groupId}`}
-          className="inline-flex items-center gap-[var(--sp-1)] text-sm font-medium transition-colors hover:opacity-80"
-          style={{ color: 'var(--text-secondary)' }}
+          className="inline-flex items-center gap-[var(--sp-1)] text-sm font-medium transition-colors hover:opacity-80 text-[var(--text-secondary)]"
         >
           <ChevronLeft size={16} strokeWidth={1.5} aria-hidden="true" />
           Back to {gang.name}
@@ -164,27 +163,13 @@ export default async function PredictPage({ params }: PredictPageProps) {
         />
 
         {/* Pre-window message */}
-        <div
-          className="flex flex-col items-center gap-[var(--sp-4)] rounded-[var(--radius-ds-lg)] border px-[var(--sp-6)] py-[var(--sp-10)] text-center"
-          style={{
-            borderColor: 'var(--border-default)',
-            backgroundColor: 'var(--bg-raised)',
-          }}
-        >
-          <Clock
-            size={32}
-            strokeWidth={1.5}
-            style={{ color: 'var(--text-tertiary)' }}
-            aria-hidden="true"
-          />
+        <div className="flex flex-col items-center gap-[var(--sp-4)] rounded-[var(--radius-ds-lg)] border px-[var(--sp-6)] py-[var(--sp-10)] text-center text-[var(--text-tertiary)] border-[var(--border-default)] bg-[var(--bg-raised)]">
+          <Clock size={32} strokeWidth={1.5} aria-hidden="true" />
           <div className="flex flex-col gap-[var(--sp-1)]">
-            <h2
-              className="text-xl font-semibold"
-              style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-heading)' }}
-            >
+            <h2 className="text-xl font-semibold text-[var(--text-primary)] font-heading">
               Predictions not open yet
             </h2>
-            <p className="text-base" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-base text-[var(--text-secondary)]">
               Predictions open at {formatWindowOpensAt(fixtureData.windowOpensAt)}
             </p>
           </div>
@@ -221,8 +206,7 @@ export default async function PredictPage({ params }: PredictPageProps) {
       {/* Back link */}
       <Link
         href={`/group/${groupId}`}
-        className="inline-flex items-center gap-[var(--sp-1)] text-sm font-medium transition-colors hover:opacity-80"
-        style={{ color: 'var(--text-secondary)' }}
+        className="inline-flex items-center gap-[var(--sp-1)] text-sm font-medium transition-colors hover:opacity-80 text-[var(--text-secondary)]"
       >
         <ChevronLeft size={16} strokeWidth={1.5} aria-hidden="true" />
         Back to {gang.name}
@@ -241,7 +225,7 @@ export default async function PredictPage({ params }: PredictPageProps) {
 
       {/* Last updated timestamp */}
       {lastUpdated !== null && (
-        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+        <p className="text-sm text-[var(--text-secondary)]">
           Last updated: {formatLastUpdated(lastUpdated)}
         </p>
       )}
@@ -249,20 +233,16 @@ export default async function PredictPage({ params }: PredictPageProps) {
       {/* Locked banner (above the form) */}
       {fixtureData.isLocked && (
         <div
-          className="flex items-center gap-[var(--sp-2)] rounded-[var(--radius-ds-md)] border px-[var(--sp-4)] py-[var(--sp-3)]"
-          style={{
-            borderColor: 'var(--prediction-locked)',
-            backgroundColor: 'var(--bg-overlay)',
-          }}
+          className="flex items-center gap-[var(--sp-2)] rounded-[var(--radius-ds-md)] border border-[var(--prediction-locked)] bg-[var(--bg-overlay)] px-[var(--sp-4)] py-[var(--sp-3)]"
           role="alert"
         >
           <Lock
             size={16}
             strokeWidth={1.5}
-            style={{ color: 'var(--prediction-locked)' }}
+            className="text-[var(--prediction-locked)]"
             aria-hidden="true"
           />
-          <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+          <span className="text-sm font-medium text-[var(--text-secondary)]">
             Predictions locked
           </span>
         </div>
@@ -310,31 +290,22 @@ function MatchHeader({
     <header className="flex flex-col gap-[var(--sp-2)]">
       {/* Teams */}
       <div className="flex items-baseline gap-[var(--sp-2)]">
-        <h1
-          className="text-3xl font-bold"
-          style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-heading)' }}
-        >
+        <h1 className="text-3xl font-bold text-[var(--text-primary)] font-heading">
           {homeCode} vs {awayCode}
         </h1>
-        <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+        <span className="text-sm font-medium text-[var(--text-secondary)]">
           Match {String(matchNumber)}
         </span>
       </div>
 
       {/* Date/time */}
-      <div
-        className="flex items-center gap-[var(--sp-1)] text-sm"
-        style={{ color: 'var(--text-secondary)' }}
-      >
+      <div className="flex items-center gap-[var(--sp-1)] text-sm text-[var(--text-secondary)]">
         <Clock size={14} strokeWidth={1.5} aria-hidden="true" />
         <time dateTime={startDatetime}>{formatMatchDateTime(startDatetime)}</time>
       </div>
 
       {/* Venue */}
-      <div
-        className="flex items-center gap-[var(--sp-1)] text-sm"
-        style={{ color: 'var(--text-secondary)' }}
-      >
+      <div className="flex items-center gap-[var(--sp-1)] text-sm text-[var(--text-secondary)]">
         <MapPin size={14} strokeWidth={1.5} aria-hidden="true" />
         <span>{venueName}</span>
       </div>

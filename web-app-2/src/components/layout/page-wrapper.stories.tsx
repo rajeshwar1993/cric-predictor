@@ -34,9 +34,7 @@ export const WithContent: Story = {
   args: {
     children: (
       <div className="flex flex-col gap-4">
-        <h1 className="font-heading text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
-          Dashboard
-        </h1>
+        <h1 className="font-heading text-3xl font-bold text-[var(--text-primary)]">Dashboard</h1>
         <div
           className="rounded-[var(--radius-ds-lg)] border p-4"
           style={{
@@ -44,10 +42,8 @@ export const WithContent: Story = {
             backgroundColor: 'var(--bg-raised)',
           }}
         >
-          <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
-            Your gangs
-          </h2>
-          <p className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Your gangs</h2>
+          <p className="mt-2 text-sm text-[var(--text-secondary)]">
             You haven&apos;t joined any gangs yet.
           </p>
         </div>
@@ -58,10 +54,8 @@ export const WithContent: Story = {
             backgroundColor: 'var(--bg-raised)',
           }}
         >
-          <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
-            Upcoming matches
-          </h2>
-          <p className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Upcoming matches</h2>
+          <p className="mt-2 text-sm text-[var(--text-secondary)]">
             No matches scheduled right now.
           </p>
         </div>

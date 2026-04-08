@@ -219,19 +219,12 @@ export function LiveScorecard({
       {/* Header: LIVE badge + stale indicator */}
       <div className="flex items-center justify-between">
         <span
-          className="inline-flex items-center gap-[var(--sp-1)] rounded-[var(--radius-ds-sm)] px-[8px] py-[4px] text-xs font-medium uppercase tracking-[0.05em]"
-          style={{
-            backgroundColor: 'var(--error-muted)',
-            color: 'var(--live)',
-          }}
+          className="inline-flex items-center gap-[var(--sp-1)] rounded-[var(--radius-ds-sm)] px-[8px] py-[4px] text-xs font-medium uppercase tracking-[0.05em] bg-[var(--error-muted)] text-[var(--live)]"
           aria-label="Live match"
         >
           <span
-            className="inline-block h-[6px] w-[6px] rounded-full"
-            style={{
-              backgroundColor: 'var(--live)',
-              animation: 'pulse-live 1.5s ease-in-out infinite',
-            }}
+            className="inline-block h-[6px] w-[6px] rounded-full bg-[var(--live)]"
+            style={{ animation: 'pulse-live 1.5s ease-in-out infinite' }}
             aria-hidden="true"
           />
           LIVE
@@ -239,11 +232,7 @@ export function LiveScorecard({
 
         {staleText !== null && (
           <span
-            className="inline-flex items-center gap-[var(--sp-1)] rounded-[var(--radius-ds-sm)] px-[6px] py-[2px] text-xs font-medium"
-            style={{
-              backgroundColor: 'var(--warning-muted)',
-              color: 'var(--warning)',
-            }}
+            className="inline-flex items-center gap-[var(--sp-1)] rounded-[var(--radius-ds-sm)] px-[6px] py-[2px] text-xs font-medium bg-[var(--warning-muted)] text-[var(--warning)]"
             role="status"
           >
             <AlertTriangle size={12} strokeWidth={1.5} aria-hidden="true" />
@@ -259,18 +248,11 @@ export function LiveScorecard({
           <div className="flex items-center gap-[var(--sp-2)]">
             {isBattingHome && (
               <span
-                className="inline-block h-[6px] w-[6px] rounded-full"
-                style={{ backgroundColor: 'var(--brand)' }}
+                className="inline-block h-[6px] w-[6px] rounded-full bg-[var(--brand)]"
                 aria-label="Currently batting"
               />
             )}
-            <span
-              className="text-base font-semibold"
-              style={{
-                color: 'var(--text-primary)',
-                fontFamily: 'var(--font-body)',
-              }}
-            >
+            <span className="text-base font-semibold text-[var(--text-primary)] font-body">
               {homeTeam.code}
             </span>
           </div>
@@ -289,7 +271,7 @@ export function LiveScorecard({
             >
               {scoreData?.homeTeamScore ?? '-'}
             </span>
-            <span className="text-lg font-medium" style={{ color: 'var(--text-secondary)' }}>
+            <span className="text-lg font-medium text-[var(--text-secondary)]">
               {formatOvers(scoreData?.homeTeamOvers ?? null)}
             </span>
           </div>
@@ -300,18 +282,11 @@ export function LiveScorecard({
           <div className="flex items-center gap-[var(--sp-2)]">
             {isBattingAway && (
               <span
-                className="inline-block h-[6px] w-[6px] rounded-full"
-                style={{ backgroundColor: 'var(--brand)' }}
+                className="inline-block h-[6px] w-[6px] rounded-full bg-[var(--brand)]"
                 aria-label="Currently batting"
               />
             )}
-            <span
-              className="text-base font-semibold"
-              style={{
-                color: 'var(--text-primary)',
-                fontFamily: 'var(--font-body)',
-              }}
-            >
+            <span className="text-base font-semibold text-[var(--text-primary)] font-body">
               {awayTeam.code}
             </span>
           </div>
@@ -330,7 +305,7 @@ export function LiveScorecard({
             >
               {scoreData?.awayTeamScore ?? '-'}
             </span>
-            <span className="text-lg font-medium" style={{ color: 'var(--text-secondary)' }}>
+            <span className="text-lg font-medium text-[var(--text-secondary)]">
               {formatOvers(scoreData?.awayTeamOvers ?? null)}
             </span>
           </div>
@@ -339,7 +314,7 @@ export function LiveScorecard({
 
       {/* Run rate */}
       {scoreData !== null && scoreData.currentRunRate !== null && (
-        <div className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+        <div className="text-sm font-medium text-[var(--text-secondary)]">
           CRR: {scoreData.currentRunRate.toFixed(2)}
         </div>
       )}
@@ -347,10 +322,7 @@ export function LiveScorecard({
       {/* Last 6 balls */}
       {balls.length > 0 && (
         <div className="flex flex-col gap-[var(--sp-1)]">
-          <span
-            className="text-xs font-medium uppercase tracking-[0.05em]"
-            style={{ color: 'var(--text-tertiary)' }}
-          >
+          <span className="text-xs font-medium uppercase tracking-[0.05em] text-[var(--text-tertiary)]">
             Last 6 balls
           </span>
           <div className="flex items-center gap-[var(--sp-1)]" aria-label="Last 6 balls">
@@ -390,10 +362,7 @@ export function LiveScorecard({
       {scoreData !== null &&
         (scoreData.strikerName !== null || scoreData.nonStrikerName !== null) && (
           <div className="flex flex-col gap-[var(--sp-1)]">
-            <span
-              className="text-xs font-medium uppercase tracking-[0.05em]"
-              style={{ color: 'var(--text-tertiary)' }}
-            >
+            <span className="text-xs font-medium uppercase tracking-[0.05em] text-[var(--text-tertiary)]">
               Batting
             </span>
             <div className="flex flex-col gap-[var(--sp-1)]">
@@ -401,23 +370,16 @@ export function LiveScorecard({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-[var(--sp-1)]">
                     <span
-                      className="inline-block h-[6px] w-[6px] rounded-full"
-                      style={{ backgroundColor: 'var(--brand)' }}
+                      className="inline-block h-[6px] w-[6px] rounded-full bg-[var(--brand)]"
                       aria-label="On strike"
                     />
-                    <span
-                      className="text-base font-medium"
-                      style={{ color: 'var(--text-primary)' }}
-                    >
+                    <span className="text-base font-medium text-[var(--text-primary)]">
                       {scoreData.strikerName}
                     </span>
                   </div>
                   <span
-                    className="text-lg font-bold tabular-nums"
-                    style={{
-                      color: 'var(--text-primary)',
-                      fontVariantNumeric: 'tabular-nums',
-                    }}
+                    className="text-lg font-bold tabular-nums text-[var(--text-primary)]"
+                    style={{ fontVariantNumeric: 'tabular-nums' }}
                   >
                     {scoreData.strikerScore ?? '0'}
                   </span>
@@ -431,19 +393,13 @@ export function LiveScorecard({
                       style={{ backgroundColor: 'transparent' }}
                       aria-hidden="true"
                     />
-                    <span
-                      className="text-base font-medium"
-                      style={{ color: 'var(--text-secondary)' }}
-                    >
+                    <span className="text-base font-medium text-[var(--text-secondary)]">
                       {scoreData.nonStrikerName}
                     </span>
                   </div>
                   <span
-                    className="text-lg font-bold tabular-nums"
-                    style={{
-                      color: 'var(--text-secondary)',
-                      fontVariantNumeric: 'tabular-nums',
-                    }}
+                    className="text-lg font-bold tabular-nums text-[var(--text-secondary)]"
+                    style={{ fontVariantNumeric: 'tabular-nums' }}
                   >
                     {scoreData.nonStrikerScore ?? '0'}
                   </span>
@@ -456,13 +412,10 @@ export function LiveScorecard({
       {/* Bowler */}
       {scoreData !== null && scoreData.currentBowler !== null && (
         <div className="flex flex-col gap-[var(--sp-1)]">
-          <span
-            className="text-xs font-medium uppercase tracking-[0.05em]"
-            style={{ color: 'var(--text-tertiary)' }}
-          >
+          <span className="text-xs font-medium uppercase tracking-[0.05em] text-[var(--text-tertiary)]">
             Bowling
           </span>
-          <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+          <span className="text-sm font-medium text-[var(--text-secondary)]">
             {scoreData.currentBowler}
           </span>
         </div>
@@ -470,16 +423,13 @@ export function LiveScorecard({
 
       {/* Partnership */}
       {scoreData !== null && scoreData.currentPartnership !== null && (
-        <div className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+        <div className="text-sm font-medium text-[var(--text-secondary)]">
           Partnership: {scoreData.currentPartnership}
         </div>
       )}
 
       {/* Predictions locked indicator */}
-      <div
-        className="flex items-center gap-[var(--sp-1)] text-xs font-medium"
-        style={{ color: 'var(--prediction-locked)' }}
-      >
+      <div className="flex items-center gap-[var(--sp-1)] text-xs font-medium text-[var(--prediction-locked)]">
         <Lock size={12} strokeWidth={1.5} aria-hidden="true" />
         <span>Predictions locked</span>
       </div>

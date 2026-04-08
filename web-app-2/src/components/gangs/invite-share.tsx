@@ -66,11 +66,8 @@ export function InviteShare({ inviteCode, gangName }: InviteShareProps) {
 
   return (
     <div className="flex flex-col gap-[var(--sp-3)]">
-      <div className="flex items-center gap-[var(--sp-3)] rounded-[length:var(--radius-ds-md)] border border-[var(--border-default)] bg-[var(--bg-inset)] px-[var(--sp-4)] py-[var(--sp-3)]">
-        <code
-          className="min-w-0 flex-1 truncate text-sm font-medium tracking-wider"
-          style={{ color: 'var(--text-secondary)' }}
-        >
+      <div className="flex items-center gap-[var(--sp-3)] rounded-[var(--radius-ds-md)] border border-[var(--border-default)] bg-[var(--bg-inset)] px-[var(--sp-4)] py-[var(--sp-3)]">
+        <code className="min-w-0 flex-1 truncate text-sm font-medium tracking-wider text-[var(--text-secondary)]">
           {shareUrl}
         </code>
       </div>

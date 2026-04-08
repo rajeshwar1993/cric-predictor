@@ -77,29 +77,18 @@ export function ResultCard({ result, gangId }: ResultCardProps) {
         {/* Top row: teams + match info + arrow */}
         <div className="flex items-center justify-between">
           <div className="flex items-baseline gap-[var(--sp-2)]">
-            <h3
-              className="text-base font-semibold"
-              style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-body)' }}
-            >
+            <h3 className="text-base font-semibold text-[var(--text-primary)] font-body">
               {result.homeTeamCode} vs {result.awayTeamCode}
             </h3>
-            <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+            <span className="text-xs font-medium text-[var(--text-tertiary)]">
               Match {result.matchNumber}
             </span>
           </div>
-          <ChevronRight
-            size={16}
-            strokeWidth={1.5}
-            style={{ color: 'var(--text-tertiary)' }}
-            aria-hidden="true"
-          />
+          <ChevronRight size={16} strokeWidth={1.5} aria-hidden="true" />
         </div>
 
         {/* Date */}
-        <div
-          className="flex items-center gap-[var(--sp-1)] text-xs"
-          style={{ color: 'var(--text-secondary)' }}
-        >
+        <div className="flex items-center gap-[var(--sp-1)] text-xs text-[var(--text-secondary)]">
           <Calendar size={12} strokeWidth={1.5} aria-hidden="true" />
           <time dateTime={result.startDatetime}>{formatDate(result.startDatetime)}</time>
         </div>
@@ -135,33 +124,26 @@ export function ResultCard({ result, gangId }: ResultCardProps) {
 
         {/* User stats */}
         {result.userStats !== null && !isVoided && (
-          <div
-            className="flex items-center gap-[var(--sp-2)] text-xs font-medium"
-            style={{ color: 'var(--text-secondary)' }}
-          >
+          <div className="flex items-center gap-[var(--sp-2)] text-xs font-medium text-[var(--text-secondary)]">
             <span>
               {result.userStats.predictedCount}/{result.totalScenarios} picked
             </span>
             <span
-              className="inline-block h-[3px] w-[3px] rounded-full"
-              style={{ backgroundColor: 'var(--text-tertiary)' }}
+              className="inline-block h-[3px] w-[3px] rounded-full bg-[var(--text-tertiary)]"
               aria-hidden="true"
             />
             <span>{result.userStats.correctCount} correct</span>
             <span
-              className="inline-block h-[3px] w-[3px] rounded-full"
-              style={{ backgroundColor: 'var(--text-tertiary)' }}
+              className="inline-block h-[3px] w-[3px] rounded-full bg-[var(--text-tertiary)]"
               aria-hidden="true"
             />
-            <span style={{ color: 'var(--brand)' }}>{result.userStats.pointsEarned} pts</span>
+            <span className="text-[var(--brand)]">{result.userStats.pointsEarned} pts</span>
           </div>
         )}
 
         {/* Voided message */}
         {isVoided && (
-          <div className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-            No points awarded
-          </div>
+          <div className="text-xs font-medium text-[var(--text-tertiary)]">No points awarded</div>
         )}
       </article>
     </Link>

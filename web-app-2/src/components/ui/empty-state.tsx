@@ -28,18 +28,11 @@ export function EmptyState({ icon, title, description, action, className }: Empt
       )}
     >
       {icon !== undefined ? (
-        <div className="mb-[var(--sp-4)]" style={{ color: 'var(--text-tertiary)' }}>
-          {icon}
-        </div>
+        <div className="mb-[var(--sp-4)] text-[var(--text-tertiary)]">{icon}</div>
       ) : null}
-      <h2 className="font-heading text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
-        {title}
-      </h2>
+      <h2 className="font-heading text-xl font-semibold text-[var(--text-primary)]">{title}</h2>
       {description !== undefined && description.length > 0 ? (
-        <p
-          className="mt-[var(--sp-2)] max-w-[45ch] text-base"
-          style={{ color: 'var(--text-secondary)' }}
-        >
+        <p className="mt-[var(--sp-2)] max-w-[45ch] text-base text-[var(--text-secondary)]">
           {description}
         </p>
       ) : null}

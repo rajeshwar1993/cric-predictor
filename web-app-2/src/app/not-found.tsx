@@ -13,7 +13,7 @@ export default function NotFound() {
         </p>
         <Link
           href="/dashboard"
-          className="inline-flex h-12 items-center justify-center rounded-[length:var(--radius-ds-md)] bg-[var(--brand)] px-6 font-semibold text-[var(--brand-on)] transition-colors hover:bg-[var(--brand-hover)]"
+          className="inline-flex h-12 items-center justify-center rounded-[var(--radius-ds-md)] bg-[var(--brand)] px-6 font-semibold text-[var(--brand-on)] transition-colors hover:bg-[var(--brand-hover)]"
         >
           Back to Dashboard
         </Link>

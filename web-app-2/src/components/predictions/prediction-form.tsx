@@ -133,20 +133,16 @@ export function PredictionForm({
       {/* Locked banner */}
       {isLocked && (
         <div
-          className="flex items-center gap-[var(--sp-2)] rounded-[length:var(--radius-ds-md)] border px-[var(--sp-4)] py-[var(--sp-3)]"
-          style={{
-            borderColor: 'var(--prediction-locked)',
-            backgroundColor: 'var(--bg-overlay)',
-          }}
+          className="flex items-center gap-[var(--sp-2)] rounded-[var(--radius-ds-md)] border border-[var(--prediction-locked)] bg-[var(--bg-overlay)] px-[var(--sp-4)] py-[var(--sp-3)]"
           role="alert"
         >
           <Lock
             size={16}
             strokeWidth={1.5}
-            style={{ color: 'var(--prediction-locked)' }}
+            className="text-[var(--prediction-locked)]"
             aria-hidden="true"
           />
-          <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+          <span className="text-sm font-medium text-[var(--text-secondary)]">
             Predictions locked
           </span>
         </div>
@@ -159,10 +155,7 @@ export function PredictionForm({
 
         return (
           <section key={phase} className="flex flex-col gap-[var(--sp-3)]">
-            <h3
-              className="text-sm font-semibold uppercase tracking-[0.05em]"
-              style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-body)' }}
-            >
+            <h3 className="text-sm font-semibold uppercase tracking-[0.05em] text-[var(--text-secondary)] font-body">
               {PHASE_LABELS[phase]}
             </h3>
             <div className="flex flex-col gap-[var(--sp-3)]">
@@ -199,7 +192,7 @@ export function PredictionForm({
           <div className="mx-auto flex w-full max-w-[480px] flex-col gap-[var(--sp-2)] px-[var(--sp-5)] py-[var(--sp-3)] pb-[max(var(--sp-3),env(safe-area-inset-bottom))]">
             {/* Progress + feedback */}
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+              <span className="text-sm font-medium text-[var(--text-secondary)]">
                 {pickedCount}/{totalCount} picked
               </span>
               {feedback !== null && (

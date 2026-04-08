@@ -47,7 +47,7 @@ export default async function LandingPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col" style={{ backgroundColor: 'var(--bg-base)' }}>
+    <div className="flex min-h-screen flex-col bg-[var(--bg-base)]">
       <HeroSection />
       <HowItWorks />
       <PredictionPreview />

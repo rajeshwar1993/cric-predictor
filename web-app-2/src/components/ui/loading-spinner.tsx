@@ -28,7 +28,6 @@ export function LoadingSpinner({ size = 'md', className }: LoadingSpinnerProps) 
         sizeClasses[size],
         className,
       )}
-      style={{ color: 'var(--brand)' }}
     >
       <span className="sr-only">Loading...</span>
     </div>

@@ -70,17 +70,12 @@ export function GangNameEditor({ gangId, currentName }: { gangId: string; curren
           aria-describedby={error !== null ? 'gang-name-edit-error' : undefined}
         />
         {error !== null && (
-          <p
-            id="gang-name-edit-error"
-            className="text-sm"
-            style={{ color: 'var(--error)' }}
-            role="alert"
-          >
+          <p id="gang-name-edit-error" className="text-sm text-[var(--error)]" role="alert">
             {error}
           </p>
         )}
         {success && (
-          <p className="text-sm" style={{ color: 'var(--success)' }} role="status">
+          <p className="text-sm text-[var(--success)]" role="status">
             Name updated
           </p>
         )}
@@ -130,7 +125,7 @@ export function AutoAcceptToggle({
           <Label htmlFor="auto-accept-toggle" className="text-[var(--text-primary)]">
             Auto-accept new members
           </Label>
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-sm text-[var(--text-secondary)]">
             When enabled, join requests are approved instantly
           </p>
         </div>
@@ -143,7 +138,7 @@ export function AutoAcceptToggle({
         />
       </div>
       {error !== null && (
-        <p className="text-sm" style={{ color: 'var(--error)' }} role="alert">
+        <p className="text-sm text-[var(--error)]" role="alert">
           {error}
         </p>
       )}
@@ -220,12 +215,12 @@ export function PredictionDeadlineEditor({
           aria-describedby={error !== null ? 'deadline-error' : undefined}
         />
         {error !== null && (
-          <p id="deadline-error" className="text-sm" style={{ color: 'var(--error)' }} role="alert">
+          <p id="deadline-error" className="text-sm text-[var(--error)]" role="alert">
             {error}
           </p>
         )}
         {success && (
-          <p className="text-sm" style={{ color: 'var(--success)' }} role="status">
+          <p className="text-sm text-[var(--success)]" role="status">
             Deadline updated
           </p>
         )}

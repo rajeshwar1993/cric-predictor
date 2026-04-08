@@ -66,10 +66,7 @@ export function MatchLeaderboardTable({ entries, currentUserId }: MatchLeaderboa
   return (
     <div className="overflow-hidden rounded-[var(--radius-ds-lg)] border border-[var(--border-default)]">
       {/* Header */}
-      <div
-        className="hidden items-center gap-[var(--sp-3)] border-b border-[var(--border-default)] px-[var(--sp-4)] py-[var(--sp-2)] text-xs font-medium uppercase tracking-[0.05em] sm:flex"
-        style={{ backgroundColor: 'var(--bg-overlay)', color: 'var(--text-tertiary)' }}
-      >
+      <div className="hidden items-center gap-[var(--sp-3)] border-b border-[var(--border-default)] px-[var(--sp-4)] py-[var(--sp-2)] text-xs font-medium uppercase tracking-[0.05em] sm:flex bg-[var(--bg-overlay)] text-[var(--text-tertiary)]">
         <span className="w-8 shrink-0 text-right">#</span>
         <span className="flex-1">Name</span>
         <span className="hidden w-16 shrink-0 text-right sm:block">Correct</span>
@@ -117,23 +114,15 @@ export function MatchLeaderboardTable({ entries, currentUserId }: MatchLeaderboa
               {/* Name */}
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-[var(--sp-1)]">
-                  <span
-                    className="truncate text-base font-medium"
-                    style={{ color: 'var(--text-primary)' }}
-                  >
+                  <span className="truncate text-base font-medium text-[var(--text-primary)]">
                     {entry.displayName}
                   </span>
                   {isCurrentUser && (
-                    <span className="shrink-0 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                      (you)
-                    </span>
+                    <span className="shrink-0 text-xs text-[var(--text-secondary)]">(you)</span>
                   )}
                 </div>
                 {isInactive && (
-                  <span
-                    className="text-xs uppercase tracking-wider"
-                    style={{ color: 'var(--text-tertiary)' }}
-                  >
+                  <span className="text-xs uppercase tracking-wider text-[var(--text-tertiary)]">
                     {entry.memberStatus}
                   </span>
                 )}
@@ -141,27 +130,24 @@ export function MatchLeaderboardTable({ entries, currentUserId }: MatchLeaderboa
 
               {/* Correct / Resolved — hidden on mobile */}
               <span
-                className="hidden w-16 shrink-0 text-right text-sm tabular-nums sm:block"
-                style={{ color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}
+                className="hidden w-16 shrink-0 text-right text-sm tabular-nums sm:block text-[var(--text-secondary)]"
+                style={{ fontVariantNumeric: 'tabular-nums' }}
               >
                 {entry.correctCount}/{entry.resolvedCount}
               </span>
 
               {/* Predicted — hidden on mobile */}
               <span
-                className="hidden w-16 shrink-0 text-right text-sm tabular-nums sm:block"
-                style={{ color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}
+                className="hidden w-16 shrink-0 text-right text-sm tabular-nums sm:block text-[var(--text-secondary)]"
+                style={{ fontVariantNumeric: 'tabular-nums' }}
               >
                 {entry.predictedCount}
               </span>
 
               {/* Points — always visible */}
               <span
-                className="shrink-0 text-lg font-bold tabular-nums"
-                style={{
-                  color: 'var(--brand)',
-                  fontVariantNumeric: 'tabular-nums',
-                }}
+                className="shrink-0 text-lg font-bold tabular-nums text-[var(--brand)]"
+                style={{ fontVariantNumeric: 'tabular-nums' }}
               >
                 {entry.pointsEarned}
               </span>

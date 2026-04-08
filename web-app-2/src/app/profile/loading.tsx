@@ -32,8 +32,7 @@ export default function ProfileLoading() {
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="flex flex-col gap-[var(--sp-2)] rounded-[var(--radius-ds-lg)] border border-[var(--border-default)] p-[var(--sp-4)]"
-              style={{ backgroundColor: 'var(--bg-raised)' }}
+              className="flex flex-col gap-[var(--sp-2)] rounded-[var(--radius-ds-lg)] border border-[var(--border-default)] p-[var(--sp-4)] bg-[var(--bg-raised)]"
             >
               <Skeleton className="h-5 w-5" />
               <Skeleton className="h-8 w-16" />
@@ -44,7 +43,7 @@ export default function ProfileLoading() {
       </div>
 
       {/* Divider */}
-      <div className="border-t" style={{ borderColor: 'var(--border-default)' }} />
+      <div className="border-t border-[var(--border-default)]" />
 
       {/* Delete account */}
       <Skeleton className="h-12 w-36 rounded-[var(--radius-ds-md)]" />

@@ -31,10 +31,7 @@ export interface MemberManagementProps {
 function StatusBadge({ status, isBlocked }: { status: string; isBlocked: boolean }) {
   if (isBlocked) {
     return (
-      <span
-        className="inline-flex items-center rounded-[length:var(--radius-ds-sm)] px-2 py-0.5 text-xs font-medium uppercase tracking-wider"
-        style={{ backgroundColor: 'var(--error-muted)', color: 'var(--error)' }}
-      >
+      <span className="inline-flex items-center rounded-[var(--radius-ds-sm)] px-2 py-0.5 text-xs font-medium uppercase tracking-wider bg-[var(--error-muted)] text-[var(--error)]">
         Blocked
       </span>
     )
@@ -52,7 +49,7 @@ function StatusBadge({ status, isBlocked }: { status: string; isBlocked: boolean
 
   return (
     <span
-      className="inline-flex items-center rounded-[length:var(--radius-ds-sm)] px-2 py-0.5 text-xs font-medium uppercase tracking-wider"
+      className="inline-flex items-center rounded-[var(--radius-ds-sm)] px-2 py-0.5 text-xs font-medium uppercase tracking-wider"
       style={{ backgroundColor: style?.bg, color: style?.color }}
     >
       {status}
@@ -89,11 +86,8 @@ function MemberRow({ gangId, member }: { gangId: string; member: ManagedMember }
         style={{ minHeight: 56 }}
       >
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            {member.displayName}{' '}
-            <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-              (you)
-            </span>
+          <p className="truncate text-sm font-medium text-[var(--text-primary)]">
+            {member.displayName} <span className="text-xs text-[var(--text-secondary)]">(you)</span>
           </p>
         </div>
         <StatusBadge status={member.status} isBlocked={member.isBlocked} />
@@ -108,7 +102,7 @@ function MemberRow({ gangId, member }: { gangId: string; member: ManagedMember }
         style={{ minHeight: 56 }}
       >
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+          <p className="truncate text-sm font-medium text-[var(--text-primary)]">
             {member.displayName}
           </p>
           <StatusBadge status={member.status} isBlocked={member.isBlocked} />
@@ -149,7 +143,7 @@ function MemberRow({ gangId, member }: { gangId: string; member: ManagedMember }
                 }}
                 aria-label={`Remove ${member.displayName}`}
               >
-                <Trash2 size={16} strokeWidth={1.5} style={{ color: 'var(--error)' }} />
+                <Trash2 size={16} strokeWidth={1.5} className="text-[var(--error)]" />
               </Button>
               <Button
                 size="icon-xs"
@@ -159,7 +153,7 @@ function MemberRow({ gangId, member }: { gangId: string; member: ManagedMember }
                 }}
                 aria-label={`Block ${member.displayName}`}
               >
-                <Shield size={16} strokeWidth={1.5} style={{ color: 'var(--warning)' }} />
+                <Shield size={16} strokeWidth={1.5} className="text-[var(--warning)]" />
               </Button>
             </>
           )}
@@ -212,16 +206,11 @@ function MemberRow({ gangId, member }: { gangId: string; member: ManagedMember }
 export function MemberManagement({ gangId, members }: MemberManagementProps) {
   return (
     <section aria-label="Member management">
-      <h3
-        className="mb-[var(--sp-3)] font-heading text-lg font-semibold"
-        style={{ color: 'var(--text-primary)' }}
-      >
+      <h3 className="mb-[var(--sp-3)] font-heading text-lg font-semibold text-[var(--text-primary)]">
         Members{' '}
-        <span className="text-sm font-normal" style={{ color: 'var(--text-secondary)' }}>
-          ({members.length})
-        </span>
+        <span className="text-sm font-normal text-[var(--text-secondary)]">({members.length})</span>
       </h3>
-      <div className="overflow-hidden rounded-[length:var(--radius-ds-lg)] border border-[var(--border-default)] bg-[var(--bg-raised)]">
+      <div className="overflow-hidden rounded-[var(--radius-ds-lg)] border border-[var(--border-default)] bg-[var(--bg-raised)]">
         {members.map((member) => (
           <MemberRow key={member.userId} gangId={gangId} member={member} />
         ))}

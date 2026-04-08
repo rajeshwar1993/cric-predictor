@@ -223,19 +223,14 @@ export function PredictionRevealTable({
           {/* Phase group headers */}
           <tr>
             <th
-              className="sticky left-0 z-20 border-b border-r border-[var(--border-default)] px-[var(--sp-3)] py-[var(--sp-2)]"
-              style={{ backgroundColor: 'var(--bg-overlay)' }}
+              className="sticky left-0 z-20 border-b border-r border-[var(--border-default)] px-[var(--sp-3)] py-[var(--sp-2)] bg-[var(--bg-overlay)]"
               aria-label="Phase"
             />
             {Array.from(phaseGroups.entries()).map(([phase, phaseScenarios]) => (
               <th
                 key={phase}
                 colSpan={phaseScenarios.length}
-                className="border-b border-[var(--border-default)] px-[var(--sp-2)] py-[var(--sp-1)] text-center text-xs font-medium uppercase tracking-[0.05em]"
-                style={{
-                  backgroundColor: 'var(--bg-overlay)',
-                  color: 'var(--text-tertiary)',
-                }}
+                className="border-b border-[var(--border-default)] px-[var(--sp-2)] py-[var(--sp-1)] text-center text-xs font-medium uppercase tracking-[0.05em] bg-[var(--bg-overlay)] text-[var(--text-tertiary)]"
               >
                 {PHASE_LABELS[phase] ?? phase}
               </th>
@@ -245,32 +240,20 @@ export function PredictionRevealTable({
           {/* Scenario titles */}
           <tr>
             <th
-              className="sticky left-0 z-20 border-b border-r border-[var(--border-default)] px-[var(--sp-3)] py-[var(--sp-2)] text-left text-xs font-medium"
-              style={{
-                backgroundColor: 'var(--bg-overlay)',
-                color: 'var(--text-secondary)',
-                minWidth: 120,
-              }}
+              className="sticky left-0 z-20 border-b border-r border-[var(--border-default)] bg-[var(--bg-overlay)] px-[var(--sp-3)] py-[var(--sp-2)] text-left text-xs font-medium text-[var(--text-secondary)]"
+              style={{ minWidth: 120 }}
             >
               Member
             </th>
             {scenarios.map((scenario) => (
               <th
                 key={scenario.id}
-                className="border-b border-[var(--border-default)] px-[var(--sp-2)] py-[var(--sp-2)] text-center text-xs font-medium"
-                style={{
-                  backgroundColor: 'var(--bg-overlay)',
-                  color: 'var(--text-secondary)',
-                  minWidth: 72,
-                  maxWidth: 100,
-                }}
+                className="border-b border-[var(--border-default)] bg-[var(--bg-overlay)] px-[var(--sp-2)] py-[var(--sp-2)] text-center text-xs font-medium text-[var(--text-secondary)]"
+                style={{ minWidth: 72, maxWidth: 100 }}
                 title={`${scenario.title} (${String(scenario.points)} pts)`}
               >
                 <div className="truncate">{truncateValue(scenario.title, 12)}</div>
-                <div
-                  className="mt-[2px] text-[10px] tabular-nums"
-                  style={{ color: 'var(--text-tertiary)' }}
-                >
+                <div className="mt-[2px] text-[10px] tabular-nums text-[var(--text-tertiary)]">
                   {scenario.points} pts
                 </div>
               </th>
@@ -282,13 +265,7 @@ export function PredictionRevealTable({
           {/* Correct answer row */}
           {hasResolvedScenarios && (
             <tr>
-              <td
-                className="sticky left-0 z-10 border-b border-r border-[var(--border-default)] px-[var(--sp-3)] py-[var(--sp-2)] text-xs font-semibold uppercase tracking-[0.05em]"
-                style={{
-                  backgroundColor: 'var(--bg-overlay)',
-                  color: 'var(--success)',
-                }}
-              >
+              <td className="sticky left-0 z-10 border-b border-r border-[var(--border-default)] px-[var(--sp-3)] py-[var(--sp-2)] text-xs font-semibold uppercase tracking-[0.05em] bg-[var(--bg-overlay)] text-[var(--success)]">
                 Answer
               </td>
               {scenarios.map((scenario) => (
@@ -346,26 +323,17 @@ export function PredictionRevealTable({
                     >
                       {member.rank}
                     </span>
-                    <span
-                      className="truncate text-sm font-medium"
-                      style={{ color: 'var(--text-primary)' }}
-                    >
+                    <span className="truncate text-sm font-medium text-[var(--text-primary)]">
                       {member.displayName}
                     </span>
                     {isCurrentUser && (
-                      <span
-                        className="shrink-0 text-[10px]"
-                        style={{ color: 'var(--text-secondary)' }}
-                      >
+                      <span className="shrink-0 text-[10px] text-[var(--text-secondary)]">
                         (you)
                       </span>
                     )}
                   </div>
                   {isInactive && (
-                    <span
-                      className="text-[10px] uppercase tracking-wider"
-                      style={{ color: 'var(--text-tertiary)' }}
-                    >
+                    <span className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)]">
                       {member.memberStatus}
                     </span>
                   )}
@@ -431,8 +399,7 @@ export function PredictionRevealTable({
                           </span>
                         ) : (
                           <span
-                            className="text-[10px]"
-                            style={{ color: 'var(--text-tertiary)' }}
+                            className="text-[10px] text-[var(--text-tertiary)]"
                             aria-label="Not predicted"
                           >
                             &mdash;

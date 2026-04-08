@@ -18,7 +18,7 @@ export default function SettingsLoading() {
         <Skeleton className="h-12 w-full rounded-[var(--radius-ds-md)]" />
       </div>
 
-      <div className="border-t" style={{ borderColor: 'var(--border-default)' }} />
+      <div className="border-t border-[var(--border-default)]" />
 
       {/* Auto-accept toggle */}
       <div className="flex items-center justify-between">
@@ -29,7 +29,7 @@ export default function SettingsLoading() {
         <Skeleton className="h-6 w-11 rounded-full" />
       </div>
 
-      <div className="border-t" style={{ borderColor: 'var(--border-default)' }} />
+      <div className="border-t border-[var(--border-default)]" />
 
       {/* Prediction deadline */}
       <div className="flex flex-col gap-[var(--sp-3)]">
@@ -37,7 +37,7 @@ export default function SettingsLoading() {
         <Skeleton className="h-12 w-full rounded-[var(--radius-ds-md)]" />
       </div>
 
-      <div className="border-t" style={{ borderColor: 'var(--border-default)' }} />
+      <div className="border-t border-[var(--border-default)]" />
 
       {/* Member management */}
       <div className="flex flex-col gap-[var(--sp-3)]">
@@ -47,7 +47,7 @@ export default function SettingsLoading() {
         ))}
       </div>
 
-      <div className="border-t" style={{ borderColor: 'var(--border-default)' }} />
+      <div className="border-t border-[var(--border-default)]" />
 
       {/* Delete gang */}
       <Skeleton className="h-12 w-36 rounded-[var(--radius-ds-md)]" />

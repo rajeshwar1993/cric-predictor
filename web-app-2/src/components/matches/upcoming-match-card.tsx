@@ -78,37 +78,27 @@ export function UpcomingMatchCard({ match, gangId, statusIndicator }: UpcomingMa
 
   return (
     <article
-      className="flex flex-col gap-[var(--sp-3)] rounded-[length:var(--radius-ds-lg)] border border-[var(--border-default)] bg-[var(--bg-raised)] p-[var(--sp-4)]"
+      className="flex flex-col gap-[var(--sp-3)] rounded-[var(--radius-ds-lg)] border border-[var(--border-default)] bg-[var(--bg-raised)] p-[var(--sp-4)]"
       aria-label={`Match ${String(match.matchNumber)}: ${match.homeTeamCode} vs ${match.awayTeamCode}`}
     >
       {/* Top row: teams + live badge */}
       <div className="flex items-center justify-between">
         <div className="flex items-baseline gap-[var(--sp-2)]">
-          <h3
-            className="text-base font-semibold"
-            style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-body)' }}
-          >
+          <h3 className="text-base font-semibold text-[var(--text-primary)] font-body">
             {match.homeTeamCode} vs {match.awayTeamCode}
           </h3>
-          <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+          <span className="text-xs font-medium text-[var(--text-secondary)]">
             Match {match.matchNumber}
           </span>
         </div>
         {isLive && (
           <span
-            className="inline-flex items-center gap-[var(--sp-1)] rounded-[length:var(--radius-ds-sm)] px-[8px] py-[4px] text-xs font-medium uppercase tracking-[0.05em]"
-            style={{
-              backgroundColor: 'var(--error-muted)',
-              color: 'var(--live)',
-            }}
+            className="inline-flex items-center gap-[var(--sp-1)] rounded-[var(--radius-ds-sm)] px-[8px] py-[4px] text-xs font-medium uppercase tracking-[0.05em] bg-[var(--error-muted)] text-[var(--live)]"
             aria-label="Live match"
           >
             <span
-              className="inline-block h-[6px] w-[6px] rounded-full"
-              style={{
-                backgroundColor: 'var(--live)',
-                animation: 'pulse-live 1.5s ease-in-out infinite',
-              }}
+              className="inline-block h-[6px] w-[6px] rounded-full bg-[var(--live)]"
+              style={{ animation: 'pulse-live 1.5s ease-in-out infinite' }}
               aria-hidden="true"
             />
             LIVE
@@ -117,19 +107,13 @@ export function UpcomingMatchCard({ match, gangId, statusIndicator }: UpcomingMa
       </div>
 
       {/* Date + time */}
-      <div
-        className="flex items-center gap-[var(--sp-1)] text-sm"
-        style={{ color: 'var(--text-secondary)' }}
-      >
+      <div className="flex items-center gap-[var(--sp-1)] text-sm text-[var(--text-secondary)]">
         <Clock size={14} strokeWidth={1.5} aria-hidden="true" />
         <time dateTime={match.startDatetime}>{formatMatchDateTime(match.startDatetime)}</time>
       </div>
 
       {/* Venue */}
-      <div
-        className="flex items-center gap-[var(--sp-1)] text-sm"
-        style={{ color: 'var(--text-secondary)' }}
-      >
+      <div className="flex items-center gap-[var(--sp-1)] text-sm text-[var(--text-secondary)]">
         <MapPin size={14} strokeWidth={1.5} aria-hidden="true" />
         <span>{match.venueName}</span>
       </div>

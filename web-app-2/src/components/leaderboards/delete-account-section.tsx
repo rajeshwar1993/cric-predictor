@@ -28,13 +28,10 @@ export function DeleteAccountSection({ userEmail }: DeleteAccountSectionProps) {
 
   return (
     <div className="flex flex-col gap-[var(--sp-3)]">
-      <h3
-        className="text-sm font-medium uppercase tracking-[0.05em]"
-        style={{ color: 'var(--error)' }}
-      >
+      <h3 className="text-sm font-medium uppercase tracking-[0.05em] text-[var(--error)]">
         Danger zone
       </h3>
-      <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+      <p className="text-sm text-[var(--text-secondary)]">
         Permanently delete your account and all associated data. This cannot be undone.
       </p>
       <Button

@@ -132,8 +132,7 @@ export default async function MatchLeaderboardPage({ params }: MatchPageProps) {
       {/* Back link */}
       <Link
         href={`/group/${groupId}`}
-        className="inline-flex items-center gap-[var(--sp-1)] text-sm font-medium transition-colors hover:opacity-80"
-        style={{ color: 'var(--text-secondary)' }}
+        className="inline-flex items-center gap-[var(--sp-1)] text-sm font-medium transition-colors hover:opacity-80 text-[var(--text-secondary)]"
       >
         <ChevronLeft size={16} strokeWidth={1.5} aria-hidden="true" />
         Back to {gang.name}
@@ -142,31 +141,22 @@ export default async function MatchLeaderboardPage({ params }: MatchPageProps) {
       {/* Match header */}
       <header className="flex flex-col gap-[var(--sp-2)]">
         <div className="flex items-baseline gap-[var(--sp-2)]">
-          <h1
-            className="text-3xl font-bold"
-            style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-heading)' }}
-          >
+          <h1 className="text-3xl font-bold text-[var(--text-primary)] font-heading">
             {homeCode} vs {awayCode}
           </h1>
-          <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+          <span className="text-sm font-medium text-[var(--text-secondary)]">
             Match {String(fixtureData.fixture.matchNumber)}
           </span>
         </div>
 
-        <div
-          className="flex items-center gap-[var(--sp-1)] text-sm"
-          style={{ color: 'var(--text-secondary)' }}
-        >
+        <div className="flex items-center gap-[var(--sp-1)] text-sm text-[var(--text-secondary)]">
           <Clock size={14} strokeWidth={1.5} aria-hidden="true" />
           <time dateTime={fixtureData.fixture.startDatetime}>
             {formatMatchDateTime(fixtureData.fixture.startDatetime)}
           </time>
         </div>
 
-        <div
-          className="flex items-center gap-[var(--sp-1)] text-sm"
-          style={{ color: 'var(--text-secondary)' }}
-        >
+        <div className="flex items-center gap-[var(--sp-1)] text-sm text-[var(--text-secondary)]">
           <MapPin size={14} strokeWidth={1.5} aria-hidden="true" />
           <span>{fixtureData.fixture.venueName}</span>
         </div>
@@ -174,19 +164,12 @@ export default async function MatchLeaderboardPage({ params }: MatchPageProps) {
         {/* Live badge */}
         {isLive && (
           <span
-            className="inline-flex w-fit items-center gap-[var(--sp-1)] rounded-[var(--radius-ds-sm)] px-[8px] py-[4px] text-xs font-medium uppercase tracking-[0.05em]"
-            style={{
-              backgroundColor: 'var(--error-muted)',
-              color: 'var(--live)',
-            }}
+            className="inline-flex w-fit items-center gap-[var(--sp-1)] rounded-[var(--radius-ds-sm)] px-[8px] py-[4px] text-xs font-medium uppercase tracking-[0.05em] bg-[var(--error-muted)] text-[var(--live)]"
             aria-label="Live match"
           >
             <span
-              className="inline-block h-[6px] w-[6px] rounded-full"
-              style={{
-                backgroundColor: 'var(--live)',
-                animation: 'pulse-live 1.5s ease-in-out infinite',
-              }}
+              className="inline-block h-[6px] w-[6px] rounded-full bg-[var(--live)]"
+              style={{ animation: 'pulse-live 1.5s ease-in-out infinite' }}
               aria-hidden="true"
             />
             LIVE
@@ -196,27 +179,13 @@ export default async function MatchLeaderboardPage({ params }: MatchPageProps) {
 
       {/* Voided match */}
       {isVoided && (
-        <div
-          className="flex flex-col items-center gap-[var(--sp-4)] rounded-[var(--radius-ds-lg)] border px-[var(--sp-6)] py-[var(--sp-10)] text-center"
-          style={{
-            borderColor: 'var(--border-default)',
-            backgroundColor: 'var(--bg-raised)',
-          }}
-        >
-          <AlertTriangle
-            size={32}
-            strokeWidth={1.5}
-            style={{ color: 'var(--text-tertiary)' }}
-            aria-hidden="true"
-          />
+        <div className="flex flex-col items-center gap-[var(--sp-4)] rounded-[var(--radius-ds-lg)] border px-[var(--sp-6)] py-[var(--sp-10)] text-center text-[var(--text-tertiary)] border-[var(--border-default)] bg-[var(--bg-raised)]">
+          <AlertTriangle size={32} strokeWidth={1.5} aria-hidden="true" />
           <div className="flex flex-col gap-[var(--sp-1)]">
-            <h2
-              className="text-xl font-semibold"
-              style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-heading)' }}
-            >
+            <h2 className="text-xl font-semibold text-[var(--text-primary)] font-heading">
               Match voided
             </h2>
-            <p className="text-base" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-base text-[var(--text-secondary)]">
               No points awarded for this match
             </p>
           </div>
@@ -225,27 +194,13 @@ export default async function MatchLeaderboardPage({ params }: MatchPageProps) {
 
       {/* Pre-lock: countdown placeholder */}
       {!isLocked && !isVoided && (
-        <div
-          className="flex flex-col items-center gap-[var(--sp-4)] rounded-[var(--radius-ds-lg)] border px-[var(--sp-6)] py-[var(--sp-10)] text-center"
-          style={{
-            borderColor: 'var(--border-default)',
-            backgroundColor: 'var(--bg-raised)',
-          }}
-        >
-          <Clock
-            size={32}
-            strokeWidth={1.5}
-            style={{ color: 'var(--text-tertiary)' }}
-            aria-hidden="true"
-          />
+        <div className="flex flex-col items-center gap-[var(--sp-4)] rounded-[var(--radius-ds-lg)] border px-[var(--sp-6)] py-[var(--sp-10)] text-center text-[var(--text-tertiary)] border-[var(--border-default)] bg-[var(--bg-raised)]">
+          <Clock size={32} strokeWidth={1.5} aria-hidden="true" />
           <div className="flex flex-col gap-[var(--sp-1)]">
-            <h2
-              className="text-xl font-semibold"
-              style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-heading)' }}
-            >
+            <h2 className="text-xl font-semibold text-[var(--text-primary)] font-heading">
               Leaderboard unlocks in {formatCountdown(fixtureData.deadline)}
             </h2>
-            <p className="text-base" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-base text-[var(--text-secondary)]">
               Predictions are still open. Make your picks before the deadline!
             </p>
           </div>
@@ -263,10 +218,7 @@ export default async function MatchLeaderboardPage({ params }: MatchPageProps) {
         <>
           {/* Match Leaderboard */}
           <section aria-label="Match leaderboard">
-            <h2
-              className="mb-[var(--sp-3)] font-heading text-lg font-semibold"
-              style={{ color: 'var(--text-primary)' }}
-            >
+            <h2 className="mb-[var(--sp-3)] font-heading text-lg font-semibold text-[var(--text-primary)]">
               Leaderboard
             </h2>
             <MatchLeaderboardTable entries={leaderboardEntries} currentUserId={user.id} />
@@ -274,10 +226,7 @@ export default async function MatchLeaderboardPage({ params }: MatchPageProps) {
 
           {/* Prediction Reveal Table */}
           <section aria-label="Prediction reveal">
-            <h2
-              className="mb-[var(--sp-3)] font-heading text-lg font-semibold"
-              style={{ color: 'var(--text-primary)' }}
-            >
+            <h2 className="mb-[var(--sp-3)] font-heading text-lg font-semibold text-[var(--text-primary)]">
               Who picked what
             </h2>
             <PredictionRevealTable

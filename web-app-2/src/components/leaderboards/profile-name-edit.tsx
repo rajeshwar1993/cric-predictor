@@ -69,17 +69,11 @@ export function ProfileNameEdit({ currentName }: ProfileNameEditProps) {
   if (!isEditing) {
     return (
       <div className="flex flex-col gap-[var(--sp-1)]">
-        <label
-          className="text-xs font-medium uppercase tracking-[0.05em]"
-          style={{ color: 'var(--text-tertiary)' }}
-        >
+        <label className="text-xs font-medium uppercase tracking-[0.05em] text-[var(--text-tertiary)]">
           Display name
         </label>
         <div className="flex items-center gap-[var(--sp-2)]">
-          <span
-            className="text-lg font-semibold"
-            style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-heading)' }}
-          >
+          <span className="text-lg font-semibold text-[var(--text-primary)] font-heading">
             {currentName}
           </span>
           <button
@@ -92,12 +86,10 @@ export function ProfileNameEdit({ currentName }: ProfileNameEditProps) {
             className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-ds-sm)] transition-colors hover:bg-[var(--bg-overlay)]"
             aria-label="Edit display name"
           >
-            <Pencil size={14} strokeWidth={1.5} style={{ color: 'var(--text-secondary)' }} />
+            <Pencil size={14} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
           </button>
           {successMessage !== null && (
-            <span className="text-xs font-medium" style={{ color: 'var(--success)' }}>
-              {successMessage}
-            </span>
+            <span className="text-xs font-medium text-[var(--success)]">{successMessage}</span>
           )}
         </div>
       </div>
@@ -108,8 +100,7 @@ export function ProfileNameEdit({ currentName }: ProfileNameEditProps) {
     <div className="flex flex-col gap-[var(--sp-2)]">
       <label
         htmlFor="display-name-input"
-        className="text-xs font-medium uppercase tracking-[0.05em]"
-        style={{ color: 'var(--text-tertiary)' }}
+        className="text-xs font-medium uppercase tracking-[0.05em] text-[var(--text-tertiary)]"
       >
         Display name
       </label>
@@ -149,11 +140,7 @@ export function ProfileNameEdit({ currentName }: ProfileNameEditProps) {
           Cancel
         </Button>
       </div>
-      {error !== null && (
-        <p className="text-sm" style={{ color: 'var(--error)' }}>
-          {error}
-        </p>
-      )}
+      {error !== null && <p className="text-sm text-[var(--error)]">{error}</p>}
     </div>
   )
 }

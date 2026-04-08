@@ -14,8 +14,7 @@ interface SkeletonProps {
 export function Skeleton({ className }: SkeletonProps) {
   return (
     <div
-      className={cn('animate-pulse rounded-[var(--radius-ds-md)]', className)}
-      style={{ backgroundColor: 'var(--bg-raised)' }}
+      className={cn('animate-pulse rounded-[var(--radius-ds-md)] bg-[var(--bg-raised)]', className)}
       aria-hidden="true"
     />
   )

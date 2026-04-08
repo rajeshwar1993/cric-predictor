@@ -42,7 +42,7 @@ export function YesNoPick({ value, onChange, disabled = false }: YesNoPickProps)
               onChange(opt.val)
             }}
             className={cn(
-              'flex h-12 items-center justify-center rounded-[length:var(--radius-ds-md)] border text-base font-semibold transition-all',
+              'flex h-12 items-center justify-center rounded-[var(--radius-ds-md)] border text-base font-semibold transition-all',
               'focus-visible:border-[var(--border-focus)] focus-visible:ring-2 focus-visible:ring-[var(--brand-muted)] focus-visible:outline-none',
               'active:scale-[0.97]',
               'disabled:pointer-events-none disabled:opacity-40',

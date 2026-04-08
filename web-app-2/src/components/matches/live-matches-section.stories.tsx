@@ -29,7 +29,7 @@ function LiveMatchesSectionStory({
 
   return (
     <section aria-label="Live matches" className="flex flex-col gap-[var(--sp-3)]">
-      <h2 className="font-heading text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+      <h2 className="font-heading text-lg font-semibold text-[var(--text-primary)]">
         Live Matches
       </h2>
 

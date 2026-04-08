@@ -21,8 +21,7 @@ export default function PredictLoading() {
       {[1, 2, 3, 4, 5].map((i) => (
         <div
           key={i}
-          className="flex flex-col gap-[var(--sp-3)] rounded-[var(--radius-ds-lg)] border border-[var(--border-default)] p-[var(--sp-4)]"
-          style={{ backgroundColor: 'var(--bg-raised)' }}
+          className="flex flex-col gap-[var(--sp-3)] rounded-[var(--radius-ds-lg)] border border-[var(--border-default)] p-[var(--sp-4)] bg-[var(--bg-raised)]"
         >
           <Skeleton className="h-5 w-40" />
           <Skeleton className="h-4 w-56" />

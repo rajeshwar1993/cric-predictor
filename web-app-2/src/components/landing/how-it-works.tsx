@@ -28,10 +28,7 @@ export function HowItWorks() {
   return (
     <section className="px-[var(--sp-5)] py-[var(--sp-12)]" aria-label="How it works">
       <div className="mx-auto max-w-[480px]">
-        <h2
-          className="mb-[var(--sp-8)] text-center font-heading text-2xl font-bold"
-          style={{ color: 'var(--text-primary)' }}
-        >
+        <h2 className="mb-[var(--sp-8)] text-center font-heading text-2xl font-bold text-[var(--text-primary)]">
           How it works
         </h2>
 
@@ -41,37 +38,27 @@ export function HowItWorks() {
             return (
               <div
                 key={step.number}
-                className="flex gap-[var(--sp-4)] rounded-[var(--radius-ds-lg)] border border-[var(--border-default)] p-[var(--sp-4)] transition-colors hover:border-[var(--border-strong)]"
-                style={{ backgroundColor: 'var(--bg-raised)' }}
+                className="flex gap-[var(--sp-4)] rounded-[var(--radius-ds-lg)] border border-[var(--border-default)] p-[var(--sp-4)] transition-colors hover:border-[var(--border-strong)] bg-[var(--bg-raised)]"
               >
                 {/* Step number + icon */}
                 <div className="flex shrink-0 flex-col items-center gap-[var(--sp-2)]">
-                  <span
-                    className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-ds-full)] text-sm font-bold"
-                    style={{
-                      backgroundColor: 'var(--brand-muted)',
-                      color: 'var(--brand)',
-                    }}
-                  >
+                  <span className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-ds-full)] text-sm font-bold bg-[var(--brand-muted)] text-[var(--brand)]">
                     {step.number}
                   </span>
                   <Icon
                     size={20}
                     strokeWidth={1.5}
-                    style={{ color: 'var(--text-tertiary)' }}
+                    className="text-[var(--text-tertiary)]"
                     aria-hidden="true"
                   />
                 </div>
 
                 {/* Text */}
                 <div className="flex flex-col gap-[var(--sp-1)]">
-                  <h3
-                    className="font-heading text-lg font-semibold"
-                    style={{ color: 'var(--text-primary)' }}
-                  >
+                  <h3 className="font-heading text-lg font-semibold text-[var(--text-primary)]">
                     {step.title}
                   </h3>
-                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                  <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
                     {step.description}
                   </p>
                 </div>

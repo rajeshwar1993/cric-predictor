@@ -67,8 +67,7 @@ export default async function SettingsPage({ params }: SettingsPageProps) {
       {/* Back link */}
       <Link
         href={`/group/${groupId}`}
-        className="inline-flex items-center gap-[var(--sp-1)] text-sm transition-colors hover:opacity-80 focus-visible:rounded-[var(--radius-sm)] focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] focus-visible:outline-none"
-        style={{ color: 'var(--text-secondary)' }}
+        className="inline-flex items-center gap-[var(--sp-1)] text-sm transition-colors hover:opacity-80 focus-visible:rounded-[var(--radius-sm)] focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] focus-visible:outline-none text-[var(--text-secondary)]"
       >
         <ChevronLeft size={16} strokeWidth={1.5} aria-hidden="true" />
         Back to gang
@@ -76,20 +75,15 @@ export default async function SettingsPage({ params }: SettingsPageProps) {
 
       {/* Page title */}
       <header>
-        <h1 className="font-heading text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+        <h1 className="font-heading text-2xl font-bold text-[var(--text-primary)]">
           Gang Settings
         </h1>
-        <p className="mt-[var(--sp-1)] text-sm" style={{ color: 'var(--text-secondary)' }}>
-          {gang.name}
-        </p>
+        <p className="mt-[var(--sp-1)] text-sm text-[var(--text-secondary)]">{gang.name}</p>
       </header>
 
       {/* Gang name editor */}
       <section aria-label="Edit gang name">
-        <h2
-          className="mb-[var(--sp-3)] font-heading text-lg font-semibold"
-          style={{ color: 'var(--text-primary)' }}
-        >
+        <h2 className="mb-[var(--sp-3)] font-heading text-lg font-semibold text-[var(--text-primary)]">
           Name
         </h2>
         <GangNameEditor gangId={groupId} currentName={gang.name} />
@@ -106,10 +100,7 @@ export default async function SettingsPage({ params }: SettingsPageProps) {
 
       {/* Prediction deadline */}
       <section aria-label="Prediction deadline setting">
-        <h2
-          className="mb-[var(--sp-3)] font-heading text-lg font-semibold"
-          style={{ color: 'var(--text-primary)' }}
-        >
+        <h2 className="mb-[var(--sp-3)] font-heading text-lg font-semibold text-[var(--text-primary)]">
           Prediction Deadline
         </h2>
         <PredictionDeadlineEditor gangId={groupId} currentMins={gang.predictionDeadlineMins} />

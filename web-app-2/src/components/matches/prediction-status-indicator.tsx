@@ -57,7 +57,7 @@ export async function PredictionStatusIndicator({
 
   return (
     <div className="flex flex-col gap-[var(--sp-2)]" aria-label="Prediction status">
-      <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+      <p className="text-xs font-medium text-[var(--text-secondary)]">
         {String(predictedCount)}/{String(members.length)} predicted
       </p>
       <div className="flex flex-wrap gap-[var(--sp-2)]">
@@ -78,8 +78,7 @@ function PredictionChip({ status }: { status: MemberPredictionStatus }) {
 
   return (
     <div
-      className="inline-flex items-center gap-[var(--sp-1)] rounded-[var(--radius-ds-full)] px-[var(--sp-2)] py-[2px]"
-      style={{ backgroundColor: 'var(--bg-overlay)' }}
+      className="inline-flex items-center gap-[var(--sp-1)] rounded-[var(--radius-ds-full)] px-[var(--sp-2)] py-[2px] bg-[var(--bg-overlay)]"
       title={
         status.hasPredicted
           ? `${status.displayName} has predicted`
@@ -101,12 +100,12 @@ function PredictionChip({ status }: { status: MemberPredictionStatus }) {
 
       {/* Status icon */}
       {status.hasPredicted ? (
-        <Check size={12} strokeWidth={2} style={{ color: 'var(--success)' }} aria-hidden="true" />
+        <Check size={12} strokeWidth={2} className="text-[var(--success)]" aria-hidden="true" />
       ) : (
         <Circle
           size={8}
           strokeWidth={2}
-          style={{ color: 'var(--text-tertiary)' }}
+          className="text-[var(--text-tertiary)]"
           aria-hidden="true"
         />
       )}

@@ -15,10 +15,7 @@ export default function StandingsLoading() {
       {/* Standings table */}
       <div className="overflow-hidden rounded-[var(--radius-ds-lg)] border border-[var(--border-default)]">
         {/* Header row */}
-        <div
-          className="flex items-center gap-[var(--sp-3)] border-b border-[var(--border-default)] px-[var(--sp-4)] py-[var(--sp-2)]"
-          style={{ backgroundColor: 'var(--bg-overlay)' }}
-        >
+        <div className="flex items-center gap-[var(--sp-3)] border-b border-[var(--border-default)] px-[var(--sp-4)] py-[var(--sp-2)] bg-[var(--bg-overlay)]">
           <Skeleton className="h-3 w-6" />
           <Skeleton className="h-3 w-20 flex-1" />
           <Skeleton className="h-3 w-12" />
@@ -28,8 +25,8 @@ export default function StandingsLoading() {
         {[1, 2, 3, 4, 5, 6].map((i) => (
           <div
             key={i}
-            className="flex items-center gap-[var(--sp-3)] border-b border-[var(--border-default)] px-[var(--sp-4)] py-[var(--sp-3)]"
-            style={{ minHeight: 56, backgroundColor: 'var(--bg-raised)' }}
+            className="flex items-center gap-[var(--sp-3)] border-b border-[var(--border-default)] bg-[var(--bg-raised)] px-[var(--sp-4)] py-[var(--sp-3)]"
+            style={{ minHeight: 56 }}
           >
             <Skeleton className="h-5 w-8" />
             <Skeleton className="h-7 w-7 rounded-full" />

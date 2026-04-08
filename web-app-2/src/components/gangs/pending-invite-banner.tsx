@@ -97,8 +97,7 @@ export function PendingInviteBanner() {
 
   return (
     <div
-      className="flex flex-col gap-[var(--sp-3)] rounded-[length:var(--radius-ds-lg)] border border-[var(--border-default)] p-[var(--sp-4)]"
-      style={{ backgroundColor: 'var(--warning-muted)' }}
+      className="flex flex-col gap-[var(--sp-3)] rounded-[var(--radius-ds-lg)] border border-[var(--border-default)] p-[var(--sp-4)] bg-[var(--warning-muted)]"
       role="status"
       aria-label="Pending gang invite"
     >
@@ -106,19 +105,16 @@ export function PendingInviteBanner() {
         <Clock
           size={20}
           strokeWidth={1.5}
-          className="mt-0.5 shrink-0"
-          style={{ color: 'var(--warning)' }}
+          className="mt-0.5 shrink-0 text-[var(--warning)]"
           aria-hidden="true"
         />
         <div className="flex-1">
-          <p className="text-sm font-medium" style={{ color: 'var(--warning)' }}>
+          <p className="text-sm font-medium text-[var(--warning)]">
             You were invited to join{' '}
-            <strong className="font-semibold" style={{ color: 'var(--text-primary)' }}>
-              {invite.gangName}
-            </strong>
+            <strong className="font-semibold text-[var(--text-primary)]">{invite.gangName}</strong>
           </p>
           {error !== null && (
-            <p className="mt-1 text-sm" style={{ color: 'var(--error)' }} role="alert">
+            <p className="mt-1 text-sm text-[var(--error)]" role="alert">
               {error}
             </p>
           )}

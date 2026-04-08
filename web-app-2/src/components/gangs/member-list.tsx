@@ -77,42 +77,30 @@ export function MemberList({ members }: MemberListProps) {
               {/* Name + Role */}
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-[var(--sp-1)]">
-                  <span
-                    className="truncate text-base font-medium"
-                    style={{ color: 'var(--text-primary)' }}
-                  >
+                  <span className="truncate text-base font-medium text-[var(--text-primary)]">
                     {member.displayName}
                   </span>
                   {member.isCurrentUser && (
-                    <span className="shrink-0 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                      (you)
-                    </span>
+                    <span className="shrink-0 text-xs text-[var(--text-secondary)]">(you)</span>
                   )}
                   {member.role === 'admin' && (
                     <Crown
                       size={14}
                       strokeWidth={1.5}
-                      className="shrink-0"
-                      style={{ color: 'var(--brand)' }}
+                      className="shrink-0 text-[var(--brand)]"
                       aria-label="Admin"
                     />
                   )}
                 </div>
                 {isInactive && (
-                  <span
-                    className="text-xs uppercase tracking-wider"
-                    style={{ color: 'var(--text-tertiary)' }}
-                  >
+                  <span className="text-xs uppercase tracking-wider text-[var(--text-tertiary)]">
                     {member.status}
                   </span>
                 )}
               </div>
 
               {/* Points */}
-              <span
-                className="shrink-0 text-lg font-bold tabular-nums"
-                style={{ color: 'var(--brand)' }}
-              >
+              <span className="shrink-0 text-lg font-bold tabular-nums text-[var(--brand)]">
                 {member.points ?? 0} pts
               </span>
             </li>

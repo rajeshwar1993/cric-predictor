@@ -8,17 +8,14 @@ export function CtaSection() {
         className="pointer-events-none absolute inset-0 flex items-center justify-center"
         aria-hidden="true"
       >
-        <div
-          className="h-[200px] w-[300px] rounded-full opacity-[0.05] blur-[80px]"
-          style={{ background: 'var(--brand)' }}
-        />
+        <div className="h-[200px] w-[300px] rounded-full bg-[var(--brand)] opacity-[0.05] blur-[80px]" />
       </div>
 
       <div className="relative z-10 mx-auto flex max-w-[480px] flex-col items-center gap-[var(--sp-6)] text-center">
-        <h2 className="font-heading text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+        <h2 className="font-heading text-2xl font-bold text-[var(--text-primary)]">
           Ready to prove you know cricket?
         </h2>
-        <p className="max-w-[35ch] text-base" style={{ color: 'var(--text-secondary)' }}>
+        <p className="max-w-[35ch] text-base text-[var(--text-secondary)]">
           IPL 2026 is here. Get your gang together and start calling the shots.
         </p>
         <div className="flex flex-col items-center gap-[var(--sp-3)] sm:flex-row">

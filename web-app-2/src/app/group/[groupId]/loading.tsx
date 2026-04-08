@@ -21,8 +21,7 @@ export default function GroupLoading() {
         {[1, 2].map((i) => (
           <div
             key={i}
-            className="rounded-[var(--radius-ds-lg)] border border-[var(--border-default)] p-[var(--sp-4)]"
-            style={{ backgroundColor: 'var(--bg-raised)' }}
+            className="rounded-[var(--radius-ds-lg)] border border-[var(--border-default)] p-[var(--sp-4)] bg-[var(--bg-raised)]"
           >
             <div className="flex flex-col gap-[var(--sp-2)]">
               <Skeleton className="h-5 w-32" />
@@ -39,10 +38,7 @@ export default function GroupLoading() {
       {/* Members skeleton */}
       <div className="flex flex-col gap-[var(--sp-3)]">
         <Skeleton className="h-5 w-24" />
-        <div
-          className="overflow-hidden rounded-[var(--radius-ds-lg)] border border-[var(--border-default)]"
-          style={{ backgroundColor: 'var(--bg-raised)' }}
-        >
+        <div className="overflow-hidden rounded-[var(--radius-ds-lg)] border border-[var(--border-default)] bg-[var(--bg-raised)]">
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}

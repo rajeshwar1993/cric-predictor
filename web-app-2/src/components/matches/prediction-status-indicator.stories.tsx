@@ -23,7 +23,7 @@ function CheckIcon() {
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      style={{ color: 'var(--success)' }}
+      className="text-[var(--success)]"
       aria-hidden="true"
     >
       <polyline points="20 6 9 17 4 12" />
@@ -42,7 +42,7 @@ function CircleIcon() {
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      style={{ color: 'var(--text-tertiary)' }}
+      className="text-[var(--text-tertiary)]"
       aria-hidden="true"
     >
       <circle cx="12" cy="12" r="10" />
@@ -55,8 +55,7 @@ function PredictionChip({ status }: { status: MemberPredictionStatus }) {
 
   return (
     <div
-      className="inline-flex items-center gap-[var(--sp-1)] rounded-[var(--radius-ds-full)] px-[var(--sp-2)] py-[2px]"
-      style={{ backgroundColor: 'var(--bg-overlay)' }}
+      className="inline-flex items-center gap-[var(--sp-1)] rounded-[var(--radius-ds-full)] px-[var(--sp-2)] py-[2px] bg-[var(--bg-overlay)]"
       title={
         status.hasPredicted
           ? `${status.displayName} has predicted`
@@ -107,7 +106,7 @@ function PredictionStatusIndicatorStory({
 
   return (
     <div className="flex flex-col gap-[var(--sp-2)]" aria-label="Prediction status">
-      <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+      <p className="text-xs font-medium text-[var(--text-secondary)]">
         {String(predictedCount)}/{String(members.length)} predicted
       </p>
       <div className="flex flex-wrap gap-[var(--sp-2)]">

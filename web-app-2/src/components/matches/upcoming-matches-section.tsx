@@ -58,7 +58,7 @@ export async function UpcomingMatchesSection({ gangId, members }: UpcomingMatche
 
   return (
     <section aria-label="Upcoming matches" className="flex flex-col gap-[var(--sp-3)]">
-      <h2 className="font-heading text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+      <h2 className="font-heading text-lg font-semibold text-[var(--text-primary)]">
         Upcoming Matches
       </h2>
 

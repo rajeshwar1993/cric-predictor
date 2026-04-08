@@ -19,16 +19,10 @@ export function HeroSection() {
         />
 
         {/* Stadium floodlight glow — top left */}
-        <div
-          className="absolute -left-20 -top-20 h-[400px] w-[400px] rounded-full opacity-[0.06] blur-[120px]"
-          style={{ background: 'var(--brand)' }}
-        />
+        <div className="absolute -left-20 -top-20 h-[400px] w-[400px] rounded-full bg-[var(--brand)] opacity-[0.06] blur-[120px]" />
 
         {/* Stadium floodlight glow — bottom right */}
-        <div
-          className="absolute -bottom-20 -right-20 h-[300px] w-[300px] rounded-full opacity-[0.04] blur-[100px]"
-          style={{ background: 'var(--brand)' }}
-        />
+        <div className="absolute -bottom-20 -right-20 h-[300px] w-[300px] rounded-full bg-[var(--brand)] opacity-[0.04] blur-[100px]" />
 
         {/* Film grain overlay */}
         <div
@@ -52,10 +46,7 @@ export function HeroSection() {
           className="flex flex-col gap-[var(--sp-3)] animate-[fadeInUp_0.6s_ease-out_both]"
           style={{ animationDelay: '150ms' }}
         >
-          <h1
-            className="font-heading text-4xl font-bold leading-tight tracking-tight md:text-5xl"
-            style={{ color: 'var(--text-primary)' }}
-          >
+          <h1 className="font-heading text-4xl font-bold leading-tight tracking-tight md:text-5xl text-[var(--text-primary)]">
             Predict right. Prove it.{' '}
             <span
               style={{
@@ -68,7 +59,7 @@ export function HeroSection() {
               Bragg.
             </span>
           </h1>
-          <p className="mx-auto max-w-[40ch] text-lg" style={{ color: 'var(--text-secondary)' }}>
+          <p className="mx-auto max-w-[40ch] text-lg text-[var(--text-secondary)]">
             The IPL prediction game for bragging rights. Rally your squad, lock in your picks, and
             own the leaderboard.
           </p>

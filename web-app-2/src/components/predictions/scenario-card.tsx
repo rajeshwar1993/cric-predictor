@@ -41,7 +41,7 @@ export function ScenarioCard({
   return (
     <div
       className={cn(
-        'flex flex-col gap-[var(--sp-3)] rounded-[length:var(--radius-ds-lg)] border p-[var(--sp-4)] transition-colors',
+        'flex flex-col gap-[var(--sp-3)] rounded-[var(--radius-ds-lg)] border p-[var(--sp-4)] transition-colors',
         hasPick
           ? 'border-[var(--brand)] bg-[var(--bg-raised)]'
           : 'border-[var(--border-default)] bg-[var(--bg-raised)]',
@@ -51,19 +51,10 @@ export function ScenarioCard({
     >
       {/* Header: title + points */}
       <div className="flex items-start justify-between gap-[var(--sp-2)]">
-        <h4
-          className="text-base font-medium leading-snug"
-          style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-body)' }}
-        >
+        <h4 className="text-base font-medium leading-snug text-[var(--text-primary)] font-body">
           {scenario.title}
         </h4>
-        <span
-          className="inline-flex shrink-0 items-center rounded-[length:var(--radius-ds-sm)] px-2 py-0.5 text-xs font-medium"
-          style={{
-            backgroundColor: 'var(--brand-muted)',
-            color: 'var(--brand)',
-          }}
-        >
+        <span className="inline-flex shrink-0 items-center rounded-[var(--radius-ds-sm)] px-2 py-0.5 text-xs font-medium bg-[var(--brand-muted)] text-[var(--brand)]">
           {scenario.points} pts
         </span>
       </div>
@@ -72,13 +63,10 @@ export function ScenarioCard({
       {hasPick && (
         <div className="flex items-center gap-[var(--sp-1)]">
           <span
-            className="inline-block h-1.5 w-1.5 rounded-full"
-            style={{ backgroundColor: 'var(--brand)' }}
+            className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--brand)]"
             aria-hidden="true"
           />
-          <span className="text-xs font-medium" style={{ color: 'var(--brand)' }}>
-            Picked
-          </span>
+          <span className="text-xs font-medium text-[var(--brand)]">Picked</span>
         </div>
       )}
 

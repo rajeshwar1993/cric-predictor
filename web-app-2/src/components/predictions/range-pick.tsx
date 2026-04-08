@@ -38,7 +38,7 @@ export function RangePick({ options, value, onChange, disabled = false }: RangeP
               onChange(option)
             }}
             className={cn(
-              'flex h-10 items-center justify-center rounded-[length:var(--radius-ds-full)] border px-[var(--sp-3)] text-sm font-medium transition-all',
+              'flex h-10 items-center justify-center rounded-[var(--radius-ds-full)] border px-[var(--sp-3)] text-sm font-medium transition-all',
               'focus-visible:border-[var(--border-focus)] focus-visible:ring-2 focus-visible:ring-[var(--brand-muted)] focus-visible:outline-none',
               'active:scale-[0.97]',
               'disabled:pointer-events-none disabled:opacity-40',

@@ -91,8 +91,7 @@ export default async function StandingsPage({ params }: StandingsPageProps) {
       <div className="flex flex-col gap-[var(--sp-6)]">
         <Link
           href={`/group/${groupId}`}
-          className="inline-flex items-center gap-[var(--sp-1)] text-sm font-medium transition-colors hover:opacity-80"
-          style={{ color: 'var(--text-secondary)' }}
+          className="inline-flex items-center gap-[var(--sp-1)] text-sm font-medium transition-colors hover:opacity-80 text-[var(--text-secondary)]"
         >
           <ChevronLeft size={16} strokeWidth={1.5} aria-hidden="true" />
           Back to {gang.name}
@@ -125,8 +124,7 @@ export default async function StandingsPage({ params }: StandingsPageProps) {
       {/* Back link */}
       <Link
         href={`/group/${groupId}`}
-        className="inline-flex items-center gap-[var(--sp-1)] text-sm font-medium transition-colors hover:opacity-80"
-        style={{ color: 'var(--text-secondary)' }}
+        className="inline-flex items-center gap-[var(--sp-1)] text-sm font-medium transition-colors hover:opacity-80 text-[var(--text-secondary)]"
       >
         <ChevronLeft size={16} strokeWidth={1.5} aria-hidden="true" />
         Back to {gang.name}
@@ -134,10 +132,8 @@ export default async function StandingsPage({ params }: StandingsPageProps) {
 
       {/* Header */}
       <header>
-        <h1 className="font-heading text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
-          Standings
-        </h1>
-        <p className="mt-[var(--sp-1)] text-sm" style={{ color: 'var(--text-secondary)' }}>
+        <h1 className="font-heading text-3xl font-bold text-[var(--text-primary)]">Standings</h1>
+        <p className="mt-[var(--sp-1)] text-sm text-[var(--text-secondary)]">
           {gang.name} &middot; {seasonName}
         </p>
       </header>
@@ -160,10 +156,7 @@ export default async function StandingsPage({ params }: StandingsPageProps) {
       ) : (
         <div className="overflow-hidden rounded-[var(--radius-ds-lg)] border border-[var(--border-default)]">
           {/* Header row */}
-          <div
-            className="hidden items-center gap-[var(--sp-3)] border-b border-[var(--border-default)] px-[var(--sp-4)] py-[var(--sp-2)] text-xs font-medium uppercase tracking-[0.05em] sm:flex"
-            style={{ backgroundColor: 'var(--bg-overlay)', color: 'var(--text-tertiary)' }}
-          >
+          <div className="hidden items-center gap-[var(--sp-3)] border-b border-[var(--border-default)] px-[var(--sp-4)] py-[var(--sp-2)] text-xs font-medium uppercase tracking-[0.05em] sm:flex bg-[var(--bg-overlay)] text-[var(--text-tertiary)]">
             <span className="w-8 shrink-0 text-right">#</span>
             <span className="flex-1">Name</span>
             <span className="hidden w-14 shrink-0 text-right sm:block">Matches</span>
@@ -213,26 +206,15 @@ export default async function StandingsPage({ params }: StandingsPageProps) {
                   {/* Name */}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-[var(--sp-1)]">
-                      <span
-                        className="truncate text-base font-medium"
-                        style={{ color: 'var(--text-primary)' }}
-                      >
+                      <span className="truncate text-base font-medium text-[var(--text-primary)]">
                         {entry.displayName}
                       </span>
                       {isCurrentUser && (
-                        <span
-                          className="shrink-0 text-xs"
-                          style={{ color: 'var(--text-secondary)' }}
-                        >
-                          (you)
-                        </span>
+                        <span className="shrink-0 text-xs text-[var(--text-secondary)]">(you)</span>
                       )}
                     </div>
                     {isInactive && (
-                      <span
-                        className="text-xs uppercase tracking-wider"
-                        style={{ color: 'var(--text-tertiary)' }}
-                      >
+                      <span className="text-xs uppercase tracking-wider text-[var(--text-tertiary)]">
                         {entry.memberStatus}
                       </span>
                     )}
@@ -240,35 +222,32 @@ export default async function StandingsPage({ params }: StandingsPageProps) {
 
                   {/* Matches predicted — hidden on mobile */}
                   <span
-                    className="hidden w-14 shrink-0 text-right text-sm tabular-nums sm:block"
-                    style={{ color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}
+                    className="hidden w-14 shrink-0 text-right text-sm tabular-nums sm:block text-[var(--text-secondary)]"
+                    style={{ fontVariantNumeric: 'tabular-nums' }}
                   >
                     {entry.matchesPredicted}
                   </span>
 
                   {/* Points per match — hidden on mobile */}
                   <span
-                    className="hidden w-14 shrink-0 text-right text-sm tabular-nums sm:block"
-                    style={{ color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}
+                    className="hidden w-14 shrink-0 text-right text-sm tabular-nums sm:block text-[var(--text-secondary)]"
+                    style={{ fontVariantNumeric: 'tabular-nums' }}
                   >
                     {entry.pointsPerMatch.toFixed(1)}
                   </span>
 
                   {/* Accuracy — hidden on mobile */}
                   <span
-                    className="hidden w-14 shrink-0 text-right text-sm tabular-nums sm:block"
-                    style={{ color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}
+                    className="hidden w-14 shrink-0 text-right text-sm tabular-nums sm:block text-[var(--text-secondary)]"
+                    style={{ fontVariantNumeric: 'tabular-nums' }}
                   >
                     {entry.accuracyPct}%
                   </span>
 
                   {/* Points — always visible */}
                   <span
-                    className="shrink-0 text-lg font-bold tabular-nums"
-                    style={{
-                      color: 'var(--brand)',
-                      fontVariantNumeric: 'tabular-nums',
-                    }}
+                    className="shrink-0 text-lg font-bold tabular-nums text-[var(--brand)]"
+                    style={{ fontVariantNumeric: 'tabular-nums' }}
                   >
                     {entry.totalPoints}
                   </span>

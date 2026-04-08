@@ -26,17 +26,11 @@ export function DeleteGangSection({ gangId, gangName }: DeleteGangSectionProps) 
 
   return (
     <section aria-label="Danger zone">
-      <div
-        className="rounded-[length:var(--radius-ds-lg)] border p-[var(--sp-4)]"
-        style={{ borderColor: 'var(--error-muted)' }}
-      >
-        <h3
-          className="mb-[var(--sp-2)] font-heading text-lg font-semibold"
-          style={{ color: 'var(--error)' }}
-        >
+      <div className="rounded-[var(--radius-ds-lg)] border border-[var(--error-muted)] p-[var(--sp-4)]">
+        <h3 className="mb-[var(--sp-2)] font-heading text-lg font-semibold text-[var(--error)]">
           Danger Zone
         </h3>
-        <p className="mb-[var(--sp-4)] text-sm" style={{ color: 'var(--text-secondary)' }}>
+        <p className="mb-[var(--sp-4)] text-sm text-[var(--text-secondary)]">
           Deleting a gang is permanent. All members will be removed and all data will be lost.
         </p>
 
@@ -51,7 +45,7 @@ export function DeleteGangSection({ gangId, gangName }: DeleteGangSectionProps) 
         </Button>
 
         {error !== null && (
-          <p className="mt-[var(--sp-2)] text-sm" style={{ color: 'var(--error)' }} role="alert">
+          <p className="mt-[var(--sp-2)] text-sm text-[var(--error)]" role="alert">
             {error}
           </p>
         )}

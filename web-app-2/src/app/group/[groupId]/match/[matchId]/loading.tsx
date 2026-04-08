@@ -16,10 +16,7 @@ export default function MatchLeaderboardLoading() {
       {/* Leaderboard section */}
       <div className="flex flex-col gap-[var(--sp-3)]">
         <Skeleton className="h-5 w-28" />
-        <div
-          className="overflow-hidden rounded-[var(--radius-ds-lg)] border border-[var(--border-default)]"
-          style={{ backgroundColor: 'var(--bg-raised)' }}
-        >
+        <div className="overflow-hidden rounded-[var(--radius-ds-lg)] border border-[var(--border-default)] bg-[var(--bg-raised)]">
           {[1, 2, 3, 4, 5].map((i) => (
             <div
               key={i}

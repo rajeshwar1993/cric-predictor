@@ -45,18 +45,15 @@ export default async function JoinPage({ params }: JoinPageProps) {
         <PageWrapper className="flex min-h-screen flex-col items-center justify-center">
           <div className="flex flex-col items-center gap-[var(--sp-6)] text-center">
             <Logo size="sm" />
-            <h1
-              className="font-heading text-2xl font-bold"
-              style={{ color: 'var(--text-primary)' }}
-            >
+            <h1 className="font-heading text-2xl font-bold text-[var(--text-primary)]">
               Gang not found
             </h1>
-            <p className="max-w-[45ch] text-base" style={{ color: 'var(--text-secondary)' }}>
+            <p className="max-w-[45ch] text-base text-[var(--text-secondary)]">
               This gang no longer exists or the invite link is invalid.
             </p>
             <Link
               href="/login"
-              className="inline-flex h-12 items-center justify-center rounded-[length:var(--radius-ds-md)] bg-[var(--brand)] px-6 font-semibold text-[var(--brand-on)] transition-colors hover:bg-[var(--brand-hover)]"
+              className="inline-flex h-12 items-center justify-center rounded-[var(--radius-ds-md)] bg-[var(--brand)] px-6 font-semibold text-[var(--brand-on)] transition-colors hover:bg-[var(--brand-hover)]"
             >
               Go to Bragg
             </Link>

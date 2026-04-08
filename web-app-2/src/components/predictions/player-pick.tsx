@@ -109,7 +109,7 @@ export function PlayerPick({
         aria-expanded={isOpen}
         aria-label={selectedPlayer !== null ? `Selected: ${selectedPlayer.name}` : title}
         className={cn(
-          'flex h-12 w-full items-center justify-between rounded-[length:var(--radius-ds-md)] border px-[var(--sp-4)] text-left text-base transition-all',
+          'flex h-12 w-full items-center justify-between rounded-[var(--radius-ds-md)] border px-[var(--sp-4)] text-left text-base transition-all',
           'focus-visible:border-[var(--border-focus)] focus-visible:ring-2 focus-visible:ring-[var(--brand-muted)] focus-visible:outline-none',
           'disabled:pointer-events-none disabled:opacity-40',
           isOpen
@@ -139,7 +139,7 @@ export function PlayerPick({
       {/* Dropdown */}
       {isOpen && (
         <div
-          className="absolute top-[calc(100%+var(--sp-1))] left-0 z-50 w-full overflow-hidden rounded-[length:var(--radius-ds-md)] border border-[var(--border-default)] bg-[var(--bg-overlay)] shadow-lg"
+          className="absolute top-[calc(100%+var(--sp-1))] left-0 z-50 w-full overflow-hidden rounded-[var(--radius-ds-md)] border border-[var(--border-default)] bg-[var(--bg-overlay)] shadow-lg"
           role="listbox"
           aria-label="Player list"
         >

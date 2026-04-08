@@ -56,12 +56,12 @@ function PendingRequestRow({ gangId, request }: { gangId: string; request: Pendi
   }
 
   return (
-    <div className="flex items-center justify-between gap-[var(--sp-3)] rounded-[length:var(--radius-ds-md)] border border-[var(--border-default)] bg-[var(--bg-raised)] p-[var(--sp-3)]">
+    <div className="flex items-center justify-between gap-[var(--sp-3)] rounded-[var(--radius-ds-md)] border border-[var(--border-default)] bg-[var(--bg-raised)] p-[var(--sp-3)]">
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+        <p className="truncate text-sm font-medium text-[var(--text-primary)]">
           {request.displayName}
         </p>
-        <p className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+        <p className="flex items-center gap-1 text-xs text-[var(--text-tertiary)]">
           <Clock size={12} strokeWidth={1.5} aria-hidden="true" />
           {formatTimeAgo(request.requestedAt)}
         </p>
@@ -83,15 +83,9 @@ export function PendingRequests({ gangId, requests }: PendingRequestsProps) {
 
   return (
     <section aria-label="Pending join requests">
-      <h3
-        className="mb-[var(--sp-3)] font-heading text-lg font-semibold"
-        style={{ color: 'var(--text-primary)' }}
-      >
+      <h3 className="mb-[var(--sp-3)] font-heading text-lg font-semibold text-[var(--text-primary)]">
         Pending Requests{' '}
-        <span
-          className="inline-flex min-w-[20px] items-center justify-center rounded-[length:var(--radius-ds-full)] px-1.5 py-0.5 text-xs font-medium"
-          style={{ backgroundColor: 'var(--warning-muted)', color: 'var(--warning)' }}
-        >
+        <span className="inline-flex min-w-[20px] items-center justify-center rounded-[var(--radius-ds-full)] px-1.5 py-0.5 text-xs font-medium bg-[var(--warning-muted)] text-[var(--warning)]">
           {requests.length}
         </span>
       </h3>

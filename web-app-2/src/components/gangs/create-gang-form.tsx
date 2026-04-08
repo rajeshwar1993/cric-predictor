@@ -58,12 +58,7 @@ export function CreateGangForm() {
           aria-describedby={error !== null ? 'create-gang-error' : undefined}
         />
         {error !== null && (
-          <p
-            id="create-gang-error"
-            className="text-sm"
-            style={{ color: 'var(--error)' }}
-            role="alert"
-          >
+          <p id="create-gang-error" className="text-sm text-[var(--error)]" role="alert">
             {error}
           </p>
         )}

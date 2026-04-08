@@ -83,13 +83,8 @@ export default async function GroupPage({ params }: GroupPageProps) {
     <div className="flex flex-col gap-[var(--sp-6)]">
       {/* Gang header */}
       <header>
-        <h1 className="font-heading text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
-          {gang.name}
-        </h1>
-        <div
-          className="mt-[var(--sp-1)] flex items-center gap-[var(--sp-1)] text-sm"
-          style={{ color: 'var(--text-secondary)' }}
-        >
+        <h1 className="font-heading text-3xl font-bold text-[var(--text-primary)]">{gang.name}</h1>
+        <div className="mt-[var(--sp-1)] flex items-center gap-[var(--sp-1)] text-sm text-[var(--text-secondary)]">
           <Users size={16} strokeWidth={1.5} aria-hidden="true" />
           <span>{gang.memberCount}/20 members</span>
         </div>
@@ -97,10 +92,7 @@ export default async function GroupPage({ params }: GroupPageProps) {
 
       {/* Invite share */}
       <section aria-label="Invite friends">
-        <h2
-          className="mb-[var(--sp-3)] font-heading text-lg font-semibold"
-          style={{ color: 'var(--text-primary)' }}
-        >
+        <h2 className="mb-[var(--sp-3)] font-heading text-lg font-semibold text-[var(--text-primary)]">
           Invite Friends
         </h2>
         <InviteShare inviteCode={gang.inviteCode} gangName={gang.name} />
@@ -110,8 +102,7 @@ export default async function GroupPage({ params }: GroupPageProps) {
       {isAdmin && (
         <Link
           href={`/group/${groupId}/settings`}
-          className="flex items-center gap-[var(--sp-2)] rounded-[length:var(--radius-ds-md)] border border-[var(--border-default)] bg-[var(--bg-raised)] px-[var(--sp-4)] py-[var(--sp-3)] text-sm font-medium transition-colors hover:border-[var(--border-strong)] focus-visible:border-[var(--border-focus)] focus-visible:ring-2 focus-visible:ring-[var(--brand-muted)] focus-visible:outline-none"
-          style={{ color: 'var(--text-primary)' }}
+          className="flex items-center gap-[var(--sp-2)] rounded-[var(--radius-ds-md)] border border-[var(--border-default)] bg-[var(--bg-raised)] px-[var(--sp-4)] py-[var(--sp-3)] text-sm font-medium transition-colors hover:border-[var(--border-strong)] focus-visible:border-[var(--border-focus)] focus-visible:ring-2 focus-visible:ring-[var(--brand-muted)] focus-visible:outline-none text-[var(--text-primary)]"
         >
           <Settings size={20} strokeWidth={1.5} aria-hidden="true" />
           Gang Settings
@@ -141,8 +132,7 @@ export default async function GroupPage({ params }: GroupPageProps) {
       {/* Standings link */}
       <Link
         href={`/group/${groupId}/standings`}
-        className="flex items-center gap-[var(--sp-2)] rounded-[length:var(--radius-ds-md)] border border-[var(--border-default)] bg-[var(--bg-raised)] px-[var(--sp-4)] py-[var(--sp-3)] text-sm font-medium transition-colors hover:border-[var(--border-strong)] focus-visible:border-[var(--border-focus)] focus-visible:ring-2 focus-visible:ring-[var(--brand-muted)] focus-visible:outline-none"
-        style={{ color: 'var(--text-primary)' }}
+        className="flex items-center gap-[var(--sp-2)] rounded-[var(--radius-ds-md)] border border-[var(--border-default)] bg-[var(--bg-raised)] px-[var(--sp-4)] py-[var(--sp-3)] text-sm font-medium transition-colors hover:border-[var(--border-strong)] focus-visible:border-[var(--border-focus)] focus-visible:ring-2 focus-visible:ring-[var(--brand-muted)] focus-visible:outline-none text-[var(--text-primary)]"
       >
         <BarChart3 size={20} strokeWidth={1.5} aria-hidden="true" />
         Season Standings
@@ -150,16 +140,13 @@ export default async function GroupPage({ params }: GroupPageProps) {
 
       {/* Member list */}
       <section aria-label="Gang members">
-        <h2
-          className="mb-[var(--sp-3)] font-heading text-lg font-semibold"
-          style={{ color: 'var(--text-primary)' }}
-        >
+        <h2 className="mb-[var(--sp-3)] font-heading text-lg font-semibold text-[var(--text-primary)]">
           Members{' '}
-          <span className="text-sm font-normal" style={{ color: 'var(--text-secondary)' }}>
+          <span className="text-sm font-normal text-[var(--text-secondary)]">
             ({gang.memberCount})
           </span>
         </h2>
-        <div className="overflow-hidden rounded-[length:var(--radius-ds-lg)] border border-[var(--border-default)] bg-[var(--bg-raised)]">
+        <div className="overflow-hidden rounded-[var(--radius-ds-lg)] border border-[var(--border-default)] bg-[var(--bg-raised)]">
           <MemberList members={enrichedMembers} />
         </div>
       </section>

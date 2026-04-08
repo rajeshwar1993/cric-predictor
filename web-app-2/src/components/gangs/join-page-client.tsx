@@ -41,22 +41,14 @@ export function UnauthJoinView({ code, gangName }: { code: string; gangName: str
       <InviteWriter code={code} gangName={gangName} />
 
       <div className="text-center">
-        <p className="text-base" style={{ color: 'var(--text-secondary)' }}>
-          You&apos;ve been invited to
-        </p>
-        <h1
-          className="mt-[var(--sp-2)] font-heading text-2xl font-bold"
-          style={{ color: 'var(--text-primary)' }}
-        >
+        <p className="text-base text-[var(--text-secondary)]">You&apos;ve been invited to</p>
+        <h1 className="mt-[var(--sp-2)] font-heading text-2xl font-bold text-[var(--text-primary)]">
           {gangName}
         </h1>
       </div>
 
-      <div className="rounded-[length:var(--radius-ds-lg)] border border-[var(--border-default)] bg-[var(--bg-raised)] p-[var(--sp-4)]">
-        <p
-          className="mb-[var(--sp-4)] text-center text-sm"
-          style={{ color: 'var(--text-secondary)' }}
-        >
+      <div className="rounded-[var(--radius-ds-lg)] border border-[var(--border-default)] bg-[var(--bg-raised)] p-[var(--sp-4)]">
+        <p className="mb-[var(--sp-4)] text-center text-sm text-[var(--text-secondary)]">
           Sign in to join this gang
         </p>
         <Suspense>
@@ -111,25 +103,20 @@ export function AuthJoinView({
   return (
     <div className="flex flex-col items-center gap-[var(--sp-6)]">
       <div className="text-center">
-        <p className="text-base" style={{ color: 'var(--text-secondary)' }}>
-          You&apos;ve been invited to
-        </p>
-        <h1
-          className="mt-[var(--sp-2)] font-heading text-2xl font-bold"
-          style={{ color: 'var(--text-primary)' }}
-        >
+        <p className="text-base text-[var(--text-secondary)]">You&apos;ve been invited to</p>
+        <h1 className="mt-[var(--sp-2)] font-heading text-2xl font-bold text-[var(--text-primary)]">
           {gangName}
         </h1>
       </div>
 
       {error !== null && (
-        <p className="text-sm" style={{ color: 'var(--error)' }} role="alert">
+        <p className="text-sm text-[var(--error)]" role="alert">
           {error}
         </p>
       )}
 
       {pendingMessage !== null && (
-        <p className="text-sm" style={{ color: 'var(--warning)' }} role="status">
+        <p className="text-sm text-[var(--warning)]" role="status">
           {pendingMessage}
         </p>
       )}
@@ -150,10 +137,8 @@ export function AuthJoinView({
 export function PendingRequestView({ gangName }: { gangName: string }) {
   return (
     <div className="flex flex-col items-center gap-[var(--sp-4)] text-center">
-      <h1 className="font-heading text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-        {gangName}
-      </h1>
-      <p className="text-sm" style={{ color: 'var(--warning)' }} role="status">
+      <h1 className="font-heading text-2xl font-bold text-[var(--text-primary)]">{gangName}</h1>
+      <p className="text-sm text-[var(--warning)]" role="status">
         Request already pending — waiting for admin approval
       </p>
     </div>

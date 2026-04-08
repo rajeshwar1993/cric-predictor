@@ -84,22 +84,12 @@ export function JoinGangForm() {
           className="uppercase tracking-widest"
         />
         {error !== null && (
-          <p
-            id="join-gang-error"
-            className="text-sm"
-            style={{ color: 'var(--error)' }}
-            role="alert"
-          >
+          <p id="join-gang-error" className="text-sm text-[var(--error)]" role="alert">
             {error}
           </p>
         )}
         {pendingMessage !== null && (
-          <p
-            id="join-gang-pending"
-            className="text-sm"
-            style={{ color: 'var(--warning)' }}
-            role="status"
-          >
+          <p id="join-gang-pending" className="text-sm text-[var(--warning)]" role="status">
             {pendingMessage}
           </p>
         )}
