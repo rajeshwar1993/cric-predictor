@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Logo } from '@/components/ui/logo'
 import { NotificationBell } from '@/components/layout/notification-bell'
 import { UserMenu } from '@/components/layout/user-menu'
+import { getLatestNotifications } from '@/lib/dal/notifications'
 
 /**
  * Global navigation bar — shown on all authenticated pages.
@@ -26,6 +27,7 @@ export async function GlobalNavBar() {
 
   let displayName: string | null = null
   const email: string | null = user?.email ?? null
+  const userId: string | null = user?.id ?? null
 
   if (user) {
     const { data: profile } = await supabase
@@ -38,6 +40,10 @@ export async function GlobalNavBar() {
       displayName = (profile as { display_name: string | null }).display_name
     }
   }
+
+  // Fetch initial notifications server-side for fast first paint
+  const initialNotifications = userId !== null ? await getLatestNotifications(userId) : []
+  const initialUnreadCount = initialNotifications.filter((n) => !n.isRead).length
 
   return (
     <header
@@ -53,7 +59,11 @@ export async function GlobalNavBar() {
       </Link>
 
       <div className="flex items-center gap-1">
-        <NotificationBell unreadCount={0} />
+        <NotificationBell
+          userId={userId}
+          initialNotifications={initialNotifications}
+          initialUnreadCount={initialUnreadCount}
+        />
         <UserMenu displayName={displayName} email={email} />
       </div>
     </header>
