@@ -20,6 +20,9 @@ export function cn(...inputs: ClassValue[]) {
 export function formatTimeAgo(date: string | Date): string {
   const now = Date.now()
   const then = typeof date === 'string' ? new Date(date).getTime() : date.getTime()
+
+  if (isNaN(then)) return 'just now'
+
   const diffMs = now - then
 
   if (diffMs < 0) return 'just now'

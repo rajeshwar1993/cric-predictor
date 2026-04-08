@@ -92,16 +92,24 @@ export async function getUnreadCount(userId: string): Promise<number> {
 // ---------------------------------------------------------------------------
 
 /**
- * Marks a single notification as read. RLS ensures only the owner can update.
+ * Marks a single notification as read. Scoped to the session user via
+ * explicit user_id check (in addition to RLS).
  * Returns true if the update succeeded.
  */
 export async function markNotificationAsRead(notificationId: string): Promise<boolean> {
   const supabase = await createClient()
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (user === null) return false
+
   const result = await supabase
     .from('v2_notifications')
     .update({ is_read: true })
     .eq('id', notificationId)
+    .eq('user_id', user.id)
 
   return !hasError(result)
 }
