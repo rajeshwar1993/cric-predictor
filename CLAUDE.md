@@ -4,8 +4,9 @@
 
 - **PRD:** `docs/PRD.V2.md` — the single source of truth for all product requirements, business logic, database schema, cron functions, and feature specs.
 - **User Stories:** `docs/stories/` — detailed implementation stories derived from the PRD. See `docs/stories/README.md` for structure, implementation order, and global requirements.
-- **Design System:** `docs/design-system.md` — the definitive reference for all visual decisions (colors, typography, spacing, components, motion, accessibility, copy voice).
-- **Design System Visual:** `docs/design-system-visual.html` — a rendered visual reference of the design system. Open in a browser for a live preview of all tokens, components, and patterns. Use alongside `design-system.md` when building UI.
+- **Design System:** `docs/design-systems/electric-street.md` — the definitive reference for all visual decisions (colors, typography, spacing, components, motion, accessibility, copy voice).
+- **Design System Visual:** `docs/design-systems/electric-street.html` — a rendered visual reference of the design system. Open in a browser for a live preview of all tokens, components, and patterns. Use alongside `electric-street.md` when building UI.
+- **Design System Screenshots:** `docs/design-systems/*.png` — screenshot references of the design system for quick visual guidance.
 - **Architecture:** `docs/architecture.md` — rendering strategy (server vs client), data fetching patterns, component architecture, suspense/loading, state management, real-time/polling, auth flow, error handling, and key data flow diagrams. Reference during all development work.
 
 ## Project Structure
@@ -64,7 +65,7 @@ For simple changes (bug fixes, small tweaks), skip the skill and work directly.
 
 When doing any UI or component work:
 
-1. **Use the `/ui-ux-pro-max` skill** to ideate and design the UI before building. Use it to explore layout options, component structure, and interaction patterns. Then use the `/frontend-design` skill along with `docs/design-system.md` and `docs/design-system-visual.html` to guide all visual decisions during implementation. Always read `docs/design-system.md` for token values, component specs, and rules. Open `docs/design-system-visual.html` in a browser for a rendered visual reference of how components should look. Follow the design system strictly. If a better approach would violate the design system, ask the user for permission before proceeding.
+1. **Use the `/ui-ux-pro-max` skill** to ideate and design the UI before building. Use it to explore layout options, component structure, and interaction patterns. Then use the `/frontend-design` skill along with `docs/design-systems/electric-street.md` and `docs/design-systems/electric-street.html` to guide all visual decisions during implementation. Always read `docs/design-systems/electric-street.md` for token values, component specs, and rules. Open `docs/design-systems/electric-street.html` in a browser or view the screenshots in `docs/design-systems/*.png` for a rendered visual reference of how components should look. Follow the design system strictly. If a better approach would violate the design system, ask the user for permission before proceeding.
 2. **Reuse before creating.** Always check `web-app/src/components/ui/` and `web-app/src/components/` for existing components before creating new ones. Prefer composing existing primitives over building from scratch.
 3. **Small, focused components.** Break UI into reusable pieces. Each component should do one thing. Pages should be thin shells that compose components. Never build monolithic page files — split sections into separate component files.
 4. **Storybook is mandatory.** Every UI component and page must have a Storybook entry (`*.stories.tsx`) alongside the component file. Include a `Default` story plus stories for every key state/variant (loading, empty, error, with data, etc.). See `docs/stories/README.md` § "Global UI story requirements" for full details.
@@ -74,7 +75,7 @@ When doing any UI or component work:
 ## Conventions
 
 - Feature branches: `feature/[short-description]`
-- Design system: `docs/design-system.md`
+- Design system: `docs/design-systems/electric-street.md`
 - PRD: `docs/PRD.V2.md`
 - Stories: `docs/stories/`
 - PSE-Frontend and PSE-Supabase never modify each other's files
