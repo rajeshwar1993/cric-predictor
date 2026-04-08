@@ -18,12 +18,21 @@ export const metadata: Metadata = {
       'The IPL prediction game for bragging rights. Rally your squad, lock in your picks, and own the leaderboard.',
     type: 'website',
     siteName: 'Bragg',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Bragg — Cricket Predictions Built for Bragging Rights',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Bragg — Cricket Predictions Built for Bragging Rights',
     description:
       'The IPL prediction game for bragging rights. Rally your squad, lock in your picks, and own the leaderboard.',
+    images: ['/og-image.png'],
   },
 }
 

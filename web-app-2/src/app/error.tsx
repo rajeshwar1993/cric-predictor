@@ -29,13 +29,13 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
           <button
             type="button"
             onClick={reset}
-            className="inline-flex h-12 items-center justify-center rounded-[length:var(--radius-ds-md)] bg-[var(--brand)] px-6 font-semibold text-[var(--brand-on)] transition-colors hover:bg-[var(--brand-hover)]"
+            className="inline-flex h-12 items-center justify-center rounded-[var(--radius-ds-md)] bg-[var(--brand)] px-6 font-semibold text-[var(--brand-on)] transition-colors hover:bg-[var(--brand-hover)]"
           >
             Try Again
           </button>
           <Link
             href="/dashboard"
-            className="inline-flex h-12 items-center justify-center rounded-[length:var(--radius-ds-md)] border border-[var(--border-strong)] px-6 font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-overlay)]"
+            className="inline-flex h-12 items-center justify-center rounded-[var(--radius-ds-md)] border border-[var(--border-strong)] px-6 font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-overlay)]"
           >
             Go to Dashboard
           </Link>
