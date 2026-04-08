@@ -10,10 +10,8 @@
 
 ## Project Structure
 
-- **`web-app-2/`** — the active Next.js 16 frontend codebase (App Router, React, TypeScript, Tailwind v4, shadcn/ui).
-- **`supabase-2/`** — the active Supabase project (migrations, Edge Functions, seeds).
-- **`web-app/`** — DEPRECATED. Do not reference, modify, or import from this folder. Will be removed.
-- **`supabase/`** — DEPRECATED. Do not reference, modify, or import from this folder. Will be removed.
+- **`web-app/`** — the active Next.js 16 frontend codebase (App Router, React, TypeScript, Tailwind v4, shadcn/ui).
+- **`supabase/`** — the active Supabase project (migrations, Edge Functions, seeds).
 
 ## Agents
 
@@ -67,7 +65,7 @@ For simple changes (bug fixes, small tweaks), skip the skill and work directly.
 When doing any UI or component work:
 
 1. **Use the `/ui-ux-pro-max` skill** to ideate and design the UI before building. Use it to explore layout options, component structure, and interaction patterns. Then use the `/frontend-design` skill along with `docs/design-system.md` and `docs/design-system-visual.html` to guide all visual decisions during implementation. Always read `docs/design-system.md` for token values, component specs, and rules. Open `docs/design-system-visual.html` in a browser for a rendered visual reference of how components should look. Follow the design system strictly. If a better approach would violate the design system, ask the user for permission before proceeding.
-2. **Reuse before creating.** Always check `web-app-2/src/components/ui/` and `web-app-2/src/components/` for existing components before creating new ones. Prefer composing existing primitives over building from scratch.
+2. **Reuse before creating.** Always check `web-app/src/components/ui/` and `web-app/src/components/` for existing components before creating new ones. Prefer composing existing primitives over building from scratch.
 3. **Small, focused components.** Break UI into reusable pieces. Each component should do one thing. Pages should be thin shells that compose components. Never build monolithic page files — split sections into separate component files.
 4. **Storybook is mandatory.** Every UI component and page must have a Storybook entry (`*.stories.tsx`) alongside the component file. Include a `Default` story plus stories for every key state/variant (loading, empty, error, with data, etc.). See `docs/stories/README.md` § "Global UI story requirements" for full details.
 5. **Mobile-first.** All components must render correctly at 375px width before expanding to tablet/desktop.
@@ -80,4 +78,4 @@ When doing any UI or component work:
 - PRD: `docs/PRD.V2.md`
 - Stories: `docs/stories/`
 - PSE-Frontend and PSE-Supabase never modify each other's files
-- All code lives in `web-app-2/` and `supabase-2/` — never in the deprecated `web-app/` or `supabase/` folders
+- All code lives in `web-app/` and `supabase/`
