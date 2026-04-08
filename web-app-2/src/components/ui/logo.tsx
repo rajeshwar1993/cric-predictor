@@ -1,4 +1,3 @@
-import Image from 'next/image'
 import { cn } from '@/lib/utils'
 
 interface LogoProps {
@@ -30,13 +29,8 @@ const textClasses = {
 export function Logo({ size = 'md', showWordmark = true, className }: LogoProps) {
   return (
     <span className={cn('inline-flex items-center gap-2 select-none', className)}>
-      <Image
-        src="/logo.png"
-        alt="Bragg"
-        width={imageSize[size]}
-        height={imageSize[size]}
-        priority
-      />
+      {/* eslint-disable-next-line @next/next/no-img-element -- small static logo, no optimization needed */}
+      <img src="/logo.png" alt="Bragg" width={imageSize[size]} height={imageSize[size]} />
       {showWordmark && (
         <span
           className={cn('font-heading font-bold tracking-tight', textClasses[size])}
