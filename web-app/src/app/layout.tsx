@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { spaceGrotesk, dmSans } from './fonts'
+import { PHProvider } from '@/components/analytics/posthog-provider'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -14,7 +15,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${spaceGrotesk.variable} ${dmSans.variable} dark`}>
-      <body className="bg-concrete-black text-text-primary font-body antialiased">{children}</body>
+      <body className="bg-concrete-black text-text-primary font-body antialiased">
+        <PHProvider>{children}</PHProvider>
+      </body>
     </html>
   )
 }

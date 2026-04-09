@@ -3,15 +3,13 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { formatDate, formatDeadline, formatMatchTime, formatTimeAgo } from './format-date'
 
 describe('formatDate', () => {
-  test('formats a Date object with timezone', () => {
+  test('formats a Date object as absolute date without timezone', () => {
     const date = new Date('2026-03-28T14:00:00Z')
     const result = formatDate(date)
-    // Should contain day, month abbreviation, year, and timezone
+    // Should contain day, month abbreviation, year
     expect(result).toMatch(/28/)
     expect(result).toMatch(/Mar/)
     expect(result).toMatch(/2026/)
-    // Timezone abbreviation (IST, GMT, EST, UTC, etc.)
-    expect(result).toMatch(/[A-Z]{2,}/)
   })
 
   test('accepts an ISO string', () => {
@@ -19,7 +17,6 @@ describe('formatDate', () => {
     expect(result).toMatch(/28/)
     expect(result).toMatch(/Mar/)
     expect(result).toMatch(/2026/)
-    expect(result).toMatch(/[A-Z]{2,}/)
   })
 
   test('handles different months', () => {
@@ -27,7 +24,6 @@ describe('formatDate', () => {
     expect(result).toMatch(/25/)
     expect(result).toMatch(/Dec/)
     expect(result).toMatch(/2026/)
-    expect(result).toMatch(/[A-Z]{2,}/)
   })
 })
 
@@ -211,8 +207,6 @@ describe('formatTimeAgo', () => {
     expect(result).not.toMatch(/ago/)
     expect(result).toMatch(/Mar/)
     expect(result).toMatch(/2026/)
-    // formatDate now includes timezone abbreviation
-    expect(result).toMatch(/[A-Z]{2,}/)
   })
 
   test('accepts an ISO string', () => {

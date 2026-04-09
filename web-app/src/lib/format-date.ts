@@ -141,6 +141,5 @@ export function formatDate(input: DateInput): string {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
-    timeZoneName: 'short',
   }).format(date)
 }

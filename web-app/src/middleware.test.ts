@@ -81,10 +81,7 @@ describe('getMajorVersion', () => {
 // ---------------------------------------------------------------------------
 
 /** Build a NextRequest for testing with optional cookies. */
-function buildRequest(
-  pathname: string,
-  cookies: Record<string, string> = {},
-): NextRequest {
+function buildRequest(pathname: string, cookies: Record<string, string> = {}): NextRequest {
   const url = new URL(pathname, 'http://localhost:3000')
   const headers = new Headers()
   const cookieHeader = Object.entries(cookies)

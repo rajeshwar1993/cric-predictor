@@ -12,9 +12,7 @@ export function PHProvider({ children }: { children: React.ReactNode }) {
 
     const key = process.env.NEXT_PUBLIC_POSTHOG_KEY
     if (!key) {
-      console.warn(
-        '[PHProvider] NEXT_PUBLIC_POSTHOG_KEY is not set — PostHog analytics disabled.',
-      )
+      console.warn('[PHProvider] NEXT_PUBLIC_POSTHOG_KEY is not set — PostHog analytics disabled.')
       return
     }
 
