@@ -126,52 +126,63 @@ export async function getUpcomingFixtures(
   if (fixturesError) throw fixturesError
   if (!fixtures || fixtures.length === 0) return []
 
-  // Step 3: For each fixture, get prediction count via RPC
-  const results: UpcomingFixture[] = await Promise.all(
-    fixtures.map(async (row) => {
-      // RPC call — gracefully handle errors (show 0 instead of breaking).
-      // Supabase .rpc() returns { data, error } and does not throw.
-      const { data: predictors } = await supabase.rpc(
-        'get_members_who_predicted',
-        {
-          p_gang_id: gangId,
-          p_fixture_id: row.id,
-        },
-      )
-      const predictedCount = predictors?.length ?? 0
+  // Step 3: Batch-fetch prediction counts for all fixtures in a single query
+  const fixtureIds = fixtures.map((f) => f.id)
+  const { data: predictions } = await supabase
+    .from('v2_predictions')
+    .select('fixture_id, user_id')
+    .in('fixture_id', fixtureIds)
+    .eq('gang_id', gangId)
 
-      // PostgREST returns joined rows as objects for single-FK relations.
-      // The SDK types them as arrays — double-cast needed.
-      const homeTeam = row.home_team as unknown as {
-        id: string
-        name: string
-        code: string
-        color: string
-        logo_url: string | null
+  // Build a map of fixture_id → count of distinct users who predicted
+  const predictionCountMap = new Map<string, number>()
+  if (predictions) {
+    // Use a Set per fixture to count distinct users
+    const userSets = new Map<string, Set<string>>()
+    for (const row of predictions) {
+      let userSet = userSets.get(row.fixture_id)
+      if (!userSet) {
+        userSet = new Set<string>()
+        userSets.set(row.fixture_id, userSet)
       }
-      const awayTeam = row.away_team as unknown as {
-        id: string
-        name: string
-        code: string
-        color: string
-        logo_url: string | null
-      }
+      userSet.add(row.user_id)
+    }
+    for (const [fixtureId, userSet] of userSets) {
+      predictionCountMap.set(fixtureId, userSet.size)
+    }
+  }
 
-      return {
-        id: row.id,
-        matchNumber: row.match_number,
-        startDatetime: row.start_datetime,
-        venueName: row.venue_name,
-        status: row.status,
-        predictionDeadlineMins: predictionDeadlineMins,
-        predictedCount,
-        homeTeam: mapTeam(homeTeam),
-        awayTeam: mapTeam(awayTeam),
-      }
-    }),
-  )
+  // Step 4: Map fixture rows to clean UpcomingFixture interface
+  return fixtures.map((row) => {
+    // PostgREST returns joined rows as objects for single-FK relations.
+    // The SDK types them as arrays — double-cast needed.
+    const homeTeam = row.home_team as unknown as {
+      id: string
+      name: string
+      code: string
+      color: string
+      logo_url: string | null
+    }
+    const awayTeam = row.away_team as unknown as {
+      id: string
+      name: string
+      code: string
+      color: string
+      logo_url: string | null
+    }
 
-  return results
+    return {
+      id: row.id,
+      matchNumber: row.match_number,
+      startDatetime: row.start_datetime,
+      venueName: row.venue_name,
+      status: row.status,
+      predictionDeadlineMins: predictionDeadlineMins,
+      predictedCount: predictionCountMap.get(row.id) ?? 0,
+      homeTeam: mapTeam(homeTeam),
+      awayTeam: mapTeam(awayTeam),
+    }
+  })
 }
 
 // ---------------------------------------------------------------------------

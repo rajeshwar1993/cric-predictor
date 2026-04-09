@@ -56,8 +56,8 @@ function chainBuilder(resolvedValue: { data: unknown; error: unknown }) {
 /** The per-test resolved value for the query. */
 let queryResult: { data: unknown; error: unknown }
 
-/** The per-test resolved value for RPC calls. */
-let rpcResult: { data: unknown; error: unknown }
+/** The per-test resolved value for predictions batch query. */
+let predictionsResult: { data: unknown; error: unknown }
 
 /** The per-test resolved value for gang league season query. */
 let gangLeagueSeasonResult: { data: unknown; error: unknown }
@@ -79,11 +79,14 @@ vi.mock('@/lib/supabase/server', () => ({
       if (table === 'v2_gang_fixture_standings') {
         return chainBuilder(standingsResult)
       }
+      if (table === 'v2_predictions') {
+        return chainBuilder(predictionsResult)
+      }
       return chainBuilder(queryResult)
     },
     rpc: (fnName: string, params: unknown) => {
       mockRpc(fnName, params)
-      return chainBuilder(rpcResult)
+      return chainBuilder({ data: [], error: null })
     },
   })),
 }))
@@ -131,7 +134,7 @@ describe('getUpcomingFixtures', () => {
     _tableCallCount = 0
 
     queryResult = { data: [], error: null }
-    rpcResult = { data: [], error: null }
+    predictionsResult = { data: [], error: null }
     standingsResult = { data: [], error: null }
     gangLeagueSeasonResult = {
       data: {
@@ -185,7 +188,13 @@ describe('getUpcomingFixtures', () => {
       data: [FIXTURE_1],
       error: null,
     }
-    rpcResult = { data: ['user-1', 'user-2'], error: null }
+    predictionsResult = {
+      data: [
+        { fixture_id: 'fixture-1', user_id: 'user-1' },
+        { fixture_id: 'fixture-1', user_id: 'user-2' },
+      ],
+      error: null,
+    }
 
     const result = await getUpcomingFixtures('gang-1')
 
@@ -233,27 +242,49 @@ describe('getUpcomingFixtures', () => {
     )
   })
 
-  test('calls get_members_who_predicted RPC for each fixture', async () => {
+  test('batch-fetches predictions from v2_predictions for all fixtures', async () => {
     queryResult = {
       data: [FIXTURE_1],
       error: null,
     }
-    rpcResult = { data: ['user-1'], error: null }
+    predictionsResult = {
+      data: [{ fixture_id: 'fixture-1', user_id: 'user-1' }],
+      error: null,
+    }
 
     await getUpcomingFixtures('gang-1')
 
-    expect(mockRpc).toHaveBeenCalledWith('get_members_who_predicted', {
-      p_gang_id: 'gang-1',
-      p_fixture_id: 'fixture-1',
-    })
+    expect(mockFrom).toHaveBeenCalledWith('v2_predictions')
+    expect(mockIn).toHaveBeenCalledWith('fixture_id', ['fixture-1'])
+    expect(mockEq).toHaveBeenCalledWith('gang_id', 'gang-1')
   })
 
-  test('handles RPC error gracefully by returning 0 predicted count', async () => {
+  test('counts distinct users per fixture in batch predictions', async () => {
     queryResult = {
       data: [FIXTURE_1],
       error: null,
     }
-    rpcResult = { data: null, error: { message: 'rpc error', code: '42883' } }
+    // Same user predicted multiple scenarios for the same fixture — should count as 1
+    predictionsResult = {
+      data: [
+        { fixture_id: 'fixture-1', user_id: 'user-1' },
+        { fixture_id: 'fixture-1', user_id: 'user-1' },
+        { fixture_id: 'fixture-1', user_id: 'user-2' },
+      ],
+      error: null,
+    }
+
+    const result = await getUpcomingFixtures('gang-1')
+
+    expect(result[0]?.predictedCount).toBe(2)
+  })
+
+  test('handles prediction query error gracefully by returning 0 predicted count', async () => {
+    queryResult = {
+      data: [FIXTURE_1],
+      error: null,
+    }
+    predictionsResult = { data: null, error: { message: 'query error', code: '42P01' } }
 
     const result = await getUpcomingFixtures('gang-1')
 
@@ -271,7 +302,7 @@ describe('getFixtureWithTeams', () => {
     _tableCallCount = 0
 
     queryResult = { data: null, error: null }
-    rpcResult = { data: [], error: null }
+    predictionsResult = { data: [], error: null }
     standingsResult = { data: [], error: null }
     gangLeagueSeasonResult = { data: null, error: null }
   })
@@ -361,7 +392,7 @@ describe('getLiveFixtures', () => {
     _tableCallCount = 0
 
     queryResult = { data: [], error: null }
-    rpcResult = { data: [], error: null }
+    predictionsResult = { data: [], error: null }
     standingsResult = { data: [], error: null }
     gangLeagueSeasonResult = {
       data: {
@@ -505,7 +536,7 @@ describe('getRecentResults', () => {
     _tableCallCount = 0
 
     queryResult = { data: [], error: null }
-    rpcResult = { data: [], error: null }
+    predictionsResult = { data: [], error: null }
     standingsResult = { data: [], error: null }
     gangLeagueSeasonResult = {
       data: {

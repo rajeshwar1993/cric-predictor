@@ -103,7 +103,7 @@ export function PredictionStatusBadge({
       return (
         <Badge variant="lime" className={cn('gap-1.5', className)}>
           <span
-            className="size-2 rounded-full bg-text-on-primary animate-pulse"
+            className="size-2 rounded-full bg-success motion-safe:animate-pulse"
             aria-hidden="true"
           />
           LIVE

@@ -42,12 +42,17 @@ export function StaleDataBadge({ lastPolledAt }: StaleDataBadgeProps) {
     return () => clearInterval(intervalId)
   }, [lastPolledAt])
 
+  const displayText = minutesAgo === 0 ? '<1m ago' : `${minutesAgo}m ago`
+  const ariaText = minutesAgo === 0
+    ? 'Data last updated less than 1 minute ago'
+    : `Data last updated ${minutesAgo} minute${minutesAgo === 1 ? '' : 's'} ago`
+
   return (
     <Badge
       variant="yellow"
-      aria-label={`Data last updated ${minutesAgo} minute${minutesAgo === 1 ? '' : 's'} ago`}
+      aria-label={ariaText}
     >
-      Last updated {minutesAgo}m ago
+      Last updated {displayText}
     </Badge>
   )
 }

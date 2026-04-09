@@ -161,7 +161,7 @@ export function LiveMatchesSection({
       {/* Section title with pulsing green dot */}
       <h2 className="mb-4 flex items-center gap-2 text-caption text-text-muted">
         <span
-          className="inline-block size-2 animate-pulse rounded-full bg-success"
+          className="inline-block size-2 motion-safe:animate-pulse rounded-full bg-success"
           aria-hidden="true"
         />
         LIVE

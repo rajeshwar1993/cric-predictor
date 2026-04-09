@@ -83,7 +83,7 @@ function TeamWithScore({
       {!isVoided && score && (
         <span
           className={cn(
-            'text-body-sm font-mono',
+            'text-body-sm font-display tabular-nums',
             isWinner ? 'text-text-primary' : 'text-text-muted',
           )}
         >
@@ -156,10 +156,10 @@ export function ResultCard({ fixture, gangId }: ResultCardProps) {
   return (
     <Link
       href={`/group/${gangId}/match/${fixture.id}`}
-      className="block rounded-[16px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bragg-lime focus-visible:ring-offset-2 focus-visible:ring-offset-concrete-black"
+      className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bragg-lime focus-visible:ring-offset-2 focus-visible:ring-offset-concrete-black"
       aria-label={`${fixture.homeTeam.code} vs ${fixture.awayTeam.code} — Match ${fixture.matchNumber} result`}
     >
-      <Card className="cursor-pointer gap-4 rounded-[16px]">
+      <Card className="cursor-pointer gap-4 rounded-lg">
         {/* Header: Match info + status badge */}
         <div className="flex items-center justify-between">
           <span className="text-caption text-text-muted">

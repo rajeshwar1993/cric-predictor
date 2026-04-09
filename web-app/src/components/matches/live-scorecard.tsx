@@ -154,7 +154,7 @@ function LiveBadge() {
   return (
     <Badge variant="lime" className="gap-1.5">
       <span
-        className="inline-block size-2 animate-pulse rounded-full bg-success"
+        className="inline-block size-2 motion-safe:animate-pulse rounded-full bg-success"
         aria-hidden="true"
       />
       LIVE

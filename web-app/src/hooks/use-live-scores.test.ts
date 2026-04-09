@@ -204,6 +204,47 @@ describe('useLiveScores', () => {
     expect(mockSingle).toHaveBeenCalledTimes(callCountBeforeInterval)
   })
 
+  it('prevents concurrent in-flight requests', async () => {
+    // Make the first poll take a long time (never resolves within the test step)
+    let resolveFirst: ((value: { data: unknown; error: unknown }) => void) | null = null
+    mockSingle.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveFirst = resolve
+        }),
+    )
+
+    const { result } = renderHook(() => useLiveScores(FIXTURE_ID))
+
+    // The initial poll is now in-flight (unresolved)
+    // Trigger another poll via interval — it should be skipped
+    await act(async () => {
+      vi.advanceTimersByTime(15_000)
+    })
+
+    // Only 1 call to mockSingle because the second was blocked by the guard
+    expect(mockSingle).toHaveBeenCalledTimes(1)
+
+    // Now resolve the first poll so the hook can finish
+    await act(async () => {
+      resolveFirst!({ data: makeLiveScoreData(), error: null })
+    })
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    // After the first poll resolves, a new interval tick should succeed
+    mockSingle.mockResolvedValue({ data: makeLiveScoreData(), error: null })
+    await act(async () => {
+      vi.advanceTimersByTime(15_000)
+    })
+
+    await waitFor(() => {
+      expect(mockSingle).toHaveBeenCalledTimes(2)
+    })
+  })
+
   it('clears interval on unmount', async () => {
     const { result, unmount } = renderHook(() => useLiveScores(FIXTURE_ID))
 

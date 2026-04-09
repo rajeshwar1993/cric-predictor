@@ -103,7 +103,7 @@ export function MatchCard({
   ).toISOString()
 
   // Card links to predict page if window is open, match leaderboard otherwise
-  const isPredictable = status === 'predict' || status === 'predicted' || status === 'not_open'
+  const isPredictable = status === 'predict' || status === 'predicted'
   const href = isPredictable
     ? `/group/${gangId}/predict/${fixture.id}`
     : `/group/${gangId}/match/${fixture.id}`
@@ -111,10 +111,10 @@ export function MatchCard({
   return (
     <Link
       href={href}
-      className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bragg-lime focus-visible:ring-offset-2 focus-visible:ring-offset-concrete-black rounded-[16px]"
+      className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bragg-lime focus-visible:ring-offset-2 focus-visible:ring-offset-concrete-black rounded-lg"
       aria-label={`${fixture.homeTeam.code} vs ${fixture.awayTeam.code} — Match ${fixture.matchNumber}`}
     >
-      <Card className="cursor-pointer gap-4 rounded-[16px]">
+      <Card className="cursor-pointer gap-4 rounded-lg">
         {/* Header: Match info + status badge */}
         <div className="flex items-center justify-between">
           <span className="text-caption text-text-muted">

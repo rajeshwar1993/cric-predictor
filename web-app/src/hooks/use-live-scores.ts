@@ -52,10 +52,17 @@ export function useLiveScores(fixtureId: string): UseLiveScoresResult {
   // but doesn't trigger re-renders
   const supabaseRef = useRef(createBrowserClient())
 
+  // Guard against concurrent in-flight requests to prevent flickering
+  const isPollingRef = useRef(false)
+
   const poll = useCallback(async () => {
     if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
       return
     }
+
+    // Prevent overlapping requests (e.g., slow poll + tab switch + interval)
+    if (isPollingRef.current) return
+    isPollingRef.current = true
 
     try {
       const { data: scoreData, error: fetchError } = await supabaseRef.current
@@ -79,6 +86,7 @@ export function useLiveScores(fixtureId: string): UseLiveScoresResult {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch live scores')
     } finally {
+      isPollingRef.current = false
       setIsLoading(false)
     }
   }, [fixtureId])
