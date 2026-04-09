@@ -536,6 +536,7 @@ export type Database = {
         | 'join_request'
         | 'join_approved'
         | 'join_rejected'
+        | 'new_member'
         | 'member_removed'
         | 'match_reminder'
         | 'results_ready'

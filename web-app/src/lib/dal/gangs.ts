@@ -65,9 +65,15 @@ export async function getUserGangs(userId: string): Promise<UserGang[]> {
 
   // Map to our clean interface
   return data.map((row) => {
-    // PostgREST returns the joined table as an object (single FK relation)
+    // PostgREST returns the joined table as an object for single-FK relations,
+    // but the Supabase SDK types it as an array. Double-cast is needed here
+    // because the generated types don't model this correctly.
     const gang = row.v2_gangs as unknown as GangRow & {
       v2_gang_members: [{ count: number }]
+    }
+
+    if (!gang || !gang.id) {
+      throw new Error('Unexpected query shape: missing gang data')
     }
 
     return {

@@ -246,15 +246,14 @@ export async function joinGangByCode(
 
   // Upsert the membership (handles both new inserts and rejoins)
   if (existingMember) {
-    // Update existing row
+    // Update existing row — clear departed_at on rejoin, always update requested_at
     const { error: updateError } = await supabase
       .from('v2_gang_members')
       .update({
         status: newStatus,
-        is_blocked: false,
-        ...(newStatus === 'approved'
-          ? { approved_at: now }
-          : { requested_at: now }),
+        departed_at: null,
+        requested_at: now,
+        ...(newStatus === 'approved' ? { approved_at: now } : {}),
       })
       .eq('gang_id', gang.id)
       .eq('user_id', user.id)
@@ -291,7 +290,7 @@ export async function joinGangByCode(
     .single()
 
   if (adminMember) {
-    const notificationType = newStatus === 'approved' ? 'join_approved' : 'join_request'
+    const notificationType = newStatus === 'approved' ? 'new_member' : 'join_request'
     const displayName = profile?.display_name ?? 'Someone'
     const notificationTitle =
       newStatus === 'approved'
@@ -302,6 +301,9 @@ export async function joinGangByCode(
         ? `${displayName} has joined your gang.`
         : `${displayName} wants to join your gang.`
 
+    // TODO: Notification schema in database.ts uses title/body/data (placeholder).
+    // The PRD defines message/gang_id/fixture_id/is_read. Align when writing
+    // the notification migration (Phase 13 — NTF stories).
     await supabase.from('v2_notifications').insert({
       user_id: adminMember.user_id,
       type: notificationType,

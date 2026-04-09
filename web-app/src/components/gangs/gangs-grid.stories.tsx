@@ -2,6 +2,12 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { GangsGrid } from './gangs-grid'
 import type { UserGang } from '@/lib/dal/gangs'
 
+/**
+ * GangsGrid stories are visual-only. The embedded CreateGangForm and
+ * JoinGangForm use real server action imports which won't execute in
+ * Storybook. For interactive form testing, see the individual form stories
+ * (CreateGangForm.stories, JoinGangForm.stories) which inject mock actions.
+ */
 const meta = {
   title: 'Gangs/GangsGrid',
   component: GangsGrid,
