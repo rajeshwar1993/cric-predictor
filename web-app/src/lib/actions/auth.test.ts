@@ -319,16 +319,18 @@ describe('completeOnboarding server action', () => {
     expect(mockEq).toHaveBeenCalledWith('id', 'user-123')
 
     // Cookies
-    expect(mockSet).toHaveBeenCalledWith('bragg_onboarded', 'true', {
+    expect(mockSet).toHaveBeenCalledWith('bragg_onboarded', 'true', expect.objectContaining({
+      httpOnly: true,
+      sameSite: 'lax',
       maxAge: 365 * 24 * 60 * 60,
       path: '/',
+    }))
+    expect(mockSet).toHaveBeenCalledWith('bragg_terms_version', '2.0', expect.objectContaining({
       httpOnly: true,
-    })
-    expect(mockSet).toHaveBeenCalledWith('bragg_terms_version', '2.0', {
+      sameSite: 'lax',
       maxAge: 365 * 24 * 60 * 60,
       path: '/',
-      httpOnly: true,
-    })
+    }))
 
     // Analytics
     expect(mockTrackEvent).toHaveBeenCalledWith(
@@ -537,11 +539,12 @@ describe('acceptTerms server action', () => {
     expect(mockEq).toHaveBeenCalledWith('id', 'user-789')
 
     // Cookie
-    expect(mockSet).toHaveBeenCalledWith('bragg_terms_version', '2.0', {
+    expect(mockSet).toHaveBeenCalledWith('bragg_terms_version', '2.0', expect.objectContaining({
+      httpOnly: true,
+      sameSite: 'lax',
       maxAge: 365 * 24 * 60 * 60,
       path: '/',
-      httpOnly: true,
-    })
+    }))
 
     // Analytics
     expect(mockTrackEvent).toHaveBeenCalledWith('user-789', 'terms_accepted')

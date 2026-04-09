@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from '@/components/ui/toast'
+import { isAtLeast18 } from '@/lib/constants'
 import { completeOnboarding } from '@/lib/actions/auth'
 
 interface OnboardingFormProps {
@@ -18,20 +19,6 @@ interface FieldErrors {
   displayName?: string
   dateOfBirth?: string
   termsAccepted?: string
-}
-
-/**
- * Check whether a date of birth represents someone who is at least 18 years old.
- * Client-side mirror of the server-side validation.
- */
-function isAtLeast18(dateOfBirth: Date): boolean {
-  const today = new Date()
-  const age = today.getFullYear() - dateOfBirth.getFullYear()
-  const monthDiff = today.getMonth() - dateOfBirth.getMonth()
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dateOfBirth.getDate())) {
-    return age - 1 >= 18
-  }
-  return age >= 18
 }
 
 export function OnboardingForm({ redirectTo }: OnboardingFormProps) {

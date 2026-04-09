@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
-import { getMajorVersion, middleware, sanitizeRedirect } from './middleware'
+import { getMajorVersion } from '@/lib/constants'
+import { sanitizeRedirect } from '@/lib/url'
+import { middleware } from './middleware'
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -47,6 +49,22 @@ describe('sanitizeRedirect', () => {
 
   test('rejects paths with backslash protocol bypass', () => {
     expect(sanitizeRedirect('/\\evil.com')).toBe('/dashboard')
+  })
+
+  test('rejects paths with CRLF injection (percent-encoded)', () => {
+    expect(sanitizeRedirect('/%0d%0aSet-Cookie:evil=true')).toBe('/dashboard')
+  })
+
+  test('rejects paths with null byte (percent-encoded)', () => {
+    expect(sanitizeRedirect('/%00evil')).toBe('/dashboard')
+  })
+
+  test('rejects paths with raw newline', () => {
+    expect(sanitizeRedirect('/foo\nbar')).toBe('/dashboard')
+  })
+
+  test('rejects paths with raw carriage return', () => {
+    expect(sanitizeRedirect('/foo\rbar')).toBe('/dashboard')
   })
 })
 
@@ -121,7 +139,7 @@ describe('middleware – gate interaction (redirect loop prevention)', () => {
     expect(response.status).toBe(200)
   })
 
-  test('authenticated user without onboarded cookie on /dashboard redirects to /onboarding', async () => {
+  test('authenticated user without onboarded cookie on /dashboard redirects to /onboarding with redirectTo', async () => {
     mockGetUser.mockResolvedValue(authenticatedUser)
 
     const request = buildRequest('/dashboard')
@@ -129,8 +147,9 @@ describe('middleware – gate interaction (redirect loop prevention)', () => {
 
     expect(response.status).toBeGreaterThanOrEqual(300)
     expect(response.status).toBeLessThan(400)
-    const location = response.headers.get('location') ?? ''
-    expect(new URL(location).pathname).toBe('/onboarding')
+    const location = new URL(response.headers.get('location') ?? '')
+    expect(location.pathname).toBe('/onboarding')
+    expect(location.searchParams.get('redirectTo')).toBe('/dashboard')
   })
 
   test('authenticated user with onboarded cookie but no terms cookie on /dashboard redirects to /accept-terms', async () => {

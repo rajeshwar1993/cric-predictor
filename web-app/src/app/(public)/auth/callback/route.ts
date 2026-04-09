@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { ANALYTICS_EVENTS } from '@/lib/analytics/events'
 import { trackEvent } from '@/lib/analytics/server'
-import { COOKIE_NAMES, CURRENT_TERMS_VERSION } from '@/lib/constants'
+import { AUTH_COOKIE_OPTIONS, COOKIE_NAMES, CURRENT_TERMS_VERSION, getMajorVersion } from '@/lib/constants'
 import { createServerClient } from '@/lib/supabase/server'
 import { sanitizeRedirect } from '@/lib/url'
 
@@ -61,26 +61,29 @@ export async function GET(request: NextRequest) {
 
   // ── Determine redirect path ─────────────────────────────────────────
   const isOnboarded = profile?.onboarding_completed === true
-  const destination = isOnboarded
-    ? redirectTo
-    : `/onboarding?redirectTo=${encodeURIComponent(redirectTo)}`
+  const termsVersion = profile?.terms_version ?? null
+  const termsUpToDate = termsVersion !== null &&
+    getMajorVersion(termsVersion) >= getMajorVersion(CURRENT_TERMS_VERSION)
+
+  let destination: string
+  if (!isOnboarded) {
+    destination = `/onboarding?redirectTo=${encodeURIComponent(redirectTo)}`
+  } else if (!termsUpToDate) {
+    destination = '/accept-terms'
+  } else {
+    destination = redirectTo
+  }
 
   const response = NextResponse.redirect(new URL(destination, request.url))
 
   // ── Set or clear cookies ────────────────────────────────────────────
   if (isOnboarded) {
-    response.cookies.set(COOKIE_NAMES.ONBOARDED, 'true', {
-      httpOnly: true,
-      maxAge: 365 * 24 * 60 * 60, // 1 year
-      path: '/',
-    })
+    response.cookies.set(COOKIE_NAMES.ONBOARDED, 'true', AUTH_COOKIE_OPTIONS)
 
-    const termsVersion = profile?.terms_version ?? CURRENT_TERMS_VERSION
-    response.cookies.set(COOKIE_NAMES.TERMS_VERSION, termsVersion, {
-      httpOnly: true,
-      maxAge: 365 * 24 * 60 * 60,
-      path: '/',
-    })
+    // Only set terms cookie if it's current — avoids stale cookie triggering extra redirect
+    if (termsUpToDate && termsVersion) {
+      response.cookies.set(COOKIE_NAMES.TERMS_VERSION, termsVersion, AUTH_COOKIE_OPTIONS)
+    }
   } else {
     // Clear stale cookie from previous user
     response.cookies.delete(COOKIE_NAMES.ONBOARDED)

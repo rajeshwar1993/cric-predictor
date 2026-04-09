@@ -1,20 +1,12 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase/server'
-import { CURRENT_TERMS_VERSION } from '@/lib/constants'
+import { CURRENT_TERMS_VERSION, getMajorVersion } from '@/lib/constants'
 import { AcceptTermsForm } from '@/components/auth/accept-terms-form'
 
 export const metadata: Metadata = {
   title: 'Accept updated terms',
   description: 'Review and accept the updated Terms of Service and Privacy Policy to continue.',
-}
-
-/**
- * Extract the major version number from a semver-like string (e.g. "2.0" -> 2).
- */
-function getMajorVersion(version: string): number {
-  const parts = version.split('.')
-  return parseInt(parts[0] ?? '', 10)
 }
 
 export default async function AcceptTermsPage() {

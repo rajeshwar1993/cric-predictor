@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { z } from 'zod'
 import { createServerClient } from '@/lib/supabase/server'
-import { COOKIE_NAMES, CURRENT_TERMS_VERSION } from '@/lib/constants'
+import { AUTH_COOKIE_OPTIONS, COOKIE_NAMES, CURRENT_TERMS_VERSION, isAtLeast18 } from '@/lib/constants'
 import { env } from '@/lib/env'
 import { sanitizeRedirect } from '@/lib/url'
 import { trackEvent } from '@/lib/analytics/server'
@@ -75,25 +75,13 @@ export async function sendMagicLink(
   return { success: true }
 }
 
-/**
- * Check whether a date of birth represents someone who is at least 18 years old.
- */
-function isAtLeast18(dateOfBirth: Date): boolean {
-  const today = new Date()
-  const age = today.getFullYear() - dateOfBirth.getFullYear()
-  const monthDiff = today.getMonth() - dateOfBirth.getMonth()
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dateOfBirth.getDate())) {
-    return age - 1 >= 18
-  }
-  return age >= 18
-}
-
 const onboardingSchema = z.object({
   displayName: z
     .string()
     .trim()
     .min(2, 'Display name must be at least 2 characters')
-    .max(30, 'Display name must be at most 30 characters'),
+    .max(30, 'Display name must be at most 30 characters')
+    .regex(/^[a-zA-Z0-9 _\-.']+$/, 'Display name can only contain letters, numbers, spaces, hyphens, underscores, periods, and apostrophes'),
   dateOfBirth: z
     .string()
     .refine((val) => !isNaN(Date.parse(val)), 'Invalid date')
@@ -163,16 +151,8 @@ export async function completeOnboarding(
 
   // Set cookies
   const cookieStore = await cookies()
-  cookieStore.set(COOKIE_NAMES.ONBOARDED, 'true', {
-    maxAge: 365 * 24 * 60 * 60,
-    path: '/',
-    httpOnly: true,
-  })
-  cookieStore.set(COOKIE_NAMES.TERMS_VERSION, CURRENT_TERMS_VERSION, {
-    maxAge: 365 * 24 * 60 * 60,
-    path: '/',
-    httpOnly: true,
-  })
+  cookieStore.set(COOKIE_NAMES.ONBOARDED, 'true', AUTH_COOKIE_OPTIONS)
+  cookieStore.set(COOKIE_NAMES.TERMS_VERSION, CURRENT_TERMS_VERSION, AUTH_COOKIE_OPTIONS)
 
   // Analytics
   trackEvent(user.id, ANALYTICS_EVENTS.ONBOARDING_COMPLETED, {
@@ -218,11 +198,7 @@ export async function acceptTerms(): Promise<ActionResult> {
 
   // Set cookie
   const cookieStore = await cookies()
-  cookieStore.set(COOKIE_NAMES.TERMS_VERSION, CURRENT_TERMS_VERSION, {
-    maxAge: 365 * 24 * 60 * 60,
-    path: '/',
-    httpOnly: true,
-  })
+  cookieStore.set(COOKIE_NAMES.TERMS_VERSION, CURRENT_TERMS_VERSION, AUTH_COOKIE_OPTIONS)
 
   // Analytics
   trackEvent(user.id, ANALYTICS_EVENTS.TERMS_ACCEPTED)
