@@ -194,6 +194,9 @@
   --shadow-elevation-3: 0 8px 32px rgba(0, 0, 0, 0.5);
   --shadow-color-block: 4px 4px 0 #c8e64a;
   --shadow-highlight: 0 0 0 3px #c8e64a;
+
+  /* --- Animations --- */
+  --animate-shimmer: shimmer 1.5s ease-in-out infinite;
 }
 
 /* --------------------------------------------------------------------------
