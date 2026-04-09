@@ -64,4 +64,16 @@ describe('signOut server action', () => {
     // Cookies should NOT be deleted when signOut itself fails
     expect(mockDelete).not.toHaveBeenCalled()
   })
+
+  test('returns generic error when an unexpected exception is thrown', async () => {
+    mockSignOut.mockRejectedValue(new Error('network failure'))
+
+    const result = await signOut()
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Failed to sign out. Please try again.',
+    })
+    expect(mockDelete).not.toHaveBeenCalled()
+  })
 })

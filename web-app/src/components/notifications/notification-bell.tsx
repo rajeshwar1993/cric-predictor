@@ -33,7 +33,7 @@ function NotificationBell({ userId: _userId, initialUnreadCount }: NotificationB
             : 'Notifications'
         }
         onClick={() => setOpen(true)}
-        className="relative rounded-md p-1.5 text-text-primary transition-colors duration-150 ease-out hover:bg-dark-concrete focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-bragg-lime/50"
+        className="relative flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-text-primary transition-colors duration-150 ease-out hover:bg-dark-concrete focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-bragg-lime/50"
       >
         <Bell className="size-6" />
         {initialUnreadCount > 0 && (

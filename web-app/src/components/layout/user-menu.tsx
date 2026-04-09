@@ -45,7 +45,7 @@ function UserMenu({ displayName, email }: UserMenuProps) {
         type="button"
         aria-label="Open user menu"
         onClick={() => setOpen(true)}
-        className="rounded-full focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-bragg-lime/50"
+        className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-bragg-lime/50"
       >
         <Avatar size="sm">
           <AvatarFallback>{getAvatarInitials(displayName)}</AvatarFallback>

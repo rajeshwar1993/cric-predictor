@@ -21,7 +21,7 @@ export function Footer() {
         <div className="flex items-center justify-center gap-4 text-xs text-text-secondary">
           <Link
             href="/privacy"
-            className="hover:text-bragg-lime transition-colors"
+            className="inline-block py-2 hover:text-bragg-lime transition-colors duration-150 ease-out"
           >
             Privacy Policy
           </Link>
@@ -30,7 +30,7 @@ export function Footer() {
           </span>
           <Link
             href="/terms"
-            className="hover:text-bragg-lime transition-colors"
+            className="inline-block py-2 hover:text-bragg-lime transition-colors duration-150 ease-out"
           >
             Terms &amp; Conditions
           </Link>
