@@ -500,7 +500,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_gang: {
+        Args: {
+          p_gang_name: string
+          p_creator_id: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       v2_match_status: 'scheduled' | 'live' | 'completed' | 'abandoned' | 'cancelled'
