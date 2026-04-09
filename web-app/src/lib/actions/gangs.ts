@@ -590,3 +590,102 @@ export async function rejectJoinRequest(
 
   return { success: true }
 }
+
+// ---------------------------------------------------------------------------
+// leaveGang
+// ---------------------------------------------------------------------------
+
+/**
+ * Leave a gang. Sets the member's status to `left` and records `departed_at`.
+ *
+ * Flow: auth check → rate limit → validate gangId → verify approved member
+ *       with role='member' (not admin) → update status → analytics →
+ *       revalidate → return.
+ *
+ * Admin guard: admins cannot leave — they must delete the gang instead.
+ * Race condition guard: `.select()` after `.update()` to check row count.
+ *
+ * @param gangId - The gang UUID to leave
+ * @returns ActionResult
+ *
+ * @see docs/stories/GANG-004-leave-gang.md
+ */
+export async function leaveGang(gangId: string): Promise<ActionResult> {
+  const supabase = await createServerClient()
+
+  // Auth check
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { success: false, error: 'Not authenticated' }
+  }
+
+  // Rate limit: 10 per hour
+  const rl = await rateLimit(user.id, 'leave_gang', {
+    max: 10,
+    windowSeconds: 3600,
+  })
+  if (!rl.allowed) {
+    return { success: false, error: 'Too many requests. Try again later.' }
+  }
+
+  // Validate gangId
+  const gangIdParsed = uuidSchema.safeParse(gangId)
+  if (!gangIdParsed.success) {
+    return { success: false, error: 'Invalid request' }
+  }
+
+  // Verify user is an approved member with role='member' (not admin)
+  const { data: membership } = await supabase
+    .from('v2_gang_members')
+    .select('role, status')
+    .eq('gang_id', gangIdParsed.data)
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (!membership || membership.status !== 'approved') {
+    return { success: false, error: 'You are not a member of this gang' }
+  }
+
+  if (membership.role === 'admin') {
+    return {
+      success: false,
+      error: 'Admins cannot leave. Delete the gang instead.',
+    }
+  }
+
+  // Update status to 'left' with departed_at — use .select() for race condition guard
+  const now = new Date().toISOString()
+  const { data: updatedRows, error: updateError } = await supabase
+    .from('v2_gang_members')
+    .update({
+      status: 'left' as const,
+      departed_at: now,
+    })
+    .eq('gang_id', gangIdParsed.data)
+    .eq('user_id', user.id)
+    .eq('status', 'approved')
+    .select()
+
+  if (updateError) {
+    return { success: false, error: 'Failed to leave gang. Please try again.' }
+  }
+
+  // Race condition: if no rows updated, the status was already changed
+  if (!updatedRows || updatedRows.length === 0) {
+    return { success: false, error: 'You are not a member of this gang' }
+  }
+
+  // Analytics
+  trackEvent(user.id, ANALYTICS_EVENTS.MEMBER_LEFT, {
+    gang_id: gangIdParsed.data,
+  })
+
+  // Revalidate paths
+  revalidatePath('/dashboard')
+  revalidatePath(`/group/${gangIdParsed.data}`)
+
+  return { success: true }
+}
