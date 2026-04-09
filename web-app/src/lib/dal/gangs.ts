@@ -2,6 +2,20 @@ import { createServerClient } from '@/lib/supabase/server'
 import type { Database } from '@/types/database'
 import type { MemberRole, MemberStatus } from '@/types'
 
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+type ProfileRow = Pick<
+  Database['public']['Tables']['v2_profiles']['Row'],
+  'display_name' | 'email'
+>
+
+type GangMemberRow = Pick<
+  Database['public']['Tables']['v2_gang_members']['Row'],
+  'user_id' | 'role' | 'status'
+>
+
 /**
  * Picked columns from v2_gangs returned by the membership query.
  */
@@ -173,5 +187,132 @@ export async function getMembershipStatus(
   return {
     status: data.status,
     isBlocked: data.is_blocked,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// getGangDetails
+// ---------------------------------------------------------------------------
+
+/**
+ * A member row within the gang details response.
+ */
+export interface GangDetailMember {
+  userId: string
+  role: MemberRole
+  status: MemberStatus
+  displayName: string | null
+  email: string
+}
+
+/**
+ * Shape returned by `getGangDetails` — full gang info with members.
+ */
+export interface GangDetails {
+  id: string
+  name: string
+  inviteCode: string
+  autoAccept: boolean
+  createdBy: string
+  members: GangDetailMember[]
+}
+
+/**
+ * Fetch full gang details including all members with their profiles.
+ *
+ * Returns `null` if the gang is not found or has been soft-deleted.
+ *
+ * Creates its own Supabase server client (DAL convention).
+ * Throws on database error.
+ */
+export async function getGangDetails(
+  gangId: string,
+): Promise<GangDetails | null> {
+  const supabase = await createServerClient()
+
+  const { data, error } = await supabase
+    .from('v2_gangs')
+    .select(
+      `
+      id, name, invite_code, auto_accept, created_by,
+      v2_gang_members (user_id, role, status, v2_profiles (display_name, email))
+    `,
+    )
+    .eq('id', gangId)
+    .eq('is_deleted', false)
+    .single()
+
+  if (error) {
+    // PGRST116 = "no rows returned" — treat as not found
+    if (error.code === 'PGRST116') return null
+    throw error
+  }
+
+  if (!data) return null
+
+  // PostgREST returns the nested join as an array. Each member has a
+  // nested v2_profiles object (single-FK relation → object, not array).
+  // Double-cast needed because the Supabase SDK types are imprecise here.
+  const rawMembers = data.v2_gang_members as unknown as (GangMemberRow & {
+    v2_profiles: ProfileRow | null
+  })[]
+
+  const members: GangDetailMember[] = (rawMembers ?? []).map((m) => ({
+    userId: m.user_id,
+    role: m.role,
+    status: m.status,
+    displayName: m.v2_profiles?.display_name ?? null,
+    email: m.v2_profiles?.email ?? '',
+  }))
+
+  return {
+    id: data.id,
+    name: data.name,
+    inviteCode: data.invite_code,
+    autoAccept: data.auto_accept,
+    createdBy: data.created_by,
+    members,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// getGangMemberStatus
+// ---------------------------------------------------------------------------
+
+/**
+ * Shape returned by `getGangMemberStatus` — the user's full membership row.
+ */
+export interface GangMemberInfo {
+  role: MemberRole
+  status: MemberStatus
+}
+
+/**
+ * Get a user's membership record for a specific gang.
+ *
+ * Returns `null` if the user has no membership row for the gang.
+ *
+ * Creates its own Supabase server client (DAL convention).
+ * Throws on database error.
+ */
+export async function getGangMemberStatus(
+  gangId: string,
+  userId: string,
+): Promise<GangMemberInfo | null> {
+  const supabase = await createServerClient()
+
+  const { data, error } = await supabase
+    .from('v2_gang_members')
+    .select('role, status')
+    .eq('gang_id', gangId)
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (error) throw error
+  if (!data) return null
+
+  return {
+    role: data.role,
+    status: data.status,
   }
 }
