@@ -194,6 +194,8 @@ const TEAM_KKR = {
 function makeLiveFixture(overrides: Partial<LiveFixture> = {}): LiveFixture {
   return {
     id: 'fixture-live-1',
+    leagueId: 'league-1',
+    seasonId: 'season-1',
     matchNumber: 12,
     startDatetime: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
     venueName: 'Wankhede Stadium, Mumbai',

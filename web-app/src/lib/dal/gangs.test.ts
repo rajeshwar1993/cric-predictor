@@ -22,9 +22,7 @@ const mockSingle = vi.fn()
  * `resolvedValue` at the end of the chain.
  */
 function chainBuilder(resolvedValue: { data: unknown; error: unknown }) {
-  const chain: Record<string, (...args: unknown[]) => typeof chain> & {
-    then: (fn: (v: { data: unknown; error: unknown }) => void) => void
-  } = {
+  const chain = {
     select(...args: unknown[]) {
       mockSelect(...args)
       return chain

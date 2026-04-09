@@ -41,6 +41,8 @@ const TEAM_KKR: FixtureTeam = {
 function makeFixture(overrides: Partial<RecentResultFixture> = {}): RecentResultFixture {
   return {
     id: 'fixture-1',
+    leagueId: 'league-1',
+    seasonId: 'season-1',
     matchNumber: 5,
     startDatetime: '2026-04-08T19:30:00Z',
     venueName: 'Wankhede Stadium, Mumbai',

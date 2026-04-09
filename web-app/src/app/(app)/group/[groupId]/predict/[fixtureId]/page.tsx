@@ -1,0 +1,287 @@
+import type { Metadata } from 'next'
+import Link from 'next/link'
+import { notFound, redirect } from 'next/navigation'
+import { createServerClient } from '@/lib/supabase/server'
+import { getFixtureWithTeams } from '@/lib/dal/fixtures'
+import { getMembershipStatus } from '@/lib/dal/gangs'
+import {
+  getFixtureScenarios,
+  getUserPredictions,
+  getMatchPlayers,
+  getGangLeagueSeason,
+  groupScenariosByPhase,
+} from '@/lib/dal/predictions'
+import { PageWrapper } from '@/components/layout/page-wrapper'
+import { PredictPageHeader } from '@/components/predictions/predict-page-header'
+import { WindowNotOpenMessage } from '@/components/predictions/window-not-open-message'
+import { ScenarioCard } from '@/components/predictions/scenario-card'
+import { ScenarioGroup } from '@/components/predictions/scenario-group'
+import { Button } from '@/components/ui/button'
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface PredictPageProps {
+  params: Promise<{ groupId: string; fixtureId: string }>
+}
+
+// ---------------------------------------------------------------------------
+// Prediction window status
+// ---------------------------------------------------------------------------
+
+type WindowStatus = 'not_open' | 'open' | 'locked'
+
+function getWindowStatus(
+  startDatetime: string,
+  predictionDeadlineMins: number,
+  fixtureStatus: string,
+): WindowStatus {
+  // Any status other than 'upcoming' means locked
+  if (fixtureStatus !== 'upcoming') return 'locked'
+
+  const now = new Date()
+  const startTime = new Date(startDatetime)
+
+  // Deadline = start_datetime minus prediction_deadline_mins
+  const deadline = new Date(startTime.getTime() - predictionDeadlineMins * 60 * 1000)
+  if (now >= deadline) return 'locked'
+
+  // Window opens 12 hours before start
+  const windowOpens = new Date(startTime.getTime() - 12 * 60 * 60 * 1000)
+  if (now < windowOpens) return 'not_open'
+
+  return 'open'
+}
+
+// ---------------------------------------------------------------------------
+// Metadata
+// ---------------------------------------------------------------------------
+
+export async function generateMetadata({
+  params,
+}: PredictPageProps): Promise<Metadata> {
+  const { fixtureId } = await params
+  const fixture = await getFixtureWithTeams(fixtureId)
+
+  if (!fixture) {
+    return { title: 'Predict' }
+  }
+
+  return {
+    title: `Predict: ${fixture.homeTeam.code} vs ${fixture.awayTeam.code} — Match ${fixture.matchNumber}`,
+    description: `Make your predictions for ${fixture.homeTeam.name} vs ${fixture.awayTeam.name}`,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
+/**
+ * PredictPage — the prediction page for a specific fixture within a gang.
+ *
+ * Server Component that:
+ * 1. Verifies auth and gang membership
+ * 2. Validates the fixture belongs to the gang's active season
+ * 3. Determines the prediction window status (not_open / open / locked)
+ * 4. Fetches scenarios + existing predictions
+ * 5. Renders the appropriate state
+ *
+ * @see docs/stories/PRED-001-predict-page.md
+ */
+export default async function PredictPage({ params }: PredictPageProps) {
+  const { groupId, fixtureId } = await params
+
+  // ---------------------------------------------------------------------------
+  // Auth gate
+  // ---------------------------------------------------------------------------
+  const supabase = await createServerClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect('/login')
+  }
+
+  // ---------------------------------------------------------------------------
+  // Membership gate — user must be approved member of this gang
+  // ---------------------------------------------------------------------------
+  const membership = await getMembershipStatus(groupId, user.id)
+
+  if (!membership || membership.status !== 'approved') {
+    redirect('/dashboard')
+  }
+
+  // ---------------------------------------------------------------------------
+  // Gang league season — needed for deadline and fixture validation
+  // ---------------------------------------------------------------------------
+  const gangSeason = await getGangLeagueSeason(groupId)
+
+  if (!gangSeason) {
+    notFound()
+  }
+
+  // ---------------------------------------------------------------------------
+  // Fixture validation — must exist and belong to the gang's active season
+  // ---------------------------------------------------------------------------
+  const fixture = await getFixtureWithTeams(fixtureId)
+
+  if (!fixture) {
+    notFound()
+  }
+
+  // Verify the fixture belongs to the gang's active league season.
+  // Prevents users from crafting a URL with any arbitrary fixtureId.
+  if (
+    fixture.leagueId !== gangSeason.leagueId ||
+    fixture.seasonId !== gangSeason.seasonId
+  ) {
+    notFound()
+  }
+
+  // ---------------------------------------------------------------------------
+  // Prediction window status
+  // ---------------------------------------------------------------------------
+  const windowStatus = getWindowStatus(
+    fixture.startDatetime,
+    gangSeason.predictionDeadlineMins,
+    fixture.status,
+  )
+
+  // ---------------------------------------------------------------------------
+  // Fetch data for open window
+  // ---------------------------------------------------------------------------
+  const [scenarios, predictions, players] = await Promise.all([
+    windowStatus === 'open' ? getFixtureScenarios(fixtureId) : Promise.resolve([]),
+    windowStatus === 'open'
+      ? getUserPredictions(groupId, fixtureId, user.id)
+      : Promise.resolve([]),
+    windowStatus === 'open'
+      ? getMatchPlayers(gangSeason.seasonId, fixture.homeTeam.id, fixture.awayTeam.id)
+      : Promise.resolve([]),
+  ])
+
+  // Build a lookup map: scenarioId → answer
+  const predictionMap = new Map(
+    predictions.map((p) => [p.scenarioId, p.answer]),
+  )
+
+  // Compute last submitted timestamp from predictions
+  const firstPrediction = predictions[0]
+  const lastSubmittedAt = firstPrediction
+    ? predictions.reduce((latest, p) => {
+        return p.updatedAt > latest ? p.updatedAt : latest
+      }, firstPrediction.updatedAt)
+    : null
+
+  // Group scenarios by phase
+  const scenarioGroups = groupScenariosByPhase(scenarios)
+
+  // Window opens 12h before start
+  const windowOpensAt = new Date(
+    new Date(fixture.startDatetime).getTime() - 12 * 60 * 60 * 1000,
+  ).toISOString()
+
+  // Suppress unused warning — players are passed down to pickers in PRED-002
+  void players
+
+  return (
+    <PageWrapper className="py-8">
+      <PredictPageHeader
+        fixture={fixture}
+        predictionDeadlineMins={gangSeason.predictionDeadlineMins}
+        isWindowOpen={windowStatus === 'open'}
+        lastSubmittedAt={lastSubmittedAt}
+      />
+
+      {/* Not open — prediction window hasn't started */}
+      {windowStatus === 'not_open' && (
+        <WindowNotOpenMessage opensAt={windowOpensAt} gangId={groupId} />
+      )}
+
+      {/* Locked — deadline passed or fixture not upcoming */}
+      {windowStatus === 'locked' && (
+        <PredictionsLockedMessage fixtureId={fixtureId} gangId={groupId} />
+      )}
+
+      {/* Open — show scenario groups */}
+      {windowStatus === 'open' && (
+        <div className="mt-8 flex flex-col gap-8">
+          {scenarioGroups.length === 0 ? (
+            <NoScenariosMessage />
+          ) : (
+            scenarioGroups.map((group) => (
+              <ScenarioGroup
+                key={group.phase}
+                phase={group.phase}
+                label={group.label}
+              >
+                {group.scenarios.map((scenario) => (
+                  <ScenarioCard
+                    key={scenario.id}
+                    title={scenario.title}
+                    description={scenario.description}
+                    pointsWeight={scenario.pointsWeight}
+                    isPicked={predictionMap.has(scenario.id)}
+                  >
+                    {/* Picker placeholder — PRED-002 will add actual pickers */}
+                    {predictionMap.has(scenario.id) && (
+                      <div className="rounded-md bg-mid-concrete px-3 py-2 text-body-sm text-text-secondary">
+                        {predictionMap.get(scenario.id)}
+                      </div>
+                    )}
+                  </ScenarioCard>
+                ))}
+              </ScenarioGroup>
+            ))
+          )}
+        </div>
+      )}
+    </PageWrapper>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Status message components
+// ---------------------------------------------------------------------------
+
+function PredictionsLockedMessage({
+  fixtureId,
+  gangId,
+}: {
+  fixtureId: string
+  gangId: string
+}) {
+  return (
+    <div className="mt-12 flex flex-col items-center gap-4 text-center">
+      <div className="flex flex-col gap-2">
+        <p className="font-display text-h3 font-bold uppercase text-text-primary">
+          Predictions locked
+        </p>
+        <p className="text-body-sm text-text-muted">
+          The prediction window has closed. Check the match leaderboard to see how you did.
+        </p>
+      </div>
+      <Link href={`/group/${gangId}/match/${fixtureId}`}>
+        <Button variant="secondary" size="sm">
+          View leaderboard
+        </Button>
+      </Link>
+    </div>
+  )
+}
+
+function NoScenariosMessage() {
+  return (
+    <div className="flex flex-col items-center gap-2 py-8 text-center">
+      <p className="font-display text-h3 font-bold text-text-primary">
+        No scenarios yet
+      </p>
+      <p className="text-body-sm text-text-muted">
+        Scenarios for this match haven&apos;t been generated yet. Check back closer to match time.
+      </p>
+    </div>
+  )
+}

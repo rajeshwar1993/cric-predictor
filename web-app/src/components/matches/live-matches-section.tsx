@@ -101,6 +101,8 @@ export function LiveMatchesSection({
           }
           return {
             id: row.id,
+            leagueId: gangSeason.league_id,
+            seasonId: gangSeason.season_id,
             matchNumber: row.match_number,
             startDatetime: row.start_datetime,
             venueName: row.venue_name,
