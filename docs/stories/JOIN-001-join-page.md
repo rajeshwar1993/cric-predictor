@@ -21,6 +21,7 @@ Build the join page that handles invite links (`/join/[code]`). This is a public
 - [ ] Login form (same magic link form as `/login`)
 - [ ] Stores invite info in localStorage: `{ code, gangName, storedAt }`
 - [ ] After login → callback → onboarding (if needed) → dashboard → banner picks up invite
+- [ ] Gambling disclaimer: "Bragg is a free prediction game for entertainment purposes only. No real money. No betting. No prizes."
 
 ### Authenticated Flow
 - [ ] NavBar shown (they're logged in)

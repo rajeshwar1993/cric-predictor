@@ -30,6 +30,8 @@ Build the create gang form on the dashboard. User enters a gang name, submits, a
 - [ ] Call `create_gang` RPC: `supabase.rpc('create_gang', { p_gang_name: name, p_creator_id: userId })`
 - [ ] Handle errors:
   - `MAX_GANGS_REACHED` (P0001) → "You've reached the maximum of 40 gangs"
+  - Invite code collision (handled by RPC with up to 5 retries internally)
+  - If all 5 retries fail → "Unable to generate invite code. Please try again."
   - Other → "Failed to create gang. Please try again."
 - [ ] Revalidate `/dashboard`
 - [ ] Fire `GANG_CREATED` analytics event

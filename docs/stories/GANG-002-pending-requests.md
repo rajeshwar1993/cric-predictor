@@ -33,13 +33,13 @@ Build the pending join requests section visible only to gang admins. Shows a lis
   - Check display name uniqueness
   - Update `v2_gang_members` status to `approved`, set `approved_at`
   - Send `join_approved` notification to the user
-  - Revalidate gang page
+  - Revalidate `/group/{gangId}` and `/group/{gangId}/settings`
   - Fire `MEMBER_APPROVED` analytics event
 - [ ] `rejectJoinRequest(gangId: string, userId: string)` → `ActionResult`
   - Auth check + admin verification
   - Update `v2_gang_members` status to `rejected`
   - Send `join_rejected` notification to the user
-  - Revalidate gang page
+  - Revalidate `/group/{gangId}` and `/group/{gangId}/settings`
   - Fire `MEMBER_REJECTED` analytics event
 
 ### DAL (`src/lib/dal/gangs.ts` — add)

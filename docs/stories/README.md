@@ -140,7 +140,7 @@ Stories must be implemented in phase order. Within a phase, stories can be paral
 | Story | Title | Dependencies |
 |-------|-------|-------------|
 | [LDB-001](LDB-001-match-leaderboard.md) | Match Leaderboard Page | GANG-003, MTCH-002 |
-| [LDB-002](LDB-002-prediction-reveal.md) | Prediction Reveal Table | LDB-001 |
+| [LDB-002](LDB-002-prediction-reveal.md) | Prediction Reveal Table | LDB-001, PRED-001 |
 | [LDB-003](LDB-003-season-standings.md) | Season Standings Page | GANG-003 |
 
 ### Phase 11: Gang Settings (SET)

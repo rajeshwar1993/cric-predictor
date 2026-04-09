@@ -1,7 +1,7 @@
 # LDB-002: Prediction Reveal Table
 
 **Phase:** 10 — Leaderboards
-**Dependencies:** LDB-001
+**Dependencies:** LDB-001, PRED-001
 **Estimated scope:** Matrix table showing all members' predictions per scenario with correct/incorrect status
 
 ---

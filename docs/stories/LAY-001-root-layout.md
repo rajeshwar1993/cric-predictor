@@ -17,10 +17,16 @@ Implement the root layout (`src/app/layout.tsx`) that applies fonts, dark mode, 
 ### Root Layout (`src/app/layout.tsx`)
 - [ ] `<html lang="en" className="dark">` with font CSS variables applied
 - [ ] `<body>` with `bg-concrete-black text-text-primary font-body antialiased`
-- [ ] PostHog provider wraps all children
+- [ ] PostHog provider wraps all children (PHProvider is a `'use client'` component rendered by the Server Component layout — this is the standard Next.js pattern for providers)
 - [ ] Toaster component rendered (for toast notifications)
 - [ ] `<meta name="viewport" content="width=device-width, initial-scale=1">` set
 - [ ] Metadata: title "Bragg — Predict Right. Prove It.", description for SEO
+
+### Mobile-First Foundation
+- [ ] All layouts and components designed mobile-first (375px), then scale up to tablet (768px) and desktop
+- [ ] Touch targets minimum 44px diameter (per WCAG)
+- [ ] Bottom safe area padding (34px) for notched phones applied via PageWrapper
+- [ ] No horizontal scroll on any page at 375px width
 
 ### PageWrapper (`src/components/layout/page-wrapper.tsx`)
 - [ ] Max content width: 480px (mobile), 720px (tablet)

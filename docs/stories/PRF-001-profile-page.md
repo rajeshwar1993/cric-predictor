@@ -48,7 +48,7 @@ Build the profile page (`/profile`) showing user info, overall stats, and accoun
 - [ ] Check display name uniqueness across all approved gang memberships
   - If collision in any gang → error with gang name(s) specified
 - [ ] Update `v2_profiles.display_name`
-- [ ] Revalidate `/profile` and all user's gang pages
+- [ ] Revalidate `/profile` and all user's gang pages (query user's approved gang IDs, call `revalidatePath('/group/${gangId}')` for each)
 - [ ] Fire analytics event
 
 ### DAL (`src/lib/dal/profile.ts` — create)
