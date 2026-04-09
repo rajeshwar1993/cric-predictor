@@ -150,54 +150,54 @@ export type Database = {
       v2_league_season_fixtures: {
         Row: {
           id: string
+          api_id: string
           league_id: string
           season_id: string
           match_number: number
           home_team_id: string
           away_team_id: string
-          venue: string | null
-          scheduled_at: string
+          start_datetime: string
+          venue_id: string | null
+          venue_name: string
           status: Database['public']['Enums']['v2_match_status']
-          toss_winner_team_id: string | null
-          toss_decision: string | null
-          winner_team_id: string | null
-          lock_time: string
+          status_changed_at: string
+          pre_match_synced: boolean
+          round: string
           created_at: string
-          updated_at: string
         }
         Insert: {
           id?: string
+          api_id: string
           league_id: string
           season_id: string
           match_number: number
           home_team_id: string
           away_team_id: string
-          venue?: string | null
-          scheduled_at: string
+          start_datetime: string
+          venue_id?: string | null
+          venue_name: string
           status?: Database['public']['Enums']['v2_match_status']
-          toss_winner_team_id?: string | null
-          toss_decision?: string | null
-          winner_team_id?: string | null
-          lock_time: string
+          status_changed_at?: string
+          pre_match_synced?: boolean
+          round: string
           created_at?: string
-          updated_at?: string
         }
         Update: {
           id?: string
+          api_id?: string
           league_id?: string
           season_id?: string
           match_number?: number
           home_team_id?: string
           away_team_id?: string
-          venue?: string | null
-          scheduled_at?: string
+          start_datetime?: string
+          venue_id?: string | null
+          venue_name?: string
           status?: Database['public']['Enums']['v2_match_status']
-          toss_winner_team_id?: string | null
-          toss_decision?: string | null
-          winner_team_id?: string | null
-          lock_time?: string
+          status_changed_at?: string
+          pre_match_synced?: boolean
+          round?: string
           created_at?: string
-          updated_at?: string
         }
         Relationships: []
       }
@@ -321,107 +321,134 @@ export type Database = {
       v2_league_teams: {
         Row: {
           id: string
+          api_id: string
           league_id: string
           name: string
-          short_name: string
+          code: string
+          color: string
           logo_url: string | null
-          primary_color: string | null
+          is_active: boolean
           created_at: string
-          updated_at: string
         }
         Insert: {
           id?: string
+          api_id: string
           league_id: string
           name: string
-          short_name: string
+          code: string
+          color: string
           logo_url?: string | null
-          primary_color?: string | null
+          is_active?: boolean
           created_at?: string
-          updated_at?: string
         }
         Update: {
           id?: string
+          api_id?: string
           league_id?: string
           name?: string
-          short_name?: string
+          code?: string
+          color?: string
           logo_url?: string | null
-          primary_color?: string | null
+          is_active?: boolean
           created_at?: string
-          updated_at?: string
         }
         Relationships: []
       }
       v2_players: {
         Row: {
           id: string
+          api_id: string
           name: string
-          team_id: string
           role: string | null
-          image_url: string | null
+          batting_style: string | null
+          bowling_style: string | null
+          is_active: boolean
           created_at: string
-          updated_at: string
         }
         Insert: {
           id?: string
+          api_id: string
           name: string
-          team_id: string
           role?: string | null
-          image_url?: string | null
+          batting_style?: string | null
+          bowling_style?: string | null
+          is_active?: boolean
           created_at?: string
-          updated_at?: string
         }
         Update: {
           id?: string
+          api_id?: string
           name?: string
-          team_id?: string
           role?: string | null
-          image_url?: string | null
+          batting_style?: string | null
+          bowling_style?: string | null
+          is_active?: boolean
           created_at?: string
-          updated_at?: string
         }
         Relationships: []
       }
       v2_fixture_live_scores: {
         Row: {
-          id: string
           fixture_id: string
-          innings: number
-          batting_team_id: string
-          runs: number
-          wickets: number
-          overs: number
-          run_rate: number | null
-          extras: number | null
-          data: Json | null
-          created_at: string
+          home_team_score: string | null
+          away_team_score: string | null
+          home_team_overs: number | null
+          away_team_overs: number | null
+          batting_team_id: string | null
+          current_run_rate: number | null
+          last_6_balls: string | null
+          striker_name: string | null
+          striker_score: string | null
+          non_striker_name: string | null
+          non_striker_score: string | null
+          current_bowler: string | null
+          current_partnership: string | null
+          raw_scorecard_json: Json | null
+          last_polled_at: string | null
+          home_team_max_overs_seen: number | null
+          away_team_max_overs_seen: number | null
           updated_at: string
         }
         Insert: {
-          id?: string
           fixture_id: string
-          innings: number
-          batting_team_id: string
-          runs?: number
-          wickets?: number
-          overs?: number
-          run_rate?: number | null
-          extras?: number | null
-          data?: Json | null
-          created_at?: string
+          home_team_score?: string | null
+          away_team_score?: string | null
+          home_team_overs?: number | null
+          away_team_overs?: number | null
+          batting_team_id?: string | null
+          current_run_rate?: number | null
+          last_6_balls?: string | null
+          striker_name?: string | null
+          striker_score?: string | null
+          non_striker_name?: string | null
+          non_striker_score?: string | null
+          current_bowler?: string | null
+          current_partnership?: string | null
+          raw_scorecard_json?: Json | null
+          last_polled_at?: string | null
+          home_team_max_overs_seen?: number | null
+          away_team_max_overs_seen?: number | null
           updated_at?: string
         }
         Update: {
-          id?: string
           fixture_id?: string
-          innings?: number
-          batting_team_id?: string
-          runs?: number
-          wickets?: number
-          overs?: number
-          run_rate?: number | null
-          extras?: number | null
-          data?: Json | null
-          created_at?: string
+          home_team_score?: string | null
+          away_team_score?: string | null
+          home_team_overs?: number | null
+          away_team_overs?: number | null
+          batting_team_id?: string | null
+          current_run_rate?: number | null
+          last_6_balls?: string | null
+          striker_name?: string | null
+          striker_score?: string | null
+          non_striker_name?: string | null
+          non_striker_score?: string | null
+          current_bowler?: string | null
+          current_partnership?: string | null
+          raw_scorecard_json?: Json | null
+          last_polled_at?: string | null
+          home_team_max_overs_seen?: number | null
+          away_team_max_overs_seen?: number | null
           updated_at?: string
         }
         Relationships: []
@@ -552,9 +579,16 @@ export type Database = {
           created_by: string
         }[]
       }
+      get_members_who_predicted: {
+        Args: {
+          p_gang_id: string
+          p_fixture_id: string
+        }
+        Returns: string[]
+      }
     }
     Enums: {
-      v2_match_status: 'scheduled' | 'live' | 'completed' | 'abandoned' | 'cancelled'
+      v2_match_status: 'upcoming' | 'live' | 'completed' | 'resolved' | 'abandoned' | 'no_result'
       v2_member_role: 'admin' | 'member'
       v2_member_status: 'pending' | 'approved' | 'rejected' | 'removed' | 'left'
       v2_scenario_input_type:

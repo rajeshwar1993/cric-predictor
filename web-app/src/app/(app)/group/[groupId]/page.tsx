@@ -11,6 +11,7 @@ import { MatchCardSkeleton, LeaderboardRowSkeleton } from '@/components/ui/skele
 import { PendingRequests } from '@/components/gangs/pending-requests'
 import { MemberListSection } from '@/components/gangs/member-list-section'
 import { LeaveGangButton } from '@/components/gangs/leave-gang-button'
+import { UpcomingMatches } from '@/components/matches/upcoming-matches'
 
 interface GangPageProps {
   params: Promise<{ groupId: string }>
@@ -99,12 +100,11 @@ export default async function GangPage({ params }: GangPageProps) {
         </Suspense>
       )}
 
-      {/* Placeholder: Upcoming Matches — MTCH-001 */}
+      {/* Upcoming Matches — MTCH-001 */}
       <Suspense fallback={<MatchListSkeleton />}>
-        <section
-          className="mt-8"
-          aria-label="Upcoming matches"
-          data-placeholder="upcoming-matches"
+        <UpcomingMatches
+          gangId={gang.id}
+          totalMembers={gang.members.filter((m) => m.status === 'approved').length}
         />
       </Suspense>
 
