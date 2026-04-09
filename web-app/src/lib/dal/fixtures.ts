@@ -1,0 +1,238 @@
+import { createServerClient } from '@/lib/supabase/server'
+import type { MatchStatus } from '@/types'
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+/**
+ * Team info as returned by fixture queries.
+ */
+export interface FixtureTeam {
+  id: string
+  name: string
+  code: string
+  color: string
+  logoUrl: string | null
+}
+
+/**
+ * Fixture with joined team data, used for match cards.
+ */
+export interface FixtureWithTeams {
+  id: string
+  matchNumber: number
+  startDatetime: string
+  venueName: string
+  status: MatchStatus
+  homeTeam: FixtureTeam
+  awayTeam: FixtureTeam
+}
+
+/**
+ * Upcoming fixture with prediction metadata, used by the gang page.
+ */
+export interface UpcomingFixture extends FixtureWithTeams {
+  /** Minutes before match start when predictions lock (from gang settings) */
+  predictionDeadlineMins: number
+  /** Count of gang members who have submitted predictions for this fixture */
+  predictedCount: number
+}
+
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Maps raw PostgREST team row to our clean FixtureTeam interface.
+ */
+function mapTeam(raw: {
+  id: string
+  name: string
+  code: string
+  color: string
+  logo_url: string | null
+}): FixtureTeam {
+  return {
+    id: raw.id,
+    name: raw.name,
+    code: raw.code,
+    color: raw.color,
+    logoUrl: raw.logo_url,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// getUpcomingFixtures
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch the next N upcoming or live fixtures for a gang.
+ *
+ * Joins home/away team info, fetches the gang's prediction deadline setting,
+ * and queries how many members have predicted for each fixture.
+ *
+ * Creates its own Supabase server client (DAL convention).
+ * Returns empty array if no active league season or no fixtures.
+ * Throws on non-recoverable database errors.
+ */
+export async function getUpcomingFixtures(
+  gangId: string,
+  limit: number = 3,
+): Promise<UpcomingFixture[]> {
+  const supabase = await createServerClient()
+
+  // Step 1: Get gang's active league season settings (for prediction_deadline_mins)
+  const { data: gangSeason, error: gangSeasonError } = await supabase
+    .from('v2_gang_league_seasons')
+    .select('prediction_deadline_mins, league_id, season_id')
+    .eq('gang_id', gangId)
+    .eq('is_active', true)
+    .single()
+
+  if (gangSeasonError) {
+    // No active league season — nothing to show
+    if (gangSeasonError.code === 'PGRST116') return []
+    throw gangSeasonError
+  }
+
+  if (!gangSeason) return []
+
+  const predictionDeadlineMins = gangSeason.prediction_deadline_mins ?? 45
+
+  // Step 2: Fetch upcoming/live fixtures sorted by start_datetime
+  const { data: fixtures, error: fixturesError } = await supabase
+    .from('v2_league_season_fixtures')
+    .select(
+      `
+      id,
+      match_number,
+      start_datetime,
+      venue_name,
+      status,
+      home_team:v2_league_teams!home_team_id (id, name, code, color, logo_url),
+      away_team:v2_league_teams!away_team_id (id, name, code, color, logo_url)
+    `,
+    )
+    .eq('league_id', gangSeason.league_id)
+    .eq('season_id', gangSeason.season_id)
+    .in('status', ['upcoming', 'live'])
+    .order('start_datetime', { ascending: true })
+    .limit(limit)
+
+  if (fixturesError) throw fixturesError
+  if (!fixtures || fixtures.length === 0) return []
+
+  // Step 3: For each fixture, get prediction count via RPC
+  const results: UpcomingFixture[] = await Promise.all(
+    fixtures.map(async (row) => {
+      // RPC call — gracefully handle errors (show 0 instead of breaking).
+      // Supabase .rpc() returns { data, error } and does not throw.
+      const { data: predictors } = await supabase.rpc(
+        'get_members_who_predicted',
+        {
+          p_gang_id: gangId,
+          p_fixture_id: row.id,
+        },
+      )
+      const predictedCount = predictors?.length ?? 0
+
+      // PostgREST returns joined rows as objects for single-FK relations.
+      // The SDK types them as arrays — double-cast needed.
+      const homeTeam = row.home_team as unknown as {
+        id: string
+        name: string
+        code: string
+        color: string
+        logo_url: string | null
+      }
+      const awayTeam = row.away_team as unknown as {
+        id: string
+        name: string
+        code: string
+        color: string
+        logo_url: string | null
+      }
+
+      return {
+        id: row.id,
+        matchNumber: row.match_number,
+        startDatetime: row.start_datetime,
+        venueName: row.venue_name,
+        status: row.status,
+        predictionDeadlineMins: predictionDeadlineMins,
+        predictedCount,
+        homeTeam: mapTeam(homeTeam),
+        awayTeam: mapTeam(awayTeam),
+      }
+    }),
+  )
+
+  return results
+}
+
+// ---------------------------------------------------------------------------
+// getFixtureWithTeams
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch a single fixture with home/away team details.
+ *
+ * Returns `null` if the fixture is not found.
+ *
+ * Creates its own Supabase server client (DAL convention).
+ * Throws on non-recoverable database errors.
+ */
+export async function getFixtureWithTeams(
+  fixtureId: string,
+): Promise<FixtureWithTeams | null> {
+  const supabase = await createServerClient()
+
+  const { data, error } = await supabase
+    .from('v2_league_season_fixtures')
+    .select(
+      `
+      id,
+      match_number,
+      start_datetime,
+      venue_name,
+      status,
+      home_team:v2_league_teams!home_team_id (id, name, code, color, logo_url),
+      away_team:v2_league_teams!away_team_id (id, name, code, color, logo_url)
+    `,
+    )
+    .eq('id', fixtureId)
+    .single()
+
+  if (error) {
+    if (error.code === 'PGRST116') return null
+    throw error
+  }
+
+  if (!data) return null
+
+  const homeTeam = data.home_team as unknown as {
+    id: string
+    name: string
+    code: string
+    color: string
+    logo_url: string | null
+  }
+  const awayTeam = data.away_team as unknown as {
+    id: string
+    name: string
+    code: string
+    color: string
+    logo_url: string | null
+  }
+
+  return {
+    id: data.id,
+    matchNumber: data.match_number,
+    startDatetime: data.start_datetime,
+    venueName: data.venue_name,
+    status: data.status,
+    homeTeam: mapTeam(homeTeam),
+    awayTeam: mapTeam(awayTeam),
+  }
+}
