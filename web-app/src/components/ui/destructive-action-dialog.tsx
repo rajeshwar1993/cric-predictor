@@ -32,6 +32,8 @@ interface DestructiveActionDialogProps {
   onConfirm: () => void | Promise<void>
   /** Whether the action is in progress */
   isLoading?: boolean
+  /** Additional class name for the dialog content */
+  className?: string
 }
 
 function DestructiveActionDialog({
@@ -43,6 +45,7 @@ function DestructiveActionDialog({
   confirmLabel = 'Delete',
   onConfirm,
   isLoading = false,
+  className,
 }: DestructiveActionDialogProps) {
   const inputId = React.useId()
   const [inputValue, setInputValue] = React.useState('')
@@ -66,7 +69,7 @@ function DestructiveActionDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={isLoading ? undefined : onOpenChange}>
+    <Dialog open={open} onOpenChange={isLoading ? () => {} : onOpenChange}>
       <DialogContent
         showCloseButton={false}
         onPointerDownOutside={(e) => {
@@ -75,7 +78,7 @@ function DestructiveActionDialog({
         onEscapeKeyDown={(e) => {
           if (isLoading) e.preventDefault()
         }}
-        className="max-w-md"
+        className={cn('max-w-md', className)}
       >
         <DialogHeader>
           <div className="mb-2 flex items-center gap-3">

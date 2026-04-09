@@ -8,7 +8,7 @@ import { getAvatarInitials } from '@/lib/utils'
 /* Types                                                                       */
 /* -------------------------------------------------------------------------- */
 
-interface LeaderboardRowProps {
+interface LeaderboardRowProps extends React.ComponentProps<'div'> {
   /** Rank position (1-based) */
   rank: number
   /** Player display name */
@@ -69,6 +69,8 @@ function LeaderboardRow({
   isDeparted = false,
   avatar,
   subtitle,
+  className,
+  ...props
 }: LeaderboardRowProps) {
   return (
     <div
@@ -77,9 +79,11 @@ function LeaderboardRow({
         'flex h-[72px] items-center gap-3 border-b-2 border-mid-concrete bg-dark-concrete px-3',
         'animate-[rank-reorder] duration-[var(--duration-rank)] ease-[var(--ease-spring)]',
         isCurrentUser && 'border-l-4 border-l-bragg-lime bg-lime-wash',
-        isDeparted && 'opacity-60'
+        isDeparted && 'opacity-60',
+        className
       )}
       aria-label={`Rank ${rank}: ${displayName}, ${score} points${isCurrentUser ? ' (you)' : ''}${isDeparted ? ' (departed)' : ''}`}
+      {...props}
     >
       {/* Rank */}
       <div className={cn(isDeparted && 'opacity-60')}>

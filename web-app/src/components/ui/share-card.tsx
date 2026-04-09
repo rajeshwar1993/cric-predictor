@@ -92,8 +92,13 @@ function ShareCard({
     setSharing(true)
     try {
       await handleShare(cardRef.current)
-    } catch {
-      // Silently handle share cancellation or failure
+    } catch (error: unknown) {
+      // Ignore user cancellation (e.g. dismissing the native share sheet)
+      const isAbort =
+        error instanceof DOMException && error.name === 'AbortError'
+      if (!isAbort) {
+        console.error('[ShareCard] Export failed:', error)
+      }
     } finally {
       setSharing(false)
     }

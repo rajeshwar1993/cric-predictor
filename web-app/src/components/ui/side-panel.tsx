@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 
+import { cn } from '@/lib/utils'
 import {
   Sheet,
   SheetContent,
@@ -21,6 +22,8 @@ interface SidePanelProps {
   onOpenChange: (open: boolean) => void
   /** Panel content */
   children: React.ReactNode
+  /** Additional class name for the content area */
+  className?: string
 }
 
 function SidePanel({
@@ -29,6 +32,7 @@ function SidePanel({
   open,
   onOpenChange,
   children,
+  className,
 }: SidePanelProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -41,7 +45,7 @@ function SidePanel({
             {title} panel
           </SheetDescription>
         </SheetHeader>
-        <div className="flex-1 overflow-y-auto px-4 pb-4">{children}</div>
+        <div className={cn('flex-1 overflow-y-auto px-4 pb-4', className)}>{children}</div>
       </SheetContent>
     </Sheet>
   )
