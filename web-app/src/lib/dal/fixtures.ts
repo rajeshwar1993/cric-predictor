@@ -1,6 +1,9 @@
 import { createServerClient } from '@/lib/supabase/server'
 import type { MatchStatus } from '@/types'
 
+// Statuses that indicate a match has ended
+const COMPLETED_STATUSES: MatchStatus[] = ['completed', 'resolved', 'abandoned', 'no_result']
+
 // ---------------------------------------------------------------------------
 // Shared types
 // ---------------------------------------------------------------------------
@@ -331,4 +334,161 @@ export async function getFixtureWithTeams(
     homeTeam: mapTeam(homeTeam),
     awayTeam: mapTeam(awayTeam),
   }
+}
+
+// ---------------------------------------------------------------------------
+// RecentResult types
+// ---------------------------------------------------------------------------
+
+/**
+ * User's prediction standing for a fixture.
+ */
+export interface FixtureUserStanding {
+  predictedCount: number
+  correctCount: number
+  resolvedCount: number
+  pointsEarned: number
+}
+
+/**
+ * A completed fixture with result info and user's standing.
+ */
+export interface RecentResultFixture extends FixtureWithTeams {
+  /** The winning team's ID, or null if no winner (tie/no_result/abandoned) */
+  matchWinnerId: string | null
+  /** Home team final score string from live_scores (e.g. "186/4") */
+  homeTeamScore: string | null
+  /** Away team final score string from live_scores (e.g. "183/8") */
+  awayTeamScore: string | null
+  /** The user's prediction standing for this fixture, or null if they didn't predict */
+  userStanding: FixtureUserStanding | null
+}
+
+// ---------------------------------------------------------------------------
+// getRecentResults
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch the last N completed/resolved/abandoned/no_result fixtures for a gang,
+ * with user's prediction standings.
+ *
+ * Returns fixtures newest first with match winner, final scores, and the
+ * current user's prediction summary (correct count, points earned, etc.).
+ *
+ * Creates its own Supabase server client (DAL convention).
+ * Returns empty array if no active league season or no completed fixtures.
+ * Throws on non-recoverable database errors.
+ */
+export async function getRecentResults(
+  gangId: string,
+  userId: string,
+  limit: number = 3,
+): Promise<RecentResultFixture[]> {
+  const supabase = await createServerClient()
+
+  // Step 1: Get gang's active league season
+  const { data: gangSeason, error: gangSeasonError } = await supabase
+    .from('v2_gang_league_seasons')
+    .select('league_id, season_id')
+    .eq('gang_id', gangId)
+    .eq('is_active', true)
+    .single()
+
+  if (gangSeasonError) {
+    if (gangSeasonError.code === 'PGRST116') return []
+    throw gangSeasonError
+  }
+
+  if (!gangSeason) return []
+
+  // Step 2: Fetch recent completed fixtures with results and live scores
+  const { data: fixtures, error: fixturesError } = await supabase
+    .from('v2_league_season_fixtures')
+    .select(
+      `
+      id,
+      match_number,
+      start_datetime,
+      venue_name,
+      status,
+      home_team:v2_league_teams!home_team_id (id, name, code, color, logo_url),
+      away_team:v2_league_teams!away_team_id (id, name, code, color, logo_url),
+      v2_fixture_results (match_winner_id),
+      v2_fixture_live_scores (home_team_score, away_team_score)
+    `,
+    )
+    .eq('league_id', gangSeason.league_id)
+    .eq('season_id', gangSeason.season_id)
+    .in('status', COMPLETED_STATUSES)
+    .order('start_datetime', { ascending: false })
+    .limit(limit)
+
+  if (fixturesError) throw fixturesError
+  if (!fixtures || fixtures.length === 0) return []
+
+  // Step 3: Get user's standings for these fixtures
+  const fixtureIds = fixtures.map((f) => f.id)
+  const { data: standings, error: standingsError } = await supabase
+    .from('v2_gang_fixture_standings')
+    .select('fixture_id, predicted_count, correct_count, resolved_count, points_earned')
+    .eq('gang_id', gangId)
+    .eq('user_id', userId)
+    .in('fixture_id', fixtureIds)
+
+  if (standingsError) throw standingsError
+
+  // Build a lookup map for standings
+  const standingsMap = new Map(
+    (standings ?? []).map((s) => [
+      s.fixture_id,
+      {
+        predictedCount: s.predicted_count,
+        correctCount: s.correct_count,
+        resolvedCount: s.resolved_count,
+        pointsEarned: s.points_earned,
+      },
+    ]),
+  )
+
+  // Step 4: Map fixtures to clean RecentResultFixture interface
+  return fixtures.map((row) => {
+    const homeTeam = row.home_team as unknown as {
+      id: string
+      name: string
+      code: string
+      color: string
+      logo_url: string | null
+    }
+    const awayTeam = row.away_team as unknown as {
+      id: string
+      name: string
+      code: string
+      color: string
+      logo_url: string | null
+    }
+
+    // PostgREST returns one-to-one as an object (or null), but types say array
+    const result = row.v2_fixture_results as unknown as {
+      match_winner_id: string | null
+    } | null
+
+    const liveScores = row.v2_fixture_live_scores as unknown as {
+      home_team_score: string | null
+      away_team_score: string | null
+    } | null
+
+    return {
+      id: row.id,
+      matchNumber: row.match_number,
+      startDatetime: row.start_datetime,
+      venueName: row.venue_name,
+      status: row.status,
+      homeTeam: mapTeam(homeTeam),
+      awayTeam: mapTeam(awayTeam),
+      matchWinnerId: result?.match_winner_id ?? null,
+      homeTeamScore: liveScores?.home_team_score ?? null,
+      awayTeamScore: liveScores?.away_team_score ?? null,
+      userStanding: standingsMap.get(row.id) ?? null,
+    }
+  })
 }

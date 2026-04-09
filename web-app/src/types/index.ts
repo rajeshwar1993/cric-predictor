@@ -11,6 +11,7 @@ export type Notification = Database['public']['Tables']['v2_notifications']['Row
 export type LeagueTeam = Database['public']['Tables']['v2_league_teams']['Row']
 export type Player = Database['public']['Tables']['v2_players']['Row']
 export type FixtureLiveScore = Database['public']['Tables']['v2_fixture_live_scores']['Row']
+export type FixtureResult = Database['public']['Tables']['v2_fixture_results']['Row']
 export type GangFixtureStanding = Database['public']['Tables']['v2_gang_fixture_standings']['Row']
 export type GangSeasonStanding = Database['public']['Tables']['v2_gang_season_standings']['Row']
 export type GangLeagueSeason = Database['public']['Tables']['v2_gang_league_seasons']['Row']

@@ -13,6 +13,7 @@ import { MemberListSection } from '@/components/gangs/member-list-section'
 import { LeaveGangButton } from '@/components/gangs/leave-gang-button'
 import { UpcomingMatches } from '@/components/matches/upcoming-matches'
 import { LiveMatchesSection } from '@/components/matches/live-matches-section'
+import { RecentResults } from '@/components/matches/recent-results'
 import { getLiveFixtures } from '@/lib/dal/fixtures'
 
 interface GangPageProps {
@@ -119,13 +120,9 @@ export default async function GangPage({ params }: GangPageProps) {
         initialLiveFixtures={liveFixtures}
       />
 
-      {/* Placeholder: Recent Results — MTCH-003 */}
+      {/* Recent Results — MTCH-003 */}
       <Suspense fallback={<MatchListSkeleton count={3} />}>
-        <section
-          className="mt-8"
-          aria-label="Recent results"
-          data-placeholder="recent-results"
-        />
+        <RecentResults gangId={gang.id} />
       </Suspense>
 
       {/* Member List — GANG-003 */}
