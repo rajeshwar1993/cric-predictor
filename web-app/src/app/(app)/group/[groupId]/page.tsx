@@ -8,6 +8,7 @@ import { env } from '@/lib/env'
 import { PageWrapper } from '@/components/layout/page-wrapper'
 import { GangHeader } from '@/components/gangs/gang-header'
 import { MatchCardSkeleton, LeaderboardRowSkeleton } from '@/components/ui/skeleton'
+import { PendingRequests } from '@/components/gangs/pending-requests'
 
 interface GangPageProps {
   params: Promise<{ groupId: string }>
@@ -89,14 +90,10 @@ export default async function GangPage({ params }: GangPageProps) {
         inviterName={currentUserDisplayName}
       />
 
-      {/* Placeholder: Pending Requests (admin only) — GANG-002 */}
+      {/* Pending Requests (admin only) — GANG-002 */}
       {isAdmin && (
         <Suspense fallback={null}>
-          <section
-            className="mt-8"
-            aria-label="Pending join requests"
-            data-placeholder="pending-requests"
-          />
+          <PendingRequests gangId={gang.id} />
         </Suspense>
       )}
 

@@ -33,6 +33,9 @@ function chainBuilder(resolvedValue: { data: unknown; error: unknown }) {
       mockEq(...args)
       return chain
     },
+    order() {
+      return chain
+    },
     maybeSingle() {
       mockMaybeSingle()
       return chain
@@ -75,6 +78,7 @@ const {
   getMembershipStatus,
   getGangDetails,
   getGangMemberStatus,
+  getPendingRequests,
 } = await import('./gangs')
 
 // ---------------------------------------------------------------------------
@@ -565,6 +569,104 @@ describe('getGangMemberStatus', () => {
     queryResult = { data: null, error: { message: 'db error', code: '42P01' } }
 
     await expect(getGangMemberStatus('gang-1', 'user-1')).rejects.toEqual(
+      expect.objectContaining({ message: 'db error' }),
+    )
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Tests — getPendingRequests
+// ---------------------------------------------------------------------------
+
+describe('getPendingRequests', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+
+    queryResult = { data: [], error: null }
+    rpcResult = { data: [], error: null }
+  })
+
+  test('returns empty array when no pending requests exist', async () => {
+    queryResult = { data: [], error: null }
+
+    const result = await getPendingRequests('gang-1')
+
+    expect(result).toEqual([])
+    expect(mockFrom).toHaveBeenCalledWith('v2_gang_members')
+    expect(mockSelect).toHaveBeenCalledWith('user_id, requested_at, v2_profiles (display_name, email)')
+    expect(mockEq).toHaveBeenCalledWith('gang_id', 'gang-1')
+    expect(mockEq).toHaveBeenCalledWith('status', 'pending')
+  })
+
+  test('returns empty array when data is null', async () => {
+    queryResult = { data: null, error: null }
+
+    const result = await getPendingRequests('gang-1')
+
+    expect(result).toEqual([])
+  })
+
+  test('maps pending member rows to PendingRequest shape', async () => {
+    queryResult = {
+      data: [
+        {
+          user_id: 'user-1',
+          requested_at: '2026-04-01T10:00:00Z',
+          v2_profiles: { display_name: 'Rohit', email: 'rohit@test.com' },
+        },
+        {
+          user_id: 'user-2',
+          requested_at: '2026-04-02T12:00:00Z',
+          v2_profiles: { display_name: 'Virat', email: 'virat@test.com' },
+        },
+      ],
+      error: null,
+    }
+
+    const result = await getPendingRequests('gang-123')
+
+    expect(result).toHaveLength(2)
+    expect(result[0]).toEqual({
+      userId: 'user-1',
+      displayName: 'Rohit',
+      email: 'rohit@test.com',
+      requestedAt: '2026-04-01T10:00:00Z',
+    })
+    expect(result[1]).toEqual({
+      userId: 'user-2',
+      displayName: 'Virat',
+      email: 'virat@test.com',
+      requestedAt: '2026-04-02T12:00:00Z',
+    })
+  })
+
+  test('handles null profile gracefully', async () => {
+    queryResult = {
+      data: [
+        {
+          user_id: 'user-1',
+          requested_at: '2026-04-01T10:00:00Z',
+          v2_profiles: null,
+        },
+      ],
+      error: null,
+    }
+
+    const result = await getPendingRequests('gang-1')
+
+    expect(result).toHaveLength(1)
+    expect(result[0]).toEqual({
+      userId: 'user-1',
+      displayName: null,
+      email: '',
+      requestedAt: '2026-04-01T10:00:00Z',
+    })
+  })
+
+  test('throws when the query errors', async () => {
+    queryResult = { data: null, error: { message: 'db error', code: '42P01' } }
+
+    await expect(getPendingRequests('gang-1')).rejects.toEqual(
       expect.objectContaining({ message: 'db error' }),
     )
   })

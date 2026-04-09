@@ -55,7 +55,7 @@ vi.mock('next/cache', () => ({
 }))
 
 // Import after mocks are set up
-const { createGang, joinGangByCode } = await import('./gangs')
+const { createGang, joinGangByCode, approveJoinRequest, rejectJoinRequest } = await import('./gangs')
 
 // ---------------------------------------------------------------------------
 // createGang
@@ -798,5 +798,478 @@ describe('joinGangByCode server action', () => {
     expect(mockRpc).toHaveBeenCalledWith('get_gang_by_invite_code', {
       p_invite_code: 'XK42AB',
     })
+  })
+})
+
+// ---------------------------------------------------------------------------
+// approveJoinRequest
+// ---------------------------------------------------------------------------
+
+describe('approveJoinRequest server action', () => {
+  const mockUser = { id: 'admin-user-123' }
+  const validGangId = '550e8400-e29b-41d4-a716-446655440000'
+  const validUserId = '660e8400-e29b-41d4-a716-446655440001'
+
+  /**
+   * Sets up mockFrom for approveJoinRequest calls.
+   * The action calls .from() for:
+   * 1. v2_gang_members — admin verification (.maybeSingle)
+   * 2. v2_gang_members — approved count (.select with count)
+   * 3. v2_profiles — requester display name (.single)
+   * 4. v2_gang_members — display name dup check (.select)
+   * 5. v2_gang_members — update status
+   * 6. v2_gangs — fetch gang name (.single)
+   * 7. v2_notifications — insert notification
+   */
+  function setupApproveFromMock(overrides?: {
+    adminCheck?: { data: unknown }
+    approvedCount?: number
+    requesterProfile?: { data: unknown }
+    duplicateName?: { data: unknown[] }
+    updateResult?: { data: unknown[]; error: unknown }
+    gangData?: { data: unknown }
+    notificationResult?: { error: unknown }
+  }) {
+    const opts = {
+      adminCheck: { data: { role: 'admin', status: 'approved' } },
+      approvedCount: 5,
+      requesterProfile: { data: { display_name: 'NewUser' } },
+      duplicateName: { data: [] },
+      updateResult: { data: [{ status: 'approved' }], error: null },
+      gangData: { data: { name: 'Test Gang' } },
+      notificationResult: { error: null },
+      ...overrides,
+    }
+
+    let memberCallIndex = 0
+    let gangsCallIndex = 0
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'v2_gang_members') {
+        memberCallIndex++
+        if (memberCallIndex === 1) return createQueryChain(opts.adminCheck)
+        if (memberCallIndex === 2) return createQueryChain({ count: opts.approvedCount, data: null, error: null })
+        if (memberCallIndex === 3) return createQueryChain(opts.duplicateName)
+        if (memberCallIndex === 4) return createQueryChain(opts.updateResult)
+      }
+      if (table === 'v2_profiles') {
+        return createQueryChain(opts.requesterProfile)
+      }
+      if (table === 'v2_gangs') {
+        gangsCallIndex++
+        if (gangsCallIndex === 1) return createQueryChain(opts.gangData)
+      }
+      if (table === 'v2_notifications') {
+        return createQueryChain(opts.notificationResult)
+      }
+      return createQueryChain({ data: null })
+    })
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockGetUser.mockResolvedValue({ data: { user: mockUser }, error: null })
+    mockRateLimit.mockResolvedValue({ allowed: true, remaining: 59 })
+  })
+
+  // ---- Auth checks ----
+
+  test('returns error when user is not authenticated', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
+
+    const result = await approveJoinRequest(validGangId, validUserId)
+
+    expect(result).toEqual({ success: false, error: 'Not authenticated' })
+  })
+
+  // ---- Admin check ----
+
+  test('returns error when user is not admin', async () => {
+    setupApproveFromMock({
+      adminCheck: { data: { role: 'member', status: 'approved' } },
+    })
+
+    const result = await approveJoinRequest(validGangId, validUserId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Only gang admins can approve requests',
+    })
+  })
+
+  test('returns error when admin membership is not approved', async () => {
+    setupApproveFromMock({
+      adminCheck: { data: { role: 'admin', status: 'pending' } },
+    })
+
+    const result = await approveJoinRequest(validGangId, validUserId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Only gang admins can approve requests',
+    })
+  })
+
+  test('returns error when no admin membership found', async () => {
+    setupApproveFromMock({
+      adminCheck: { data: null },
+    })
+
+    const result = await approveJoinRequest(validGangId, validUserId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Only gang admins can approve requests',
+    })
+  })
+
+  // ---- Rate limiting ----
+
+  test('returns error when rate limited', async () => {
+    setupApproveFromMock()
+    mockRateLimit.mockResolvedValue({ allowed: false, remaining: 0 })
+
+    const result = await approveJoinRequest(validGangId, validUserId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Too many requests. Try again later.',
+    })
+    expect(mockRateLimit).toHaveBeenCalledWith('admin-user-123', 'approve_join_request', {
+      max: 60,
+      windowSeconds: 3600,
+    })
+  })
+
+  // ---- Validation ----
+
+  test('returns error for invalid gangId UUID', async () => {
+    setupApproveFromMock()
+
+    const result = await approveJoinRequest('not-a-uuid', validUserId)
+
+    expect(result).toEqual({ success: false, error: 'Invalid request' })
+  })
+
+  test('returns error for invalid userId UUID', async () => {
+    setupApproveFromMock()
+
+    const result = await approveJoinRequest(validGangId, 'not-a-uuid')
+
+    expect(result).toEqual({ success: false, error: 'Invalid request' })
+  })
+
+  // ---- Gang full ----
+
+  test('returns error when gang has 20 approved members', async () => {
+    setupApproveFromMock({ approvedCount: 20 })
+
+    const result = await approveJoinRequest(validGangId, validUserId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'This gang has reached its maximum of 20 members',
+    })
+  })
+
+  // ---- Display name collision ----
+
+  test('returns error when display name is duplicate in gang', async () => {
+    setupApproveFromMock({
+      duplicateName: { data: [{ user_id: 'other-user' }] },
+    })
+
+    const result = await approveJoinRequest(validGangId, validUserId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'A member with the same display name already exists in this gang.',
+    })
+  })
+
+  // ---- Update failure ----
+
+  test('returns error when update fails', async () => {
+    setupApproveFromMock({
+      updateResult: { data: [], error: { message: 'db error' } },
+    })
+
+    const result = await approveJoinRequest(validGangId, validUserId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Failed to approve request. Please try again.',
+    })
+  })
+
+  // ---- Race condition: already processed ----
+
+  test('returns already-processed error when zero rows updated (race condition)', async () => {
+    setupApproveFromMock({
+      updateResult: { data: [], error: null },
+    })
+
+    const result = await approveJoinRequest(validGangId, validUserId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'This request has already been processed.',
+    })
+    // Should NOT send notification or fire analytics
+    expect(mockTrackEvent).not.toHaveBeenCalled()
+    expect(mockRevalidatePath).not.toHaveBeenCalled()
+  })
+
+  // ---- Success ----
+
+  test('approves request, fires analytics, revalidates, and returns success', async () => {
+    setupApproveFromMock()
+
+    const result = await approveJoinRequest(validGangId, validUserId)
+
+    expect(result).toEqual({ success: true })
+
+    // Revalidation
+    expect(mockRevalidatePath).toHaveBeenCalledWith(`/group/${validGangId}`)
+    expect(mockRevalidatePath).toHaveBeenCalledWith(`/group/${validGangId}/settings`)
+
+    // Analytics
+    expect(mockTrackEvent).toHaveBeenCalledWith(
+      'admin-user-123',
+      'member_approved',
+      expect.objectContaining({
+        gang_id: validGangId,
+        approved_user_id: validUserId,
+      }),
+    )
+  })
+
+  // ---- Order of operations ----
+
+  test('calls auth before admin check', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
+
+    await approveJoinRequest(validGangId, validUserId)
+
+    expect(mockGetUser).toHaveBeenCalledOnce()
+    expect(mockFrom).not.toHaveBeenCalled()
+  })
+
+  test('does not revalidate or fire analytics on error', async () => {
+    setupApproveFromMock({
+      updateResult: { data: [], error: { message: 'db error' } },
+    })
+
+    await approveJoinRequest(validGangId, validUserId)
+
+    expect(mockRevalidatePath).not.toHaveBeenCalled()
+    expect(mockTrackEvent).not.toHaveBeenCalled()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// rejectJoinRequest
+// ---------------------------------------------------------------------------
+
+describe('rejectJoinRequest server action', () => {
+  const mockUser = { id: 'admin-user-123' }
+  const validGangId = '550e8400-e29b-41d4-a716-446655440000'
+  const validUserId = '660e8400-e29b-41d4-a716-446655440001'
+
+  /**
+   * Sets up mockFrom for rejectJoinRequest calls.
+   * The action calls .from() for:
+   * 1. v2_gang_members — admin verification (.maybeSingle)
+   * 2. v2_gang_members — update status
+   * 3. v2_gangs — fetch gang name (.single)
+   * 4. v2_notifications — insert notification
+   */
+  function setupRejectFromMock(overrides?: {
+    adminCheck?: { data: unknown }
+    updateResult?: { data: unknown[]; error: unknown }
+    gangData?: { data: unknown }
+    notificationResult?: { error: unknown }
+  }) {
+    const opts = {
+      adminCheck: { data: { role: 'admin', status: 'approved' } },
+      updateResult: { data: [{ status: 'rejected' }], error: null },
+      gangData: { data: { name: 'Test Gang' } },
+      notificationResult: { error: null },
+      ...overrides,
+    }
+
+    let memberCallIndex = 0
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'v2_gang_members') {
+        memberCallIndex++
+        if (memberCallIndex === 1) return createQueryChain(opts.adminCheck)
+        if (memberCallIndex === 2) return createQueryChain(opts.updateResult)
+      }
+      if (table === 'v2_gangs') {
+        return createQueryChain(opts.gangData)
+      }
+      if (table === 'v2_notifications') {
+        return createQueryChain(opts.notificationResult)
+      }
+      return createQueryChain({ data: null })
+    })
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockGetUser.mockResolvedValue({ data: { user: mockUser }, error: null })
+    mockRateLimit.mockResolvedValue({ allowed: true, remaining: 59 })
+  })
+
+  // ---- Auth checks ----
+
+  test('returns error when user is not authenticated', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
+
+    const result = await rejectJoinRequest(validGangId, validUserId)
+
+    expect(result).toEqual({ success: false, error: 'Not authenticated' })
+  })
+
+  // ---- Admin check ----
+
+  test('returns error when user is not admin', async () => {
+    setupRejectFromMock({
+      adminCheck: { data: { role: 'member', status: 'approved' } },
+    })
+
+    const result = await rejectJoinRequest(validGangId, validUserId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Only gang admins can reject requests',
+    })
+  })
+
+  test('returns error when no membership found', async () => {
+    setupRejectFromMock({
+      adminCheck: { data: null },
+    })
+
+    const result = await rejectJoinRequest(validGangId, validUserId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Only gang admins can reject requests',
+    })
+  })
+
+  // ---- Rate limiting ----
+
+  test('returns error when rate limited', async () => {
+    setupRejectFromMock()
+    mockRateLimit.mockResolvedValue({ allowed: false, remaining: 0 })
+
+    const result = await rejectJoinRequest(validGangId, validUserId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Too many requests. Try again later.',
+    })
+    expect(mockRateLimit).toHaveBeenCalledWith('admin-user-123', 'reject_join_request', {
+      max: 60,
+      windowSeconds: 3600,
+    })
+  })
+
+  // ---- Validation ----
+
+  test('returns error for invalid gangId UUID', async () => {
+    setupRejectFromMock()
+
+    const result = await rejectJoinRequest('not-a-uuid', validUserId)
+
+    expect(result).toEqual({ success: false, error: 'Invalid request' })
+  })
+
+  test('returns error for invalid userId UUID', async () => {
+    setupRejectFromMock()
+
+    const result = await rejectJoinRequest(validGangId, 'not-a-uuid')
+
+    expect(result).toEqual({ success: false, error: 'Invalid request' })
+  })
+
+  // ---- Update failure ----
+
+  test('returns error when update fails', async () => {
+    setupRejectFromMock({
+      updateResult: { data: [], error: { message: 'db error' } },
+    })
+
+    const result = await rejectJoinRequest(validGangId, validUserId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Failed to reject request. Please try again.',
+    })
+  })
+
+  // ---- Race condition: already processed ----
+
+  test('returns already-processed error when zero rows updated (race condition)', async () => {
+    setupRejectFromMock({
+      updateResult: { data: [], error: null },
+    })
+
+    const result = await rejectJoinRequest(validGangId, validUserId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'This request has already been processed.',
+    })
+    // Should NOT send notification or fire analytics
+    expect(mockTrackEvent).not.toHaveBeenCalled()
+    expect(mockRevalidatePath).not.toHaveBeenCalled()
+  })
+
+  // ---- Success ----
+
+  test('rejects request, fires analytics, revalidates, and returns success', async () => {
+    setupRejectFromMock()
+
+    const result = await rejectJoinRequest(validGangId, validUserId)
+
+    expect(result).toEqual({ success: true })
+
+    // Revalidation
+    expect(mockRevalidatePath).toHaveBeenCalledWith(`/group/${validGangId}`)
+    expect(mockRevalidatePath).toHaveBeenCalledWith(`/group/${validGangId}/settings`)
+
+    // Analytics
+    expect(mockTrackEvent).toHaveBeenCalledWith(
+      'admin-user-123',
+      'member_rejected',
+      expect.objectContaining({
+        gang_id: validGangId,
+        rejected_user_id: validUserId,
+      }),
+    )
+  })
+
+  // ---- Order of operations ----
+
+  test('calls auth before admin check', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
+
+    await rejectJoinRequest(validGangId, validUserId)
+
+    expect(mockGetUser).toHaveBeenCalledOnce()
+    expect(mockFrom).not.toHaveBeenCalled()
+  })
+
+  test('does not revalidate or fire analytics on error', async () => {
+    setupRejectFromMock({
+      updateResult: { data: [], error: { message: 'db error' } },
+    })
+
+    await rejectJoinRequest(validGangId, validUserId)
+
+    expect(mockRevalidatePath).not.toHaveBeenCalled()
+    expect(mockTrackEvent).not.toHaveBeenCalled()
   })
 })
