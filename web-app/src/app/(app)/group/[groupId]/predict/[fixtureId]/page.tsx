@@ -14,8 +14,8 @@ import {
 import { PageWrapper } from '@/components/layout/page-wrapper'
 import { PredictPageHeader } from '@/components/predictions/predict-page-header'
 import { WindowNotOpenMessage } from '@/components/predictions/window-not-open-message'
-import { ScenarioCard } from '@/components/predictions/scenario-card'
-import { ScenarioGroup } from '@/components/predictions/scenario-group'
+import { ScenarioList } from '@/components/predictions/scenario-list'
+import type { ScenarioGroupData } from '@/components/predictions/scenario-list'
 import { Button } from '@/components/ui/button'
 
 // ---------------------------------------------------------------------------
@@ -163,10 +163,16 @@ export default async function PredictPage({ params }: PredictPageProps) {
       : Promise.resolve([]),
   ])
 
-  // Build a lookup map: scenarioId → answer
+  // Build a lookup map: scenarioId → answer (for initial prediction values)
   const predictionMap = new Map(
     predictions.map((p) => [p.scenarioId, p.answer]),
   )
+
+  // Build initial predictions as a plain object for the client component
+  const initialPredictions: Record<string, string> = {}
+  for (const [scenarioId, answer] of predictionMap) {
+    initialPredictions[scenarioId] = answer
+  }
 
   // Compute last submitted timestamp from predictions
   const firstPrediction = predictions[0]
@@ -179,13 +185,30 @@ export default async function PredictPage({ params }: PredictPageProps) {
   // Group scenarios by phase
   const scenarioGroups = groupScenariosByPhase(scenarios)
 
+  // Map scenario groups for the client component (serializable data)
+  const clientGroups: ScenarioGroupData[] = scenarioGroups.map((g) => ({
+    phase: g.phase,
+    label: g.label,
+    scenarios: g.scenarios.map((s) => ({
+      id: s.id,
+      title: s.title,
+      description: s.description,
+      inputType: s.inputType,
+      options: s.options,
+      pointsWeight: s.pointsWeight,
+    })),
+  }))
+
+  // Group players by team for the pickers
+  const groupedPlayers = {
+    home: players.filter((p) => p.teamId === fixture.homeTeam.id),
+    away: players.filter((p) => p.teamId === fixture.awayTeam.id),
+  }
+
   // Window opens 12h before start
   const windowOpensAt = new Date(
     new Date(fixture.startDatetime).getTime() - 12 * 60 * 60 * 1000,
   ).toISOString()
-
-  // Suppress unused warning — players are passed down to pickers in PRED-002
-  void players
 
   return (
     <PageWrapper className="py-8">
@@ -206,36 +229,19 @@ export default async function PredictPage({ params }: PredictPageProps) {
         <PredictionsLockedMessage fixtureId={fixtureId} gangId={groupId} />
       )}
 
-      {/* Open — show scenario groups */}
+      {/* Open — show scenario groups with pickers */}
       {windowStatus === 'open' && (
         <div className="mt-8 flex flex-col gap-8">
-          {scenarioGroups.length === 0 ? (
+          {clientGroups.length === 0 ? (
             <NoScenariosMessage />
           ) : (
-            scenarioGroups.map((group) => (
-              <ScenarioGroup
-                key={group.phase}
-                phase={group.phase}
-                label={group.label}
-              >
-                {group.scenarios.map((scenario) => (
-                  <ScenarioCard
-                    key={scenario.id}
-                    title={scenario.title}
-                    description={scenario.description}
-                    pointsWeight={scenario.pointsWeight}
-                    isPicked={predictionMap.has(scenario.id)}
-                  >
-                    {/* Picker placeholder — PRED-002 will add actual pickers */}
-                    {predictionMap.has(scenario.id) && (
-                      <div className="rounded-md bg-mid-concrete px-3 py-2 text-body-sm text-text-secondary">
-                        {predictionMap.get(scenario.id)}
-                      </div>
-                    )}
-                  </ScenarioCard>
-                ))}
-              </ScenarioGroup>
-            ))
+            <ScenarioList
+              groups={clientGroups}
+              homeTeam={fixture.homeTeam}
+              awayTeam={fixture.awayTeam}
+              players={groupedPlayers}
+              initialPredictions={initialPredictions}
+            />
           )}
         </div>
       )}
