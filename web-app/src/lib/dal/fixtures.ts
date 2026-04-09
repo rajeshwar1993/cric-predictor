@@ -172,6 +172,102 @@ export async function getUpcomingFixtures(
 }
 
 // ---------------------------------------------------------------------------
+// LiveFixture type
+// ---------------------------------------------------------------------------
+
+/**
+ * Live fixture with joined team data, used by the LiveMatchesSection.
+ */
+export interface LiveFixture extends FixtureWithTeams {
+  /** The fixture status is always 'live' for these fixtures */
+  status: 'live'
+}
+
+// ---------------------------------------------------------------------------
+// getLiveFixtures
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch all live fixtures for a gang's active league season.
+ *
+ * Returns fixtures where status='live' with home/away team joins.
+ * Used by the gang page server component to provide initial data
+ * to the LiveMatchesSection client component.
+ *
+ * Creates its own Supabase server client (DAL convention).
+ * Returns empty array if no active league season or no live fixtures.
+ * Throws on non-recoverable database errors.
+ */
+export async function getLiveFixtures(gangId: string): Promise<LiveFixture[]> {
+  const supabase = await createServerClient()
+
+  // Step 1: Get gang's active league season
+  const { data: gangSeason, error: gangSeasonError } = await supabase
+    .from('v2_gang_league_seasons')
+    .select('league_id, season_id')
+    .eq('gang_id', gangId)
+    .eq('is_active', true)
+    .single()
+
+  if (gangSeasonError) {
+    // No active league season — nothing to show
+    if (gangSeasonError.code === 'PGRST116') return []
+    throw gangSeasonError
+  }
+
+  if (!gangSeason) return []
+
+  // Step 2: Fetch live fixtures sorted by start_datetime
+  const { data: fixtures, error: fixturesError } = await supabase
+    .from('v2_league_season_fixtures')
+    .select(
+      `
+      id,
+      match_number,
+      start_datetime,
+      venue_name,
+      status,
+      home_team:v2_league_teams!home_team_id (id, name, code, color, logo_url),
+      away_team:v2_league_teams!away_team_id (id, name, code, color, logo_url)
+    `,
+    )
+    .eq('league_id', gangSeason.league_id)
+    .eq('season_id', gangSeason.season_id)
+    .eq('status', 'live')
+    .order('start_datetime', { ascending: true })
+
+  if (fixturesError) throw fixturesError
+  if (!fixtures || fixtures.length === 0) return []
+
+  return fixtures.map((row) => {
+    const homeTeam = row.home_team as unknown as {
+      id: string
+      name: string
+      code: string
+      color: string
+      logo_url: string | null
+    }
+    const awayTeam = row.away_team as unknown as {
+      id: string
+      name: string
+      code: string
+      color: string
+      logo_url: string | null
+    }
+
+    return {
+      id: row.id,
+      matchNumber: row.match_number,
+      startDatetime: row.start_datetime,
+      venueName: row.venue_name,
+      status: 'live' as const,
+      homeTeam: mapTeam(homeTeam),
+      awayTeam: mapTeam(awayTeam),
+    }
+  })
+}
+
+// ---------------------------------------------------------------------------
 // getFixtureWithTeams
 // ---------------------------------------------------------------------------
 
