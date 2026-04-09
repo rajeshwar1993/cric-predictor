@@ -13,6 +13,7 @@ export type Player = Database['public']['Tables']['v2_players']['Row']
 export type FixtureLiveScore = Database['public']['Tables']['v2_fixture_live_scores']['Row']
 export type GangFixtureStanding = Database['public']['Tables']['v2_gang_fixture_standings']['Row']
 export type GangSeasonStanding = Database['public']['Tables']['v2_gang_season_standings']['Row']
+export type RateLimit = Database['public']['Tables']['v2_rate_limits']['Row']
 
 // Insert types
 export type ProfileInsert = Database['public']['Tables']['v2_profiles']['Insert']
