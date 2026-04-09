@@ -14,9 +14,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${spaceGrotesk.variable} ${dmSans.variable} dark`}>
-      <body className="bg-concrete-black text-text-primary font-body antialiased">
-        {children}
-      </body>
+      <body className="bg-concrete-black text-text-primary font-body antialiased">{children}</body>
     </html>
   )
 }

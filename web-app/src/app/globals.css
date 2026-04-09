@@ -18,39 +18,39 @@
 
 :root {
   /* --- Primary Colors (derived from logo) --- */
-  --color-bragg-lime: #C8E64A;
-  --color-lime-shade: #A8C42A;
-  --color-lime-wash: #C8E64A15;
+  --color-bragg-lime: #c8e64a;
+  --color-lime-shade: #a8c42a;
+  --color-lime-wash: #c8e64a15;
 
   /* --- Secondary & Accent Colors --- */
-  --color-electric-coral: #FF6B6B;
-  --color-vivid-blue: #4F7DF9;
-  --color-sunburst-yellow: #FFD93D;
-  --color-ultraviolet: #8B5CF6;
+  --color-electric-coral: #ff6b6b;
+  --color-vivid-blue: #4f7df9;
+  --color-sunburst-yellow: #ffd93d;
+  --color-ultraviolet: #8b5cf6;
 
   /* --- Neutral / Surface Colors --- */
   --color-concrete-black: #111111;
-  --color-dark-concrete: #1A1A1A;
+  --color-dark-concrete: #1a1a1a;
   --color-mid-concrete: #242424;
-  --color-light-concrete: #2E2E2E;
+  --color-light-concrete: #2e2e2e;
   --color-wire: #333333;
-  --color-lime-wire: #C8E64A50;
+  --color-lime-wire: #c8e64a50;
 
   /* --- Text Colors --- */
-  --color-text-primary: #FFFFFF;
-  --color-text-secondary: #A3A3A3;
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #a3a3a3;
   --color-text-muted: #737373;
   --color-text-on-primary: #111111;
 
   /* --- Semantic Colors --- */
-  --color-success: #4ADE80;
-  --color-warning: #FFD93D;
-  --color-error: #FF6B6B;
-  --color-info: #4F7DF9;
+  --color-success: #4ade80;
+  --color-warning: #ffd93d;
+  --color-error: #ff6b6b;
+  --color-info: #4f7df9;
 
   /* --- Component-level Colors (not in core palette but needed by specific components) --- */
-  --color-hover-lime: #D4F05A;   /* Button primary hover bg */
-  --color-bronze: #CD7F32;       /* Leaderboard #3 rank text */
+  --color-hover-lime: #d4f05a; /* Button primary hover bg */
+  --color-bronze: #cd7f32; /* Leaderboard #3 rank text */
 
   /* --- Font Families ---
    * --font-space-grotesk and --font-dm-sans are set by next/font on <html>.
@@ -88,11 +88,11 @@
 
   /* --- Shadows / Elevation --- */
   --shadow-elevation-0: none;
-  --shadow-elevation-1: 0 2px 4px rgba(0,0,0,0.3);
-  --shadow-elevation-2: 0 4px 16px rgba(0,0,0,0.4);
-  --shadow-elevation-3: 0 8px 32px rgba(0,0,0,0.5);
-  --shadow-color-block: 4px 4px 0 #C8E64A;
-  --shadow-highlight: 0 0 0 3px #C8E64A;
+  --shadow-elevation-1: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-elevation-2: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-elevation-3: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-color-block: 4px 4px 0 #c8e64a;
+  --shadow-highlight: 0 0 0 3px #c8e64a;
 
   /* --- Motion / Duration --- */
   --duration-micro: 120ms;
@@ -130,39 +130,39 @@
 
 @theme {
   /* --- Colors (Primary) --- */
-  --color-bragg-lime: #C8E64A;
-  --color-lime-shade: #A8C42A;
-  --color-lime-wash: #C8E64A15;
+  --color-bragg-lime: #c8e64a;
+  --color-lime-shade: #a8c42a;
+  --color-lime-wash: #c8e64a15;
 
   /* --- Colors (Secondary & Accent) --- */
-  --color-electric-coral: #FF6B6B;
-  --color-vivid-blue: #4F7DF9;
-  --color-sunburst-yellow: #FFD93D;
-  --color-ultraviolet: #8B5CF6;
+  --color-electric-coral: #ff6b6b;
+  --color-vivid-blue: #4f7df9;
+  --color-sunburst-yellow: #ffd93d;
+  --color-ultraviolet: #8b5cf6;
 
   /* --- Colors (Neutral / Surface) --- */
   --color-concrete-black: #111111;
-  --color-dark-concrete: #1A1A1A;
+  --color-dark-concrete: #1a1a1a;
   --color-mid-concrete: #242424;
-  --color-light-concrete: #2E2E2E;
+  --color-light-concrete: #2e2e2e;
   --color-wire: #333333;
-  --color-lime-wire: #C8E64A50;
+  --color-lime-wire: #c8e64a50;
 
   /* --- Colors (Text) --- */
-  --color-text-primary: #FFFFFF;
-  --color-text-secondary: #A3A3A3;
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #a3a3a3;
   --color-text-muted: #737373;
   --color-text-on-primary: #111111;
 
   /* --- Colors (Semantic) --- */
-  --color-success: #4ADE80;
-  --color-warning: #FFD93D;
-  --color-error: #FF6B6B;
-  --color-info: #4F7DF9;
+  --color-success: #4ade80;
+  --color-warning: #ffd93d;
+  --color-error: #ff6b6b;
+  --color-info: #4f7df9;
 
   /* --- Colors (Component-level) --- */
-  --color-hover-lime: #D4F05A;
-  --color-bronze: #CD7F32;
+  --color-hover-lime: #d4f05a;
+  --color-bronze: #cd7f32;
 
   /* --- Font Families ---
    * Tailwind v4 generates font-display and font-body utility classes from these.
@@ -189,11 +189,11 @@
 
   /* --- Shadows / Elevation --- */
   --shadow-elevation-0: none;
-  --shadow-elevation-1: 0 2px 4px rgba(0,0,0,0.3);
-  --shadow-elevation-2: 0 4px 16px rgba(0,0,0,0.4);
-  --shadow-elevation-3: 0 8px 32px rgba(0,0,0,0.5);
-  --shadow-color-block: 4px 4px 0 #C8E64A;
-  --shadow-highlight: 0 0 0 3px #C8E64A;
+  --shadow-elevation-1: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-elevation-2: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-elevation-3: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-color-block: 4px 4px 0 #c8e64a;
+  --shadow-highlight: 0 0 0 3px #c8e64a;
 }
 
 /* --------------------------------------------------------------------------
@@ -201,25 +201,49 @@
  * -------------------------------------------------------------------------- */
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 @keyframes pop-in {
-  0% { opacity: 0; transform: scale(0.95); }
-  70% { transform: scale(1.03); }
-  100% { opacity: 1; transform: scale(1); }
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  70% {
+    transform: scale(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @keyframes score-pop {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.15); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 @keyframes rank-reorder {
-  0% { opacity: 0.6; transform: translateY(-8px); }
-  100% { opacity: 1; transform: translateY(0); }
+  0% {
+    opacity: 0.6;
+    transform: translateY(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* --------------------------------------------------------------------------
@@ -231,42 +255,42 @@
 
 @layer components {
   .text-display {
-    @apply text-[44px] leading-[1.05] font-display font-bold uppercase tracking-[-0.02em];
+    @apply font-display text-[44px] leading-[1.05] font-bold tracking-[-0.02em] uppercase;
   }
 
   .text-h1 {
-    @apply text-[34px] leading-[1.1] font-display font-bold uppercase tracking-[-0.02em];
+    @apply font-display text-[34px] leading-[1.1] font-bold tracking-[-0.02em] uppercase;
   }
 
   .text-h2 {
-    @apply text-[26px] leading-[1.15] font-display font-bold uppercase tracking-[-0.02em];
+    @apply font-display text-[26px] leading-[1.15] font-bold tracking-[-0.02em] uppercase;
   }
 
   .text-h3 {
-    @apply text-[20px] leading-[1.25] font-display font-semibold;
+    @apply font-display text-[20px] leading-[1.25] font-semibold;
   }
 
   .text-h4 {
-    @apply text-[17px] leading-[1.35] font-body font-semibold;
+    @apply font-body text-[17px] leading-[1.35] font-semibold;
   }
 
   .text-body-lg {
-    @apply text-[18px] leading-[1.6] font-body font-normal;
+    @apply font-body text-[18px] leading-[1.6] font-normal;
   }
 
   .text-body {
-    @apply text-base leading-[1.6] font-body font-normal;
+    @apply font-body text-base leading-[1.6] font-normal;
   }
 
   .text-body-sm {
-    @apply text-sm leading-[1.5] font-body font-normal;
+    @apply font-body text-sm leading-[1.5] font-normal;
   }
 
   .text-caption {
-    @apply text-xs leading-[1.4] font-body font-medium uppercase tracking-[0.1em];
+    @apply font-body text-xs leading-[1.4] font-medium tracking-[0.1em] uppercase;
   }
 
   .text-stat {
-    @apply text-[28px] leading-[1.1] font-display font-bold tabular-nums;
+    @apply font-display text-[28px] leading-[1.1] font-bold tabular-nums;
   }
 }

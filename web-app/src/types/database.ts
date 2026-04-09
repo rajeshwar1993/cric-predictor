@@ -7,13 +7,7 @@
  * Command: cd ../supabase/supabase && npx supabase gen types typescript --local > ../../web-app/src/types/database.ts
  */
 
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
   public: {
@@ -470,12 +464,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      v2_match_status:
-        | 'scheduled'
-        | 'live'
-        | 'completed'
-        | 'abandoned'
-        | 'cancelled'
+      v2_match_status: 'scheduled' | 'live' | 'completed' | 'abandoned' | 'cancelled'
       v2_member_role: 'admin' | 'member'
       v2_member_status: 'active' | 'pending' | 'removed'
       v2_scenario_input_type:
