@@ -507,6 +507,18 @@ export type Database = {
         }
         Returns: string
       }
+      get_gang_by_invite_code: {
+        Args: {
+          p_invite_code: string
+        }
+        Returns: {
+          id: string
+          name: string
+          auto_accept: boolean
+          is_deleted: boolean
+          created_by: string
+        }[]
+      }
     }
     Enums: {
       v2_match_status: 'scheduled' | 'live' | 'completed' | 'abandoned' | 'cancelled'
