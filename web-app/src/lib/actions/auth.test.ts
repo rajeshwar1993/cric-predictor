@@ -6,18 +6,45 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mockSignOut = vi.fn()
 const mockSignInWithOtp = vi.fn()
+const mockGetUser = vi.fn()
+const mockUpdate = vi.fn()
+const mockEq = vi.fn()
+const mockSelect = vi.fn()
+const mockSelectEq = vi.fn()
+const mockSingle = vi.fn()
 const mockDelete = vi.fn()
+const mockSet = vi.fn()
 const mockTrackEvent = vi.fn()
 
 vi.mock('@/lib/supabase/server', () => ({
   createServerClient: vi.fn().mockResolvedValue({
-    auth: { signOut: mockSignOut, signInWithOtp: mockSignInWithOtp },
+    auth: {
+      signOut: (...args: unknown[]) => mockSignOut(...args),
+      signInWithOtp: (...args: unknown[]) => mockSignInWithOtp(...args),
+      getUser: (...args: unknown[]) => mockGetUser(...args),
+    },
+    from: () => ({
+      update: (...args: unknown[]) => {
+        mockUpdate(...args)
+        return { eq: (...eqArgs: unknown[]) => mockEq(...eqArgs) }
+      },
+      select: (...args: unknown[]) => {
+        mockSelect(...args)
+        return {
+          eq: (...eqArgs: unknown[]) => {
+            mockSelectEq(...eqArgs)
+            return { single: () => mockSingle() }
+          },
+        }
+      },
+    }),
   }),
 }))
 
 vi.mock('next/headers', () => ({
   cookies: vi.fn().mockResolvedValue({
-    delete: mockDelete,
+    delete: (...args: unknown[]) => mockDelete(...args),
+    set: (...args: unknown[]) => mockSet(...args),
   }),
 }))
 
@@ -47,7 +74,7 @@ class RedirectError extends Error {
 }
 
 // Import after mocks are set up
-const { signOut, sendMagicLink } = await import('./auth')
+const { signOut, sendMagicLink, completeOnboarding } = await import('./auth')
 
 // ---------------------------------------------------------------------------
 // signOut
@@ -228,6 +255,204 @@ describe('sendMagicLink server action', () => {
     })
 
     await sendMagicLink('user@example.com')
+
+    expect(mockTrackEvent).not.toHaveBeenCalled()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// completeOnboarding
+// ---------------------------------------------------------------------------
+
+describe('completeOnboarding server action', () => {
+  const validData = {
+    displayName: 'Test User',
+    dateOfBirth: '1990-05-15',
+    termsAccepted: true as const,
+  }
+
+  const mockUser = { id: 'user-123' }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockGetUser.mockResolvedValue({ data: { user: mockUser }, error: null })
+    mockSingle.mockResolvedValue({ data: { onboarding_completed: false }, error: null })
+    mockEq.mockResolvedValue({ error: null })
+  })
+
+  test('updates profile, sets cookies, fires analytics, and redirects on valid data', async () => {
+    const error = await completeOnboarding(validData).catch((e: unknown) => e) as RedirectError
+
+    expect(error).toBeInstanceOf(RedirectError)
+    expect(error.url).toBe('/dashboard')
+
+    // Profile update
+    expect(mockUpdate).toHaveBeenCalledOnce()
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        display_name: 'Test User',
+        date_of_birth: '1990-05-15',
+        terms_version: '2.0',
+        onboarding_completed: true,
+      }),
+    )
+    expect(mockEq).toHaveBeenCalledWith('id', 'user-123')
+
+    // Cookies
+    expect(mockSet).toHaveBeenCalledWith('bragg_onboarded', 'true', {
+      maxAge: 365 * 24 * 60 * 60,
+      path: '/',
+      httpOnly: true,
+    })
+    expect(mockSet).toHaveBeenCalledWith('bragg_terms_version', '2.0', {
+      maxAge: 365 * 24 * 60 * 60,
+      path: '/',
+      httpOnly: true,
+    })
+
+    // Analytics
+    expect(mockTrackEvent).toHaveBeenCalledWith(
+      'user-123',
+      'onboarding_completed',
+      expect.objectContaining({ display_name: 'Test User' }),
+    )
+  })
+
+  test('redirects to custom redirectTo when provided', async () => {
+    const error = await completeOnboarding(validData, '/groups').catch(
+      (e: unknown) => e,
+    ) as RedirectError
+
+    expect(error).toBeInstanceOf(RedirectError)
+    expect(error.url).toBe('/groups')
+  })
+
+  test('returns error when user is not authenticated', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
+
+    const result = await completeOnboarding(validData)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'You must be logged in to complete onboarding.',
+    })
+    expect(mockUpdate).not.toHaveBeenCalled()
+  })
+
+  test('returns error when auth check fails', async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: null },
+      error: { message: 'session expired' },
+    })
+
+    const result = await completeOnboarding(validData)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'You must be logged in to complete onboarding.',
+    })
+  })
+
+  test('returns error when user has already completed onboarding', async () => {
+    mockSingle.mockResolvedValue({ data: { onboarding_completed: true }, error: null })
+
+    const result = await completeOnboarding(validData)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Onboarding already completed.',
+    })
+    expect(mockUpdate).not.toHaveBeenCalled()
+    expect(mockSet).not.toHaveBeenCalled()
+    expect(mockTrackEvent).not.toHaveBeenCalled()
+  })
+
+  test('returns validation error for short display name', async () => {
+    const result = await completeOnboarding({
+      ...validData,
+      displayName: 'A',
+    })
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Display name must be at least 2 characters',
+    })
+    expect(mockUpdate).not.toHaveBeenCalled()
+  })
+
+  test('returns validation error for long display name', async () => {
+    const result = await completeOnboarding({
+      ...validData,
+      displayName: 'A'.repeat(31),
+    })
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Display name must be at most 30 characters',
+    })
+  })
+
+  test('returns validation error for underage user', async () => {
+    const today = new Date()
+    const underageDate = `${today.getFullYear() - 17}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+
+    const result = await completeOnboarding({
+      ...validData,
+      dateOfBirth: underageDate,
+    })
+
+    expect(result).toEqual({
+      success: false,
+      error: 'You must be 18 or older to use Bragg',
+    })
+    expect(mockUpdate).not.toHaveBeenCalled()
+  })
+
+  test('returns validation error when terms not accepted', async () => {
+    const result = await completeOnboarding({
+      displayName: 'Test User',
+      dateOfBirth: '1990-05-15',
+      termsAccepted: false,
+    })
+
+    expect(result).toEqual({
+      success: false,
+      error: 'You must accept the Terms of Service and Privacy Policy',
+    })
+    expect(mockUpdate).not.toHaveBeenCalled()
+  })
+
+  test('returns error when profile update fails', async () => {
+    mockEq.mockResolvedValue({ error: { message: 'db error' } })
+
+    const result = await completeOnboarding(validData)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Failed to save your profile. Please try again.',
+    })
+    // Cookies should NOT be set when update fails
+    expect(mockSet).not.toHaveBeenCalled()
+  })
+
+  test('trims display name whitespace', async () => {
+    const error = await completeOnboarding({
+      ...validData,
+      displayName: '  Test User  ',
+    }).catch((e: unknown) => e) as RedirectError
+
+    expect(error).toBeInstanceOf(RedirectError)
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        display_name: 'Test User',
+      }),
+    )
+  })
+
+  test('does not fire analytics when auth fails', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
+
+    await completeOnboarding(validData)
 
     expect(mockTrackEvent).not.toHaveBeenCalled()
   })

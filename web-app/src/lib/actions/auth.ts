@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { z } from 'zod'
 import { createServerClient } from '@/lib/supabase/server'
-import { COOKIE_NAMES } from '@/lib/constants'
+import { COOKIE_NAMES, CURRENT_TERMS_VERSION } from '@/lib/constants'
 import { env } from '@/lib/env'
 import { sanitizeRedirect } from '@/lib/url'
 import { trackEvent } from '@/lib/analytics/server'
@@ -73,6 +73,115 @@ export async function sendMagicLink(
   })
 
   return { success: true }
+}
+
+/**
+ * Check whether a date of birth represents someone who is at least 18 years old.
+ */
+function isAtLeast18(dateOfBirth: Date): boolean {
+  const today = new Date()
+  const age = today.getFullYear() - dateOfBirth.getFullYear()
+  const monthDiff = today.getMonth() - dateOfBirth.getMonth()
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dateOfBirth.getDate())) {
+    return age - 1 >= 18
+  }
+  return age >= 18
+}
+
+const onboardingSchema = z.object({
+  displayName: z
+    .string()
+    .trim()
+    .min(2, 'Display name must be at least 2 characters')
+    .max(30, 'Display name must be at most 30 characters'),
+  dateOfBirth: z
+    .string()
+    .refine((val) => !isNaN(Date.parse(val)), 'Invalid date')
+    .refine((val) => isAtLeast18(new Date(val)), 'You must be 18 or older to use Bragg'),
+  termsAccepted: z
+    .boolean()
+    .refine((val) => val === true, 'You must accept the Terms of Service and Privacy Policy'),
+})
+
+export type OnboardingInput = z.infer<typeof onboardingSchema>
+
+/**
+ * Complete onboarding for a first-time user.
+ *
+ * Updates the user's profile with display name, date of birth,
+ * terms acceptance, and marks onboarding as complete.
+ * Sets auth cookies and redirects to dashboard (or a provided redirectTo path).
+ */
+export async function completeOnboarding(
+  data: OnboardingInput,
+  redirectTo?: string,
+): Promise<ActionResult> {
+  const supabase = await createServerClient()
+
+  // Auth check
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    return { success: false, error: 'You must be logged in to complete onboarding.' }
+  }
+
+  // Guard: prevent already-onboarded users from overwriting their profile
+  const { data: existingProfile } = await supabase
+    .from('v2_profiles')
+    .select('onboarding_completed')
+    .eq('id', user.id)
+    .single()
+  if (existingProfile?.onboarding_completed) {
+    return { success: false, error: 'Onboarding already completed.' }
+  }
+
+  // Validate input
+  const parsed = onboardingSchema.safeParse(data)
+  if (!parsed.success) {
+    const firstError = parsed.error.issues[0]?.message ?? 'Invalid input'
+    return { success: false, error: firstError }
+  }
+
+  // Update profile
+  const { error: updateError } = await supabase
+    .from('v2_profiles')
+    .update({
+      display_name: parsed.data.displayName,
+      date_of_birth: parsed.data.dateOfBirth,
+      terms_version: CURRENT_TERMS_VERSION,
+      terms_accepted_at: new Date().toISOString(),
+      onboarding_completed: true,
+    })
+    .eq('id', user.id)
+
+  if (updateError) {
+    return { success: false, error: 'Failed to save your profile. Please try again.' }
+  }
+
+  // Set cookies
+  const cookieStore = await cookies()
+  cookieStore.set(COOKIE_NAMES.ONBOARDED, 'true', {
+    maxAge: 365 * 24 * 60 * 60,
+    path: '/',
+    httpOnly: true,
+  })
+  cookieStore.set(COOKIE_NAMES.TERMS_VERSION, CURRENT_TERMS_VERSION, {
+    maxAge: 365 * 24 * 60 * 60,
+    path: '/',
+    httpOnly: true,
+  })
+
+  // Analytics
+  trackEvent(user.id, ANALYTICS_EVENTS.ONBOARDING_COMPLETED, {
+    display_name: parsed.data.displayName,
+  })
+
+  // Redirect
+  const safeRedirect = redirectTo ? sanitizeRedirect(redirectTo) : '/dashboard'
+  redirect(safeRedirect)
 }
 
 /**
