@@ -15,7 +15,7 @@ export interface PendingInvite {
   storedAt: number // Date.now() timestamp
 }
 
-const STORAGE_KEY = 'bragg_pending_invite'
+export const STORAGE_KEY = 'bragg_pending_invite'
 const EXPIRY_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 interface PendingInviteBannerProps {
