@@ -58,65 +58,65 @@ export type Database = {
         Row: {
           id: string
           name: string
-          slug: string
           invite_code: string
           created_by: string
-          max_members: number
+          auto_accept: boolean
+          is_deleted: boolean
+          deleted_at: string | null
           created_at: string
-          updated_at: string
         }
         Insert: {
           id?: string
           name: string
-          slug: string
           invite_code?: string
           created_by: string
-          max_members?: number
+          auto_accept?: boolean
+          is_deleted?: boolean
+          deleted_at?: string | null
           created_at?: string
-          updated_at?: string
         }
         Update: {
           id?: string
           name?: string
-          slug?: string
           invite_code?: string
           created_by?: string
-          max_members?: number
+          auto_accept?: boolean
+          is_deleted?: boolean
+          deleted_at?: string | null
           created_at?: string
-          updated_at?: string
         }
         Relationships: []
       }
       v2_gang_members: {
         Row: {
-          id: string
           gang_id: string
           user_id: string
           role: Database['public']['Enums']['v2_member_role']
           status: Database['public']['Enums']['v2_member_status']
-          joined_at: string | null
-          created_at: string
-          updated_at: string
+          is_blocked: boolean
+          requested_at: string
+          approved_at: string | null
+          departed_at: string | null
         }
         Insert: {
-          id?: string
           gang_id: string
           user_id: string
           role?: Database['public']['Enums']['v2_member_role']
           status?: Database['public']['Enums']['v2_member_status']
-          joined_at?: string | null
-          created_at?: string
-          updated_at?: string
+          is_blocked?: boolean
+          requested_at?: string
+          approved_at?: string | null
+          departed_at?: string | null
         }
         Update: {
-          id?: string
           gang_id?: string
           user_id?: string
           role?: Database['public']['Enums']['v2_member_role']
           status?: Database['public']['Enums']['v2_member_status']
-          joined_at?: string | null
-          created_at?: string
-          updated_at?: string
+          is_blocked?: boolean
+          requested_at?: string
+          approved_at?: string | null
+          departed_at?: string | null
         }
         Relationships: []
       }
@@ -505,7 +505,7 @@ export type Database = {
     Enums: {
       v2_match_status: 'scheduled' | 'live' | 'completed' | 'abandoned' | 'cancelled'
       v2_member_role: 'admin' | 'member'
-      v2_member_status: 'active' | 'pending' | 'removed'
+      v2_member_status: 'pending' | 'approved' | 'rejected' | 'removed' | 'left'
       v2_scenario_input_type:
         | 'team_select'
         | 'player_select'
