@@ -9,8 +9,8 @@ import { getAvatarInitials } from '@/lib/utils'
 /* -------------------------------------------------------------------------- */
 
 interface LeaderboardRowProps extends React.ComponentProps<'div'> {
-  /** Rank position (1-based) */
-  rank: number
+  /** Rank position (1-based), or null for unranked/departed members */
+  rank: number | null
   /** Player display name */
   displayName: string
   /** Score value */
@@ -23,13 +23,23 @@ interface LeaderboardRowProps extends React.ComponentProps<'div'> {
   avatar?: string
   /** Optional subtitle (e.g. "14/19 correct") */
   subtitle?: string
+  /** Optional badge rendered next to the display name (e.g. "ADMIN") */
+  badge?: React.ReactNode
 }
 
 /* -------------------------------------------------------------------------- */
 /* RankBadge                                                                   */
 /* -------------------------------------------------------------------------- */
 
-function RankBadge({ rank }: { rank: number }) {
+function RankBadge({ rank }: { rank: number | null }) {
+  if (rank === null) {
+    return (
+      <span className="flex min-w-[48px] items-center justify-center font-display text-2xl font-bold text-text-muted">
+        —
+      </span>
+    )
+  }
+
   if (rank === 1) {
     return (
       <span className="flex min-w-[48px] items-center justify-center bg-sunburst-yellow px-3 py-1 font-display text-2xl font-bold text-text-on-primary">
@@ -69,6 +79,7 @@ function LeaderboardRow({
   isDeparted = false,
   avatar,
   subtitle,
+  badge,
   className,
   ...props
 }: LeaderboardRowProps) {
@@ -82,7 +93,7 @@ function LeaderboardRow({
         isDeparted && 'opacity-60',
         className
       )}
-      aria-label={`Rank ${rank}: ${displayName}, ${score} points${isCurrentUser ? ' (you)' : ''}${isDeparted ? ' (departed)' : ''}`}
+      aria-label={`${rank !== null ? `Rank ${rank}` : 'Unranked'}: ${displayName}, ${score} points${isCurrentUser ? ' (you)' : ''}${isDeparted ? ' (departed)' : ''}`}
       {...props}
     >
       {/* Rank */}
@@ -113,6 +124,9 @@ function LeaderboardRow({
               <span className="ml-1.5 text-body-sm font-normal text-bragg-lime">
                 (you)
               </span>
+            )}
+            {badge && (
+              <span className="ml-1.5 inline-flex">{badge}</span>
             )}
           </span>
           {subtitle && (

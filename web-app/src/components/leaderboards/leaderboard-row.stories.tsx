@@ -76,11 +76,20 @@ export const CurrentUser: Story = {
 
 export const DepartedMember: Story = {
   args: {
-    rank: 7,
+    rank: null,
     displayName: 'Former Player',
     score: 45,
     isDeparted: true,
     subtitle: '6/19 correct',
+  },
+}
+
+export const Unranked: Story = {
+  args: {
+    rank: null,
+    displayName: 'New Joiner',
+    score: 0,
+    subtitle: 'No predictions yet',
   },
 }
 
@@ -134,17 +143,17 @@ export const FullLeaderboard: Story = {
         subtitle="10/19 correct"
       />
       <LeaderboardRow
-        rank={7}
+        rank={null}
         displayName="Former Player"
         score={45}
         isDeparted
         subtitle="6/19 correct"
       />
       <LeaderboardRow
-        rank={8}
+        rank={null}
         displayName="New Joiner"
-        score={12}
-        subtitle="2/19 correct"
+        score={0}
+        subtitle="No predictions yet"
       />
     </div>
   ),

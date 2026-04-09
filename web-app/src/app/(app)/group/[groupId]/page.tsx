@@ -9,6 +9,7 @@ import { PageWrapper } from '@/components/layout/page-wrapper'
 import { GangHeader } from '@/components/gangs/gang-header'
 import { MatchCardSkeleton, LeaderboardRowSkeleton } from '@/components/ui/skeleton'
 import { PendingRequests } from '@/components/gangs/pending-requests'
+import { MemberListSection } from '@/components/gangs/member-list-section'
 
 interface GangPageProps {
   params: Promise<{ groupId: string }>
@@ -122,12 +123,12 @@ export default async function GangPage({ params }: GangPageProps) {
         />
       </Suspense>
 
-      {/* Placeholder: Member List — GANG-003 */}
+      {/* Member List — GANG-003 */}
       <Suspense fallback={<MemberListSkeleton />}>
-        <section
-          className="mt-8"
-          aria-label="Members"
-          data-placeholder="member-list"
+        <MemberListSection
+          gangId={gang.id}
+          members={gang.members}
+          currentUserId={user.id}
         />
       </Suspense>
 
