@@ -84,7 +84,7 @@ vi.mock('@/lib/supabase/server', () => ({
 }))
 
 // Import after mocks
-const { getUpcomingFixtures, getFixtureWithTeams } = await import('./fixtures')
+const { getUpcomingFixtures, getFixtureWithTeams, getLiveFixtures } = await import('./fixtures')
 
 // ---------------------------------------------------------------------------
 // Test data helpers
@@ -331,5 +331,131 @@ describe('getFixtureWithTeams', () => {
     await expect(getFixtureWithTeams('fixture-1')).rejects.toEqual(
       expect.objectContaining({ message: 'connection error' }),
     )
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Tests — getLiveFixtures
+// ---------------------------------------------------------------------------
+
+const LIVE_FIXTURE_1 = {
+  id: 'live-fixture-1',
+  match_number: 12,
+  start_datetime: '2026-04-09T19:30:00Z',
+  venue_name: 'Wankhede Stadium',
+  status: 'live',
+  home_team: TEAM_MI,
+  away_team: TEAM_CSK,
+}
+
+describe('getLiveFixtures', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    _tableCallCount = 0
+
+    queryResult = { data: [], error: null }
+    rpcResult = { data: [], error: null }
+    gangLeagueSeasonResult = {
+      data: {
+        league_id: 'league-1',
+        season_id: 'season-1',
+      },
+      error: null,
+    }
+  })
+
+  test('returns empty array when no live fixtures exist', async () => {
+    queryResult = { data: [], error: null }
+
+    const result = await getLiveFixtures('gang-1')
+
+    expect(result).toEqual([])
+  })
+
+  test('returns empty array when gang has no active league season', async () => {
+    gangLeagueSeasonResult = { data: null, error: { message: 'no rows', code: 'PGRST116' } }
+
+    const result = await getLiveFixtures('gang-1')
+
+    expect(result).toEqual([])
+  })
+
+  test('queries fixtures with status=live only', async () => {
+    queryResult = { data: [LIVE_FIXTURE_1], error: null }
+
+    await getLiveFixtures('gang-1')
+
+    expect(mockFrom).toHaveBeenCalledWith('v2_league_season_fixtures')
+    expect(mockEq).toHaveBeenCalledWith('status', 'live')
+    expect(mockOrder).toHaveBeenCalledWith('start_datetime', { ascending: true })
+  })
+
+  test('maps fixture rows to LiveFixture interface with team info', async () => {
+    queryResult = {
+      data: [LIVE_FIXTURE_1],
+      error: null,
+    }
+
+    const result = await getLiveFixtures('gang-1')
+
+    expect(result).toHaveLength(1)
+    expect(result[0]).toEqual({
+      id: 'live-fixture-1',
+      matchNumber: 12,
+      startDatetime: '2026-04-09T19:30:00Z',
+      venueName: 'Wankhede Stadium',
+      status: 'live',
+      homeTeam: {
+        id: 'team-mi',
+        name: 'Mumbai Indians',
+        code: 'MI',
+        color: '#004BA0',
+        logoUrl: '/teams/mi.png',
+      },
+      awayTeam: {
+        id: 'team-csk',
+        name: 'Chennai Super Kings',
+        code: 'CSK',
+        color: '#FDB913',
+        logoUrl: '/teams/csk.png',
+      },
+    })
+  })
+
+  test('throws on non-PGRST116 gang season errors', async () => {
+    gangLeagueSeasonResult = {
+      data: null,
+      error: { message: 'connection error', code: '08006' },
+    }
+
+    await expect(getLiveFixtures('gang-1')).rejects.toEqual(
+      expect.objectContaining({ message: 'connection error' }),
+    )
+  })
+
+  test('throws when the fixtures query errors', async () => {
+    queryResult = { data: null, error: { message: 'db error', code: '42P01' } }
+
+    await expect(getLiveFixtures('gang-1')).rejects.toEqual(
+      expect.objectContaining({ message: 'db error' }),
+    )
+  })
+
+  test('returns multiple live fixtures when two concurrent matches exist', async () => {
+    const liveFixture2 = {
+      ...LIVE_FIXTURE_1,
+      id: 'live-fixture-2',
+      match_number: 13,
+    }
+    queryResult = {
+      data: [LIVE_FIXTURE_1, liveFixture2],
+      error: null,
+    }
+
+    const result = await getLiveFixtures('gang-1')
+
+    expect(result).toHaveLength(2)
+    expect(result[0]?.id).toBe('live-fixture-1')
+    expect(result[1]?.id).toBe('live-fixture-2')
   })
 })

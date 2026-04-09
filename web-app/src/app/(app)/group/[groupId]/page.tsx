@@ -12,6 +12,8 @@ import { PendingRequests } from '@/components/gangs/pending-requests'
 import { MemberListSection } from '@/components/gangs/member-list-section'
 import { LeaveGangButton } from '@/components/gangs/leave-gang-button'
 import { UpcomingMatches } from '@/components/matches/upcoming-matches'
+import { LiveMatchesSection } from '@/components/matches/live-matches-section'
+import { getLiveFixtures } from '@/lib/dal/fixtures'
 
 interface GangPageProps {
   params: Promise<{ groupId: string }>
@@ -78,6 +80,9 @@ export default async function GangPage({ params }: GangPageProps) {
 
   const isAdmin = membership.role === 'admin'
 
+  // Fetch live fixtures for the LiveMatchesSection (client component)
+  const liveFixtures = await getLiveFixtures(groupId)
+
   // Get current user's display name for share text
   const currentUserDisplayName = membership.displayName ?? 'Someone'
 
@@ -108,11 +113,10 @@ export default async function GangPage({ params }: GangPageProps) {
         />
       </Suspense>
 
-      {/* Placeholder: Live Matches — MTCH-002 */}
-      <section
-        className="mt-8"
-        aria-label="Live matches"
-        data-placeholder="live-matches"
+      {/* Live Matches — MTCH-002 */}
+      <LiveMatchesSection
+        gangId={gang.id}
+        initialLiveFixtures={liveFixtures}
       />
 
       {/* Placeholder: Recent Results — MTCH-003 */}
