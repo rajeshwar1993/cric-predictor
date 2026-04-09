@@ -1045,12 +1045,22 @@ describe('approveJoinRequest server action', () => {
 
   // ---- Order of operations ----
 
-  test('calls auth before admin check', async () => {
+  test('calls auth before rate limit and admin check', async () => {
     mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
 
     await approveJoinRequest(validGangId, validUserId)
 
     expect(mockGetUser).toHaveBeenCalledOnce()
+    expect(mockRateLimit).not.toHaveBeenCalled()
+    expect(mockFrom).not.toHaveBeenCalled()
+  })
+
+  test('calls rate limit before admin check (DB query)', async () => {
+    mockRateLimit.mockResolvedValue({ allowed: false, remaining: 0 })
+
+    await approveJoinRequest(validGangId, validUserId)
+
+    expect(mockRateLimit).toHaveBeenCalledOnce()
     expect(mockFrom).not.toHaveBeenCalled()
   })
 
@@ -1253,12 +1263,22 @@ describe('rejectJoinRequest server action', () => {
 
   // ---- Order of operations ----
 
-  test('calls auth before admin check', async () => {
+  test('calls auth before rate limit and admin check', async () => {
     mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
 
     await rejectJoinRequest(validGangId, validUserId)
 
     expect(mockGetUser).toHaveBeenCalledOnce()
+    expect(mockRateLimit).not.toHaveBeenCalled()
+    expect(mockFrom).not.toHaveBeenCalled()
+  })
+
+  test('calls rate limit before admin check (DB query)', async () => {
+    mockRateLimit.mockResolvedValue({ allowed: false, remaining: 0 })
+
+    await rejectJoinRequest(validGangId, validUserId)
+
+    expect(mockRateLimit).toHaveBeenCalledOnce()
     expect(mockFrom).not.toHaveBeenCalled()
   })
 

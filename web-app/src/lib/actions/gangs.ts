@@ -336,7 +336,7 @@ const uuidSchema = z.string().uuid()
 /**
  * Approve a pending join request.
  *
- * Flow: auth check → admin verification → rate limit → validate UUIDs →
+ * Flow: auth check → rate limit → validate UUIDs → admin verification →
  *       member count check → display name uniqueness → update status →
  *       notification → analytics → revalidate → return.
  *
@@ -361,18 +361,6 @@ export async function approveJoinRequest(
     return { success: false, error: 'Not authenticated' }
   }
 
-  // Admin verification
-  const { data: adminMember } = await supabase
-    .from('v2_gang_members')
-    .select('role, status')
-    .eq('gang_id', gangId)
-    .eq('user_id', user.id)
-    .maybeSingle()
-
-  if (!adminMember || adminMember.role !== 'admin' || adminMember.status !== 'approved') {
-    return { success: false, error: 'Only gang admins can approve requests' }
-  }
-
   // Rate limit: 60 per hour
   const rl = await rateLimit(user.id, 'approve_join_request', {
     max: 60,
@@ -387,6 +375,18 @@ export async function approveJoinRequest(
   const userIdParsed = uuidSchema.safeParse(userId)
   if (!gangIdParsed.success || !userIdParsed.success) {
     return { success: false, error: 'Invalid request' }
+  }
+
+  // Admin verification
+  const { data: adminMember } = await supabase
+    .from('v2_gang_members')
+    .select('role, status')
+    .eq('gang_id', gangIdParsed.data)
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (!adminMember || adminMember.role !== 'admin' || adminMember.status !== 'approved') {
+    return { success: false, error: 'Only gang admins can approve requests' }
   }
 
   // Check gang member count (< 20 approved)
@@ -488,7 +488,7 @@ export async function approveJoinRequest(
 /**
  * Reject a pending join request.
  *
- * Flow: auth check → admin verification → rate limit → validate UUIDs →
+ * Flow: auth check → rate limit → validate UUIDs → admin verification →
  *       update status → notification → analytics → revalidate → return.
  *
  * @param gangId - The gang UUID
@@ -512,18 +512,6 @@ export async function rejectJoinRequest(
     return { success: false, error: 'Not authenticated' }
   }
 
-  // Admin verification
-  const { data: adminMember } = await supabase
-    .from('v2_gang_members')
-    .select('role, status')
-    .eq('gang_id', gangId)
-    .eq('user_id', user.id)
-    .maybeSingle()
-
-  if (!adminMember || adminMember.role !== 'admin' || adminMember.status !== 'approved') {
-    return { success: false, error: 'Only gang admins can reject requests' }
-  }
-
   // Rate limit: 60 per hour
   const rl = await rateLimit(user.id, 'reject_join_request', {
     max: 60,
@@ -538,6 +526,18 @@ export async function rejectJoinRequest(
   const userIdParsed = uuidSchema.safeParse(userId)
   if (!gangIdParsed.success || !userIdParsed.success) {
     return { success: false, error: 'Invalid request' }
+  }
+
+  // Admin verification
+  const { data: adminMember } = await supabase
+    .from('v2_gang_members')
+    .select('role, status')
+    .eq('gang_id', gangIdParsed.data)
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (!adminMember || adminMember.role !== 'admin' || adminMember.status !== 'approved') {
+    return { success: false, error: 'Only gang admins can reject requests' }
   }
 
   // Update status to rejected — use .select() to detect race conditions
