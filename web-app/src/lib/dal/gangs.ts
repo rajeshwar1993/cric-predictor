@@ -316,3 +316,52 @@ export async function getGangMemberStatus(
     status: data.status,
   }
 }
+
+// ---------------------------------------------------------------------------
+// getPendingRequests
+// ---------------------------------------------------------------------------
+
+/**
+ * A pending join request with profile info.
+ */
+export interface PendingRequest {
+  userId: string
+  displayName: string | null
+  email: string
+  requestedAt: string
+}
+
+/**
+ * Fetch all pending join requests for a gang.
+ *
+ * Queries `v2_gang_members` where status='pending' and joins
+ * `v2_profiles` for display name and email.
+ *
+ * Creates its own Supabase server client (DAL convention).
+ * Throws on database error.
+ */
+export async function getPendingRequests(
+  gangId: string,
+): Promise<PendingRequest[]> {
+  const supabase = await createServerClient()
+
+  const { data, error } = await supabase
+    .from('v2_gang_members')
+    .select('user_id, requested_at, v2_profiles (display_name, email)')
+    .eq('gang_id', gangId)
+    .eq('status', 'pending')
+    .order('requested_at', { ascending: true })
+
+  if (error) throw error
+  if (!data || data.length === 0) return []
+
+  return data.map((row) => {
+    const profile = row.v2_profiles as unknown as ProfileRow | null
+    return {
+      userId: row.user_id,
+      displayName: profile?.display_name ?? null,
+      email: profile?.email ?? '',
+      requestedAt: row.requested_at,
+    }
+  })
+}

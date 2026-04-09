@@ -326,3 +326,267 @@ export async function joinGangByCode(
 
   return { success: true, data: { gangId: gang.id, status: newStatus } }
 }
+
+// ---------------------------------------------------------------------------
+// approveJoinRequest
+// ---------------------------------------------------------------------------
+
+const uuidSchema = z.string().uuid()
+
+/**
+ * Approve a pending join request.
+ *
+ * Flow: auth check → admin verification → rate limit → validate UUIDs →
+ *       member count check → display name uniqueness → update status →
+ *       notification → analytics → revalidate → return.
+ *
+ * @param gangId - The gang UUID
+ * @param userId - The requesting user's UUID
+ * @returns ActionResult
+ *
+ * @see docs/stories/GANG-002-pending-requests.md
+ */
+export async function approveJoinRequest(
+  gangId: string,
+  userId: string,
+): Promise<ActionResult> {
+  const supabase = await createServerClient()
+
+  // Auth check
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { success: false, error: 'Not authenticated' }
+  }
+
+  // Admin verification
+  const { data: adminMember } = await supabase
+    .from('v2_gang_members')
+    .select('role, status')
+    .eq('gang_id', gangId)
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (!adminMember || adminMember.role !== 'admin' || adminMember.status !== 'approved') {
+    return { success: false, error: 'Only gang admins can approve requests' }
+  }
+
+  // Rate limit: 60 per hour
+  const rl = await rateLimit(user.id, 'approve_join_request', {
+    max: 60,
+    windowSeconds: 3600,
+  })
+  if (!rl.allowed) {
+    return { success: false, error: 'Too many requests. Try again later.' }
+  }
+
+  // Validate UUIDs
+  const gangIdParsed = uuidSchema.safeParse(gangId)
+  const userIdParsed = uuidSchema.safeParse(userId)
+  if (!gangIdParsed.success || !userIdParsed.success) {
+    return { success: false, error: 'Invalid request' }
+  }
+
+  // Check gang member count (< 20 approved)
+  const { count: approvedCount } = await supabase
+    .from('v2_gang_members')
+    .select('*', { count: 'exact', head: true })
+    .eq('gang_id', gangId)
+    .eq('status', 'approved')
+
+  if ((approvedCount ?? 0) >= 20) {
+    return {
+      success: false,
+      error: 'This gang has reached its maximum of 20 members',
+    }
+  }
+
+  // Check display name uniqueness
+  const { data: requesterProfile } = await supabase
+    .from('v2_profiles')
+    .select('display_name')
+    .eq('id', userId)
+    .single()
+
+  if (requesterProfile?.display_name) {
+    const { data: duplicateName } = await supabase
+      .from('v2_gang_members')
+      .select('user_id, v2_profiles!inner(display_name)')
+      .eq('gang_id', gangId)
+      .eq('status', 'approved')
+      .eq('v2_profiles.display_name', requesterProfile.display_name)
+      .neq('user_id', userId)
+      .limit(1)
+
+    if (duplicateName && duplicateName.length > 0) {
+      return {
+        success: false,
+        error: 'A member with the same display name already exists in this gang.',
+      }
+    }
+  }
+
+  // Update status to approved — use .select() to detect race conditions
+  const now = new Date().toISOString()
+  const { data: updatedRows, error: updateError } = await supabase
+    .from('v2_gang_members')
+    .update({
+      status: 'approved' as const,
+      approved_at: now,
+    })
+    .eq('gang_id', gangId)
+    .eq('user_id', userId)
+    .eq('status', 'pending')
+    .select()
+
+  if (updateError) {
+    return { success: false, error: 'Failed to approve request. Please try again.' }
+  }
+
+  // If no rows were updated, the request was already processed (race condition)
+  if (!updatedRows || updatedRows.length === 0) {
+    return { success: false, error: 'This request has already been processed.' }
+  }
+
+  // Fetch gang name for notification
+  const { data: gangData } = await supabase
+    .from('v2_gangs')
+    .select('name')
+    .eq('id', gangId)
+    .single()
+
+  const gangName = gangData?.name ?? 'the gang'
+
+  // Send notification to the requester
+  await supabase.from('v2_notifications').insert({
+    user_id: userId,
+    type: 'join_approved' as const,
+    title: 'Request approved',
+    body: `Your request to join ${gangName} has been approved!`,
+    data: { gang_id: gangId },
+  })
+
+  // Revalidate paths
+  revalidatePath(`/group/${gangId}`)
+  revalidatePath(`/group/${gangId}/settings`)
+
+  // Analytics
+  trackEvent(user.id, ANALYTICS_EVENTS.MEMBER_APPROVED, {
+    gang_id: gangId,
+    approved_user_id: userId,
+  })
+
+  return { success: true }
+}
+
+// ---------------------------------------------------------------------------
+// rejectJoinRequest
+// ---------------------------------------------------------------------------
+
+/**
+ * Reject a pending join request.
+ *
+ * Flow: auth check → admin verification → rate limit → validate UUIDs →
+ *       update status → notification → analytics → revalidate → return.
+ *
+ * @param gangId - The gang UUID
+ * @param userId - The requesting user's UUID
+ * @returns ActionResult
+ *
+ * @see docs/stories/GANG-002-pending-requests.md
+ */
+export async function rejectJoinRequest(
+  gangId: string,
+  userId: string,
+): Promise<ActionResult> {
+  const supabase = await createServerClient()
+
+  // Auth check
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { success: false, error: 'Not authenticated' }
+  }
+
+  // Admin verification
+  const { data: adminMember } = await supabase
+    .from('v2_gang_members')
+    .select('role, status')
+    .eq('gang_id', gangId)
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (!adminMember || adminMember.role !== 'admin' || adminMember.status !== 'approved') {
+    return { success: false, error: 'Only gang admins can reject requests' }
+  }
+
+  // Rate limit: 60 per hour
+  const rl = await rateLimit(user.id, 'reject_join_request', {
+    max: 60,
+    windowSeconds: 3600,
+  })
+  if (!rl.allowed) {
+    return { success: false, error: 'Too many requests. Try again later.' }
+  }
+
+  // Validate UUIDs
+  const gangIdParsed = uuidSchema.safeParse(gangId)
+  const userIdParsed = uuidSchema.safeParse(userId)
+  if (!gangIdParsed.success || !userIdParsed.success) {
+    return { success: false, error: 'Invalid request' }
+  }
+
+  // Update status to rejected — use .select() to detect race conditions
+  const { data: updatedRows, error: updateError } = await supabase
+    .from('v2_gang_members')
+    .update({
+      status: 'rejected' as const,
+    })
+    .eq('gang_id', gangId)
+    .eq('user_id', userId)
+    .eq('status', 'pending')
+    .select()
+
+  if (updateError) {
+    return { success: false, error: 'Failed to reject request. Please try again.' }
+  }
+
+  // If no rows were updated, the request was already processed (race condition)
+  if (!updatedRows || updatedRows.length === 0) {
+    return { success: false, error: 'This request has already been processed.' }
+  }
+
+  // Fetch gang name for notification
+  const { data: gangData } = await supabase
+    .from('v2_gangs')
+    .select('name')
+    .eq('id', gangId)
+    .single()
+
+  const gangName = gangData?.name ?? 'the gang'
+
+  // Send notification to the requester
+  await supabase.from('v2_notifications').insert({
+    user_id: userId,
+    type: 'join_rejected' as const,
+    title: 'Request declined',
+    body: `Your request to join ${gangName} was declined.`,
+    data: { gang_id: gangId },
+  })
+
+  // Revalidate paths
+  revalidatePath(`/group/${gangId}`)
+  revalidatePath(`/group/${gangId}/settings`)
+
+  // Analytics
+  trackEvent(user.id, ANALYTICS_EVENTS.MEMBER_REJECTED, {
+    gang_id: gangId,
+    rejected_user_id: userId,
+  })
+
+  return { success: true }
+}
