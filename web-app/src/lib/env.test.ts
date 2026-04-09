@@ -23,26 +23,21 @@ describe('env', () => {
       'NEXT_PUBLIC_APP_URL',
     ] as const
 
-    it.each(requiredVars)(
-      'throws when %s is missing',
-      async (varName) => {
-        // Set all required vars except the one under test
-        process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co'
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key'
-        process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-role-key'
-        process.env.NEXT_PUBLIC_POSTHOG_KEY = 'phc_test'
-        process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000'
+    it.each(requiredVars)('throws when %s is missing', async (varName) => {
+      // Set all required vars except the one under test
+      process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co'
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key'
+      process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-role-key'
+      process.env.NEXT_PUBLIC_POSTHOG_KEY = 'phc_test'
+      process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000'
 
-        // Remove the one we're testing
-        delete process.env[varName]
+      // Remove the one we're testing
+      delete process.env[varName]
 
-        const { env } = await import('./env')
+      const { env } = await import('./env')
 
-        expect(() => env[varName]).toThrow(
-          `Missing required environment variable: ${varName}`
-        )
-      }
-    )
+      expect(() => env[varName]).toThrow(`Missing required environment variable: ${varName}`)
+    })
 
     it('returns values when all required vars are set', async () => {
       process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co'

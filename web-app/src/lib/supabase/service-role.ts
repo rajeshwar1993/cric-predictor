@@ -11,8 +11,5 @@ import { env } from '@/lib/env'
  * (e.g., admin tasks, cron jobs, webhook handlers).
  */
 export function createServiceRoleClient() {
-  return createClient<Database>(
-    env.NEXT_PUBLIC_SUPABASE_URL,
-    env.SUPABASE_SERVICE_ROLE_KEY
-  )
+  return createClient<Database>(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY)
 }
