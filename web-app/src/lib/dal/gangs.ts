@@ -1,6 +1,6 @@
 import { createServerClient } from '@/lib/supabase/server'
 import type { Database } from '@/types/database'
-import type { MemberRole } from '@/types'
+import type { MemberRole, MemberStatus } from '@/types'
 
 /**
  * Picked columns from v2_gangs returned by the membership query.
@@ -85,4 +85,93 @@ export async function getUserGangs(userId: string): Promise<UserGang[]> {
       createdAt: gang.created_at,
     }
   })
+}
+
+// ---------------------------------------------------------------------------
+// getGangByInviteCode
+// ---------------------------------------------------------------------------
+
+/**
+ * Shape returned by `getGangByInviteCode` — basic gang info from the RPC.
+ */
+export interface GangByInviteCode {
+  id: string
+  name: string
+  autoAccept: boolean
+  isDeleted: boolean
+  createdBy: string
+}
+
+/**
+ * Look up a gang by its 6-character invite code.
+ *
+ * Uses the `get_gang_by_invite_code` SECURITY DEFINER RPC — no auth session required.
+ * Returns `null` if no gang is found for the given code.
+ *
+ * Creates its own Supabase server client (DAL convention).
+ * Throws on database error.
+ */
+export async function getGangByInviteCode(
+  code: string,
+): Promise<GangByInviteCode | null> {
+  const supabase = await createServerClient()
+
+  const { data, error } = await supabase.rpc('get_gang_by_invite_code', {
+    p_invite_code: code,
+  })
+
+  if (error) throw error
+
+  const row = data?.[0]
+  if (!row) return null
+
+  return {
+    id: row.id,
+    name: row.name,
+    autoAccept: row.auto_accept,
+    isDeleted: row.is_deleted,
+    createdBy: row.created_by,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// getMembershipStatus
+// ---------------------------------------------------------------------------
+
+/**
+ * Shape returned by `getMembershipStatus` — the user's membership row in a gang.
+ */
+export interface MembershipInfo {
+  status: MemberStatus
+  isBlocked: boolean
+}
+
+/**
+ * Check a user's membership status in a specific gang.
+ *
+ * Returns `null` if the user has no membership row for the gang.
+ *
+ * Creates its own Supabase server client (DAL convention).
+ * Throws on database error.
+ */
+export async function getMembershipStatus(
+  gangId: string,
+  userId: string,
+): Promise<MembershipInfo | null> {
+  const supabase = await createServerClient()
+
+  const { data, error } = await supabase
+    .from('v2_gang_members')
+    .select('status, is_blocked')
+    .eq('gang_id', gangId)
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (error) throw error
+  if (!data) return null
+
+  return {
+    status: data.status,
+    isBlocked: data.is_blocked,
+  }
 }
