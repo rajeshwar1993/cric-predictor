@@ -31,7 +31,7 @@ export function GangCard({ id, name, role, memberCount }: GangCardProps) {
     >
       <Card className="cursor-pointer">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="font-display text-[1.25rem] leading-[1.25] font-semibold text-text-primary">
+          <h3 className="text-h3 text-text-primary">
             {name}
           </h3>
           <Badge variant={role === 'admin' ? 'lime' : 'default'}>

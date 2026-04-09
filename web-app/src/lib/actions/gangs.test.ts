@@ -667,6 +667,109 @@ describe('joinGangByCode server action', () => {
     })
   })
 
+  // ---- Rejoin: update payload correctness ----
+
+  test('clears departed_at and sets requested_at on rejoin', async () => {
+    const updateChain = createQueryChain({ error: null })
+    let memberCallIndex = 0
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'v2_gang_members') {
+        memberCallIndex++
+        if (memberCallIndex === 1) return createQueryChain({ data: { status: 'left', is_blocked: false } })
+        if (memberCallIndex === 2) return createQueryChain({ count: 5, data: null, error: null })
+        if (memberCallIndex === 3) return createQueryChain({ count: 3, data: null, error: null })
+        if (memberCallIndex === 5) return createQueryChain({ data: [] })
+        if (memberCallIndex === 6) return updateChain
+        if (memberCallIndex === 7) return createQueryChain({ data: { user_id: 'admin-456' } })
+      }
+      if (table === 'v2_profiles') {
+        memberCallIndex++
+        return createQueryChain({ data: { display_name: 'TestUser' } })
+      }
+      if (table === 'v2_notifications') return createQueryChain({ error: null })
+      return createQueryChain({ data: null })
+    })
+
+    await joinGangByCode('XK42AB')
+
+    expect(updateChain.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        departed_at: null,
+        requested_at: expect.any(String),
+        status: 'approved',
+        approved_at: expect.any(String),
+      }),
+    )
+  })
+
+  // ---- Notification type correctness ----
+
+  test('sends new_member notification to admin on auto-accept', async () => {
+    const notificationChain = createQueryChain({ error: null })
+    let memberCallIndex = 0
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'v2_gang_members') {
+        memberCallIndex++
+        if (memberCallIndex === 1) return createQueryChain({ data: null })
+        if (memberCallIndex === 2) return createQueryChain({ count: 5, data: null, error: null })
+        if (memberCallIndex === 3) return createQueryChain({ count: 3, data: null, error: null })
+        if (memberCallIndex === 5) return createQueryChain({ data: [] })
+        if (memberCallIndex === 6) return createQueryChain({ error: null })
+        if (memberCallIndex === 7) return createQueryChain({ data: { user_id: 'admin-456' } })
+      }
+      if (table === 'v2_profiles') {
+        memberCallIndex++
+        return createQueryChain({ data: { display_name: 'TestUser' } })
+      }
+      if (table === 'v2_notifications') return notificationChain
+      return createQueryChain({ data: null })
+    })
+
+    await joinGangByCode('XK42AB')
+
+    expect(notificationChain.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'new_member',
+        user_id: 'admin-456',
+      }),
+    )
+  })
+
+  test('sends join_request notification to admin when auto-accept is off', async () => {
+    mockRpc.mockResolvedValue({
+      data: [{ ...mockGang, auto_accept: false }],
+      error: null,
+    })
+    const notificationChain = createQueryChain({ error: null })
+    let memberCallIndex = 0
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'v2_gang_members') {
+        memberCallIndex++
+        if (memberCallIndex === 1) return createQueryChain({ data: null })
+        if (memberCallIndex === 2) return createQueryChain({ count: 5, data: null, error: null })
+        if (memberCallIndex === 3) return createQueryChain({ count: 3, data: null, error: null })
+        if (memberCallIndex === 5) return createQueryChain({ data: [] })
+        if (memberCallIndex === 6) return createQueryChain({ error: null })
+        if (memberCallIndex === 7) return createQueryChain({ data: { user_id: 'admin-456' } })
+      }
+      if (table === 'v2_profiles') {
+        memberCallIndex++
+        return createQueryChain({ data: { display_name: 'TestUser' } })
+      }
+      if (table === 'v2_notifications') return notificationChain
+      return createQueryChain({ data: null })
+    })
+
+    await joinGangByCode('XK42AB')
+
+    expect(notificationChain.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'join_request',
+        user_id: 'admin-456',
+      }),
+    )
+  })
+
   // ---- Order of operations ----
 
   test('calls auth before rate limit', async () => {
