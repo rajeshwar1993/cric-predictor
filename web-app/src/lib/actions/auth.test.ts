@@ -74,19 +74,36 @@ class RedirectError extends Error {
 }
 
 // Import after mocks are set up
-const { signOut, sendMagicLink, completeOnboarding } = await import('./auth')
+const { signOut, sendMagicLink, completeOnboarding, acceptTerms } = await import('./auth')
 
 // ---------------------------------------------------------------------------
 // signOut
 // ---------------------------------------------------------------------------
 
 describe('signOut server action', () => {
+  const mockUser = { id: 'user-456' }
+
   beforeEach(() => {
     vi.clearAllMocks()
     mockSignOut.mockResolvedValue({ error: null })
+    mockGetUser.mockResolvedValue({ data: { user: mockUser }, error: null })
   })
 
-  test('signs out, clears cookies, and redirects to /', async () => {
+  test('signs out, clears cookies, fires analytics, and redirects to /', async () => {
+    const error = await signOut().catch((e: unknown) => e) as RedirectError
+
+    expect(error).toBeInstanceOf(RedirectError)
+    expect(error.url).toBe('/')
+    expect(mockGetUser).toHaveBeenCalledOnce()
+    expect(mockSignOut).toHaveBeenCalledOnce()
+    expect(mockDelete).toHaveBeenCalledWith('bragg_onboarded')
+    expect(mockDelete).toHaveBeenCalledWith('bragg_terms_version')
+    expect(mockTrackEvent).toHaveBeenCalledWith('user-456', 'signed_out')
+  })
+
+  test('signs out without analytics when getUser returns no user', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
+
     const error = await signOut().catch((e: unknown) => e) as RedirectError
 
     expect(error).toBeInstanceOf(RedirectError)
@@ -94,6 +111,7 @@ describe('signOut server action', () => {
     expect(mockSignOut).toHaveBeenCalledOnce()
     expect(mockDelete).toHaveBeenCalledWith('bragg_onboarded')
     expect(mockDelete).toHaveBeenCalledWith('bragg_terms_version')
+    expect(mockTrackEvent).not.toHaveBeenCalled()
   })
 
   test('returns error when supabase signOut fails', async () => {
@@ -106,6 +124,7 @@ describe('signOut server action', () => {
     expect(result).toEqual({ success: false, error: 'session_not_found' })
     // Cookies should NOT be deleted when signOut itself fails
     expect(mockDelete).not.toHaveBeenCalled()
+    expect(mockTrackEvent).not.toHaveBeenCalled()
   })
 
   test('returns generic error when an unexpected exception is thrown', async () => {
@@ -118,6 +137,7 @@ describe('signOut server action', () => {
       error: 'Failed to sign out. Please try again.',
     })
     expect(mockDelete).not.toHaveBeenCalled()
+    expect(mockTrackEvent).not.toHaveBeenCalled()
   })
 })
 
@@ -454,6 +474,91 @@ describe('completeOnboarding server action', () => {
 
     await completeOnboarding(validData)
 
+    expect(mockTrackEvent).not.toHaveBeenCalled()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// acceptTerms
+// ---------------------------------------------------------------------------
+
+describe('acceptTerms server action', () => {
+  const mockUser = { id: 'user-789' }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockGetUser.mockResolvedValue({ data: { user: mockUser }, error: null })
+    mockEq.mockResolvedValue({ error: null })
+  })
+
+  test('returns error when user is not authenticated', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
+
+    const result = await acceptTerms()
+
+    expect(result).toEqual({
+      success: false,
+      error: 'You must be logged in to accept terms.',
+    })
+    expect(mockUpdate).not.toHaveBeenCalled()
+    expect(mockSet).not.toHaveBeenCalled()
+    expect(mockTrackEvent).not.toHaveBeenCalled()
+  })
+
+  test('returns error when auth check fails', async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: null },
+      error: { message: 'session expired' },
+    })
+
+    const result = await acceptTerms()
+
+    expect(result).toEqual({
+      success: false,
+      error: 'You must be logged in to accept terms.',
+    })
+    expect(mockUpdate).not.toHaveBeenCalled()
+  })
+
+  test('updates profile, sets cookie, fires analytics, and redirects on success', async () => {
+    const error = await acceptTerms().catch((e: unknown) => e) as RedirectError
+
+    expect(error).toBeInstanceOf(RedirectError)
+    expect(error.url).toBe('/dashboard')
+
+    // Profile update
+    expect(mockUpdate).toHaveBeenCalledOnce()
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        terms_version: '2.0',
+        terms_accepted_at: expect.any(String),
+      }),
+    )
+    expect(mockEq).toHaveBeenCalledWith('id', 'user-789')
+
+    // Cookie
+    expect(mockSet).toHaveBeenCalledWith('bragg_terms_version', '2.0', {
+      maxAge: 365 * 24 * 60 * 60,
+      path: '/',
+      httpOnly: true,
+    })
+
+    // Analytics
+    expect(mockTrackEvent).toHaveBeenCalledWith('user-789', 'terms_accepted')
+  })
+
+  test('returns error when profile update fails', async () => {
+    mockEq.mockResolvedValue({ error: { message: 'db error' } })
+
+    const result = await acceptTerms()
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Failed to accept terms. Please try again.',
+    })
+    // Cookie should NOT be set when update fails
+    expect(mockSet).not.toHaveBeenCalled()
+    // Analytics should NOT fire when update fails
     expect(mockTrackEvent).not.toHaveBeenCalled()
   })
 })
