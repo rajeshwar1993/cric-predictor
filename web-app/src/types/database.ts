@@ -453,35 +453,122 @@ export type Database = {
         }
         Relationships: []
       }
+      v2_fixture_results: {
+        Row: {
+          fixture_id: string
+          toss_winner_id: string | null
+          match_winner_id: string | null
+          top_scorer_id: string | null
+          top_wicket_taker_id: string | null
+          most_sixes_player_id: string | null
+          player_of_match_id: string | null
+          home_team_innings_score: number | null
+          away_team_innings_score: number | null
+          home_team_powerplay_runs: number | null
+          away_team_powerplay_runs: number | null
+          home_team_powerplay_wickets_lost: number | null
+          away_team_powerplay_wickets_lost: number | null
+          total_match_runs: number | null
+          total_match_sixes: number | null
+          total_match_wickets: number | null
+          total_match_catches: number | null
+          first_wicket_over: number | null
+          fifty_scored: boolean | null
+          bowler_three_wickets: boolean | null
+          super_over: boolean | null
+          resolved_at: string | null
+          created_at: string
+        }
+        Insert: {
+          fixture_id: string
+          toss_winner_id?: string | null
+          match_winner_id?: string | null
+          top_scorer_id?: string | null
+          top_wicket_taker_id?: string | null
+          most_sixes_player_id?: string | null
+          player_of_match_id?: string | null
+          home_team_innings_score?: number | null
+          away_team_innings_score?: number | null
+          home_team_powerplay_runs?: number | null
+          away_team_powerplay_runs?: number | null
+          home_team_powerplay_wickets_lost?: number | null
+          away_team_powerplay_wickets_lost?: number | null
+          total_match_runs?: number | null
+          total_match_sixes?: number | null
+          total_match_wickets?: number | null
+          total_match_catches?: number | null
+          first_wicket_over?: number | null
+          fifty_scored?: boolean | null
+          bowler_three_wickets?: boolean | null
+          super_over?: boolean | null
+          resolved_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          fixture_id?: string
+          toss_winner_id?: string | null
+          match_winner_id?: string | null
+          top_scorer_id?: string | null
+          top_wicket_taker_id?: string | null
+          most_sixes_player_id?: string | null
+          player_of_match_id?: string | null
+          home_team_innings_score?: number | null
+          away_team_innings_score?: number | null
+          home_team_powerplay_runs?: number | null
+          away_team_powerplay_runs?: number | null
+          home_team_powerplay_wickets_lost?: number | null
+          away_team_powerplay_wickets_lost?: number | null
+          total_match_runs?: number | null
+          total_match_sixes?: number | null
+          total_match_wickets?: number | null
+          total_match_catches?: number | null
+          first_wicket_over?: number | null
+          fifty_scored?: boolean | null
+          bowler_three_wickets?: boolean | null
+          super_over?: boolean | null
+          resolved_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       v2_gang_fixture_standings: {
         Row: {
-          id: string
           gang_id: string
+          season_id: string
           fixture_id: string
           user_id: string
-          total_points: number
+          predicted_count: number
+          resolved_count: number
+          correct_count: number
+          points_earned: number
+          last_submitted_at: string | null
           rank: number | null
-          created_at: string
           updated_at: string
         }
         Insert: {
-          id?: string
           gang_id: string
+          season_id?: string
           fixture_id: string
           user_id: string
-          total_points?: number
+          predicted_count?: number
+          resolved_count?: number
+          correct_count?: number
+          points_earned?: number
+          last_submitted_at?: string | null
           rank?: number | null
-          created_at?: string
           updated_at?: string
         }
         Update: {
-          id?: string
           gang_id?: string
+          season_id?: string
           fixture_id?: string
           user_id?: string
-          total_points?: number
+          predicted_count?: number
+          resolved_count?: number
+          correct_count?: number
+          points_earned?: number
+          last_submitted_at?: string | null
           rank?: number | null
-          created_at?: string
           updated_at?: string
         }
         Relationships: []
