@@ -204,13 +204,22 @@ export type Database = {
       v2_fixture_scenarios: {
         Row: {
           id: string
+          template_id: string | null
+          league_id: string
+          season_id: string
           fixture_id: string
+          gang_id: string
+          type: string
+          slug: string
           title: string
           description: string | null
           input_type: Database['public']['Enums']['v2_scenario_input_type']
           options: Json | null
+          points: number
           resolution_phase: Database['public']['Enums']['v2_resolution_phase']
           correct_answer: string | null
+          is_resolved: boolean
+          is_voided: boolean
           points_weight: number
           sort_order: number
           created_at: string
@@ -218,13 +227,22 @@ export type Database = {
         }
         Insert: {
           id?: string
+          template_id?: string | null
+          league_id: string
+          season_id: string
           fixture_id: string
+          gang_id: string
+          type?: string
+          slug: string
           title: string
           description?: string | null
           input_type: Database['public']['Enums']['v2_scenario_input_type']
           options?: Json | null
+          points: number
           resolution_phase?: Database['public']['Enums']['v2_resolution_phase']
           correct_answer?: string | null
+          is_resolved?: boolean
+          is_voided?: boolean
           points_weight?: number
           sort_order?: number
           created_at?: string
@@ -232,13 +250,22 @@ export type Database = {
         }
         Update: {
           id?: string
+          template_id?: string | null
+          league_id?: string
+          season_id?: string
           fixture_id?: string
+          gang_id?: string
+          type?: string
+          slug?: string
           title?: string
           description?: string | null
           input_type?: Database['public']['Enums']['v2_scenario_input_type']
           options?: Json | null
+          points?: number
           resolution_phase?: Database['public']['Enums']['v2_resolution_phase']
           correct_answer?: string | null
+          is_resolved?: boolean
+          is_voided?: boolean
           points_weight?: number
           sort_order?: number
           created_at?: string

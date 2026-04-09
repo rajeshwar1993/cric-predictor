@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import type { ResolutionPhase, ScenarioInputType } from '@/types'
 import type { FixtureTeam } from '@/lib/dal/fixtures'
 import type { MatchPlayer } from '@/lib/dal/predictions'
@@ -43,6 +43,8 @@ export interface ScenarioListProps {
   initialPredictions: Record<string, string>
   /** Whether the picker inputs are disabled (e.g., locked predictions) */
   disabled?: boolean
+  /** Callback fired whenever predictions change — receives the full predictions map */
+  onPredictionsChange?: (predictions: Record<string, string>) => void
 }
 
 // ---------------------------------------------------------------------------
@@ -83,6 +85,7 @@ export function ScenarioList({
   players,
   initialPredictions,
   disabled = false,
+  onPredictionsChange,
 }: ScenarioListProps) {
   // Local state: scenarioId → selected answer
   const [predictions, setPredictions] = useState<Record<string, string>>(
@@ -92,6 +95,12 @@ export function ScenarioList({
   const handleChange = useCallback((scenarioId: string, value: string) => {
     setPredictions((prev) => ({ ...prev, [scenarioId]: value }))
   }, [])
+
+  // Notify parent after state settles — avoids side-effects inside updater
+  // which can double-fire in React 18+ concurrent mode.
+  useEffect(() => {
+    onPredictionsChange?.(predictions)
+  }, [predictions, onPredictionsChange])
 
   return (
     <>

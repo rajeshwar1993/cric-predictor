@@ -14,7 +14,7 @@ import {
 import { PageWrapper } from '@/components/layout/page-wrapper'
 import { PredictPageHeader } from '@/components/predictions/predict-page-header'
 import { WindowNotOpenMessage } from '@/components/predictions/window-not-open-message'
-import { ScenarioList } from '@/components/predictions/scenario-list'
+import { PredictionForm } from '@/components/predictions/prediction-form'
 import type { ScenarioGroupData } from '@/components/predictions/scenario-list'
 import { Button } from '@/components/ui/button'
 
@@ -229,18 +229,22 @@ export default async function PredictPage({ params }: PredictPageProps) {
         <PredictionsLockedMessage fixtureId={fixtureId} gangId={groupId} />
       )}
 
-      {/* Open — show scenario groups with pickers */}
+      {/* Open — show scenario groups with pickers + submit bar */}
       {windowStatus === 'open' && (
         <div className="mt-8 flex flex-col gap-8">
           {clientGroups.length === 0 ? (
             <NoScenariosMessage />
           ) : (
-            <ScenarioList
+            <PredictionForm
+              gangId={groupId}
+              fixtureId={fixtureId}
               groups={clientGroups}
               homeTeam={fixture.homeTeam}
               awayTeam={fixture.awayTeam}
               players={groupedPlayers}
               initialPredictions={initialPredictions}
+              lastSubmittedAt={lastSubmittedAt}
+              totalScenarios={scenarios.length}
             />
           )}
         </div>
