@@ -15,30 +15,42 @@ export type Database = {
       v2_profiles: {
         Row: {
           id: string
-          display_name: string
+          display_name: string | null
+          email: string
+          date_of_birth: string | null
           avatar_url: string | null
-          accepted_terms_at: string | null
-          onboarded_at: string | null
+          terms_version: string | null
+          terms_accepted_at: string | null
+          onboarding_completed: boolean
+          is_deleted: boolean
+          deleted_at: string | null
           created_at: string
-          updated_at: string
         }
         Insert: {
           id: string
-          display_name: string
+          display_name?: string | null
+          email: string
+          date_of_birth?: string | null
           avatar_url?: string | null
-          accepted_terms_at?: string | null
-          onboarded_at?: string | null
+          terms_version?: string | null
+          terms_accepted_at?: string | null
+          onboarding_completed?: boolean
+          is_deleted?: boolean
+          deleted_at?: string | null
           created_at?: string
-          updated_at?: string
         }
         Update: {
           id?: string
-          display_name?: string
+          display_name?: string | null
+          email?: string
+          date_of_birth?: string | null
           avatar_url?: string | null
-          accepted_terms_at?: string | null
-          onboarded_at?: string | null
+          terms_version?: string | null
+          terms_accepted_at?: string | null
+          onboarding_completed?: boolean
+          is_deleted?: boolean
+          deleted_at?: string | null
           created_at?: string
-          updated_at?: string
         }
         Relationships: []
       }
