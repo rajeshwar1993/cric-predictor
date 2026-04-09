@@ -14,6 +14,8 @@ const mockEq = vi.fn()
 const mockRpc = vi.fn()
 /** Tracks calls to `.maybeSingle()` */
 const mockMaybeSingle = vi.fn()
+/** Tracks calls to `.single()` */
+const mockSingle = vi.fn()
 
 /**
  * Build a chainable mock that records every method call and resolves to
@@ -33,6 +35,10 @@ function chainBuilder(resolvedValue: { data: unknown; error: unknown }) {
     },
     maybeSingle() {
       mockMaybeSingle()
+      return chain
+    },
+    single() {
+      mockSingle()
       return chain
     },
     // Make it thenable so `await` resolves it
@@ -63,8 +69,13 @@ vi.mock('@/lib/supabase/server', () => ({
 }))
 
 // Import after mocks
-const { getUserGangs, getGangByInviteCode, getMembershipStatus } =
-  await import('./gangs')
+const {
+  getUserGangs,
+  getGangByInviteCode,
+  getMembershipStatus,
+  getGangDetails,
+  getGangMemberStatus,
+} = await import('./gangs')
 
 // ---------------------------------------------------------------------------
 // Test data helpers
@@ -357,6 +368,203 @@ describe('getMembershipStatus', () => {
     queryResult = { data: null, error: { message: 'db error', code: '42P01' } }
 
     await expect(getMembershipStatus('gang-1', 'user-1')).rejects.toEqual(
+      expect.objectContaining({ message: 'db error' }),
+    )
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Tests — getGangDetails
+// ---------------------------------------------------------------------------
+
+describe('getGangDetails', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+
+    queryResult = { data: null, error: null }
+    rpcResult = { data: [], error: null }
+  })
+
+  test('returns null when gang is not found (PGRST116)', async () => {
+    queryResult = {
+      data: null,
+      error: { message: 'JSON object requested, multiple (or no) rows returned', code: 'PGRST116' },
+    }
+
+    const result = await getGangDetails('non-existent')
+
+    expect(result).toBeNull()
+    expect(mockFrom).toHaveBeenCalledWith('v2_gangs')
+    expect(mockEq).toHaveBeenCalledWith('id', 'non-existent')
+    expect(mockEq).toHaveBeenCalledWith('is_deleted', false)
+    expect(mockSingle).toHaveBeenCalledTimes(1)
+  })
+
+  test('maps gang row with members to GangDetails shape', async () => {
+    queryResult = {
+      data: {
+        id: 'gang-123',
+        name: 'Mumbai Mavericks',
+        invite_code: 'ABC123',
+        auto_accept: true,
+        created_by: 'user-admin',
+        v2_gang_members: [
+          {
+            user_id: 'user-admin',
+            role: 'admin',
+            status: 'approved',
+            v2_profiles: { display_name: 'Raj', email: 'raj@test.com' },
+          },
+          {
+            user_id: 'user-2',
+            role: 'member',
+            status: 'approved',
+            v2_profiles: { display_name: 'Virat', email: 'virat@test.com' },
+          },
+        ],
+      },
+      error: null,
+    }
+
+    const result = await getGangDetails('gang-123')
+
+    expect(result).toEqual({
+      id: 'gang-123',
+      name: 'Mumbai Mavericks',
+      inviteCode: 'ABC123',
+      autoAccept: true,
+      createdBy: 'user-admin',
+      members: [
+        {
+          userId: 'user-admin',
+          role: 'admin',
+          status: 'approved',
+          displayName: 'Raj',
+          email: 'raj@test.com',
+        },
+        {
+          userId: 'user-2',
+          role: 'member',
+          status: 'approved',
+          displayName: 'Virat',
+          email: 'virat@test.com',
+        },
+      ],
+    })
+  })
+
+  test('handles member with null profile gracefully', async () => {
+    queryResult = {
+      data: {
+        id: 'gang-123',
+        name: 'Test Gang',
+        invite_code: 'XYZ789',
+        auto_accept: false,
+        created_by: 'user-1',
+        v2_gang_members: [
+          {
+            user_id: 'user-1',
+            role: 'admin',
+            status: 'approved',
+            v2_profiles: null,
+          },
+        ],
+      },
+      error: null,
+    }
+
+    const result = await getGangDetails('gang-123')
+
+    expect(result?.members[0]).toEqual({
+      userId: 'user-1',
+      role: 'admin',
+      status: 'approved',
+      displayName: null,
+      email: '',
+    })
+  })
+
+  test('returns empty members array when gang has no members', async () => {
+    queryResult = {
+      data: {
+        id: 'gang-empty',
+        name: 'Empty Gang',
+        invite_code: 'EMP001',
+        auto_accept: true,
+        created_by: 'user-1',
+        v2_gang_members: [],
+      },
+      error: null,
+    }
+
+    const result = await getGangDetails('gang-empty')
+
+    expect(result?.members).toEqual([])
+  })
+
+  test('throws on non-PGRST116 errors', async () => {
+    queryResult = {
+      data: null,
+      error: { message: 'connection error', code: '08006' },
+    }
+
+    await expect(getGangDetails('gang-1')).rejects.toEqual(
+      expect.objectContaining({ message: 'connection error' }),
+    )
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Tests — getGangMemberStatus
+// ---------------------------------------------------------------------------
+
+describe('getGangMemberStatus', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+
+    queryResult = { data: null, error: null }
+    rpcResult = { data: [], error: null }
+  })
+
+  test('returns null when user has no membership', async () => {
+    queryResult = { data: null, error: null }
+
+    const result = await getGangMemberStatus('gang-1', 'user-1')
+
+    expect(result).toBeNull()
+    expect(mockFrom).toHaveBeenCalledWith('v2_gang_members')
+    expect(mockSelect).toHaveBeenCalledWith('role, status')
+    expect(mockEq).toHaveBeenCalledWith('gang_id', 'gang-1')
+    expect(mockEq).toHaveBeenCalledWith('user_id', 'user-1')
+    expect(mockMaybeSingle).toHaveBeenCalledTimes(1)
+  })
+
+  test('maps membership row to GangMemberInfo — admin, approved', async () => {
+    queryResult = {
+      data: { role: 'admin', status: 'approved' },
+      error: null,
+    }
+
+    const result = await getGangMemberStatus('gang-1', 'user-1')
+
+    expect(result).toEqual({ role: 'admin', status: 'approved' })
+  })
+
+  test('maps membership row to GangMemberInfo — member, pending', async () => {
+    queryResult = {
+      data: { role: 'member', status: 'pending' },
+      error: null,
+    }
+
+    const result = await getGangMemberStatus('gang-1', 'user-1')
+
+    expect(result).toEqual({ role: 'member', status: 'pending' })
+  })
+
+  test('throws when the query errors', async () => {
+    queryResult = { data: null, error: { message: 'db error', code: '42P01' } }
+
+    await expect(getGangMemberStatus('gang-1', 'user-1')).rejects.toEqual(
       expect.objectContaining({ message: 'db error' }),
     )
   })
