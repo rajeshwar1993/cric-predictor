@@ -456,6 +456,33 @@ export type Database = {
         }
         Relationships: []
       }
+      v2_rate_limits: {
+        Row: {
+          id: string
+          user_id: string
+          action: string
+          window_start: string
+          count: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          action: string
+          window_start: string
+          count?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          action?: string
+          window_start?: string
+          count?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
