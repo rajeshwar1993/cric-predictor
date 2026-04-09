@@ -48,6 +48,8 @@ function makeFixture(overrides: Partial<UpcomingFixture> & { hoursFromNow?: numb
 
   return {
     id: 'fixture-1',
+    leagueId: 'league-1',
+    seasonId: 'season-1',
     matchNumber: 1,
     startDatetime: startTime.toISOString(),
     venueName: 'Wankhede Stadium, Mumbai',

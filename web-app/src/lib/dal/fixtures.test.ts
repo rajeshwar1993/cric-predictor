@@ -18,9 +18,7 @@ const mockRpc = vi.fn()
  * `resolvedValue` at the end of the chain.
  */
 function chainBuilder(resolvedValue: { data: unknown; error: unknown }) {
-  const chain: Record<string, (...args: unknown[]) => typeof chain> & {
-    then: (fn: (v: { data: unknown; error: unknown }) => void) => void
-  } = {
+  const chain = {
     select(...args: unknown[]) {
       mockSelect(...args)
       return chain
@@ -311,6 +309,8 @@ describe('getFixtureWithTeams', () => {
     queryResult = {
       data: {
         id: 'fixture-1',
+        league_id: 'league-1',
+        season_id: 'season-1',
         match_number: 1,
         start_datetime: '2026-04-10T19:30:00Z',
         venue_name: 'Wankhede Stadium',
@@ -325,6 +325,8 @@ describe('getFixtureWithTeams', () => {
 
     expect(result).toEqual({
       id: 'fixture-1',
+      leagueId: 'league-1',
+      seasonId: 'season-1',
       matchNumber: 1,
       startDatetime: '2026-04-10T19:30:00Z',
       venueName: 'Wankhede Stadium',
@@ -440,6 +442,8 @@ describe('getLiveFixtures', () => {
     expect(result).toHaveLength(1)
     expect(result[0]).toEqual({
       id: 'live-fixture-1',
+      leagueId: 'league-1',
+      seasonId: 'season-1',
       matchNumber: 12,
       startDatetime: '2026-04-09T19:30:00Z',
       venueName: 'Wankhede Stadium',

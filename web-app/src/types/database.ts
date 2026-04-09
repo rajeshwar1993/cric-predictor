@@ -642,6 +642,30 @@ export type Database = {
         }
         Relationships: []
       }
+      v2_league_season_team_players: {
+        Row: {
+          league_id: string
+          season_id: string
+          team_id: string
+          player_id: string
+          created_at: string
+        }
+        Insert: {
+          league_id: string
+          season_id: string
+          team_id: string
+          player_id: string
+          created_at?: string
+        }
+        Update: {
+          league_id?: string
+          season_id?: string
+          team_id?: string
+          player_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -684,7 +708,7 @@ export type Database = {
         | 'number_range'
         | 'over_range'
         | 'yes_no'
-      v2_resolution_phase: 'toss' | 'innings_1' | 'innings_2' | 'post_match'
+      v2_resolution_phase: 'toss' | 'first_wicket' | 'team_powerplay_end' | 'mid_match' | 'team_innings_end' | 'end' | 'post_match'
       v2_notification_type:
         | 'gang_invite'
         | 'join_request'

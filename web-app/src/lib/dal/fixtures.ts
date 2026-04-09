@@ -24,6 +24,8 @@ export interface FixtureTeam {
  */
 export interface FixtureWithTeams {
   id: string
+  leagueId: string
+  seasonId: string
   matchNumber: number
   startDatetime: string
   venueName: string
@@ -173,6 +175,8 @@ export async function getUpcomingFixtures(
 
     return {
       id: row.id,
+      leagueId: gangSeason.league_id,
+      seasonId: gangSeason.season_id,
       matchNumber: row.match_number,
       startDatetime: row.start_datetime,
       venueName: row.venue_name,
@@ -271,6 +275,8 @@ export async function getLiveFixtures(gangId: string): Promise<LiveFixture[]> {
 
     return {
       id: row.id,
+      leagueId: gangSeason.league_id,
+      seasonId: gangSeason.season_id,
       matchNumber: row.match_number,
       startDatetime: row.start_datetime,
       venueName: row.venue_name,
@@ -303,6 +309,8 @@ export async function getFixtureWithTeams(
     .select(
       `
       id,
+      league_id,
+      season_id,
       match_number,
       start_datetime,
       venue_name,
@@ -338,6 +346,8 @@ export async function getFixtureWithTeams(
 
   return {
     id: data.id,
+    leagueId: data.league_id,
+    seasonId: data.season_id,
     matchNumber: data.match_number,
     startDatetime: data.start_datetime,
     venueName: data.venue_name,
@@ -490,6 +500,8 @@ export async function getRecentResults(
 
     return {
       id: row.id,
+      leagueId: gangSeason.league_id,
+      seasonId: gangSeason.season_id,
       matchNumber: row.match_number,
       startDatetime: row.start_datetime,
       venueName: row.venue_name,

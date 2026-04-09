@@ -218,6 +218,8 @@ const TEAM_CSK = {
 function makeFixture(overrides: Partial<FixtureWithTeams> = {}): FixtureWithTeams {
   return {
     id: 'fixture-live-1',
+    leagueId: 'league-1',
+    seasonId: 'season-1',
     matchNumber: 12,
     startDatetime: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
     venueName: 'Wankhede Stadium, Mumbai',

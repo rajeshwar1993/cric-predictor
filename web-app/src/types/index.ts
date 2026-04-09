@@ -16,6 +16,7 @@ export type GangFixtureStanding = Database['public']['Tables']['v2_gang_fixture_
 export type GangSeasonStanding = Database['public']['Tables']['v2_gang_season_standings']['Row']
 export type GangLeagueSeason = Database['public']['Tables']['v2_gang_league_seasons']['Row']
 export type RateLimit = Database['public']['Tables']['v2_rate_limits']['Row']
+export type LeagueSeasonTeamPlayer = Database['public']['Tables']['v2_league_season_team_players']['Row']
 
 // Insert types
 export type ProfileInsert = Database['public']['Tables']['v2_profiles']['Insert']
