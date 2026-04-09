@@ -107,7 +107,14 @@
       "Skill(build-feature)",
       "Skill(frontend-design)",
       "Skill(ui-ux-pro-max)",
-      "Skill(simplify)"
+      "Skill(simplify)",
+      "Agent",
+      "TaskCreate",
+      "TaskUpdate",
+      "TaskList",
+      "TaskGet",
+      "ToolSearch",
+      "SendMessage"
     ],
     "deny": [
       "Bash(rm -rf:*)",
