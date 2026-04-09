@@ -5,6 +5,7 @@ export const ANALYTICS_EVENTS = {
   AUTH_CALLBACK_SUCCESS: 'auth_callback_success',
   AUTH_CALLBACK_FAILURE: 'auth_callback_failure',
   ONBOARDING_COMPLETED: 'onboarding_completed',
+  TERMS_ACCEPTED: 'terms_accepted',
   SIGNED_OUT: 'signed_out',
   ACCOUNT_DELETED: 'account_deleted',
 

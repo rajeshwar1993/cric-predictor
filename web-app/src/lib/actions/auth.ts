@@ -185,12 +185,65 @@ export async function completeOnboarding(
 }
 
 /**
+ * Accept updated terms of service.
+ *
+ * Updates the user's profile with the current terms version and acceptance timestamp,
+ * sets the terms version cookie, fires an analytics event, and redirects to /dashboard.
+ */
+export async function acceptTerms(): Promise<ActionResult> {
+  const supabase = await createServerClient()
+
+  // Auth check
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    return { success: false, error: 'You must be logged in to accept terms.' }
+  }
+
+  // Update profile
+  const { error: updateError } = await supabase
+    .from('v2_profiles')
+    .update({
+      terms_version: CURRENT_TERMS_VERSION,
+      terms_accepted_at: new Date().toISOString(),
+    })
+    .eq('id', user.id)
+
+  if (updateError) {
+    return { success: false, error: 'Failed to accept terms. Please try again.' }
+  }
+
+  // Set cookie
+  const cookieStore = await cookies()
+  cookieStore.set(COOKIE_NAMES.TERMS_VERSION, CURRENT_TERMS_VERSION, {
+    maxAge: 365 * 24 * 60 * 60,
+    path: '/',
+    httpOnly: true,
+  })
+
+  // Analytics
+  trackEvent(user.id, ANALYTICS_EVENTS.TERMS_ACCEPTED)
+
+  // Redirect
+  redirect('/dashboard')
+}
+
+/**
  * Sign the current user out of Supabase, clear onboarding/terms cookies,
- * and redirect to the landing page.
+ * fire analytics, and redirect to the landing page.
  */
 export async function signOut(): Promise<ActionResult> {
   try {
     const supabase = await createServerClient()
+
+    // Capture userId BEFORE signing out (session is destroyed by signOut)
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
     const { error } = await supabase.auth.signOut()
 
     if (error) {
@@ -200,6 +253,11 @@ export async function signOut(): Promise<ActionResult> {
     const cookieStore = await cookies()
     cookieStore.delete(COOKIE_NAMES.ONBOARDED)
     cookieStore.delete(COOKIE_NAMES.TERMS_VERSION)
+
+    // Fire analytics event if we had a user
+    if (user) {
+      trackEvent(user.id, ANALYTICS_EVENTS.SIGNED_OUT)
+    }
   } catch {
     return { success: false, error: 'Failed to sign out. Please try again.' }
   }
