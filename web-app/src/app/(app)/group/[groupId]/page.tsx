@@ -10,6 +10,7 @@ import { GangHeader } from '@/components/gangs/gang-header'
 import { MatchCardSkeleton, LeaderboardRowSkeleton } from '@/components/ui/skeleton'
 import { PendingRequests } from '@/components/gangs/pending-requests'
 import { MemberListSection } from '@/components/gangs/member-list-section'
+import { LeaveGangButton } from '@/components/gangs/leave-gang-button'
 
 interface GangPageProps {
   params: Promise<{ groupId: string }>
@@ -132,13 +133,9 @@ export default async function GangPage({ params }: GangPageProps) {
         />
       </Suspense>
 
-      {/* Placeholder: Leave Gang — GANG-004 */}
+      {/* Leave Gang — GANG-004 */}
       {!isAdmin && (
-        <section
-          className="mt-8"
-          aria-label="Leave gang"
-          data-placeholder="leave-gang"
-        />
+        <LeaveGangButton gangId={gang.id} gangName={gang.name} />
       )}
     </PageWrapper>
   )

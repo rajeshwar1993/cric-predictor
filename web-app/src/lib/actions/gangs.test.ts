@@ -55,7 +55,7 @@ vi.mock('next/cache', () => ({
 }))
 
 // Import after mocks are set up
-const { createGang, joinGangByCode, approveJoinRequest, rejectJoinRequest } = await import('./gangs')
+const { createGang, joinGangByCode, approveJoinRequest, rejectJoinRequest, leaveGang } = await import('./gangs')
 
 // ---------------------------------------------------------------------------
 // createGang
@@ -1268,6 +1268,220 @@ describe('rejectJoinRequest server action', () => {
     })
 
     await rejectJoinRequest(validGangId, validUserId)
+
+    expect(mockRevalidatePath).not.toHaveBeenCalled()
+    expect(mockTrackEvent).not.toHaveBeenCalled()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// leaveGang
+// ---------------------------------------------------------------------------
+
+describe('leaveGang server action', () => {
+  const mockUser = { id: 'user-123' }
+  const validGangId = '550e8400-e29b-41d4-a716-446655440000'
+
+  /**
+   * Sets up mockFrom for leaveGang calls.
+   * The action calls .from() for:
+   * 1. v2_gang_members — membership check (.maybeSingle)
+   * 2. v2_gang_members — update status (.update + .select)
+   */
+  function setupLeaveFromMock(overrides?: {
+    membershipCheck?: { data: unknown }
+    updateResult?: { data: unknown[]; error: unknown }
+  }) {
+    const opts = {
+      membershipCheck: { data: { role: 'member', status: 'approved' } },
+      updateResult: { data: [{ status: 'left' }], error: null },
+      ...overrides,
+    }
+
+    let memberCallIndex = 0
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'v2_gang_members') {
+        memberCallIndex++
+        if (memberCallIndex === 1) return createQueryChain(opts.membershipCheck)
+        if (memberCallIndex === 2) return createQueryChain(opts.updateResult)
+      }
+      return createQueryChain({ data: null })
+    })
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockGetUser.mockResolvedValue({ data: { user: mockUser }, error: null })
+    mockRateLimit.mockResolvedValue({ allowed: true, remaining: 9 })
+  })
+
+  // ---- Auth checks ----
+
+  test('returns error when user is not authenticated', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
+
+    const result = await leaveGang(validGangId)
+
+    expect(result).toEqual({ success: false, error: 'Not authenticated' })
+    expect(mockFrom).not.toHaveBeenCalled()
+    expect(mockTrackEvent).not.toHaveBeenCalled()
+  })
+
+  // ---- Rate limiting ----
+
+  test('returns error when rate limited', async () => {
+    mockRateLimit.mockResolvedValue({ allowed: false, remaining: 0 })
+
+    const result = await leaveGang(validGangId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Too many requests. Try again later.',
+    })
+    expect(mockRateLimit).toHaveBeenCalledWith('user-123', 'leave_gang', {
+      max: 10,
+      windowSeconds: 3600,
+    })
+    expect(mockFrom).not.toHaveBeenCalled()
+  })
+
+  // ---- Validation ----
+
+  test('returns error for invalid gangId UUID', async () => {
+    const result = await leaveGang('not-a-uuid')
+
+    expect(result).toEqual({ success: false, error: 'Invalid request' })
+    expect(mockFrom).not.toHaveBeenCalled()
+  })
+
+  // ---- Admin cannot leave ----
+
+  test('returns error when user is an admin', async () => {
+    setupLeaveFromMock({
+      membershipCheck: { data: { role: 'admin', status: 'approved' } },
+    })
+
+    const result = await leaveGang(validGangId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Admins cannot leave. Delete the gang instead.',
+    })
+    expect(mockTrackEvent).not.toHaveBeenCalled()
+    expect(mockRevalidatePath).not.toHaveBeenCalled()
+  })
+
+  // ---- Non-member cannot leave ----
+
+  test('returns error when user is not a member', async () => {
+    setupLeaveFromMock({
+      membershipCheck: { data: null },
+    })
+
+    const result = await leaveGang(validGangId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'You are not a member of this gang',
+    })
+  })
+
+  test('returns error when membership status is not approved', async () => {
+    setupLeaveFromMock({
+      membershipCheck: { data: { role: 'member', status: 'pending' } },
+    })
+
+    const result = await leaveGang(validGangId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'You are not a member of this gang',
+    })
+  })
+
+  // ---- Update failure ----
+
+  test('returns error when update fails', async () => {
+    setupLeaveFromMock({
+      updateResult: { data: [], error: { message: 'db error' } },
+    })
+
+    const result = await leaveGang(validGangId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Failed to leave gang. Please try again.',
+    })
+    expect(mockTrackEvent).not.toHaveBeenCalled()
+    expect(mockRevalidatePath).not.toHaveBeenCalled()
+  })
+
+  // ---- Race condition: already left ----
+
+  test('returns error when zero rows updated (race condition)', async () => {
+    setupLeaveFromMock({
+      updateResult: { data: [], error: null },
+    })
+
+    const result = await leaveGang(validGangId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'You are not a member of this gang',
+    })
+    expect(mockTrackEvent).not.toHaveBeenCalled()
+    expect(mockRevalidatePath).not.toHaveBeenCalled()
+  })
+
+  // ---- Success ----
+
+  test('leaves gang, fires analytics, revalidates, and returns success', async () => {
+    setupLeaveFromMock()
+
+    const result = await leaveGang(validGangId)
+
+    expect(result).toEqual({ success: true })
+
+    // Revalidation
+    expect(mockRevalidatePath).toHaveBeenCalledWith('/dashboard')
+    expect(mockRevalidatePath).toHaveBeenCalledWith(`/group/${validGangId}`)
+
+    // Analytics
+    expect(mockTrackEvent).toHaveBeenCalledWith(
+      'user-123',
+      'member_left',
+      expect.objectContaining({
+        gang_id: validGangId,
+      }),
+    )
+  })
+
+  // ---- Order of operations ----
+
+  test('calls auth before rate limit', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
+
+    await leaveGang(validGangId)
+
+    expect(mockGetUser).toHaveBeenCalledOnce()
+    expect(mockRateLimit).not.toHaveBeenCalled()
+  })
+
+  test('calls rate limit before from query', async () => {
+    mockRateLimit.mockResolvedValue({ allowed: false, remaining: 0 })
+
+    await leaveGang(validGangId)
+
+    expect(mockRateLimit).toHaveBeenCalledOnce()
+    expect(mockFrom).not.toHaveBeenCalled()
+  })
+
+  test('does not revalidate or fire analytics on error', async () => {
+    setupLeaveFromMock({
+      updateResult: { data: [], error: { message: 'db error' } },
+    })
+
+    await leaveGang(validGangId)
 
     expect(mockRevalidatePath).not.toHaveBeenCalled()
     expect(mockTrackEvent).not.toHaveBeenCalled()
