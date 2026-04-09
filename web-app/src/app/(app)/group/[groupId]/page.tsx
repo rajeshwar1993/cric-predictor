@@ -40,8 +40,8 @@ export async function generateMetadata({
  * Gang page — the central hub for a gang.
  *
  * Server Component that fetches gang details and composes the
- * GangHeader + placeholder sections. Future stories (GANG-002 through
- * GANG-004, MTCH-001 through MTCH-003) will replace the stubs.
+ * GangHeader + sections. Future stories (MTCH-001 through MTCH-003)
+ * will replace the remaining match placeholders.
  *
  * Auth gate: unauthenticated users redirect to /login.
  * Membership gate: non-approved members redirect to /dashboard.

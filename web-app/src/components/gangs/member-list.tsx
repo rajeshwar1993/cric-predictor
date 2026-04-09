@@ -92,7 +92,7 @@ export function MemberList({
       const standing = standingsMap.get(m.userId)
       return {
         userId: m.userId,
-        displayName: m.displayName ?? m.email,
+        displayName: m.displayName ?? 'Anonymous',
         avatarUrl: standing?.avatarUrl ?? null,
         role: m.role,
         status: m.status,
