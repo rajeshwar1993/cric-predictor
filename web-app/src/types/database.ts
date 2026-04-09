@@ -120,6 +120,33 @@ export type Database = {
         }
         Relationships: []
       }
+      v2_gang_league_seasons: {
+        Row: {
+          gang_id: string
+          league_id: string
+          season_id: string
+          prediction_deadline_mins: number
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          gang_id: string
+          league_id: string
+          season_id: string
+          prediction_deadline_mins?: number
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          gang_id?: string
+          league_id?: string
+          season_id?: string
+          prediction_deadline_mins?: number
+          is_active?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
       v2_league_season_fixtures: {
         Row: {
           id: string
@@ -434,36 +461,42 @@ export type Database = {
       }
       v2_gang_season_standings: {
         Row: {
-          id: string
           gang_id: string
           season_id: string
           user_id: string
+          matches_predicted: number
           total_points: number
-          matches_played: number
+          total_correct: number
+          total_resolved: number
+          accuracy_pct: number
+          points_per_match: number
           rank: number | null
-          created_at: string
           updated_at: string
         }
         Insert: {
-          id?: string
           gang_id: string
           season_id: string
           user_id: string
+          matches_predicted?: number
           total_points?: number
-          matches_played?: number
+          total_correct?: number
+          total_resolved?: number
+          accuracy_pct?: number
+          points_per_match?: number
           rank?: number | null
-          created_at?: string
           updated_at?: string
         }
         Update: {
-          id?: string
           gang_id?: string
           season_id?: string
           user_id?: string
+          matches_predicted?: number
           total_points?: number
-          matches_played?: number
+          total_correct?: number
+          total_resolved?: number
+          accuracy_pct?: number
+          points_per_match?: number
           rank?: number | null
-          created_at?: string
           updated_at?: string
         }
         Relationships: []
