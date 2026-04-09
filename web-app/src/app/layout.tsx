@@ -1,11 +1,18 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { spaceGrotesk, dmSans } from './fonts'
 import { PHProvider } from '@/components/analytics/posthog-provider'
+import { Toaster } from '@/components/ui/toaster'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Bragg',
-  description: 'IPL prediction game — bragging rights with your crew',
+  title: { default: 'Bragg', template: '%s | Bragg' },
+  description: 'Predict right. Prove it. Bragg. A social prediction game for cricket.',
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({
@@ -15,8 +22,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${spaceGrotesk.variable} ${dmSans.variable} dark`}>
-      <body className="bg-concrete-black text-text-primary font-body antialiased">
-        <PHProvider>{children}</PHProvider>
+      <body className="bg-concrete-black text-text-primary font-body antialiased min-h-dvh">
+        <PHProvider>
+          {children}
+          <Toaster />
+        </PHProvider>
       </body>
     </html>
   )

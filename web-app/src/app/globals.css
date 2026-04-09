@@ -200,7 +200,35 @@
 }
 
 /* --------------------------------------------------------------------------
- * 3. Keyframe Animations
+ * 3. Base Body Styles
+ * -------------------------------------------------------------------------- */
+
+body {
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-wire) var(--color-concrete-black);
+}
+
+/* --------------------------------------------------------------------------
+ * 4. Scrollbar Styling (dark theme)
+ * -------------------------------------------------------------------------- */
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-concrete-black);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-wire);
+  border-radius: 3px;
+}
+
+/* --------------------------------------------------------------------------
+ * 5. Keyframe Animations
  * -------------------------------------------------------------------------- */
 
 @keyframes shimmer {
@@ -250,7 +278,7 @@
 }
 
 /* --------------------------------------------------------------------------
- * 4. Typography Utility Classes (@layer components)
+ * 6. Typography Utility Classes (@layer components)
  *
  * Reusable Tailwind component classes for each type scale level.
  * @see docs/design-systems/electric-street.md — Type Scale table
