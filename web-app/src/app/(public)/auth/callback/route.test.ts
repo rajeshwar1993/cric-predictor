@@ -291,4 +291,25 @@ describe('GET /auth/callback', () => {
     const redirectUrl = new URL(response.headers.get('location')!)
     expect(redirectUrl.pathname).toBe('/gang/my-gang')
   })
+
+  it('redirects to /accept-terms when onboarded user has stale terms version', async () => {
+    setupMocks({
+      profile: { onboarding_completed: true, terms_version: '1.0', is_deleted: false },
+    })
+
+    const request = makeRequest({ code: 'valid-code' })
+    const response = await GET(request)
+
+    expect(response.status).toBe(307)
+    const redirectUrl = new URL(response.headers.get('location')!)
+    expect(redirectUrl.pathname).toBe('/accept-terms')
+
+    // Should set onboarded cookie but NOT terms cookie (stale)
+    const setCookieHeaders = response.headers.getSetCookie()
+    const onboardedCookie = setCookieHeaders.find((c) => c.startsWith('bragg_onboarded='))
+    const termsCookie = setCookieHeaders.find((c) => c.startsWith('bragg_terms_version='))
+
+    expect(onboardedCookie).toBeDefined()
+    expect(termsCookie).toBeUndefined()
+  })
 })

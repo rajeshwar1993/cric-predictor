@@ -1,11 +1,8 @@
 import { type NextRequest, NextResponse } from 'next/server'
 
-import { COOKIE_NAMES, CURRENT_TERMS_VERSION } from '@/lib/constants'
+import { COOKIE_NAMES, CURRENT_TERMS_VERSION, getMajorVersion } from '@/lib/constants'
 import { createMiddlewareClient } from '@/lib/supabase/middleware'
 import { sanitizeRedirect } from '@/lib/url'
-
-// Re-export shared utility for consumers that import from middleware
-export { sanitizeRedirect }
 
 // ---------------------------------------------------------------------------
 // Public route prefixes that bypass all middleware gates.
@@ -17,14 +14,6 @@ const PUBLIC_PATH_PREFIXES = ['/login', '/auth', '/join', '/privacy', '/terms', 
 function isPublicRoute(pathname: string): boolean {
   if (pathname === '/') return true
   return PUBLIC_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix))
-}
-
-/**
- * Extract the major version number from a semver-like string (e.g. "2.0" -> 2).
- */
-export function getMajorVersion(version: string): number {
-  const parts = version.split('.')
-  return parseInt(parts[0] ?? '', 10)
 }
 
 // ---------------------------------------------------------------------------
@@ -68,6 +57,8 @@ export async function middleware(request: NextRequest) {
       const onboardingUrl = request.nextUrl.clone()
       onboardingUrl.pathname = '/onboarding'
       onboardingUrl.search = ''
+      const redirectTo = sanitizeRedirect(pathname + request.nextUrl.search)
+      onboardingUrl.searchParams.set('redirectTo', redirectTo)
       return NextResponse.redirect(onboardingUrl)
     }
   }
