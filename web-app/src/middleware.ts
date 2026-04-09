@@ -2,6 +2,10 @@ import { type NextRequest, NextResponse } from 'next/server'
 
 import { COOKIE_NAMES, CURRENT_TERMS_VERSION } from '@/lib/constants'
 import { createMiddlewareClient } from '@/lib/supabase/middleware'
+import { sanitizeRedirect } from '@/lib/url'
+
+// Re-export shared utility for consumers that import from middleware
+export { sanitizeRedirect }
 
 // ---------------------------------------------------------------------------
 // Public route prefixes that bypass all middleware gates.
@@ -13,21 +17,6 @@ const PUBLIC_PATH_PREFIXES = ['/login', '/auth', '/join', '/privacy', '/terms', 
 function isPublicRoute(pathname: string): boolean {
   if (pathname === '/') return true
   return PUBLIC_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix))
-}
-
-// ---------------------------------------------------------------------------
-// Helpers (exported for unit testing)
-// ---------------------------------------------------------------------------
-
-/**
- * Sanitize a redirect URL to prevent open-redirect attacks.
- * Only relative paths starting with a single `/` are allowed.
- */
-export function sanitizeRedirect(url: string): string {
-  if (!url || !url.startsWith('/') || url.startsWith('//') || url.startsWith('/\\')) {
-    return '/dashboard'
-  }
-  return url
 }
 
 /**
