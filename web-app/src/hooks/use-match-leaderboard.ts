@@ -1,16 +1,36 @@
 'use client'
 
+// ---------------------------------------------------------------------------
+// DAL duplication invariant — READ BEFORE EDITING
+// ---------------------------------------------------------------------------
+//
+// The query shape in this hook is INTENTIONALLY duplicated with the server
+// DAL in `src/lib/dal/leaderboards.ts#getMatchLeaderboard`.
+//
+// Why:
+//   - Client hooks cannot import server-only modules (the DAL creates its
+//     Supabase client via `next/headers`, which is forbidden in Client
+//     Components).
+//   - The initial render uses the server DAL for SSR, while this hook owns
+//     the 30s polling path once the fixture goes live.
+//
+// Invariant:
+//   - Any change to the SELECT clause, table names, joins, ordering, member
+//     status fallback, or sort behaviour in `getMatchLeaderboard` MUST be
+//     mirrored here, or polling will silently return stale/wrong data.
+//   - The `MatchLeaderboardEntry` shape is the shared contract — do not add
+//     fields on only one side.
+//
+// TODO: consolidate both implementations into a single Postgres RPC (or a
+// route handler) once the v2 schema stabilises so there is only one source
+// of truth.
+
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createBrowserClient } from '@/lib/supabase/client'
 import type { MatchLeaderboardEntry } from '@/lib/dal/leaderboards'
 import type { MemberStatus } from '@/types'
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-/** Polling interval in milliseconds (30 seconds — less frequent than live scores) */
-const POLL_INTERVAL_MS = 30_000
+import { isDeparted } from '@/lib/member-status'
+import { LEADERBOARD_POLL_INTERVAL_MS } from '@/lib/constants'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -56,6 +76,9 @@ export function useMatchLeaderboard(
   // Guard against concurrent in-flight requests
   const isPollingRef = useRef(false)
 
+  // Guard against setState after unmount (in-flight poll resolving late).
+  const isMountedRef = useRef(true)
+
   const poll = useCallback(async () => {
     if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
       return
@@ -79,13 +102,15 @@ export function useMatchLeaderboard(
         .order('rank', { ascending: true, nullsFirst: false })
 
       if (standingsError) {
-        setError(standingsError.message)
+        if (isMountedRef.current) setError(standingsError.message)
         return
       }
 
       if (!standings || standings.length === 0) {
-        setData([])
-        setError(null)
+        if (isMountedRef.current) {
+          setData([])
+          setError(null)
+        }
         return
       }
 
@@ -98,7 +123,7 @@ export function useMatchLeaderboard(
         .in('user_id', userIds)
 
       if (membersError) {
-        setError(membersError.message)
+        if (isMountedRef.current) setError(membersError.message)
         return
       }
 
@@ -106,13 +131,18 @@ export function useMatchLeaderboard(
         (members ?? []).map((m) => [m.user_id, m.status]),
       )
 
-      const departedStatuses: MemberStatus[] = ['left', 'removed']
-
       type ProfileShape = { display_name: string | null; avatar_url: string | null } | null
 
       const entries: MatchLeaderboardEntry[] = standings.map((row) => {
         const profile = row.v2_profiles as unknown as ProfileShape
-        const status = memberStatusMap.get(row.user_id) ?? 'approved'
+        const status = memberStatusMap.get(row.user_id)
+        if (status === undefined && process.env.NODE_ENV !== 'production') {
+          console.warn(
+            `[useMatchLeaderboard] user ${row.user_id} has standings row but no membership record — defaulting to 'removed'`,
+          )
+        }
+        // Safer default: dim the user rather than surface them as active.
+        const resolvedStatus: MemberStatus = status ?? 'removed'
 
         return {
           userId: row.user_id,
@@ -124,28 +154,38 @@ export function useMatchLeaderboard(
           lastSubmittedAt: row.last_submitted_at,
           displayName: profile?.display_name ?? null,
           avatarUrl: profile?.avatar_url ?? null,
-          memberStatus: status,
+          memberStatus: resolvedStatus,
         }
       })
 
       // Sort active first, departed at end
-      const active = entries.filter((e) => !departedStatuses.includes(e.memberStatus))
-      const departed = entries.filter((e) => departedStatuses.includes(e.memberStatus))
+      const active = entries.filter((e) => !isDeparted(e.memberStatus))
+      const departed = entries.filter((e) => isDeparted(e.memberStatus))
 
-      setData([...active, ...departed])
-      setError(null)
+      if (isMountedRef.current) {
+        setData([...active, ...departed])
+        setError(null)
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch leaderboard')
+      if (isMountedRef.current) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch leaderboard')
+      }
     } finally {
       isPollingRef.current = false
-      setIsLoading(false)
+      if (isMountedRef.current) setIsLoading(false)
     }
   }, [gangId, fixtureId])
 
   useEffect(() => {
+    // Re-arm the mount flag on every enabled change so StrictMode double
+    // invocation and prop changes don't leave us permanently unmounted.
+    isMountedRef.current = true
+
     if (!enabled) {
       setIsLoading(false)
-      return
+      return () => {
+        isMountedRef.current = false
+      }
     }
 
     let active = true
@@ -159,7 +199,7 @@ export function useMatchLeaderboard(
     wrappedPoll()
 
     // Set up polling interval
-    const intervalId = setInterval(wrappedPoll, POLL_INTERVAL_MS)
+    const intervalId = setInterval(wrappedPoll, LEADERBOARD_POLL_INTERVAL_MS)
 
     // Re-poll immediately when tab becomes visible
     const onVisibilityChange = () => {
@@ -171,6 +211,7 @@ export function useMatchLeaderboard(
 
     return () => {
       active = false
+      isMountedRef.current = false
       clearInterval(intervalId)
       document.removeEventListener('visibilitychange', onVisibilityChange)
     }

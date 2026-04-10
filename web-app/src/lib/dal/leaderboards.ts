@@ -1,6 +1,7 @@
 import { createServerClient } from '@/lib/supabase/server'
 import type { Database } from '@/types/database'
 import type { MemberStatus } from '@/types'
+import { isDeparted } from '@/lib/member-status'
 
 // ---------------------------------------------------------------------------
 // Shared types
@@ -85,28 +86,36 @@ export async function getGangSeasonStandings(
   )
 
   // Map and sort: active members first by rank, departed at end
-  const departedStatuses: MemberStatus[] = ['left', 'removed']
-
   const entries: GangStandingEntry[] = data.map((row) => {
     const profile = row.v2_profiles as unknown as ProfileRow | null
-    const status = memberStatusMap.get(row.user_id) ?? 'approved'
+    const status = memberStatusMap.get(row.user_id)
+    if (status === undefined && process.env.NODE_ENV !== 'production') {
+      console.warn(
+        `[DAL] getGangSeasonStandings: user ${row.user_id} has standings row but no membership record — defaulting to 'removed'`,
+      )
+    }
+    // Safer default than 'approved': dim the user rather than falsely surface
+    // them as active if the membership row is missing (e.g., data drift).
+    const resolvedStatus: MemberStatus = status ?? 'removed'
 
     return {
       userId: row.user_id,
       totalPoints: row.total_points,
       matchesPredicted: row.matches_predicted,
-      accuracyPct: row.accuracy_pct,
-      pointsPerMatch: row.points_per_match,
+      // DECIMAL(5,2) columns can arrive as strings from supabase-js; coerce
+      // here so downstream `.toFixed()` callers never see a string.
+      accuracyPct: Number(row.accuracy_pct),
+      pointsPerMatch: Number(row.points_per_match),
       rank: row.rank,
       displayName: profile?.display_name ?? null,
       avatarUrl: profile?.avatar_url ?? null,
-      memberStatus: status,
+      memberStatus: resolvedStatus,
     }
   })
 
   // Sort: active members first (by rank from DB), then departed at bottom
-  const active = entries.filter((e) => !departedStatuses.includes(e.memberStatus))
-  const departed = entries.filter((e) => departedStatuses.includes(e.memberStatus))
+  const active = entries.filter((e) => !isDeparted(e.memberStatus))
+  const departed = entries.filter((e) => isDeparted(e.memberStatus))
 
   return [...active, ...departed]
 }
@@ -218,11 +227,17 @@ export async function getMatchLeaderboard(
   )
 
   // Map and sort: active members first by rank, departed at end
-  const departedStatuses: MemberStatus[] = ['left', 'removed']
-
   const entries: MatchLeaderboardEntry[] = standings.map((row) => {
     const profile = row.v2_profiles as unknown as ProfileRow | null
-    const status = memberStatusMap.get(row.user_id) ?? 'approved'
+    const status = memberStatusMap.get(row.user_id)
+    if (status === undefined && process.env.NODE_ENV !== 'production') {
+      console.warn(
+        `[DAL] getMatchLeaderboard: user ${row.user_id} has standings row but no membership record — defaulting to 'removed'`,
+      )
+    }
+    // Safer default than 'approved': dim the user rather than falsely surface
+    // them as active if the membership row is missing (e.g., data drift).
+    const resolvedStatus: MemberStatus = status ?? 'removed'
 
     return {
       userId: row.user_id,
@@ -234,13 +249,13 @@ export async function getMatchLeaderboard(
       lastSubmittedAt: row.last_submitted_at,
       displayName: profile?.display_name ?? null,
       avatarUrl: profile?.avatar_url ?? null,
-      memberStatus: status,
+      memberStatus: resolvedStatus,
     }
   })
 
   // Sort: active members first (by rank from DB), then departed at bottom
-  const active = entries.filter((e) => !departedStatuses.includes(e.memberStatus))
-  const departed = entries.filter((e) => departedStatuses.includes(e.memberStatus))
+  const active = entries.filter((e) => !isDeparted(e.memberStatus))
+  const departed = entries.filter((e) => isDeparted(e.memberStatus))
 
   return [...active, ...departed]
 }

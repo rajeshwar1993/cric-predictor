@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useMatchPredictions } from '@/hooks/use-match-predictions'
 import type { MatchPredictionsDataset } from '@/lib/dal/predictions-shared'
 import { PredictionReveal } from './prediction-reveal'
@@ -43,10 +44,36 @@ export function PredictionRevealLive({
   initialData,
   currentUserId,
 }: PredictionRevealLiveProps) {
-  const { data: polledData } = useMatchPredictions(gangId, fixtureId, isLive)
+  const { data: polledData, error } = useMatchPredictions(
+    gangId,
+    fixtureId,
+    isLive,
+  )
+
+  // Log polling errors in development for debugging — production surfaces
+  // the banner below without spamming the console.
+  useEffect(() => {
+    if (error && process.env.NODE_ENV !== 'production') {
+      console.error('[PredictionRevealLive] polling error:', error)
+    }
+  }, [error])
 
   // Use polled data once available, otherwise fall back to server data.
+  // Stale data stays visible when a poll fails — the banner signals retry.
   const data = isLive && polledData ? polledData : initialData
 
-  return <PredictionReveal data={data} currentUserId={currentUserId} />
+  return (
+    <>
+      {isLive && error && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="mb-3 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 font-body text-caption text-warning"
+        >
+          Updates paused — retrying...
+        </div>
+      )}
+      <PredictionReveal data={data} currentUserId={currentUserId} />
+    </>
+  )
 }

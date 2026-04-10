@@ -345,8 +345,13 @@ export async function getMatchPredictions(
 
   if (scenariosError) throw scenariosError
 
-  const scenarios: MatchPredictionScenario[] = (scenarioRows ?? []).map(
-    (row) => ({
+  // Build the scenario list once, tracking the phase alongside each row so
+  // we can partition into phase groups without re-mapping.
+  const scenariosWithPhase: {
+    scenario: MatchPredictionScenario
+    phase: ResolutionPhase
+  }[] = (scenarioRows ?? []).map((row) => ({
+    scenario: {
       id: row.id,
       title: row.title,
       points: row.points,
@@ -354,28 +359,24 @@ export async function getMatchPredictions(
       correctAnswer: row.correct_answer,
       isResolved: row.is_resolved,
       isVoided: row.is_voided,
-    }),
+    },
+    phase: row.resolution_phase as ResolutionPhase,
+  }))
+
+  // Flat list retained for downstream UUID collection (correct-answer loop).
+  const scenarios: MatchPredictionScenario[] = scenariosWithPhase.map(
+    (s) => s.scenario,
   )
 
   // Build a scenario-id → input-type map for UUID collection
   const scenarioInputTypeById = new Map<string, ScenarioInputType>()
-  for (const row of scenarioRows ?? []) {
-    scenarioInputTypeById.set(row.id, row.input_type)
+  for (const { scenario } of scenariosWithPhase) {
+    scenarioInputTypeById.set(scenario.id, scenario.inputType)
   }
 
-  // Group scenarios by phase in canonical order
+  // Partition scenarios into phase groups (canonical order applied below).
   const phaseGroups = new Map<ResolutionPhase, MatchPredictionScenario[]>()
-  for (const row of scenarioRows ?? []) {
-    const phase = row.resolution_phase as ResolutionPhase
-    const scenario: MatchPredictionScenario = {
-      id: row.id,
-      title: row.title,
-      points: row.points,
-      inputType: row.input_type,
-      correctAnswer: row.correct_answer,
-      isResolved: row.is_resolved,
-      isVoided: row.is_voided,
-    }
+  for (const { scenario, phase } of scenariosWithPhase) {
     const existing = phaseGroups.get(phase)
     if (existing) existing.push(scenario)
     else phaseGroups.set(phase, [scenario])

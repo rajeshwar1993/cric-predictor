@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Clock, RefreshCw } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -20,12 +20,14 @@ export interface LeaderboardCountdownProps {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function getTimeRemaining(deadline: string): {
+interface TimeRemaining {
   hours: number
   minutes: number
   seconds: number
   isExpired: boolean
-} {
+}
+
+function getTimeRemaining(deadline: string): TimeRemaining {
   const diff = new Date(deadline).getTime() - Date.now()
 
   if (diff <= 0) {
@@ -44,6 +46,16 @@ function padTwo(n: number): string {
   return n.toString().padStart(2, '0')
 }
 
+/**
+ * Format a TimeRemaining into the displayed string (H:MM:SS or MM:SS). Used
+ * both for the initial render and to throttle setState in the tick loop.
+ */
+function formatTimeString(t: TimeRemaining): string {
+  return t.hours > 0
+    ? `${t.hours}:${padTwo(t.minutes)}:${padTwo(t.seconds)}`
+    : `${padTwo(t.minutes)}:${padTwo(t.seconds)}`
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -60,26 +72,57 @@ function padTwo(n: number): string {
  * @see docs/stories/LDB-001-match-leaderboard.md
  */
 export function LeaderboardCountdown({ deadline, onExpire }: LeaderboardCountdownProps) {
-  const [remaining, setRemaining] = useState(() => getTimeRemaining(deadline))
-  const [hasExpired, setHasExpired] = useState(() => getTimeRemaining(deadline).isExpired)
+  // Lazy initializer: compute the initial snapshot once per mount and reuse
+  // it for both `remaining` and `hasExpired` (was previously computed twice).
+  const [remaining, setRemaining] = useState<TimeRemaining>(() =>
+    getTimeRemaining(deadline),
+  )
+  const [hasExpired, setHasExpired] = useState<boolean>(
+    () => getTimeRemaining(deadline).isExpired,
+  )
   // Screen reader announcement — only updated at meaningful intervals (every minute)
   const [srAnnouncement, setSrAnnouncement] = useState('')
+
+  // Refs used to throttle re-renders: only re-render when the displayed
+  // string actually changes, not on every 1s tick. Initialized to null and
+  // seeded inside the tick effect — we never read them during render.
+  const lastDisplayedRef = useRef<string | null>(null)
+  const lastMinuteRef = useRef<number | null>(null)
 
   useEffect(() => {
     if (hasExpired) return
 
+    // Seed the throttling refs from the current snapshot before the first
+    // tick. Doing this inside the effect keeps the render pass pure.
+    const seed = getTimeRemaining(deadline)
+    lastDisplayedRef.current = formatTimeString(seed)
+    lastMinuteRef.current = seed.minutes
+
     const tick = () => {
       const next = getTimeRemaining(deadline)
-      setRemaining(next)
 
       if (next.isExpired) {
         setHasExpired(true)
+        setRemaining(next)
         return
       }
 
-      // Announce at the top of each minute (when seconds === 0) or at 30s remaining
+      // Throttle: only setState when the visible string has changed.
+      // Because the display shows seconds, this means once per second when
+      // visible — but it avoids setState churn if a future change makes
+      // the display coarser (e.g., dropping seconds).
+      const nextString = formatTimeString(next)
+      if (nextString !== lastDisplayedRef.current) {
+        lastDisplayedRef.current = nextString
+        setRemaining(next)
+      }
+
+      // Screen-reader announcement: only fire when the minutes tier changes
+      // so aria-live stays quiet. Also announce the final 30s heads-up.
       const totalSecs = next.hours * 3600 + next.minutes * 60 + next.seconds
-      if (next.seconds === 0 || totalSecs === 30) {
+      const minuteChanged = next.minutes !== lastMinuteRef.current
+      if (minuteChanged || totalSecs === 30) {
+        lastMinuteRef.current = next.minutes
         const parts: string[] = []
         if (next.hours > 0) parts.push(`${next.hours} hour${next.hours !== 1 ? 's' : ''}`)
         if (next.minutes > 0) parts.push(`${next.minutes} minute${next.minutes !== 1 ? 's' : ''}`)
@@ -129,9 +172,7 @@ export function LeaderboardCountdown({ deadline, onExpire }: LeaderboardCountdow
     )
   }
 
-  const timeString = remaining.hours > 0
-    ? `${remaining.hours}:${padTwo(remaining.minutes)}:${padTwo(remaining.seconds)}`
-    : `${padTwo(remaining.minutes)}:${padTwo(remaining.seconds)}`
+  const timeString = formatTimeString(remaining)
 
   return (
     <Card

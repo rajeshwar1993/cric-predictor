@@ -5,6 +5,7 @@ import { ChevronDown, Trophy } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import type { GangStandingEntry } from '@/lib/dal/leaderboards'
+import { isDeparted } from '@/lib/member-status'
 import { LeaderboardRow } from './leaderboard-row'
 import { EmptyState } from '@/components/ui/empty-state'
 import { LeaderboardRowSkeleton } from '@/components/ui/skeleton'
@@ -21,12 +22,6 @@ export interface SeasonStandingsTableProps {
   /** Whether the standings data is currently loading */
   isLoading?: boolean
 }
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const DEPARTED_STATUSES = new Set(['left', 'removed'])
 
 // ---------------------------------------------------------------------------
 // Component
@@ -69,7 +64,7 @@ export function SeasonStandingsTable({
 
       <div className="flex flex-col" role="list">
         {entries.map((entry) => {
-          const isDeparted = DEPARTED_STATUSES.has(entry.memberStatus)
+          const departed = isDeparted(entry.memberStatus)
           const isCurrentUser = entry.userId === currentUserId
 
           return (
@@ -77,7 +72,7 @@ export function SeasonStandingsTable({
               key={entry.userId}
               entry={entry}
               isCurrentUser={isCurrentUser}
-              isDeparted={isDeparted}
+              isDeparted={departed}
             />
           )
         })}
@@ -126,6 +121,7 @@ function StandingsRow({ entry, isCurrentUser, isDeparted }: StandingsRowProps) {
 
   const subtitle = buildSubtitle(entry)
   const ariaLabel = buildAriaLabel(entry, isCurrentUser, isDeparted)
+  const detailsId = `standings-${entry.userId}-details`
 
   return (
     <div role="listitem">
@@ -179,6 +175,7 @@ function StandingsRow({ entry, isCurrentUser, isDeparted }: StandingsRowProps) {
           className="w-full text-left"
           onClick={() => setExpanded((prev) => !prev)}
           aria-expanded={expanded}
+          aria-controls={detailsId}
           aria-label={`${ariaLabel}. Tap to ${expanded ? 'collapse' : 'expand'} details.`}
         >
           <LeaderboardRow
@@ -212,6 +209,7 @@ function StandingsRow({ entry, isCurrentUser, isDeparted }: StandingsRowProps) {
         {/* Expanded detail stats */}
         {expanded && (
           <div
+            id={detailsId}
             className={cn(
               'flex gap-4 border-b-2 border-mid-concrete bg-mid-concrete px-4 py-3',
               isCurrentUser && 'bg-lime-wash',

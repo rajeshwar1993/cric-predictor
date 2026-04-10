@@ -3,6 +3,32 @@
  *
  * Kept in a separate module so client components and hooks can import them
  * without pulling in `createServerClient` (which depends on `next/headers`).
+ *
+ * ---------------------------------------------------------------------------
+ * RSC serialization contract
+ * ---------------------------------------------------------------------------
+ *
+ * `MatchPredictionsDataset` (and in particular the nested
+ * `predictionsByScenarioByUser: Map<string, Map<string, MatchPredictionCell>>`)
+ * crosses the React Server Component → Client Component boundary in routes
+ * such as `/group/[groupId]/match/[fixtureId]`.
+ *
+ * React 19 / Next 16 Flight serializer natively supports `Map` and `Set`
+ * values, so this nested-Map shape round-trips correctly across the RSC
+ * boundary today.
+ *
+ * IMPORTANT
+ *   - DO NOT run these objects through `JSON.parse(JSON.stringify(...))`
+ *     anywhere in the pipeline. `JSON.stringify` silently drops Map entries
+ *     (they serialize to `{}`) and the reveal table will render empty cells
+ *     for every member.
+ *   - DO NOT spread into a plain object for "convenience" (e.g., to log it).
+ *     Use `Array.from(map.entries())` explicitly when you need a serializable
+ *     snapshot for debugging.
+ *   - If Map support is ever removed from Flight, convert the nested Map to
+ *     `Record<string, Record<string, MatchPredictionCell>>` at the DAL
+ *     boundary (`getMatchPredictions`) and update the consuming components
+ *     in the same change.
  */
 
 import type { MemberStatus, ResolutionPhase, ScenarioInputType } from '@/types'
