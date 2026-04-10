@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useMatchLeaderboard } from '@/hooks/use-match-leaderboard'
 import type { MatchLeaderboardEntry } from '@/lib/dal/leaderboards'
 import { MatchLeaderboard } from './match-leaderboard'
@@ -43,20 +44,41 @@ export function MatchLeaderboardLive({
   initialEntries,
   currentUserId,
 }: MatchLeaderboardLiveProps) {
-  const { data: polledData, isLoading } = useMatchLeaderboard(
+  const { data: polledData, isLoading, error } = useMatchLeaderboard(
     gangId,
     fixtureId,
     isLive,
   )
 
-  // Use polled data when available, fall back to initial server data
+  // Log polling errors in development for debugging — production surfaces
+  // the banner below without spamming the console.
+  useEffect(() => {
+    if (error && process.env.NODE_ENV !== 'production') {
+      console.error('[MatchLeaderboardLive] polling error:', error)
+    }
+  }, [error])
+
+  // Use polled data when available, fall back to initial server data.
+  // We intentionally keep showing the stale underlying data when the poll
+  // fails so users don't lose context — the banner above signals retry.
   const entries = isLive && polledData ? polledData : initialEntries
 
   return (
-    <MatchLeaderboard
-      entries={entries}
-      currentUserId={currentUserId}
-      isLoading={isLive && isLoading && !polledData}
-    />
+    <>
+      {isLive && error && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="mb-3 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 font-body text-caption text-warning"
+        >
+          Updates paused — retrying...
+        </div>
+      )}
+      <MatchLeaderboard
+        entries={entries}
+        currentUserId={currentUserId}
+        isLoading={isLive && isLoading && !polledData}
+      />
+    </>
   )
 }

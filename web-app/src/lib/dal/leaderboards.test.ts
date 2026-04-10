@@ -322,7 +322,10 @@ describe('getGangSeasonStandings', () => {
     expect(result[1]?.memberStatus).toBe('left')
   })
 
-  test('defaults member status to approved when not found', async () => {
+  test("defaults member status to 'removed' when not found", async () => {
+    // Safer default than 'approved': if the standings row exists but the
+    // membership record is missing (data drift), we dim the user rather
+    // than falsely surface them as active.
     tableResults.set('v2_gang_season_standings', {
       data: [
         {
@@ -342,9 +345,12 @@ describe('getGangSeasonStandings', () => {
       error: null,
     })
 
+    // Suppress the expected dev-only warning log.
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const result = await getGangSeasonStandings('gang-1', 'season-1')
+    warnSpy.mockRestore()
 
-    expect(result[0]?.memberStatus).toBe('approved')
+    expect(result[0]?.memberStatus).toBe('removed')
   })
 
   test('includes pointsPerMatch from database', async () => {
@@ -620,7 +626,10 @@ describe('getMatchLeaderboard', () => {
     expect(result[0]?.lastSubmittedAt).toBeNull()
   })
 
-  test('defaults member status to approved when not found', async () => {
+  test("defaults member status to 'removed' when not found", async () => {
+    // Safer default than 'approved': if the standings row exists but the
+    // membership record is missing (data drift), we dim the user rather
+    // than falsely surface them as active.
     tableResults.set('v2_gang_fixture_standings', {
       data: [
         {
@@ -641,9 +650,12 @@ describe('getMatchLeaderboard', () => {
       error: null,
     })
 
+    // Suppress the expected dev-only warning log.
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const result = await getMatchLeaderboard('gang-1', 'fixture-1')
+    warnSpy.mockRestore()
 
-    expect(result[0]?.memberStatus).toBe('approved')
+    expect(result[0]?.memberStatus).toBe('removed')
   })
 
   test('queries correct tables with correct filters', async () => {

@@ -80,7 +80,18 @@ export function useLiveScores(fixtureId: string): UseLiveScoresResult {
           setError(fetchError.message)
         }
       } else if (scoreData) {
-        setData(scoreData)
+        // Coerce DECIMAL(4,2) columns (current_run_rate) from supabase-js.
+        // Postgres DECIMALs can round-trip as strings via PostgREST even
+        // when the generated TS type claims `number | null`. Callers use
+        // `.toFixed(2)` which would throw on a string.
+        const normalized: FixtureLiveScore = {
+          ...scoreData,
+          current_run_rate:
+            scoreData.current_run_rate != null
+              ? Number(scoreData.current_run_rate)
+              : null,
+        }
+        setData(normalized)
         setError(null)
       }
     } catch (err) {

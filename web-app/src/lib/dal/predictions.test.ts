@@ -213,7 +213,7 @@ describe('getFixtureScenarios', () => {
   test('throws on database error', async () => {
     scenariosResult = { data: null, error: { message: 'DB error', code: '500' } }
 
-    await expect(getFixtureScenarios('fixture-1')).rejects.toEqual({
+    await expect(getFixtureScenarios('gang-1', 'fixture-1')).rejects.toEqual({
       message: 'DB error',
       code: '500',
     })

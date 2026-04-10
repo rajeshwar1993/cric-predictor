@@ -1,5 +1,6 @@
 import { Trophy } from 'lucide-react'
 import type { MatchLeaderboardEntry } from '@/lib/dal/leaderboards'
+import { isDeparted } from '@/lib/member-status'
 import { LeaderboardRow } from './leaderboard-row'
 import { EmptyState } from '@/components/ui/empty-state'
 import { LeaderboardRowSkeleton } from '@/components/ui/skeleton'
@@ -16,12 +17,6 @@ export interface MatchLeaderboardProps {
   /** Whether the leaderboard data is currently loading */
   isLoading?: boolean
 }
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const DEPARTED_STATUSES = new Set(['left', 'removed'])
 
 // ---------------------------------------------------------------------------
 // Component
@@ -48,8 +43,8 @@ export function MatchLeaderboard({
     return (
       <EmptyState
         icon={Trophy}
-        headline="No predictions yet"
-        description="No one has predicted for this match yet. Be the first to make your predictions!"
+        headline="No one has predicted"
+        description="Be the first — lock in your predictions to claim the top spot."
       />
     )
   }
@@ -61,18 +56,18 @@ export function MatchLeaderboard({
       </h2>
       <div className="flex flex-col" role="list" aria-label="Match standings">
         {entries.map((entry) => {
-          const isDeparted = DEPARTED_STATUSES.has(entry.memberStatus)
+          const departed = isDeparted(entry.memberStatus)
           const isCurrentUser = entry.userId === currentUserId
           const subtitle = buildSubtitle(entry)
 
           return (
             <div key={entry.userId} role="listitem">
               <LeaderboardRow
-                rank={isDeparted ? null : entry.rank}
+                rank={departed ? null : entry.rank}
                 displayName={entry.displayName ?? 'Unknown'}
                 score={entry.pointsEarned}
                 isCurrentUser={isCurrentUser}
-                isDeparted={isDeparted}
+                isDeparted={departed}
                 avatar={entry.avatarUrl ?? undefined}
                 subtitle={subtitle}
               />

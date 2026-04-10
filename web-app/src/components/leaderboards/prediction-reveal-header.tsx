@@ -1,13 +1,8 @@
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { getAvatarInitials } from '@/lib/utils'
+import { isDeparted } from '@/lib/member-status'
 import type { MatchPredictionMember } from '@/lib/dal/predictions-shared'
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const DEPARTED_STATUSES = new Set(['left', 'removed'])
 
 // ---------------------------------------------------------------------------
 // Props
@@ -69,7 +64,7 @@ export function PredictionRevealHeader({
         {/* One column per member */}
         {members.map((member) => {
           const isCurrentUser = member.userId === currentUserId
-          const isDeparted = DEPARTED_STATUSES.has(member.memberStatus)
+          const departed = isDeparted(member.memberStatus)
 
           return (
             <th
@@ -80,7 +75,7 @@ export function PredictionRevealHeader({
                 isCurrentUser
                   ? 'bg-bragg-lime text-text-on-primary'
                   : 'text-text-secondary',
-                isDeparted && !isCurrentUser && 'opacity-75',
+                departed && !isCurrentUser && 'opacity-75',
                 'min-w-[72px]',
               )}
             >

@@ -1,5 +1,32 @@
 'use client'
 
+// ---------------------------------------------------------------------------
+// DAL duplication invariant — READ BEFORE EDITING
+// ---------------------------------------------------------------------------
+//
+// The query pipeline in this hook is INTENTIONALLY duplicated with the
+// server DAL in `src/lib/dal/predictions.ts#getMatchPredictions`.
+//
+// Why:
+//   - Client hooks cannot import server-only modules (the DAL creates its
+//     Supabase client via `next/headers`, which is forbidden in Client
+//     Components).
+//   - The initial render uses the server DAL for SSR, while this hook owns
+//     the 30s polling path once the fixture goes live.
+//
+// Invariant:
+//   - Any change to the SELECT clauses, table names, joins, ordering,
+//     member status fallback, scenario→phase grouping, or the cell
+//     `Map<scenarioId, Map<userId, cell>>` shape in `getMatchPredictions`
+//     MUST be mirrored here, or polling will silently return stale/wrong
+//     data.
+//   - The `MatchPredictionsDataset` shape is the shared contract — do not
+//     add fields on only one side.
+//
+// TODO: consolidate both implementations into a single Postgres RPC (or a
+// route handler) once the v2 schema stabilises so there is only one source
+// of truth.
+
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createBrowserClient } from '@/lib/supabase/client'
 import {
@@ -14,15 +41,8 @@ import {
   type MatchPredictionsDataset,
 } from '@/lib/dal/predictions-shared'
 import type { MemberStatus, ResolutionPhase, ScenarioInputType } from '@/types'
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-/** Polling interval (30s — matches useMatchLeaderboard cadence). */
-const POLL_INTERVAL_MS = 30_000
-
-const DEPARTED_STATUSES: MemberStatus[] = ['left', 'removed']
+import { isDeparted } from '@/lib/member-status'
+import { LEADERBOARD_POLL_INTERVAL_MS } from '@/lib/constants'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -69,6 +89,8 @@ export function useMatchPredictions(
 
   const supabaseRef = useRef(createBrowserClient())
   const isPollingRef = useRef(false)
+  // Guard against setState after unmount (in-flight poll resolving late).
+  const isMountedRef = useRef(true)
 
   const poll = useCallback(async () => {
     if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
@@ -93,7 +115,7 @@ export function useMatchPredictions(
         .order('rank', { ascending: true, nullsFirst: false })
 
       if (standingsError) {
-        setError(standingsError.message)
+        if (isMountedRef.current) setError(standingsError.message)
         return
       }
 
@@ -108,7 +130,7 @@ export function useMatchPredictions(
           .in('user_id', userIds)
 
         if (membersError) {
-          setError(membersError.message)
+          if (isMountedRef.current) setError(membersError.message)
           return
         }
 
@@ -118,34 +140,41 @@ export function useMatchPredictions(
 
         const mapped: MatchPredictionMember[] = standings.map((row) => {
           const profile = row.v2_profiles as unknown as ProfileShape
+          const status = statusMap.get(row.user_id)
+          if (status === undefined && process.env.NODE_ENV !== 'production') {
+            console.warn(
+              `[useMatchPredictions] user ${row.user_id} has standings row but no membership record — defaulting to 'removed'`,
+            )
+          }
+          // Safer default: dim the user rather than surface them as active.
+          const resolvedStatus: MemberStatus = status ?? 'removed'
+
           return {
             userId: row.user_id,
             displayName: profile?.display_name ?? null,
             avatarUrl: profile?.avatar_url ?? null,
-            memberStatus: statusMap.get(row.user_id) ?? 'approved',
+            memberStatus: resolvedStatus,
             rank: row.rank,
           }
         })
 
-        const active = mapped.filter(
-          (m) => !DEPARTED_STATUSES.includes(m.memberStatus),
-        )
-        const departed = mapped.filter((m) =>
-          DEPARTED_STATUSES.includes(m.memberStatus),
-        )
+        const active = mapped.filter((m) => !isDeparted(m.memberStatus))
+        const departed = mapped.filter((m) => isDeparted(m.memberStatus))
         members = [...active, ...departed]
       }
 
       // Empty early-out: no members → empty dataset.
       if (members.length === 0) {
-        setData({
-          members: [],
-          phases: [],
-          predictionsByScenarioByUser: new Map(),
-          teamsById: {},
-          playersById: {},
-        })
-        setError(null)
+        if (isMountedRef.current) {
+          setData({
+            members: [],
+            phases: [],
+            predictionsByScenarioByUser: new Map(),
+            teamsById: {},
+            playersById: {},
+          })
+          setError(null)
+        }
         return
       }
 
@@ -160,7 +189,7 @@ export function useMatchPredictions(
         .order('sort_order', { ascending: true })
 
       if (scenariosError) {
-        setError(scenariosError.message)
+        if (isMountedRef.current) setError(scenariosError.message)
         return
       }
 
@@ -200,7 +229,7 @@ export function useMatchPredictions(
         .eq('fixture_id', fixtureId)
 
       if (predictionsError) {
-        setError(predictionsError.message)
+        if (isMountedRef.current) setError(predictionsError.message)
         return
       }
 
@@ -248,7 +277,7 @@ export function useMatchPredictions(
           .in('id', Array.from(teamIds))
 
         if (teamsError) {
-          setError(teamsError.message)
+          if (isMountedRef.current) setError(teamsError.message)
           return
         }
 
@@ -266,7 +295,7 @@ export function useMatchPredictions(
           .in('id', Array.from(playerIds))
 
         if (playersError) {
-          setError(playersError.message)
+          if (isMountedRef.current) setError(playersError.message)
           return
         }
 
@@ -275,26 +304,36 @@ export function useMatchPredictions(
         }
       }
 
-      setData({
-        members,
-        phases,
-        predictionsByScenarioByUser,
-        teamsById,
-        playersById,
-      })
-      setError(null)
+      if (isMountedRef.current) {
+        setData({
+          members,
+          phases,
+          predictionsByScenarioByUser,
+          teamsById,
+          playersById,
+        })
+        setError(null)
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch predictions')
+      if (isMountedRef.current) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch predictions')
+      }
     } finally {
       isPollingRef.current = false
-      setIsLoading(false)
+      if (isMountedRef.current) setIsLoading(false)
     }
   }, [gangId, fixtureId])
 
   useEffect(() => {
+    // Re-arm the mount flag on every enabled change so StrictMode double
+    // invocation and prop changes don't leave us permanently unmounted.
+    isMountedRef.current = true
+
     if (!enabled) {
       setIsLoading(false)
-      return
+      return () => {
+        isMountedRef.current = false
+      }
     }
 
     let active = true
@@ -307,7 +346,7 @@ export function useMatchPredictions(
     // Initial fetch
     wrappedPoll()
 
-    const intervalId = setInterval(wrappedPoll, POLL_INTERVAL_MS)
+    const intervalId = setInterval(wrappedPoll, LEADERBOARD_POLL_INTERVAL_MS)
 
     const onVisibilityChange = () => {
       if (document.visibilityState === 'visible' && active) {
@@ -318,6 +357,7 @@ export function useMatchPredictions(
 
     return () => {
       active = false
+      isMountedRef.current = false
       clearInterval(intervalId)
       document.removeEventListener('visibilitychange', onVisibilityChange)
     }

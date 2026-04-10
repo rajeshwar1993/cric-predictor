@@ -16,6 +16,15 @@ export const PREDICTION_WINDOW_MS = PREDICTION_WINDOW_HOURS * 60 * 60 * 1000
 /** Default deadline before match start (in minutes). */
 export const DEFAULT_DEADLINE_MINS = 45
 
+/**
+ * Polling interval used by live match leaderboard + prediction reveal pollers.
+ *
+ * Less aggressive than the live scorecard poller (15s) because leaderboard
+ * and reveal data change at most once per scenario resolution. Shared between
+ * `use-match-leaderboard` and `use-match-predictions` so they stay in sync.
+ */
+export const LEADERBOARD_POLL_INTERVAL_MS = 30_000
+
 /** Cookie names used by middleware and auth flow. */
 export const COOKIE_NAMES = {
   ONBOARDED: 'bragg_onboarded',

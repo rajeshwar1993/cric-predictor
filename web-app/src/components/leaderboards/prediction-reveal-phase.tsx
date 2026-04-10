@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils'
+import { isDeparted } from '@/lib/member-status'
 import { PredictionCell } from './prediction-cell'
 import { PredictionRevealHeader } from './prediction-reveal-header'
 import type {
@@ -9,12 +10,6 @@ import type {
   MatchPredictionScenario,
   MatchPredictionTeam,
 } from '@/lib/dal/predictions-shared'
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const DEPARTED_STATUSES = new Set(['left', 'removed'])
 
 // ---------------------------------------------------------------------------
 // Props
@@ -177,7 +172,7 @@ export function PredictionRevealPhase({
                     const didPredict = Boolean(cell)
                     const value = cell?.value ?? null
                     const isCurrentUser = member.userId === currentUserId
-                    const isDeparted = DEPARTED_STATUSES.has(member.memberStatus)
+                    const departed = isDeparted(member.memberStatus)
                     const displayValue = resolveDisplayValue(
                       value,
                       scenario,
@@ -195,7 +190,7 @@ export function PredictionRevealPhase({
                       ? 'You'
                       : (member.displayName ?? 'Member')
                     const ariaMemberName =
-                      isDeparted && !isCurrentUser
+                      departed && !isCurrentUser
                         ? `${baseMemberName} (left gang)`
                         : baseMemberName
 
@@ -220,16 +215,18 @@ export function PredictionRevealPhase({
                         isCurrentUser={isCurrentUser}
                         className={cn(
                           'border-b border-mid-concrete',
-                          isDeparted && !isCurrentUser && 'opacity-75',
+                          departed && !isCurrentUser && 'opacity-75',
                         )}
                       />
                     )
                   })}
 
-                  {/* Trailing answer cell */}
+                  {/* Trailing answer cell — min-w matches the header so
+                      long player names rendered as correct answers don't
+                      wrap awkwardly. */}
                   <td
                     className={cn(
-                      'border-b border-mid-concrete px-3 py-3 text-center align-middle',
+                      'min-w-[80px] border-b border-mid-concrete px-3 py-3 text-center align-middle',
                       'font-body text-body-sm font-medium',
                       scenario.isVoided
                         ? 'text-text-muted'
