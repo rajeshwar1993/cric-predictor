@@ -8,6 +8,7 @@ export const ANALYTICS_EVENTS = {
   TERMS_ACCEPTED: 'terms_accepted',
   SIGNED_OUT: 'signed_out',
   ACCOUNT_DELETED: 'account_deleted',
+  DISPLAY_NAME_UPDATED: 'display_name_updated',
 
   // Gangs
   GANG_CREATED: 'gang_created',
