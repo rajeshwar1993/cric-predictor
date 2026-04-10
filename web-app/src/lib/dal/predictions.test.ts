@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import type { FixtureScenarioRow } from './predictions'
+import type { MatchLeaderboardEntry } from './leaderboards'
 
 // ---------------------------------------------------------------------------
 // Mocks — chain-style to simulate Supabase PostgREST builder
@@ -58,6 +59,12 @@ let playersResult: { data: unknown; error: unknown }
 /** The per-test resolved value for gang league season query. */
 let gangLeagueSeasonResult: { data: unknown; error: unknown }
 
+/** The per-test resolved value for v2_league_teams query. */
+let leagueTeamsResult: { data: unknown; error: unknown }
+
+/** The per-test resolved value for v2_players query. */
+let leaguePlayersResult: { data: unknown; error: unknown }
+
 vi.mock('@/lib/supabase/server', () => ({
   createServerClient: vi.fn().mockImplementation(async () => ({
     from: (table: string) => {
@@ -74,9 +81,23 @@ vi.mock('@/lib/supabase/server', () => ({
       if (table === 'v2_gang_league_seasons') {
         return chainBuilder(gangLeagueSeasonResult)
       }
+      if (table === 'v2_league_teams') {
+        return chainBuilder(leagueTeamsResult)
+      }
+      if (table === 'v2_players') {
+        return chainBuilder(leaguePlayersResult)
+      }
       return chainBuilder({ data: null, error: null })
     },
   })),
+}))
+
+// Mock getMatchLeaderboard from leaderboards DAL — it creates its own
+// server client so mocking the Supabase tables here would double-dispatch.
+const mockGetMatchLeaderboard = vi.fn()
+vi.mock('./leaderboards', () => ({
+  getMatchLeaderboard: (gangId: string, fixtureId: string) =>
+    mockGetMatchLeaderboard(gangId, fixtureId),
 }))
 
 // Import after mocks
@@ -86,6 +107,7 @@ const {
   getMatchPlayers,
   getGangLeagueSeason,
   groupScenariosByPhase,
+  getMatchPredictions,
 } = await import('./predictions')
 
 // ---------------------------------------------------------------------------
@@ -490,3 +512,382 @@ function mapped(raw: {
     sortOrder: raw.sort_order,
   }
 }
+
+// ---------------------------------------------------------------------------
+// Tests — getMatchPredictions
+// ---------------------------------------------------------------------------
+
+function makeLeaderboardEntry(
+  overrides: Partial<MatchLeaderboardEntry> & { userId: string },
+): MatchLeaderboardEntry {
+  return {
+    predictedCount: 3,
+    resolvedCount: 0,
+    correctCount: 0,
+    pointsEarned: 0,
+    rank: 1,
+    lastSubmittedAt: null,
+    displayName: 'Player',
+    avatarUrl: null,
+    memberStatus: 'approved',
+    ...overrides,
+  }
+}
+
+/** Raw v2_fixture_scenarios row shape for `getMatchPredictions`. */
+const RAW_SCENARIO_TOSS = {
+  id: 'scenario-1',
+  fixture_id: 'fixture-1',
+  title: 'Who will win the toss?',
+  description: null,
+  input_type: 'team_select' as const,
+  options: null,
+  points: 10,
+  resolution_phase: 'toss' as const,
+  correct_answer: 'team-mi',
+  is_resolved: true,
+  is_voided: false,
+  sort_order: 1,
+}
+
+const RAW_SCENARIO_FIRST_WICKET = {
+  id: 'scenario-2',
+  fixture_id: 'fixture-1',
+  title: 'First wicket in which over?',
+  description: null,
+  input_type: 'over_range' as const,
+  options: null,
+  points: 15,
+  resolution_phase: 'first_wicket' as const,
+  correct_answer: null,
+  is_resolved: false,
+  is_voided: false,
+  sort_order: 2,
+}
+
+const RAW_SCENARIO_VOIDED = {
+  id: 'scenario-3',
+  fixture_id: 'fixture-1',
+  title: 'Man of the match?',
+  description: null,
+  input_type: 'player_select' as const,
+  options: null,
+  points: 25,
+  resolution_phase: 'post_match' as const,
+  correct_answer: null,
+  is_resolved: false,
+  is_voided: true,
+  sort_order: 5,
+}
+
+describe('getMatchPredictions', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    scenariosResult = { data: [], error: null }
+    predictionsResult = { data: [], error: null }
+    playersResult = { data: [], error: null }
+    gangLeagueSeasonResult = { data: null, error: null }
+    leagueTeamsResult = { data: [], error: null }
+    leaguePlayersResult = { data: [], error: null }
+    mockGetMatchLeaderboard.mockReset()
+    mockGetMatchLeaderboard.mockResolvedValue([])
+  })
+
+  test('returns empty structure when there are no members', async () => {
+    mockGetMatchLeaderboard.mockResolvedValue([])
+    scenariosResult = { data: [], error: null }
+    predictionsResult = { data: [], error: null }
+
+    const result = await getMatchPredictions('gang-1', 'fixture-1')
+
+    expect(result.members).toEqual([])
+    expect(result.phases).toEqual([])
+    expect(result.teamsById).toEqual({})
+    expect(result.playersById).toEqual({})
+    expect(result.predictionsByScenarioByUser.size).toBe(0)
+    expect(mockGetMatchLeaderboard).toHaveBeenCalledWith('gang-1', 'fixture-1')
+  })
+
+  test('returns phases and scenario matrix when data exists', async () => {
+    mockGetMatchLeaderboard.mockResolvedValue([
+      makeLeaderboardEntry({
+        userId: 'user-1',
+        displayName: 'Alice',
+        avatarUrl: null,
+        rank: 1,
+      }),
+      makeLeaderboardEntry({
+        userId: 'user-2',
+        displayName: 'Bob',
+        avatarUrl: null,
+        rank: 2,
+      }),
+    ])
+
+    scenariosResult = {
+      data: [RAW_SCENARIO_TOSS, RAW_SCENARIO_FIRST_WICKET],
+      error: null,
+    }
+
+    predictionsResult = {
+      data: [
+        {
+          user_id: 'user-1',
+          scenario_id: 'scenario-1',
+          value: 'team-mi',
+          is_correct: true,
+          points_earned: 10,
+        },
+        {
+          user_id: 'user-2',
+          scenario_id: 'scenario-1',
+          value: 'team-csk',
+          is_correct: false,
+          points_earned: 0,
+        },
+        {
+          user_id: 'user-1',
+          scenario_id: 'scenario-2',
+          value: '3-4',
+          is_correct: null,
+          points_earned: 0,
+        },
+      ],
+      error: null,
+    }
+
+    leagueTeamsResult = {
+      data: [
+        { id: 'team-mi', code: 'MI', name: 'Mumbai Indians', color: '#004BA0' },
+        { id: 'team-csk', code: 'CSK', name: 'Chennai Super Kings', color: '#FDB913' },
+      ],
+      error: null,
+    }
+
+    const result = await getMatchPredictions('gang-1', 'fixture-1')
+
+    // Members ordered by leaderboard rank
+    expect(result.members).toHaveLength(2)
+    expect(result.members[0]).toMatchObject({
+      userId: 'user-1',
+      displayName: 'Alice',
+      rank: 1,
+    })
+    expect(result.members[1]).toMatchObject({
+      userId: 'user-2',
+      displayName: 'Bob',
+      rank: 2,
+    })
+
+    // Phases grouped in order
+    expect(result.phases).toHaveLength(2)
+    expect(result.phases[0]?.phase).toBe('toss')
+    expect(result.phases[0]?.label).toBe('TOSS')
+    expect(result.phases[0]?.scenarios).toHaveLength(1)
+    expect(result.phases[0]?.scenarios[0]).toMatchObject({
+      id: 'scenario-1',
+      title: 'Who will win the toss?',
+      points: 10,
+      inputType: 'team_select',
+      correctAnswer: 'team-mi',
+      isResolved: true,
+      isVoided: false,
+    })
+    expect(result.phases[1]?.phase).toBe('first_wicket')
+    expect(result.phases[1]?.scenarios[0]?.isResolved).toBe(false)
+
+    // Predictions map
+    const tossCells = result.predictionsByScenarioByUser.get('scenario-1')
+    expect(tossCells?.get('user-1')).toEqual({
+      value: 'team-mi',
+      isCorrect: true,
+      pointsEarned: 10,
+    })
+    expect(tossCells?.get('user-2')).toEqual({
+      value: 'team-csk',
+      isCorrect: false,
+      pointsEarned: 0,
+    })
+
+    const firstWicketCells = result.predictionsByScenarioByUser.get('scenario-2')
+    expect(firstWicketCells?.get('user-1')).toEqual({
+      value: '3-4',
+      isCorrect: null,
+      pointsEarned: 0,
+    })
+    expect(firstWicketCells?.get('user-2')).toBeUndefined()
+
+    // Teams resolved
+    expect(result.teamsById['team-mi']).toEqual({
+      code: 'MI',
+      name: 'Mumbai Indians',
+      color: '#004BA0',
+    })
+    expect(result.teamsById['team-csk']).toEqual({
+      code: 'CSK',
+      name: 'Chennai Super Kings',
+      color: '#FDB913',
+    })
+
+    // No players in this test
+    expect(Object.keys(result.playersById)).toHaveLength(0)
+  })
+
+  test('resolves player UUIDs via v2_players batch lookup', async () => {
+    mockGetMatchLeaderboard.mockResolvedValue([
+      makeLeaderboardEntry({ userId: 'user-1', displayName: 'Alice' }),
+    ])
+
+    scenariosResult = {
+      data: [
+        {
+          ...RAW_SCENARIO_VOIDED,
+          is_voided: false,
+          is_resolved: true,
+          correct_answer: 'player-1',
+        },
+      ],
+      error: null,
+    }
+
+    predictionsResult = {
+      data: [
+        {
+          user_id: 'user-1',
+          scenario_id: 'scenario-3',
+          value: 'player-2',
+          is_correct: false,
+          points_earned: 0,
+        },
+      ],
+      error: null,
+    }
+
+    leaguePlayersResult = {
+      data: [
+        { id: 'player-1', name: 'Rohit Sharma' },
+        { id: 'player-2', name: 'MS Dhoni' },
+      ],
+      error: null,
+    }
+
+    const result = await getMatchPredictions('gang-1', 'fixture-1')
+
+    expect(result.playersById['player-1']).toEqual({ name: 'Rohit Sharma' })
+    expect(result.playersById['player-2']).toEqual({ name: 'MS Dhoni' })
+  })
+
+  test('preserves voided scenarios in the output', async () => {
+    mockGetMatchLeaderboard.mockResolvedValue([
+      makeLeaderboardEntry({ userId: 'user-1', displayName: 'Alice' }),
+    ])
+
+    scenariosResult = { data: [RAW_SCENARIO_VOIDED], error: null }
+    predictionsResult = {
+      data: [
+        {
+          user_id: 'user-1',
+          scenario_id: 'scenario-3',
+          value: 'player-7',
+          is_correct: null,
+          points_earned: 0,
+        },
+      ],
+      error: null,
+    }
+    leaguePlayersResult = {
+      data: [{ id: 'player-7', name: 'Some Player' }],
+      error: null,
+    }
+
+    const result = await getMatchPredictions('gang-1', 'fixture-1')
+
+    expect(result.phases).toHaveLength(1)
+    expect(result.phases[0]?.scenarios[0]?.isVoided).toBe(true)
+    expect(result.phases[0]?.scenarios[0]?.isResolved).toBe(false)
+  })
+
+  test('throws when scenarios query errors', async () => {
+    mockGetMatchLeaderboard.mockResolvedValue([
+      makeLeaderboardEntry({ userId: 'user-1' }),
+    ])
+    scenariosResult = { data: null, error: { message: 'scenarios fail', code: '500' } }
+
+    await expect(getMatchPredictions('gang-1', 'fixture-1')).rejects.toEqual(
+      expect.objectContaining({ message: 'scenarios fail' }),
+    )
+  })
+
+  test('throws when predictions query errors', async () => {
+    mockGetMatchLeaderboard.mockResolvedValue([
+      makeLeaderboardEntry({ userId: 'user-1' }),
+    ])
+    scenariosResult = { data: [RAW_SCENARIO_TOSS], error: null }
+    predictionsResult = {
+      data: null,
+      error: { message: 'predictions fail', code: '500' },
+    }
+    leagueTeamsResult = {
+      data: [{ id: 'team-mi', code: 'MI', name: 'Mumbai Indians', color: '#004BA0' }],
+      error: null,
+    }
+
+    await expect(getMatchPredictions('gang-1', 'fixture-1')).rejects.toEqual(
+      expect.objectContaining({ message: 'predictions fail' }),
+    )
+  })
+
+  test('skips team/player lookup when no UUIDs to resolve', async () => {
+    mockGetMatchLeaderboard.mockResolvedValue([
+      makeLeaderboardEntry({ userId: 'user-1' }),
+    ])
+    scenariosResult = {
+      data: [
+        {
+          ...RAW_SCENARIO_FIRST_WICKET,
+          // over_range only, no team/player UUIDs
+        },
+      ],
+      error: null,
+    }
+    predictionsResult = {
+      data: [
+        {
+          user_id: 'user-1',
+          scenario_id: 'scenario-2',
+          value: '3-4',
+          is_correct: null,
+          points_earned: 0,
+        },
+      ],
+      error: null,
+    }
+
+    const result = await getMatchPredictions('gang-1', 'fixture-1')
+
+    expect(result.teamsById).toEqual({})
+    expect(result.playersById).toEqual({})
+    expect(mockFrom).not.toHaveBeenCalledWith('v2_league_teams')
+    expect(mockFrom).not.toHaveBeenCalledWith('v2_players')
+  })
+
+  test('handles solo member with no predictions', async () => {
+    mockGetMatchLeaderboard.mockResolvedValue([
+      makeLeaderboardEntry({ userId: 'user-1', displayName: 'Lonely', rank: 1 }),
+    ])
+    scenariosResult = { data: [RAW_SCENARIO_TOSS], error: null }
+    predictionsResult = { data: [], error: null }
+    leagueTeamsResult = {
+      data: [{ id: 'team-mi', code: 'MI', name: 'Mumbai Indians', color: '#004BA0' }],
+      error: null,
+    }
+
+    const result = await getMatchPredictions('gang-1', 'fixture-1')
+
+    expect(result.members).toHaveLength(1)
+    expect(result.phases).toHaveLength(1)
+    // No predictions map entries since no predictions
+    const tossCells = result.predictionsByScenarioByUser.get('scenario-1')
+    expect(tossCells?.size ?? 0).toBe(0)
+  })
+})
