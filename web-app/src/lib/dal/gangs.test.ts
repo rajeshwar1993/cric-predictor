@@ -417,12 +417,14 @@ describe('getGangDetails', () => {
             user_id: 'user-admin',
             role: 'admin',
             status: 'approved',
+            is_blocked: false,
             v2_profiles: { display_name: 'Raj', email: 'raj@test.com' },
           },
           {
             user_id: 'user-2',
             role: 'member',
             status: 'approved',
+            is_blocked: false,
             v2_profiles: { display_name: 'Virat', email: 'virat@test.com' },
           },
         ],
@@ -443,6 +445,7 @@ describe('getGangDetails', () => {
           userId: 'user-admin',
           role: 'admin',
           status: 'approved',
+          isBlocked: false,
           displayName: 'Raj',
           email: 'raj@test.com',
         },
@@ -450,10 +453,44 @@ describe('getGangDetails', () => {
           userId: 'user-2',
           role: 'member',
           status: 'approved',
+          isBlocked: false,
           displayName: 'Virat',
           email: 'virat@test.com',
         },
       ],
+    })
+  })
+
+  test('maps is_blocked=true from a removed/blocked member row', async () => {
+    queryResult = {
+      data: {
+        id: 'gang-123',
+        name: 'Test Gang',
+        invite_code: 'BLK001',
+        auto_accept: false,
+        created_by: 'user-admin',
+        v2_gang_members: [
+          {
+            user_id: 'user-blocked',
+            role: 'member',
+            status: 'removed',
+            is_blocked: true,
+            v2_profiles: { display_name: 'Blocked', email: 'b@test.com' },
+          },
+        ],
+      },
+      error: null,
+    }
+
+    const result = await getGangDetails('gang-123')
+
+    expect(result?.members[0]).toEqual({
+      userId: 'user-blocked',
+      role: 'member',
+      status: 'removed',
+      isBlocked: true,
+      displayName: 'Blocked',
+      email: 'b@test.com',
     })
   })
 
@@ -470,6 +507,7 @@ describe('getGangDetails', () => {
             user_id: 'user-1',
             role: 'admin',
             status: 'approved',
+            is_blocked: false,
             v2_profiles: null,
           },
         ],
@@ -483,6 +521,7 @@ describe('getGangDetails', () => {
       userId: 'user-1',
       role: 'admin',
       status: 'approved',
+      isBlocked: false,
       displayName: null,
       email: '',
     })

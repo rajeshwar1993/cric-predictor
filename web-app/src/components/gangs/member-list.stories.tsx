@@ -15,6 +15,7 @@ function makeMember(
     email: 'member@test.com',
     role: 'member',
     status: 'approved',
+    isBlocked: false,
     ...overrides,
   }
 }

@@ -11,6 +11,7 @@ import {
 import { PageWrapper } from '@/components/layout/page-wrapper'
 import { GangSettingsForm } from '@/components/gangs/gang-settings-form'
 import { DeleteGangSection } from '@/components/gangs/delete-gang-section'
+import { MemberManagement } from '@/components/gangs/member-management'
 
 export const metadata: Metadata = {
   title: 'Gang Settings',
@@ -31,7 +32,7 @@ interface GangSettingsPageProps {
  * Sections (in order):
  *   1. Gang Info — name, auto-accept
  *   2. Prediction Settings — deadline minutes
- *   3. Member Management — placeholder (SET-002)
+ *   3. Member Management — remove/block/unblock members (SET-002)
  *   4. Danger Zone — delete gang
  *
  * @see docs/stories/SET-001-gang-settings.md
@@ -101,18 +102,12 @@ export default async function GangSettingsPage({
         initialPredictionDeadlineMins={predictionDeadlineMins}
       />
 
-      {/* 3. Member Management — placeholder (SET-002 fills this in) */}
-      <section
-        className="mt-8 rounded-lg border border-wire bg-dark-concrete p-6"
-        aria-label="Member management"
-      >
-        <h2 className="text-h3 font-bold uppercase tracking-[0.02em] text-text-primary">
-          Member Management
-        </h2>
-        <p className="mt-2 text-body-sm text-text-secondary">
-          Member management coming soon.
-        </p>
-      </section>
+      {/* 3. Member Management */}
+      <MemberManagement
+        gangId={gang.id}
+        members={gang.members}
+        currentUserId={user.id}
+      />
 
       {/* 4. Danger Zone */}
       <DeleteGangSection gangId={gang.id} gangName={gang.name} />
