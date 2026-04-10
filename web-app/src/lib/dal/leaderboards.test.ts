@@ -16,6 +16,8 @@ const mockOrder = vi.fn()
 const mockLimit = vi.fn()
 /** Tracks calls to `.maybeSingle()` */
 const mockMaybeSingle = vi.fn()
+/** Tracks calls to `.in()` */
+const mockIn = vi.fn()
 
 /**
  * Build a chainable mock that records every method call and resolves to
@@ -43,6 +45,10 @@ function chainBuilder(resolvedValue: { data: unknown; error: unknown }) {
       mockMaybeSingle()
       return chain
     },
+    in(...args: unknown[]) {
+      mockIn(...args)
+      return chain
+    },
     // Make it thenable so `await` resolves it
     then(fn: (v: { data: unknown; error: unknown }) => void) {
       fn(resolvedValue)
@@ -51,22 +57,28 @@ function chainBuilder(resolvedValue: { data: unknown; error: unknown }) {
   return chain
 }
 
-/** The per-test resolved value for the query. */
+/** The per-test resolved value for the query (single-query functions). */
 let queryResult: { data: unknown; error: unknown }
+
+/**
+ * Per-table query results for multi-query functions.
+ * When a table is in this map, it takes precedence over `queryResult`.
+ */
+let tableResults: Map<string, { data: unknown; error: unknown }>
 
 vi.mock('@/lib/supabase/server', () => ({
   createServerClient: vi.fn().mockImplementation(async () => ({
     from: (table: string) => {
       mockFrom(table)
-      return chainBuilder(queryResult)
+      const result = tableResults.get(table) ?? queryResult
+      return chainBuilder(result)
     },
   })),
 }))
 
 // Import after mocks
-const { getGangSeasonStandings, getGangActiveSeason } = await import(
-  './leaderboards'
-)
+const { getGangSeasonStandings, getGangActiveSeason, getMatchLeaderboard } =
+  await import('./leaderboards')
 
 // ---------------------------------------------------------------------------
 // Tests — getGangSeasonStandings
@@ -76,6 +88,7 @@ describe('getGangSeasonStandings', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     queryResult = { data: [], error: null }
+    tableResults = new Map()
   })
 
   test('returns empty array when no standings exist', async () => {
@@ -114,7 +127,10 @@ describe('getGangSeasonStandings', () => {
           matches_predicted: 17,
           accuracy_pct: 82.3,
           rank: 2,
-          v2_profiles: { display_name: 'Virat K', avatar_url: 'https://example.com/avatar.jpg' },
+          v2_profiles: {
+            display_name: 'Virat K',
+            avatar_url: 'https://example.com/avatar.jpg',
+          },
         },
       ],
       error: null,
@@ -223,6 +239,7 @@ describe('getGangActiveSeason', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     queryResult = { data: null, error: null }
+    tableResults = new Map()
   })
 
   test('returns season_id when an active season exists', async () => {
@@ -265,5 +282,280 @@ describe('getGangActiveSeason', () => {
     await expect(getGangActiveSeason('gang-1')).rejects.toEqual(
       expect.objectContaining({ message: 'db error' }),
     )
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Tests — getMatchLeaderboard
+// ---------------------------------------------------------------------------
+
+describe('getMatchLeaderboard', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    queryResult = { data: [], error: null }
+    tableResults = new Map()
+  })
+
+  test('returns empty array when no standings exist', async () => {
+    tableResults.set('v2_gang_fixture_standings', { data: [], error: null })
+
+    const result = await getMatchLeaderboard('gang-1', 'fixture-1')
+
+    expect(result).toEqual([])
+    expect(mockFrom).toHaveBeenCalledWith('v2_gang_fixture_standings')
+  })
+
+  test('returns empty array when standings data is null', async () => {
+    tableResults.set('v2_gang_fixture_standings', { data: null, error: null })
+
+    const result = await getMatchLeaderboard('gang-1', 'fixture-1')
+
+    expect(result).toEqual([])
+  })
+
+  test('maps standings with profile and member status data', async () => {
+    tableResults.set('v2_gang_fixture_standings', {
+      data: [
+        {
+          user_id: 'user-1',
+          predicted_count: 8,
+          resolved_count: 6,
+          correct_count: 5,
+          points_earned: 42,
+          rank: 1,
+          last_submitted_at: '2026-04-10T10:00:00Z',
+          v2_profiles: {
+            display_name: 'Rajesh K',
+            avatar_url: 'https://example.com/a1.jpg',
+          },
+        },
+        {
+          user_id: 'user-2',
+          predicted_count: 8,
+          resolved_count: 6,
+          correct_count: 4,
+          points_earned: 36,
+          rank: 2,
+          last_submitted_at: '2026-04-10T11:00:00Z',
+          v2_profiles: { display_name: 'Virat K', avatar_url: null },
+        },
+      ],
+      error: null,
+    })
+    tableResults.set('v2_gang_members', {
+      data: [
+        { user_id: 'user-1', status: 'approved' },
+        { user_id: 'user-2', status: 'approved' },
+      ],
+      error: null,
+    })
+
+    const result = await getMatchLeaderboard('gang-1', 'fixture-1')
+
+    expect(result).toHaveLength(2)
+    expect(result[0]).toEqual({
+      userId: 'user-1',
+      predictedCount: 8,
+      resolvedCount: 6,
+      correctCount: 5,
+      pointsEarned: 42,
+      rank: 1,
+      lastSubmittedAt: '2026-04-10T10:00:00Z',
+      displayName: 'Rajesh K',
+      avatarUrl: 'https://example.com/a1.jpg',
+      memberStatus: 'approved',
+    })
+    expect(result[1]).toEqual({
+      userId: 'user-2',
+      predictedCount: 8,
+      resolvedCount: 6,
+      correctCount: 4,
+      pointsEarned: 36,
+      rank: 2,
+      lastSubmittedAt: '2026-04-10T11:00:00Z',
+      displayName: 'Virat K',
+      avatarUrl: null,
+      memberStatus: 'approved',
+    })
+  })
+
+  test('sorts departed members to the end', async () => {
+    tableResults.set('v2_gang_fixture_standings', {
+      data: [
+        {
+          user_id: 'user-active',
+          predicted_count: 5,
+          resolved_count: 5,
+          correct_count: 3,
+          points_earned: 20,
+          rank: 2,
+          last_submitted_at: '2026-04-10T10:00:00Z',
+          v2_profiles: { display_name: 'Active User', avatar_url: null },
+        },
+        {
+          user_id: 'user-left',
+          predicted_count: 8,
+          resolved_count: 6,
+          correct_count: 5,
+          points_earned: 42,
+          rank: 1,
+          last_submitted_at: '2026-04-10T09:00:00Z',
+          v2_profiles: { display_name: 'Left User', avatar_url: null },
+        },
+      ],
+      error: null,
+    })
+    tableResults.set('v2_gang_members', {
+      data: [
+        { user_id: 'user-active', status: 'approved' },
+        { user_id: 'user-left', status: 'left' },
+      ],
+      error: null,
+    })
+
+    const result = await getMatchLeaderboard('gang-1', 'fixture-1')
+
+    expect(result).toHaveLength(2)
+    // Active member should be first despite departed member having rank 1
+    expect(result[0]?.userId).toBe('user-active')
+    expect(result[0]?.memberStatus).toBe('approved')
+    expect(result[1]?.userId).toBe('user-left')
+    expect(result[1]?.memberStatus).toBe('left')
+  })
+
+  test('handles null profile gracefully', async () => {
+    tableResults.set('v2_gang_fixture_standings', {
+      data: [
+        {
+          user_id: 'user-1',
+          predicted_count: 3,
+          resolved_count: 3,
+          correct_count: 1,
+          points_earned: 10,
+          rank: 1,
+          last_submitted_at: null,
+          v2_profiles: null,
+        },
+      ],
+      error: null,
+    })
+    tableResults.set('v2_gang_members', {
+      data: [{ user_id: 'user-1', status: 'approved' }],
+      error: null,
+    })
+
+    const result = await getMatchLeaderboard('gang-1', 'fixture-1')
+
+    expect(result).toHaveLength(1)
+    expect(result[0]?.displayName).toBeNull()
+    expect(result[0]?.avatarUrl).toBeNull()
+    expect(result[0]?.lastSubmittedAt).toBeNull()
+  })
+
+  test('defaults member status to approved when not found', async () => {
+    tableResults.set('v2_gang_fixture_standings', {
+      data: [
+        {
+          user_id: 'user-unknown',
+          predicted_count: 3,
+          resolved_count: 0,
+          correct_count: 0,
+          points_earned: 0,
+          rank: 1,
+          last_submitted_at: '2026-04-10T10:00:00Z',
+          v2_profiles: { display_name: 'Unknown', avatar_url: null },
+        },
+      ],
+      error: null,
+    })
+    tableResults.set('v2_gang_members', {
+      data: [],
+      error: null,
+    })
+
+    const result = await getMatchLeaderboard('gang-1', 'fixture-1')
+
+    expect(result[0]?.memberStatus).toBe('approved')
+  })
+
+  test('queries correct tables with correct filters', async () => {
+    tableResults.set('v2_gang_fixture_standings', { data: [], error: null })
+
+    await getMatchLeaderboard('gang-1', 'fixture-1')
+
+    expect(mockFrom).toHaveBeenCalledWith('v2_gang_fixture_standings')
+    expect(mockEq).toHaveBeenCalledWith('gang_id', 'gang-1')
+    expect(mockEq).toHaveBeenCalledWith('fixture_id', 'fixture-1')
+    expect(mockOrder).toHaveBeenCalledWith('rank', {
+      ascending: true,
+      nullsFirst: false,
+    })
+  })
+
+  test('throws when standings query errors', async () => {
+    tableResults.set('v2_gang_fixture_standings', {
+      data: null,
+      error: { message: 'standings error', code: '42P01' },
+    })
+
+    await expect(
+      getMatchLeaderboard('gang-1', 'fixture-1'),
+    ).rejects.toEqual(
+      expect.objectContaining({ message: 'standings error' }),
+    )
+  })
+
+  test('throws when members query errors', async () => {
+    tableResults.set('v2_gang_fixture_standings', {
+      data: [
+        {
+          user_id: 'user-1',
+          predicted_count: 3,
+          resolved_count: 0,
+          correct_count: 0,
+          points_earned: 0,
+          rank: 1,
+          last_submitted_at: '2026-04-10T10:00:00Z',
+          v2_profiles: { display_name: 'User', avatar_url: null },
+        },
+      ],
+      error: null,
+    })
+    tableResults.set('v2_gang_members', {
+      data: null,
+      error: { message: 'members error', code: '42P01' },
+    })
+
+    await expect(
+      getMatchLeaderboard('gang-1', 'fixture-1'),
+    ).rejects.toEqual(
+      expect.objectContaining({ message: 'members error' }),
+    )
+  })
+
+  test('handles removed members as departed', async () => {
+    tableResults.set('v2_gang_fixture_standings', {
+      data: [
+        {
+          user_id: 'user-removed',
+          predicted_count: 4,
+          resolved_count: 4,
+          correct_count: 2,
+          points_earned: 15,
+          rank: 1,
+          last_submitted_at: '2026-04-10T09:00:00Z',
+          v2_profiles: { display_name: 'Removed User', avatar_url: null },
+        },
+      ],
+      error: null,
+    })
+    tableResults.set('v2_gang_members', {
+      data: [{ user_id: 'user-removed', status: 'removed' }],
+      error: null,
+    })
+
+    const result = await getMatchLeaderboard('gang-1', 'fixture-1')
+
+    expect(result[0]?.memberStatus).toBe('removed')
   })
 })
