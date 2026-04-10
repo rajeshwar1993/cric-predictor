@@ -53,7 +53,11 @@ export async function getProfileStats(userId: string): Promise<ProfileStats> {
     .eq('user_id', userId)
     .eq('status', 'approved')
 
-  if (gangsError) throw gangsError
+  if (gangsError) {
+    throw new Error(`getProfileStats: ${gangsError.message}`, {
+      cause: gangsError,
+    })
+  }
 
   // Query 2: aggregate season standings across every gang
   const { data: standings, error: standingsError } = await supabase
@@ -61,7 +65,11 @@ export async function getProfileStats(userId: string): Promise<ProfileStats> {
     .select('total_points, matches_predicted, total_correct, total_resolved')
     .eq('user_id', userId)
 
-  if (standingsError) throw standingsError
+  if (standingsError) {
+    throw new Error(`getProfileStats: ${standingsError.message}`, {
+      cause: standingsError,
+    })
+  }
 
   const rows = standings ?? []
 

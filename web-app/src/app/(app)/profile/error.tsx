@@ -1,10 +1,15 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import { AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageWrapper } from '@/components/layout/page-wrapper'
+
+/** After this many failed resets we stop offering Try Again and surface a
+ *  dashboard escape hatch so the user can't get stuck in a reset loop. */
+const MAX_RESET_ATTEMPTS = 2
 
 /**
  * Route-level error boundary for `/profile`.
@@ -18,6 +23,10 @@ import { PageWrapper } from '@/components/layout/page-wrapper'
  * a transient failure (network blip, Supabase hiccup) can recover without a
  * full page reload.
  *
+ * Reset-loop protection: after `MAX_RESET_ATTEMPTS` consecutive failures we
+ * stop offering the Try Again button and show a "Go to dashboard" link
+ * instead, so the user can always escape a persistent failure.
+ *
  * @see https://nextjs.org/docs/app/api-reference/file-conventions/error
  * @see docs/stories/PRF-001-profile-page.md
  */
@@ -28,6 +37,13 @@ export default function ProfileError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  // Track reset attempts across re-renders. A ref keeps the count stable
+  // without causing an extra render loop, and a state counter re-renders
+  // once we hit the limit so the fallback UI can swap in.
+  const attemptsRef = useRef(0)
+  const [attempts, setAttempts] = useState(0)
+  const hasExhaustedResets = attempts >= MAX_RESET_ATTEMPTS
+
   useEffect(() => {
     // Log so the failure shows up in the console during development and in
     // whatever production logger picks up console errors. The digest (if
@@ -35,6 +51,12 @@ export default function ProfileError({
     // — useful for cross-referencing server logs.
     console.error('[ProfileError]', error)
   }, [error])
+
+  function handleReset() {
+    attemptsRef.current += 1
+    setAttempts(attemptsRef.current)
+    reset()
+  }
 
   return (
     <PageWrapper className="py-8">
@@ -48,11 +70,21 @@ export default function ProfileError({
         <EmptyState
           icon={AlertTriangle}
           headline="Couldn't load your profile"
-          description="Something went sideways on our end. Give it another shot — if it keeps failing, refresh the page."
+          description={
+            hasExhaustedResets
+              ? "We've tried a few times and it keeps failing. Head back to the dashboard and try again later."
+              : "Something went sideways on our end. Give it another shot — if it keeps failing, refresh the page."
+          }
           action={
-            <Button type="button" variant="default" onClick={reset}>
-              Try again
-            </Button>
+            hasExhaustedResets ? (
+              <Button type="button" variant="default" asChild>
+                <Link href="/dashboard">Go to dashboard</Link>
+              </Button>
+            ) : (
+              <Button type="button" variant="default" onClick={handleReset}>
+                Try again
+              </Button>
+            )
           }
         />
       </section>

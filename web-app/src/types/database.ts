@@ -711,6 +711,12 @@ export type Database = {
         }
         Returns: string
       }
+      delete_account: {
+        Args: {
+          p_user_id: string
+        }
+        Returns: undefined
+      }
       get_gang_by_invite_code: {
         Args: {
           p_invite_code: string

@@ -21,6 +21,16 @@ const displayNameSchema = z
   .min(2, 'Display name must be at least 2 characters')
   .max(30, 'Display name must be at most 30 characters')
 
+/**
+ * Escape PostgREST `ilike` wildcards so a user-supplied display name cannot
+ * accidentally match unrelated rows. Without this, a user typing "100%" would
+ * collide with every name starting with "100" because `%` and `_` are LIKE
+ * wildcards. Backslashes are also escaped so the pattern is applied literally.
+ */
+function escapeLikePattern(value: string): string {
+  return value.replace(/[\\%_]/g, (c) => `\\${c}`)
+}
+
 // ---------------------------------------------------------------------------
 // updateDisplayName
 // ---------------------------------------------------------------------------
@@ -37,8 +47,10 @@ const displayNameSchema = z
  *
  * Cross-gang uniqueness: queries every gang the user is an approved member
  * of and rejects the new name if any other approved member in any of those
- * gangs already uses it (case-sensitive). The error message includes the
- * offending gang name(s) so the user can resolve the conflict.
+ * gangs already uses it (case-insensitive — "Virat" and "virat" collide).
+ * LIKE wildcards (`%`, `_`, `\`) in the user input are escaped so a name
+ * like "100%" cannot accidentally match "100abc". The error message includes
+ * the offending gang name(s) so the user can resolve the conflict.
  *
  * @param newName - The desired display name (2–30 characters after trim)
  * @returns ActionResult
@@ -103,30 +115,40 @@ export async function updateDisplayName(
   }
   const trimmedName = parsed.data
 
-  // Find every gang the user is an approved member of
+  // Find every gang the user is an approved member of. Soft-deleted gangs
+  // are excluded via an inner join on `v2_gangs.is_deleted = false` so we
+  // don't fire `revalidatePath` for ghost paths after the update.
   const { data: memberships, error: membershipsError } = await supabase
     .from('v2_gang_members')
-    .select('gang_id')
+    .select('gang_id, v2_gangs!inner(is_deleted)')
     .eq('user_id', user.id)
     .eq('status', 'approved')
+    .eq('v2_gangs.is_deleted', false)
 
   if (membershipsError) {
     return { success: false, error: 'Failed to update display name. Please try again.' }
   }
 
-  const gangIds = (memberships ?? []).map((m) => m.gang_id)
+  const gangIds = (memberships ?? []).map(
+    (m: { gang_id: string }) => m.gang_id,
+  )
 
   // Cross-gang uniqueness check — only run if the user belongs to at least
   // one gang. The query joins to v2_profiles via inner-join so PostgREST
   // can filter on display_name, and to v2_gangs!inner so the response
   // includes the offending gang name for each collision row.
   if (gangIds.length > 0) {
+    // Case-insensitive collision check. PostgREST's `ilike` is ILIKE under
+    // the hood so "Virat" matches "virat". The user-supplied name is
+    // escaped via `escapeLikePattern` so LIKE wildcards (`%`, `_`, `\`)
+    // typed by the user do not fan out to unrelated rows.
+    const escapedName = escapeLikePattern(trimmedName)
     const { data: collisions, error: collisionsError } = await supabase
       .from('v2_gang_members')
       .select('gang_id, v2_gangs!inner(name), v2_profiles!inner(display_name)')
       .in('gang_id', gangIds)
       .eq('status', 'approved')
-      .eq('v2_profiles.display_name', trimmedName)
+      .ilike('v2_profiles.display_name', escapedName)
       .neq('user_id', user.id)
 
     if (collisionsError) {
@@ -196,25 +218,6 @@ export async function updateDisplayName(
 // ---------------------------------------------------------------------------
 
 /**
- * Narrow typed shape for the Supabase client where `delete_account` is not
- * yet present in the generated `Database['public']['Functions']` types. Cast
- * only at the `deleteAccount` call site, not across the whole client.
- *
- * The RPC signature is `delete_account(p_user_id UUID)` — see migration
- * 20260406000012_delete_account_rpc.sql.
- *
- * TODO: regenerate src/types/database.ts via `npx supabase gen types
- * typescript` so the new `delete_account(p_user_id)` signature is
- * auto-included and this shim can be removed.
- */
-interface DeleteAccountRpcClient {
-  rpc(
-    fn: 'delete_account',
-    args: { p_user_id: string },
-  ): Promise<{ data: null; error: { message: string; code?: string } | null }>
-}
-
-/**
  * Permanently delete the current user's account.
  *
  * Flow: auth check → `delete_account` RPC (atomic admin succession + gang
@@ -266,13 +269,7 @@ export async function deleteAccount(): Promise<ActionResult> {
 
     // Call the atomic delete_account RPC. On failure, return an error
     // WITHOUT signing the user out — their account is still intact.
-    //
-    // The generated `Database['public']['Functions']` type does not yet
-    // include `delete_account` (migration 20260406000012 has not been
-    // picked up by db:types), so we cast the client to a narrow typed
-    // shim. See `DeleteAccountRpcClient` above.
-    const rpcClient = supabase as unknown as DeleteAccountRpcClient
-    const { error: rpcError } = await rpcClient.rpc('delete_account', {
+    const { error: rpcError } = await supabase.rpc('delete_account', {
       p_user_id: userId,
     })
 
@@ -336,7 +333,11 @@ export async function deleteAccount(): Promise<ActionResult> {
         cookieStoreError,
       )
     }
-  } catch {
+  } catch (error) {
+    // Forensic trail for the most irreversible action in the app. Matches
+    // the `[deleteAccount]` log prefix used by the best-effort cleanup
+    // steps above so failures across the whole action are easy to grep.
+    console.error('[deleteAccount] unexpected failure:', error)
     return {
       success: false,
       error: 'Failed to delete account. Please try again.',

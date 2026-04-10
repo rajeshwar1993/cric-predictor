@@ -33,6 +33,7 @@ function createQueryChain(resolvedValue: unknown) {
   chain.eq = vi.fn().mockImplementation(handler)
   chain.neq = vi.fn().mockImplementation(handler)
   chain.in = vi.fn().mockImplementation(handler)
+  chain.ilike = vi.fn().mockImplementation(handler)
   chain.limit = vi.fn().mockImplementation(handler)
   chain.single = vi.fn().mockImplementation(() => resolvedValue)
   chain.maybeSingle = vi.fn().mockImplementation(() => resolvedValue)
@@ -97,6 +98,12 @@ interface UpdateDisplayNameMockOpts {
 }
 
 /**
+ * Chain reference for the cross-gang collision query. Populated by
+ * `setupMocks` so tests can assert on how the ilike call was invoked.
+ */
+let lastCollisionChain: Record<string, unknown> | null = null
+
+/**
  * Sets up mockFrom for updateDisplayName. The action issues, in order:
  *   1. v2_profiles  — SELECT current display_name (.single)
  *   2. v2_gang_members — SELECT all approved memberships
@@ -111,6 +118,7 @@ function setupMocks(opts: UpdateDisplayNameMockOpts = {}) {
     updateResult = { error: null },
   } = opts
 
+  lastCollisionChain = null
   let profileCall = 0
   let memberCall = 0
   mockFrom.mockImplementation((table: string) => {
@@ -123,7 +131,9 @@ function setupMocks(opts: UpdateDisplayNameMockOpts = {}) {
     if (table === 'v2_gang_members') {
       memberCall++
       if (memberCall === 1) return createQueryChain(memberships)
-      return createQueryChain(collisions)
+      const chain = createQueryChain(collisions)
+      lastCollisionChain = chain
+      return chain
     }
     return createQueryChain({ data: null, error: null })
   })
@@ -350,6 +360,82 @@ describe('updateDisplayName server action', () => {
       expect(result.error).toContain('Delhi Dynamos')
       expect(result.error).toMatch(/already have/)
     }
+  })
+
+  test('treats display name uniqueness as case-insensitive', async () => {
+    // The stored row is "virat" (lowercase); the user submits "Virat". The
+    // collision check must still fire and reject the update, otherwise
+    // mixed-case variants could coexist in the same gang and enable
+    // impersonation.
+    setupMocks({
+      currentProfile: { data: { display_name: 'Old Name' }, error: null },
+      memberships: { data: [{ gang_id: 'gang-aaa' }], error: null },
+      collisions: {
+        data: [
+          {
+            gang_id: 'gang-aaa',
+            v2_gangs: { name: 'Mumbai Mavericks' },
+            v2_profiles: { display_name: 'virat' },
+          },
+        ],
+        error: null,
+      },
+    })
+
+    const result = await updateDisplayName('Virat')
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error).toContain('Mumbai Mavericks')
+    }
+    // Verify the query used `.ilike` (case-insensitive) rather than `.eq`
+    // on display_name, with the user-typed value passed through.
+    const collisionChain = lastCollisionChain as unknown as {
+      ilike: ReturnType<typeof vi.fn>
+    } | null
+    expect(collisionChain?.ilike).toHaveBeenCalledWith(
+      'v2_profiles.display_name',
+      'Virat',
+    )
+  })
+
+  test('escapes LIKE wildcards in the uniqueness check', async () => {
+    // A user typing "100%" must not fan out into every name starting with
+    // "100" — `%` and `_` are LIKE wildcards and have to be escaped before
+    // they reach PostgREST.
+    setupMocks({
+      currentProfile: { data: { display_name: 'Old Name' }, error: null },
+      memberships: { data: [{ gang_id: 'gang-aaa' }], error: null },
+      collisions: { data: [], error: null },
+    })
+
+    await updateDisplayName('100%')
+
+    const collisionChain = lastCollisionChain as unknown as {
+      ilike: ReturnType<typeof vi.fn>
+    } | null
+    expect(collisionChain?.ilike).toHaveBeenCalledWith(
+      'v2_profiles.display_name',
+      '100\\%',
+    )
+  })
+
+  test('escapes underscore and backslash LIKE wildcards', async () => {
+    setupMocks({
+      currentProfile: { data: { display_name: 'Old Name' }, error: null },
+      memberships: { data: [{ gang_id: 'gang-aaa' }], error: null },
+      collisions: { data: [], error: null },
+    })
+
+    await updateDisplayName('a_b\\c')
+
+    const collisionChain = lastCollisionChain as unknown as {
+      ilike: ReturnType<typeof vi.fn>
+    } | null
+    expect(collisionChain?.ilike).toHaveBeenCalledWith(
+      'v2_profiles.display_name',
+      'a\\_b\\\\c',
+    )
   })
 
   test('returns error when collision lookup fails', async () => {
@@ -690,6 +776,11 @@ describe('deleteAccount server action', () => {
 
   test('returns generic error when an unexpected exception is thrown', async () => {
     mockRpc.mockRejectedValue(new Error('network failure'))
+    // Silence the expected console.error forensic log emitted by the
+    // outer catch so the test output stays clean.
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {})
 
     const result = await deleteAccount()
 
@@ -700,5 +791,12 @@ describe('deleteAccount server action', () => {
     expect(mockSignOut).not.toHaveBeenCalled()
     expect(mockCookieDelete).not.toHaveBeenCalled()
     expect(mockTrackEvent).not.toHaveBeenCalled()
+    // Forensic trail must fire on unexpected exceptions.
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      '[deleteAccount] unexpected failure:',
+      expect.any(Error),
+    )
+
+    consoleErrorSpy.mockRestore()
   })
 })
