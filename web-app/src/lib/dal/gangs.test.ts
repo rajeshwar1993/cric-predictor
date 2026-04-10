@@ -77,6 +77,8 @@ const {
   getGangDetails,
   getGangMemberStatus,
   getPendingRequests,
+  getGangPredictionDeadline,
+  DEFAULT_PREDICTION_DEADLINE_MINS,
 } = await import('./gangs')
 
 // ---------------------------------------------------------------------------
@@ -665,6 +667,59 @@ describe('getPendingRequests', () => {
     queryResult = { data: null, error: { message: 'db error', code: '42P01' } }
 
     await expect(getPendingRequests('gang-1')).rejects.toEqual(
+      expect.objectContaining({ message: 'db error' }),
+    )
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Tests — getGangPredictionDeadline
+// ---------------------------------------------------------------------------
+
+describe('getGangPredictionDeadline', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+
+    queryResult = { data: null, error: null }
+    rpcResult = { data: [], error: null }
+  })
+
+  test('returns default deadline when no active season row exists', async () => {
+    queryResult = { data: null, error: null }
+
+    const result = await getGangPredictionDeadline('gang-1')
+
+    expect(result).toBe(DEFAULT_PREDICTION_DEADLINE_MINS)
+    expect(mockFrom).toHaveBeenCalledWith('v2_gang_league_seasons')
+    expect(mockSelect).toHaveBeenCalledWith('prediction_deadline_mins')
+    expect(mockEq).toHaveBeenCalledWith('gang_id', 'gang-1')
+    expect(mockEq).toHaveBeenCalledWith('is_active', true)
+    expect(mockMaybeSingle).toHaveBeenCalledTimes(1)
+  })
+
+  test('returns the stored prediction_deadline_mins when row exists', async () => {
+    queryResult = {
+      data: { prediction_deadline_mins: 120 },
+      error: null,
+    }
+
+    const result = await getGangPredictionDeadline('gang-1')
+
+    expect(result).toBe(120)
+  })
+
+  test('returns a custom value like 15 (min) and 720 (max)', async () => {
+    queryResult = { data: { prediction_deadline_mins: 15 }, error: null }
+    expect(await getGangPredictionDeadline('gang-1')).toBe(15)
+
+    queryResult = { data: { prediction_deadline_mins: 720 }, error: null }
+    expect(await getGangPredictionDeadline('gang-1')).toBe(720)
+  })
+
+  test('throws when the query errors', async () => {
+    queryResult = { data: null, error: { message: 'db error', code: '42P01' } }
+
+    await expect(getGangPredictionDeadline('gang-1')).rejects.toEqual(
       expect.objectContaining({ message: 'db error' }),
     )
   })
