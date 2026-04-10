@@ -1,11 +1,14 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { createServerClient } from '@/lib/supabase/server'
 import { rateLimit } from '@/lib/rate-limit'
 import { trackEvent } from '@/lib/analytics/server'
 import { ANALYTICS_EVENTS } from '@/lib/analytics/events'
+import { COOKIE_NAMES } from '@/lib/constants'
 import type { ActionResult } from '@/types'
 
 // ---------------------------------------------------------------------------
@@ -186,4 +189,161 @@ export async function updateDisplayName(
   })
 
   return { success: true }
+}
+
+// ---------------------------------------------------------------------------
+// deleteAccount
+// ---------------------------------------------------------------------------
+
+/**
+ * Narrow typed shape for the Supabase client where `delete_account` is not
+ * yet present in the generated `Database['public']['Functions']` types. Cast
+ * only at the `deleteAccount` call site, not across the whole client.
+ *
+ * The RPC signature is `delete_account(p_user_id UUID)` — see migration
+ * 20260406000012_delete_account_rpc.sql.
+ *
+ * TODO: regenerate src/types/database.ts via `npx supabase gen types
+ * typescript` so the new `delete_account(p_user_id)` signature is
+ * auto-included and this shim can be removed.
+ */
+interface DeleteAccountRpcClient {
+  rpc(
+    fn: 'delete_account',
+    args: { p_user_id: string },
+  ): Promise<{ data: null; error: { message: string; code?: string } | null }>
+}
+
+/**
+ * Permanently delete the current user's account.
+ *
+ * Flow: auth check → `delete_account` RPC (atomic admin succession + gang
+ * cleanup + profile soft-delete) → analytics → sign out (best effort) →
+ * clear cookies (best effort) → redirect to `/`.
+ *
+ * The RPC runs in a single transaction and is the source of truth for
+ * admin auto-promotion, gang soft-deletion when the admin is the only
+ * member left, and the notifications those events generate. If the RPC
+ * fails the user is NOT signed out — their account is still intact and
+ * they should be able to retry.
+ *
+ * **Post-RPC failure handling (R-001 + R-002).** Once the RPC succeeds
+ * the account is durably soft-deleted in the database. From that point
+ * on, signOut and cookie deletion are recoverable cleanup steps — a
+ * failure there must NOT roll the user-facing action back into an error
+ * state, because:
+ *   - The account is already gone, so "please try again" is misleading
+ *     and a retry would hit USER_NOT_FOUND from the RPC.
+ *   - The `account_deleted` analytics event represents the RPC
+ *     succeeding, not the signOut, and skewing deletion metrics on
+ *     signOut flake is worse than firing slightly before the session
+ *     tear-down completes.
+ * Analytics therefore fires immediately after a successful RPC, and
+ * signOut/cookie deletion are each isolated in their own try/catch so
+ * the happy-path redirect always runs.
+ *
+ * Structured like `signOut` in `@/lib/actions/auth` so the `redirect()`
+ * throw (NEXT_REDIRECT) sits OUTSIDE the try/catch and propagates to
+ * Next.js untouched.
+ *
+ * @see docs/stories/PRF-002-delete-account.md
+ * @see supabase/supabase/migrations/20260406000012_delete_account_rpc.sql
+ */
+export async function deleteAccount(): Promise<ActionResult> {
+  try {
+    const supabase = await createServerClient()
+
+    // Auth check — capture the user id BEFORE signOut destroys the session
+    // so we can fire analytics with the correct distinctId.
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return { success: false, error: 'Not authenticated' }
+    }
+    const userId = user.id
+
+    // Call the atomic delete_account RPC. On failure, return an error
+    // WITHOUT signing the user out — their account is still intact.
+    //
+    // The generated `Database['public']['Functions']` type does not yet
+    // include `delete_account` (migration 20260406000012 has not been
+    // picked up by db:types), so we cast the client to a narrow typed
+    // shim. See `DeleteAccountRpcClient` above.
+    const rpcClient = supabase as unknown as DeleteAccountRpcClient
+    const { error: rpcError } = await rpcClient.rpc('delete_account', {
+      p_user_id: userId,
+    })
+
+    if (rpcError) {
+      return {
+        success: false,
+        error: 'Failed to delete account. Please try again.',
+      }
+    }
+
+    // The RPC has succeeded — the account is durably soft-deleted. From
+    // here on, every remaining step is best-effort cleanup. Analytics
+    // fires FIRST so a flaky signOut cannot skew deletion metrics (the
+    // "account deleted" event represents the RPC succeeding, not the
+    // session tear-down).
+    trackEvent(userId, ANALYTICS_EVENTS.ACCOUNT_DELETED)
+
+    // Sign out (best effort). The profile is already soft-deleted, so a
+    // failure here leaves the user in a half-authenticated state but does
+    // NOT mean the action failed. Log and continue to cookie cleanup.
+    try {
+      const { error: signOutError } = await supabase.auth.signOut()
+      if (signOutError) {
+        console.error(
+          '[deleteAccount] signOut failed after successful RPC:',
+          signOutError.message,
+        )
+      }
+    } catch (signOutException) {
+      console.error(
+        '[deleteAccount] signOut threw after successful RPC:',
+        signOutException,
+      )
+    }
+
+    // Clear onboarding/terms cookies (mirrors signOut in auth.ts). The
+    // auth cookies may be partially invalid after a best-effort signOut,
+    // so each deletion is isolated — one failure must not prevent the
+    // other cookie from being cleared or the redirect from firing.
+    try {
+      const cookieStore = await cookies()
+      try {
+        cookieStore.delete(COOKIE_NAMES.ONBOARDED)
+      } catch (cookieError) {
+        console.error(
+          '[deleteAccount] failed to delete onboarded cookie:',
+          cookieError,
+        )
+      }
+      try {
+        cookieStore.delete(COOKIE_NAMES.TERMS_VERSION)
+      } catch (cookieError) {
+        console.error(
+          '[deleteAccount] failed to delete terms_version cookie:',
+          cookieError,
+        )
+      }
+    } catch (cookieStoreError) {
+      console.error(
+        '[deleteAccount] failed to access cookie store:',
+        cookieStoreError,
+      )
+    }
+  } catch {
+    return {
+      success: false,
+      error: 'Failed to delete account. Please try again.',
+    }
+  }
+
+  // `redirect()` throws NEXT_REDIRECT which MUST propagate to Next.js,
+  // so it sits outside the try/catch above.
+  redirect('/')
 }
