@@ -3,11 +3,12 @@ import { notFound, redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase/server'
 import { getFixtureWithTeams } from '@/lib/dal/fixtures'
 import { getMembershipStatus } from '@/lib/dal/gangs'
-import { getGangLeagueSeason } from '@/lib/dal/predictions'
+import { getGangLeagueSeason, getMatchPredictions } from '@/lib/dal/predictions'
 import { getMatchLeaderboard } from '@/lib/dal/leaderboards'
 import { PageWrapper } from '@/components/layout/page-wrapper'
 import { MatchLeaderboardHeader } from '@/components/leaderboards/match-leaderboard-header'
 import { MatchLeaderboardLive } from '@/components/leaderboards/match-leaderboard-live'
+import { PredictionRevealLive } from '@/components/leaderboards/prediction-reveal-live'
 import { LeaderboardCountdownWithRefresh } from '@/components/leaderboards/leaderboard-countdown-with-refresh'
 import { LiveScorecard } from '@/components/matches/live-scorecard'
 
@@ -149,11 +150,14 @@ export default async function MatchLeaderboardPage({
   ).toISOString()
 
   // ---------------------------------------------------------------------------
-  // Fetch leaderboard data (only when locked)
+  // Fetch leaderboard + prediction reveal data (only when locked)
   // ---------------------------------------------------------------------------
-  const leaderboardEntries = locked
-    ? await getMatchLeaderboard(groupId, fixtureId)
-    : []
+  const [leaderboardEntries, revealData] = locked
+    ? await Promise.all([
+        getMatchLeaderboard(groupId, fixtureId),
+        getMatchPredictions(groupId, fixtureId),
+      ])
+    : [[], null]
 
   return (
     <PageWrapper className="py-8">
@@ -179,8 +183,16 @@ export default async function MatchLeaderboardPage({
             currentUserId={user.id}
           />
 
-          {/* Placeholder for prediction reveal table (LDB-002) */}
-          {/* TODO: Add PredictionRevealTable component from LDB-002 */}
+          {/* Prediction reveal table with live polling wrapper */}
+          {revealData && (
+            <PredictionRevealLive
+              gangId={groupId}
+              fixtureId={fixtureId}
+              isLive={isLive}
+              initialData={revealData}
+              currentUserId={user.id}
+            />
+          )}
         </div>
       ) : (
         <div className="mt-8">
