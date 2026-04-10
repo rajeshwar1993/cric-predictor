@@ -17,6 +17,8 @@ export const ANALYTICS_EVENTS = {
   MEMBER_APPROVED: 'member_approved',
   MEMBER_REJECTED: 'member_rejected',
   MEMBER_REMOVED: 'member_removed',
+  MEMBER_BLOCKED: 'member_blocked',
+  MEMBER_UNBLOCKED: 'member_unblocked',
   MEMBER_LEFT: 'member_left',
   GANG_DELETED: 'gang_deleted',
 

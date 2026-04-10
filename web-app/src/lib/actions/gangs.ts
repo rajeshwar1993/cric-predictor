@@ -1106,3 +1106,405 @@ export async function deleteGang(gangId: string): Promise<ActionResult> {
 
   return { success: true }
 }
+
+// ---------------------------------------------------------------------------
+// removeMember
+// ---------------------------------------------------------------------------
+
+/**
+ * Remove a member from a gang (admin only). Sets the target member row's
+ * status to `removed` and records `departed_at`. The member can rejoin
+ * with an invite code unless they are also blocked.
+ *
+ * Flow: auth → rate limit → validate UUIDs → admin verification →
+ *       guard self → guard admin target → update (race-guarded) →
+ *       analytics → revalidate → return.
+ *
+ * @param gangId - The gang UUID
+ * @param userId - The UUID of the member to remove
+ * @returns ActionResult
+ *
+ * @see docs/stories/SET-002-member-management.md
+ */
+export async function removeMember(
+  gangId: string,
+  userId: string,
+): Promise<ActionResult> {
+  const supabase = await createServerClient()
+
+  // Auth check
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { success: false, error: 'Not authenticated' }
+  }
+
+  // Rate limit: 30 per hour
+  const rl = await rateLimit(user.id, 'remove_member', {
+    max: 30,
+    windowSeconds: 3600,
+  })
+  if (!rl.allowed) {
+    return { success: false, error: 'Too many requests. Try again later.' }
+  }
+
+  // Validate UUIDs
+  const gangIdParsed = uuidSchema.safeParse(gangId)
+  const userIdParsed = uuidSchema.safeParse(userId)
+  if (!gangIdParsed.success || !userIdParsed.success) {
+    return { success: false, error: 'Invalid request' }
+  }
+
+  // Admin verification (also guards against soft-deleted gangs)
+  const isAdmin = await isApprovedGangAdmin(
+    supabase,
+    gangIdParsed.data,
+    user.id,
+  )
+  if (!isAdmin) {
+    return {
+      success: false,
+      error: "Gang not found or you don't have permission",
+    }
+  }
+
+  // Self-guard: admins cannot remove themselves via this action.
+  if (userIdParsed.data === user.id) {
+    return {
+      success: false,
+      error: "You can't perform this action on yourself",
+    }
+  }
+
+  // Admin target guard: cannot remove another admin.
+  const { data: targetMember } = await supabase
+    .from('v2_gang_members')
+    .select('role')
+    .eq('gang_id', gangIdParsed.data)
+    .eq('user_id', userIdParsed.data)
+    .maybeSingle()
+
+  if (targetMember?.role === 'admin') {
+    return {
+      success: false,
+      error: 'Admins cannot be removed or blocked',
+    }
+  }
+
+  // Update — race-guarded by status='approved'.
+  const now = new Date().toISOString()
+  const { data: updatedRows, error: updateError } = await supabase
+    .from('v2_gang_members')
+    .update({
+      status: 'removed' as const,
+      departed_at: now,
+    })
+    .eq('gang_id', gangIdParsed.data)
+    .eq('user_id', userIdParsed.data)
+    .eq('status', 'approved')
+    .select()
+
+  if (updateError) {
+    return {
+      success: false,
+      error: 'Failed to remove member. Please try again.',
+    }
+  }
+
+  if (!updatedRows || updatedRows.length === 0) {
+    return {
+      success: false,
+      error: 'This member is no longer active in the gang.',
+    }
+  }
+
+  // Analytics
+  trackEvent(user.id, ANALYTICS_EVENTS.MEMBER_REMOVED, {
+    gang_id: gangIdParsed.data,
+    removed_user_id: userIdParsed.data,
+  })
+
+  // Revalidate
+  revalidatePath(`/group/${gangIdParsed.data}`)
+  revalidatePath(`/group/${gangIdParsed.data}/settings`)
+
+  return { success: true }
+}
+
+// ---------------------------------------------------------------------------
+// blockMember
+// ---------------------------------------------------------------------------
+
+/**
+ * Block a member from a gang (admin only). Sets `is_blocked = true` on the
+ * target member row. If the member is currently `approved`, also attempts
+ * to transition their status to `removed` with `departed_at = now()` in the
+ * same update — race-guarded by `status='approved'` so a concurrent
+ * leave/remove is not clobbered. If the race is lost, a fallback update sets
+ * only `is_blocked=true` and leaves the new status intact. Blocked members
+ * cannot rejoin — even if the gang has auto-accept enabled — until they are
+ * unblocked.
+ *
+ * Flow: auth → rate limit → validate UUIDs → admin verification →
+ *       guard self → guard admin target → read current status →
+ *       race-guarded update (+ fallback) → analytics → revalidate → return.
+ *
+ * @param gangId - The gang UUID
+ * @param userId - The UUID of the member to block
+ * @returns ActionResult
+ *
+ * @see docs/stories/SET-002-member-management.md
+ */
+export async function blockMember(
+  gangId: string,
+  userId: string,
+): Promise<ActionResult> {
+  const supabase = await createServerClient()
+
+  // Auth check
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { success: false, error: 'Not authenticated' }
+  }
+
+  // Rate limit: 30 per hour
+  const rl = await rateLimit(user.id, 'block_member', {
+    max: 30,
+    windowSeconds: 3600,
+  })
+  if (!rl.allowed) {
+    return { success: false, error: 'Too many requests. Try again later.' }
+  }
+
+  // Validate UUIDs
+  const gangIdParsed = uuidSchema.safeParse(gangId)
+  const userIdParsed = uuidSchema.safeParse(userId)
+  if (!gangIdParsed.success || !userIdParsed.success) {
+    return { success: false, error: 'Invalid request' }
+  }
+
+  // Admin verification (also guards against soft-deleted gangs)
+  const isAdmin = await isApprovedGangAdmin(
+    supabase,
+    gangIdParsed.data,
+    user.id,
+  )
+  if (!isAdmin) {
+    return {
+      success: false,
+      error: "Gang not found or you don't have permission",
+    }
+  }
+
+  // Self-guard
+  if (userIdParsed.data === user.id) {
+    return {
+      success: false,
+      error: "You can't perform this action on yourself",
+    }
+  }
+
+  // Admin target guard + read current status so we can decide whether
+  // the block update should also transition status→'removed'.
+  const { data: targetMember } = await supabase
+    .from('v2_gang_members')
+    .select('role, status')
+    .eq('gang_id', gangIdParsed.data)
+    .eq('user_id', userIdParsed.data)
+    .maybeSingle()
+
+  if (!targetMember) {
+    return {
+      success: false,
+      error: 'Member not found in this gang',
+    }
+  }
+
+  if (targetMember.role === 'admin') {
+    return {
+      success: false,
+      error: 'Admins cannot be removed or blocked',
+    }
+  }
+
+  // Update strategy:
+  //   - If the target is currently `approved`, attempt a race-guarded update
+  //     that also transitions status→'removed' with `departed_at=now()` so the
+  //     member loses access immediately.
+  //   - If the race-guarded update affects zero rows, the status changed
+  //     between the read and the write (e.g. the user left or another admin
+  //     removed them). In that case fall through to a plain `is_blocked=true`
+  //     update so we don't clobber the new status / departed_at.
+  //   - If the target is not currently `approved`, a plain `is_blocked=true`
+  //     update is enough.
+  if (targetMember.status === 'approved') {
+    const now = new Date().toISOString()
+    const { data: guardedRows, error: guardedError } = await supabase
+      .from('v2_gang_members')
+      .update({
+        is_blocked: true,
+        status: 'removed' as const,
+        departed_at: now,
+      })
+      .eq('gang_id', gangIdParsed.data)
+      .eq('user_id', userIdParsed.data)
+      .eq('status', 'approved')
+      .select()
+
+    if (guardedError) {
+      return {
+        success: false,
+        error: 'Failed to block member. Please try again.',
+      }
+    }
+
+    if (!guardedRows || guardedRows.length === 0) {
+      // Race lost — status is no longer 'approved'. Apply block without
+      // touching status or departed_at so we preserve whatever transition
+      // happened between the read and the write.
+      const { error: fallbackError } = await supabase
+        .from('v2_gang_members')
+        .update({ is_blocked: true })
+        .eq('gang_id', gangIdParsed.data)
+        .eq('user_id', userIdParsed.data)
+
+      if (fallbackError) {
+        return {
+          success: false,
+          error: 'Failed to block member. Please try again.',
+        }
+      }
+    }
+  } else {
+    const { error: updateError } = await supabase
+      .from('v2_gang_members')
+      .update({ is_blocked: true })
+      .eq('gang_id', gangIdParsed.data)
+      .eq('user_id', userIdParsed.data)
+
+    if (updateError) {
+      return {
+        success: false,
+        error: 'Failed to block member. Please try again.',
+      }
+    }
+  }
+
+  // Analytics
+  trackEvent(user.id, ANALYTICS_EVENTS.MEMBER_BLOCKED, {
+    gang_id: gangIdParsed.data,
+    blocked_user_id: userIdParsed.data,
+  })
+
+  // Revalidate
+  revalidatePath(`/group/${gangIdParsed.data}`)
+  revalidatePath(`/group/${gangIdParsed.data}/settings`)
+
+  return { success: true }
+}
+
+// ---------------------------------------------------------------------------
+// unblockMember
+// ---------------------------------------------------------------------------
+
+/**
+ * Unblock a previously blocked member (admin only). Sets `is_blocked = false`
+ * on the target member row. Does NOT automatically reinstate the member —
+ * they must request to join again (or use an invite code if auto-accept is
+ * enabled). Returns an error if the target row does not exist in the gang.
+ *
+ * Flow: auth → rate limit → validate UUIDs → admin verification →
+ *       update (with row count) → analytics → revalidate → return.
+ *
+ * @param gangId - The gang UUID
+ * @param userId - The UUID of the member to unblock
+ * @returns ActionResult
+ *
+ * @see docs/stories/SET-002-member-management.md
+ */
+export async function unblockMember(
+  gangId: string,
+  userId: string,
+): Promise<ActionResult> {
+  const supabase = await createServerClient()
+
+  // Auth check
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { success: false, error: 'Not authenticated' }
+  }
+
+  // Rate limit: 30 per hour
+  const rl = await rateLimit(user.id, 'unblock_member', {
+    max: 30,
+    windowSeconds: 3600,
+  })
+  if (!rl.allowed) {
+    return { success: false, error: 'Too many requests. Try again later.' }
+  }
+
+  // Validate UUIDs
+  const gangIdParsed = uuidSchema.safeParse(gangId)
+  const userIdParsed = uuidSchema.safeParse(userId)
+  if (!gangIdParsed.success || !userIdParsed.success) {
+    return { success: false, error: 'Invalid request' }
+  }
+
+  // Admin verification (also guards against soft-deleted gangs)
+  const isAdmin = await isApprovedGangAdmin(
+    supabase,
+    gangIdParsed.data,
+    user.id,
+  )
+  if (!isAdmin) {
+    return {
+      success: false,
+      error: "Gang not found or you don't have permission",
+    }
+  }
+
+  // Update + count affected rows so we can distinguish "member not found"
+  // from "update succeeded". Without `.select()` Supabase returns an empty
+  // response on an update that matches zero rows, which would silently fire
+  // analytics for a non-existent row.
+  const { data: updatedRows, error: updateError } = await supabase
+    .from('v2_gang_members')
+    .update({ is_blocked: false })
+    .eq('gang_id', gangIdParsed.data)
+    .eq('user_id', userIdParsed.data)
+    .select()
+
+  if (updateError) {
+    return {
+      success: false,
+      error: 'Failed to unblock member. Please try again.',
+    }
+  }
+
+  if (!updatedRows || updatedRows.length === 0) {
+    return {
+      success: false,
+      error: 'Member not found in this gang',
+    }
+  }
+
+  // Analytics
+  trackEvent(user.id, ANALYTICS_EVENTS.MEMBER_UNBLOCKED, {
+    gang_id: gangIdParsed.data,
+    unblocked_user_id: userIdParsed.data,
+  })
+
+  // Revalidate
+  revalidatePath(`/group/${gangIdParsed.data}`)
+  revalidatePath(`/group/${gangIdParsed.data}/settings`)
+
+  return { success: true }
+}

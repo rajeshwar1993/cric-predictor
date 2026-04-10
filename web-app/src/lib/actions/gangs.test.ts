@@ -65,6 +65,9 @@ const {
   updateAutoAccept,
   updatePredictionDeadline,
   deleteGang,
+  removeMember,
+  blockMember,
+  unblockMember,
 } = await import('./gangs')
 
 // ---------------------------------------------------------------------------
@@ -2190,5 +2193,649 @@ describe('deleteGang server action', () => {
 
     expect(mockRateLimit).toHaveBeenCalledOnce()
     expect(mockRpc).not.toHaveBeenCalled()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// removeMember
+// ---------------------------------------------------------------------------
+
+describe('removeMember server action', () => {
+  const mockAdmin = { id: '770e8400-e29b-41d4-a716-446655440002' }
+  const validGangId = '550e8400-e29b-41d4-a716-446655440000'
+  const validTargetId = '660e8400-e29b-41d4-a716-446655440001'
+
+  /**
+   * Sets up mockFrom for removeMember calls.
+   * Flow:
+   *   1. v2_gangs — isApprovedGangAdmin soft-delete existence check
+   *   2. v2_gang_members — isApprovedGangAdmin role/status check
+   *   3. v2_gang_members — target member role lookup
+   *   4. v2_gang_members — update (with .select())
+   */
+  function setupRemoveFromMock(overrides?: {
+    softDeleteCheck?: { data: unknown }
+    adminCheck?: { data: unknown }
+    targetLookup?: { data: unknown }
+    updateResult?: { data: unknown[]; error: unknown }
+  }) {
+    const opts = {
+      softDeleteCheck: { data: { id: validGangId } },
+      adminCheck: { data: { role: 'admin', status: 'approved' } },
+      targetLookup: { data: { role: 'member' } },
+      updateResult: { data: [{ status: 'removed' }], error: null },
+      ...overrides,
+    }
+
+    let memberCallIndex = 0
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'v2_gangs') {
+        return createQueryChain(opts.softDeleteCheck)
+      }
+      if (table === 'v2_gang_members') {
+        memberCallIndex++
+        if (memberCallIndex === 1) return createQueryChain(opts.adminCheck)
+        if (memberCallIndex === 2) return createQueryChain(opts.targetLookup)
+        return createQueryChain(opts.updateResult)
+      }
+      return createQueryChain({ data: null })
+    })
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockGetUser.mockResolvedValue({ data: { user: mockAdmin }, error: null })
+    mockRateLimit.mockResolvedValue({ allowed: true, remaining: 29 })
+  })
+
+  // ---- Auth checks ----
+
+  test('returns error when user is not authenticated', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
+
+    const result = await removeMember(validGangId, validTargetId)
+
+    expect(result).toEqual({ success: false, error: 'Not authenticated' })
+    expect(mockFrom).not.toHaveBeenCalled()
+  })
+
+  // ---- Rate limiting ----
+
+  test('returns error when rate limited', async () => {
+    mockRateLimit.mockResolvedValue({ allowed: false, remaining: 0 })
+
+    const result = await removeMember(validGangId, validTargetId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Too many requests. Try again later.',
+    })
+    expect(mockRateLimit).toHaveBeenCalledWith(
+      mockAdmin.id,
+      'remove_member',
+      { max: 30, windowSeconds: 3600 },
+    )
+    expect(mockFrom).not.toHaveBeenCalled()
+  })
+
+  // ---- Validation ----
+
+  test('returns error for invalid gangId UUID', async () => {
+    const result = await removeMember('not-a-uuid', validTargetId)
+
+    expect(result).toEqual({ success: false, error: 'Invalid request' })
+    expect(mockFrom).not.toHaveBeenCalled()
+  })
+
+  test('returns error for invalid userId UUID', async () => {
+    const result = await removeMember(validGangId, 'not-a-uuid')
+
+    expect(result).toEqual({ success: false, error: 'Invalid request' })
+    expect(mockFrom).not.toHaveBeenCalled()
+  })
+
+  // ---- Admin verification ----
+
+  test('returns error when caller is not an admin', async () => {
+    setupRemoveFromMock({
+      adminCheck: { data: { role: 'member', status: 'approved' } },
+    })
+
+    const result = await removeMember(validGangId, validTargetId)
+
+    expect(result).toEqual({
+      success: false,
+      error: "Gang not found or you don't have permission",
+    })
+  })
+
+  test('returns error when gang is soft-deleted', async () => {
+    setupRemoveFromMock({
+      softDeleteCheck: { data: null },
+    })
+
+    const result = await removeMember(validGangId, validTargetId)
+
+    expect(result).toEqual({
+      success: false,
+      error: "Gang not found or you don't have permission",
+    })
+  })
+
+  // ---- Self guard ----
+
+  test('returns error when attempting to remove self', async () => {
+    setupRemoveFromMock()
+
+    const result = await removeMember(validGangId, mockAdmin.id)
+
+    expect(result).toEqual({
+      success: false,
+      error: "You can't perform this action on yourself",
+    })
+    expect(mockTrackEvent).not.toHaveBeenCalled()
+    expect(mockRevalidatePath).not.toHaveBeenCalled()
+  })
+
+  // ---- Admin target guard ----
+
+  test('returns error when target is an admin', async () => {
+    setupRemoveFromMock({
+      targetLookup: { data: { role: 'admin' } },
+    })
+
+    const result = await removeMember(validGangId, validTargetId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Admins cannot be removed or blocked',
+    })
+    expect(mockTrackEvent).not.toHaveBeenCalled()
+    expect(mockRevalidatePath).not.toHaveBeenCalled()
+  })
+
+  // ---- Update failure ----
+
+  test('returns error when update fails', async () => {
+    setupRemoveFromMock({
+      updateResult: { data: [], error: { message: 'db error' } },
+    })
+
+    const result = await removeMember(validGangId, validTargetId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Failed to remove member. Please try again.',
+    })
+    expect(mockTrackEvent).not.toHaveBeenCalled()
+    expect(mockRevalidatePath).not.toHaveBeenCalled()
+  })
+
+  // ---- Race condition ----
+
+  test('returns error when zero rows updated (race condition)', async () => {
+    setupRemoveFromMock({
+      updateResult: { data: [], error: null },
+    })
+
+    const result = await removeMember(validGangId, validTargetId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'This member is no longer active in the gang.',
+    })
+    expect(mockTrackEvent).not.toHaveBeenCalled()
+    expect(mockRevalidatePath).not.toHaveBeenCalled()
+  })
+
+  // ---- Success ----
+
+  test('removes member, fires analytics, revalidates, and returns success', async () => {
+    setupRemoveFromMock()
+
+    const result = await removeMember(validGangId, validTargetId)
+
+    expect(result).toEqual({ success: true })
+    expect(mockTrackEvent).toHaveBeenCalledWith(
+      mockAdmin.id,
+      'member_removed',
+      expect.objectContaining({
+        gang_id: validGangId,
+        removed_user_id: validTargetId,
+      }),
+    )
+    expect(mockRevalidatePath).toHaveBeenCalledWith(`/group/${validGangId}`)
+    expect(mockRevalidatePath).toHaveBeenCalledWith(
+      `/group/${validGangId}/settings`,
+    )
+  })
+})
+
+// ---------------------------------------------------------------------------
+// blockMember
+// ---------------------------------------------------------------------------
+
+describe('blockMember server action', () => {
+  const mockAdmin = { id: '770e8400-e29b-41d4-a716-446655440002' }
+  const validGangId = '550e8400-e29b-41d4-a716-446655440000'
+  const validTargetId = '660e8400-e29b-41d4-a716-446655440001'
+
+  /**
+   * Sets up mockFrom for blockMember calls.
+   * Flow:
+   *   1. v2_gangs — isApprovedGangAdmin soft-delete existence check
+   *   2. v2_gang_members — isApprovedGangAdmin role/status check
+   *   3. v2_gang_members — target member role+status lookup
+   *   4. v2_gang_members — update (race-guarded when approved) OR plain
+   *      update for non-approved targets
+   *   5. v2_gang_members — OPTIONAL fallback update (only when approved +
+   *      race-guarded update affected zero rows)
+   */
+  function setupBlockFromMock(overrides?: {
+    softDeleteCheck?: { data: unknown }
+    adminCheck?: { data: unknown }
+    targetLookup?: { data: unknown }
+    /**
+     * First update call. For the approved path this ends in `.select()` so
+     * the resolved value should be `{ data: [...], error }`. For the
+     * non-approved path it's a plain update that resolves to `{ error }`.
+     */
+    updateResult?: { data?: unknown[]; error: unknown }
+    /**
+     * Fallback update — only hit on the approved path when the first update
+     * affected zero rows (race lost). Defaults to success.
+     */
+    fallbackUpdateResult?: { error: unknown }
+  }) {
+    const opts = {
+      softDeleteCheck: { data: { id: validGangId } },
+      adminCheck: { data: { role: 'admin', status: 'approved' } },
+      targetLookup: { data: { role: 'member', status: 'approved' } },
+      updateResult: { data: [{ is_blocked: true }], error: null } as {
+        data?: unknown[]
+        error: unknown
+      },
+      fallbackUpdateResult: { error: null },
+      ...overrides,
+    }
+
+    let memberCallIndex = 0
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'v2_gangs') {
+        return createQueryChain(opts.softDeleteCheck)
+      }
+      if (table === 'v2_gang_members') {
+        memberCallIndex++
+        if (memberCallIndex === 1) return createQueryChain(opts.adminCheck)
+        if (memberCallIndex === 2) return createQueryChain(opts.targetLookup)
+        if (memberCallIndex === 3) return createQueryChain(opts.updateResult)
+        return createQueryChain(opts.fallbackUpdateResult)
+      }
+      return createQueryChain({ data: null })
+    })
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockGetUser.mockResolvedValue({ data: { user: mockAdmin }, error: null })
+    mockRateLimit.mockResolvedValue({ allowed: true, remaining: 29 })
+  })
+
+  test('returns error when user is not authenticated', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
+
+    const result = await blockMember(validGangId, validTargetId)
+
+    expect(result).toEqual({ success: false, error: 'Not authenticated' })
+    expect(mockFrom).not.toHaveBeenCalled()
+  })
+
+  test('returns error when rate limited', async () => {
+    mockRateLimit.mockResolvedValue({ allowed: false, remaining: 0 })
+
+    const result = await blockMember(validGangId, validTargetId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Too many requests. Try again later.',
+    })
+    expect(mockRateLimit).toHaveBeenCalledWith(
+      mockAdmin.id,
+      'block_member',
+      { max: 30, windowSeconds: 3600 },
+    )
+  })
+
+  test('returns error for invalid gangId UUID', async () => {
+    const result = await blockMember('not-a-uuid', validTargetId)
+
+    expect(result).toEqual({ success: false, error: 'Invalid request' })
+  })
+
+  test('returns error for invalid userId UUID', async () => {
+    const result = await blockMember(validGangId, 'not-a-uuid')
+
+    expect(result).toEqual({ success: false, error: 'Invalid request' })
+  })
+
+  test('returns error when caller is not an admin', async () => {
+    setupBlockFromMock({
+      adminCheck: { data: { role: 'member', status: 'approved' } },
+    })
+
+    const result = await blockMember(validGangId, validTargetId)
+
+    expect(result).toEqual({
+      success: false,
+      error: "Gang not found or you don't have permission",
+    })
+  })
+
+  test('returns error when attempting to block self', async () => {
+    setupBlockFromMock()
+
+    const result = await blockMember(validGangId, mockAdmin.id)
+
+    expect(result).toEqual({
+      success: false,
+      error: "You can't perform this action on yourself",
+    })
+    expect(mockTrackEvent).not.toHaveBeenCalled()
+  })
+
+  test('returns error when target member does not exist', async () => {
+    setupBlockFromMock({ targetLookup: { data: null } })
+
+    const result = await blockMember(validGangId, validTargetId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Member not found in this gang',
+    })
+  })
+
+  test('returns error when target is an admin', async () => {
+    setupBlockFromMock({
+      targetLookup: { data: { role: 'admin', status: 'approved' } },
+    })
+
+    const result = await blockMember(validGangId, validTargetId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Admins cannot be removed or blocked',
+    })
+    expect(mockTrackEvent).not.toHaveBeenCalled()
+  })
+
+  test('returns error when race-guarded update fails (approved path)', async () => {
+    setupBlockFromMock({
+      updateResult: { data: [], error: { message: 'db error' } },
+    })
+
+    const result = await blockMember(validGangId, validTargetId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Failed to block member. Please try again.',
+    })
+    expect(mockTrackEvent).not.toHaveBeenCalled()
+    expect(mockRevalidatePath).not.toHaveBeenCalled()
+  })
+
+  test('returns error when plain update fails (non-approved path)', async () => {
+    setupBlockFromMock({
+      targetLookup: { data: { role: 'member', status: 'left' } },
+      updateResult: { error: { message: 'db error' } },
+    })
+
+    const result = await blockMember(validGangId, validTargetId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Failed to block member. Please try again.',
+    })
+    expect(mockTrackEvent).not.toHaveBeenCalled()
+    expect(mockRevalidatePath).not.toHaveBeenCalled()
+  })
+
+  test('blocks approved member, fires analytics, revalidates, and returns success', async () => {
+    setupBlockFromMock()
+
+    const result = await blockMember(validGangId, validTargetId)
+
+    expect(result).toEqual({ success: true })
+    expect(mockTrackEvent).toHaveBeenCalledWith(
+      mockAdmin.id,
+      'member_blocked',
+      expect.objectContaining({
+        gang_id: validGangId,
+        blocked_user_id: validTargetId,
+      }),
+    )
+    expect(mockRevalidatePath).toHaveBeenCalledWith(`/group/${validGangId}`)
+    expect(mockRevalidatePath).toHaveBeenCalledWith(
+      `/group/${validGangId}/settings`,
+    )
+  })
+
+  test('blocks member who has already left (no status transition)', async () => {
+    setupBlockFromMock({
+      targetLookup: { data: { role: 'member', status: 'left' } },
+    })
+
+    const result = await blockMember(validGangId, validTargetId)
+
+    expect(result).toEqual({ success: true })
+    expect(mockTrackEvent).toHaveBeenCalled()
+  })
+
+  test('blocks previously removed member (no status transition)', async () => {
+    setupBlockFromMock({
+      targetLookup: { data: { role: 'member', status: 'removed' } },
+    })
+
+    const result = await blockMember(validGangId, validTargetId)
+
+    expect(result).toEqual({ success: true })
+  })
+
+  // ---- Race condition: approved→left between read and write ----
+
+  test('falls back to plain is_blocked update when target status changed after read (race lost)', async () => {
+    // Target reads as `approved`, but by the time the race-guarded update
+    // fires, the row has transitioned to `left` elsewhere (another admin,
+    // user leaving, etc.). The guarded update affects zero rows, so the
+    // action falls back to a plain is_blocked=true update that preserves
+    // the new status and does NOT clobber departed_at.
+    setupBlockFromMock({
+      targetLookup: { data: { role: 'member', status: 'approved' } },
+      updateResult: { data: [], error: null },
+      fallbackUpdateResult: { error: null },
+    })
+
+    const result = await blockMember(validGangId, validTargetId)
+
+    expect(result).toEqual({ success: true })
+    expect(mockTrackEvent).toHaveBeenCalledWith(
+      mockAdmin.id,
+      'member_blocked',
+      expect.objectContaining({
+        gang_id: validGangId,
+        blocked_user_id: validTargetId,
+      }),
+    )
+    expect(mockRevalidatePath).toHaveBeenCalledWith(`/group/${validGangId}`)
+  })
+
+  test('returns error when fallback update fails after race lost', async () => {
+    setupBlockFromMock({
+      targetLookup: { data: { role: 'member', status: 'approved' } },
+      updateResult: { data: [], error: null },
+      fallbackUpdateResult: { error: { message: 'db error' } },
+    })
+
+    const result = await blockMember(validGangId, validTargetId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Failed to block member. Please try again.',
+    })
+    expect(mockTrackEvent).not.toHaveBeenCalled()
+    expect(mockRevalidatePath).not.toHaveBeenCalled()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// unblockMember
+// ---------------------------------------------------------------------------
+
+describe('unblockMember server action', () => {
+  const mockAdmin = { id: '770e8400-e29b-41d4-a716-446655440002' }
+  const validGangId = '550e8400-e29b-41d4-a716-446655440000'
+  const validTargetId = '660e8400-e29b-41d4-a716-446655440001'
+
+  /**
+   * Sets up mockFrom for unblockMember calls.
+   * Flow:
+   *   1. v2_gangs — isApprovedGangAdmin soft-delete existence check
+   *   2. v2_gang_members — isApprovedGangAdmin role/status check
+   *   3. v2_gang_members — update (with .select() to count affected rows)
+   */
+  function setupUnblockFromMock(overrides?: {
+    softDeleteCheck?: { data: unknown }
+    adminCheck?: { data: unknown }
+    updateResult?: { data?: unknown[]; error: unknown }
+  }) {
+    const opts = {
+      softDeleteCheck: { data: { id: validGangId } },
+      adminCheck: { data: { role: 'admin', status: 'approved' } },
+      updateResult: { data: [{ is_blocked: false }], error: null } as {
+        data?: unknown[]
+        error: unknown
+      },
+      ...overrides,
+    }
+
+    let memberCallIndex = 0
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'v2_gangs') {
+        return createQueryChain(opts.softDeleteCheck)
+      }
+      if (table === 'v2_gang_members') {
+        memberCallIndex++
+        if (memberCallIndex === 1) return createQueryChain(opts.adminCheck)
+        return createQueryChain(opts.updateResult)
+      }
+      return createQueryChain({ data: null })
+    })
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockGetUser.mockResolvedValue({ data: { user: mockAdmin }, error: null })
+    mockRateLimit.mockResolvedValue({ allowed: true, remaining: 29 })
+  })
+
+  test('returns error when user is not authenticated', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
+
+    const result = await unblockMember(validGangId, validTargetId)
+
+    expect(result).toEqual({ success: false, error: 'Not authenticated' })
+    expect(mockFrom).not.toHaveBeenCalled()
+  })
+
+  test('returns error when rate limited', async () => {
+    mockRateLimit.mockResolvedValue({ allowed: false, remaining: 0 })
+
+    const result = await unblockMember(validGangId, validTargetId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Too many requests. Try again later.',
+    })
+    expect(mockRateLimit).toHaveBeenCalledWith(
+      mockAdmin.id,
+      'unblock_member',
+      { max: 30, windowSeconds: 3600 },
+    )
+  })
+
+  test('returns error for invalid gangId UUID', async () => {
+    const result = await unblockMember('not-a-uuid', validTargetId)
+
+    expect(result).toEqual({ success: false, error: 'Invalid request' })
+  })
+
+  test('returns error for invalid userId UUID', async () => {
+    const result = await unblockMember(validGangId, 'not-a-uuid')
+
+    expect(result).toEqual({ success: false, error: 'Invalid request' })
+  })
+
+  test('returns error when caller is not an admin', async () => {
+    setupUnblockFromMock({
+      adminCheck: { data: { role: 'member', status: 'approved' } },
+    })
+
+    const result = await unblockMember(validGangId, validTargetId)
+
+    expect(result).toEqual({
+      success: false,
+      error: "Gang not found or you don't have permission",
+    })
+  })
+
+  test('returns error when update fails', async () => {
+    setupUnblockFromMock({
+      updateResult: { data: [], error: { message: 'db error' } },
+    })
+
+    const result = await unblockMember(validGangId, validTargetId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Failed to unblock member. Please try again.',
+    })
+    expect(mockTrackEvent).not.toHaveBeenCalled()
+    expect(mockRevalidatePath).not.toHaveBeenCalled()
+  })
+
+  test('returns error when target member does not exist', async () => {
+    // Update succeeds but affects zero rows — the target user is not a
+    // member of this gang. Must NOT fire analytics or revalidate.
+    setupUnblockFromMock({
+      updateResult: { data: [], error: null },
+    })
+
+    const result = await unblockMember(validGangId, validTargetId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Member not found in this gang',
+    })
+    expect(mockTrackEvent).not.toHaveBeenCalled()
+    expect(mockRevalidatePath).not.toHaveBeenCalled()
+  })
+
+  test('unblocks member, fires analytics, revalidates, and returns success', async () => {
+    setupUnblockFromMock()
+
+    const result = await unblockMember(validGangId, validTargetId)
+
+    expect(result).toEqual({ success: true })
+    expect(mockTrackEvent).toHaveBeenCalledWith(
+      mockAdmin.id,
+      'member_unblocked',
+      expect.objectContaining({
+        gang_id: validGangId,
+        unblocked_user_id: validTargetId,
+      }),
+    )
+    expect(mockRevalidatePath).toHaveBeenCalledWith(`/group/${validGangId}`)
+    expect(mockRevalidatePath).toHaveBeenCalledWith(
+      `/group/${validGangId}/settings`,
+    )
   })
 })

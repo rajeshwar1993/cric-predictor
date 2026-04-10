@@ -13,7 +13,7 @@ type ProfileRow = Pick<
 
 type GangMemberRow = Pick<
   Database['public']['Tables']['v2_gang_members']['Row'],
-  'user_id' | 'role' | 'status'
+  'user_id' | 'role' | 'status' | 'is_blocked'
 >
 
 /**
@@ -201,6 +201,7 @@ export interface GangDetailMember {
   userId: string
   role: MemberRole
   status: MemberStatus
+  isBlocked: boolean
   displayName: string | null
   email: string
 }
@@ -235,7 +236,7 @@ export async function getGangDetails(
     .select(
       `
       id, name, invite_code, auto_accept, created_by,
-      v2_gang_members (user_id, role, status, v2_profiles (display_name, email))
+      v2_gang_members (user_id, role, status, is_blocked, v2_profiles (display_name, email))
     `,
     )
     .eq('id', gangId)
@@ -261,6 +262,7 @@ export async function getGangDetails(
     userId: m.user_id,
     role: m.role,
     status: m.status,
+    isBlocked: m.is_blocked,
     displayName: m.v2_profiles?.display_name ?? null,
     email: m.v2_profiles?.email ?? '',
   }))
