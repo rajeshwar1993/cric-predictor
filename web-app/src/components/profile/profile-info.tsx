@@ -7,6 +7,7 @@ import {
   useState,
   useTransition,
   type FormEvent,
+  type KeyboardEvent,
 } from 'react'
 import { Loader2, Pencil } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -95,6 +96,16 @@ export function ProfileInfo({
     setIsEditing(false)
   }
 
+  function handleKeyDown(event: KeyboardEvent<HTMLFormElement>) {
+    // Escape cancels the inline edit. preventDefault + stopPropagation keeps
+    // the key from bubbling up and closing any parent dialog or drawer.
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      event.stopPropagation()
+      cancelEdit()
+    }
+  }
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
@@ -149,6 +160,7 @@ export function ProfileInfo({
             <form
               className="flex flex-col gap-2"
               onSubmit={handleSubmit}
+              onKeyDown={handleKeyDown}
               aria-label="Edit display name"
             >
               <Label htmlFor={inputId} className="normal-case">

@@ -38,12 +38,12 @@ function isNextRedirectError(error: unknown): error is Error & { digest: string 
  * on `/profile/delete`.
  *
  * On confirm:
- *   1. Optimistically fire a success toast (the server action redirects
- *      on success, so the client never sees a `success: true` result).
- *   2. Call the `deleteAccount` server action.
- *   3. On `NEXT_REDIRECT` — rethrow so Next.js completes the navigation.
- *   4. On any other error or `success: false` — surface the message via
- *      a persistent error toast and re-enable the dialog.
+ *   1. Call the `deleteAccount` server action.
+ *   2. On `NEXT_REDIRECT` — fire a success toast (this IS the success
+ *      signal) and rethrow so Next.js completes the navigation.
+ *   3. On any other error or `success: false` — surface the message via
+ *      a persistent error toast and re-enable the dialog. No optimistic
+ *      success toast is ever shown on the failure path.
  *
  * @see docs/stories/PRF-002-delete-account.md
  */
@@ -58,29 +58,25 @@ export function DeleteAccountSection({
   async function handleConfirm() {
     setIsLoading(true)
 
-    // Optimistic success toast: the server action redirects on success,
-    // so we never see `success: true` on the client. Fire the toast now
-    // so the user sees confirmation before the navigation completes.
-    toast.success('Account deleted')
-
     try {
       const result = await onDelete()
 
       // We only get here if the action returned an ActionResult instead
-      // of redirecting (i.e. an error path). Dismiss the optimistic
-      // success toast and surface the real error.
-      toast.dismiss()
+      // of redirecting (i.e. an error path). Surface the real error —
+      // no optimistic success toast has been fired, so there is nothing
+      // to dismiss.
       toast.error(result.success ? 'Failed to delete account.' : result.error)
       setIsDialogOpen(false)
       setIsLoading(false)
     } catch (error) {
-      // Rethrow Next.js redirect errors so the framework can navigate
-      // — this is the success path.
+      // Rethrow Next.js redirect errors so the framework can navigate.
+      // The thrown NEXT_REDIRECT IS the success signal, so the success
+      // toast only fires here — failure paths never flash a green toast.
       if (isNextRedirectError(error)) {
+        toast.success('Account deleted')
         throw error
       }
 
-      toast.dismiss()
       toast.error('Failed to delete account. Please try again.')
       setIsDialogOpen(false)
       setIsLoading(false)

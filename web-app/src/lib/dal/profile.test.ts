@@ -9,6 +9,11 @@ const mockFrom = vi.fn()
 /**
  * Build a chainable mock that records every method call and resolves to
  * `resolvedValue` at the end of the chain.
+ *
+ * The `then` method delegates to a real `Promise.resolve(...).then(fn)` so
+ * the mock behaves exactly like an actual thenable. Returning the raw
+ * `fn(resolvedValue)` would break chained `.then()`/`.catch()` handlers
+ * and cause rejected-value tests to silently swallow the error.
  */
 function chainBuilder(resolvedValue: {
   data?: unknown
@@ -22,9 +27,12 @@ function chainBuilder(resolvedValue: {
     eq(..._args: unknown[]) {
       return chain
     },
-    // Make it thenable so `await` resolves it
-    then(fn: (v: { data?: unknown; error: unknown; count?: number | null }) => void) {
-      fn(resolvedValue)
+    // Make it thenable so `await` resolves it — delegate to a real Promise
+    // so all Promise semantics (chaining, rejection, microtask order) work.
+    then(
+      fn: (v: { data?: unknown; error: unknown; count?: number | null }) => unknown,
+    ) {
+      return Promise.resolve(resolvedValue).then(fn)
     },
   }
   return chain
@@ -201,27 +209,30 @@ describe('getProfileStats', () => {
   })
 
   test('throws when the gang-members query fails', async () => {
+    const originalError = { message: 'db error' }
     tableResults.set('v2_gang_members', {
       count: null,
-      error: { message: 'db error' },
+      error: originalError,
     })
     tableResults.set('v2_gang_season_standings', { data: [], error: null })
 
-    await expect(getProfileStats('user-1')).rejects.toEqual({
-      message: 'db error',
-    })
+    // Expect an Error instance (not a POJO) so middleware / error
+    // boundaries get a proper stack trace. The original Supabase error
+    // is attached as the `cause`.
+    await expect(getProfileStats('user-1')).rejects.toBeInstanceOf(Error)
+    await expect(getProfileStats('user-1')).rejects.toThrow(/db error/)
   })
 
   test('throws when the standings query fails', async () => {
+    const originalError = { message: 'db error' }
     tableResults.set('v2_gang_members', { count: 1, error: null })
     tableResults.set('v2_gang_season_standings', {
       data: null,
-      error: { message: 'db error' },
+      error: originalError,
     })
 
-    await expect(getProfileStats('user-1')).rejects.toEqual({
-      message: 'db error',
-    })
+    await expect(getProfileStats('user-1')).rejects.toBeInstanceOf(Error)
+    await expect(getProfileStats('user-1')).rejects.toThrow(/db error/)
   })
 
   test('queries both tables', async () => {

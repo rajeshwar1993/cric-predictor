@@ -45,6 +45,13 @@ export function ProfileStats({ stats }: ProfileStatsProps) {
           aria-label="Profile statistics across all gangs"
           className="mt-6 grid grid-cols-2 gap-3 sm:gap-4"
         >
+          {/* All four StatBlocks use the default lime background.
+              The Electric Street design system restricts StatBlock
+              backgrounds to lime or a team color, and the profile page
+              is not gang-scoped so there is no team color to apply.
+              Coral, sunburst yellow, and ultraviolet all fail WCAG AA
+              contrast (4.5:1) against the 11px #111 label at opacity-80,
+              so monochromatic lime is the only compliant choice. */}
           <div role="listitem" className="flex justify-center">
             <StatBlock
               className="w-full"
@@ -57,14 +64,9 @@ export function ProfileStats({ stats }: ProfileStatsProps) {
               className="w-full"
               value={stats.totalPredicted}
               label="Predicted"
-              color="var(--color-sunburst-yellow)"
             />
           </div>
           <div role="listitem" className="flex justify-center">
-            {/* Accuracy uses the default lime background. Ultraviolet (#8b5cf6)
-                fails WCAG AA contrast against #111 text for the 11px label,
-                and the Electric Street design system restricts StatBlock
-                backgrounds to lime or a team color. */}
             <StatBlock
               className="w-full"
               value={`${Math.round(stats.accuracy)}%`}
@@ -76,7 +78,6 @@ export function ProfileStats({ stats }: ProfileStatsProps) {
               className="w-full"
               value={stats.totalPoints}
               label="Points"
-              color="var(--color-electric-coral)"
             />
           </div>
         </div>
