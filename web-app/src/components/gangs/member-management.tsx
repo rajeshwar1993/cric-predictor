@@ -1,5 +1,7 @@
+import { UsersRound } from 'lucide-react'
 import type { GangDetailMember } from '@/lib/dal/gangs'
 import type { ActionResult } from '@/types'
+import { EmptyState } from '@/components/ui/empty-state'
 import { MemberRowAdmin } from './member-row-admin'
 
 export interface MemberManagementProps {
@@ -61,6 +63,11 @@ export function MemberManagement({
     return aName.localeCompare(bName)
   })
 
+  // An empty-ish gang shows only the admin row with no action buttons,
+  // which looks like an empty list. Surface an explicit empty state when
+  // the admin is the only member the list can act on.
+  const hasNonAdminMembers = sorted.some((m) => m.role !== 'admin')
+
   return (
     <section
       className="mt-8 rounded-lg border border-wire bg-dark-concrete p-6"
@@ -73,23 +80,32 @@ export function MemberManagement({
         Remove, block, or unblock members. Admins cannot be removed.
       </p>
 
-      <div className="mt-4 flex flex-col gap-2" role="list">
-        {sorted.map((m) => (
-          <MemberRowAdmin
-            key={m.userId}
-            gangId={gangId}
-            userId={m.userId}
-            displayName={m.displayName}
-            role={m.role}
-            status={m.status}
-            isBlocked={m.isBlocked}
-            isCurrentUser={m.userId === currentUserId}
-            onRemove={onRemove}
-            onBlock={onBlock}
-            onUnblock={onUnblock}
-          />
-        ))}
-      </div>
+      {hasNonAdminMembers ? (
+        <div className="mt-4 flex flex-col gap-2" role="list">
+          {sorted.map((m) => (
+            <MemberRowAdmin
+              key={m.userId}
+              gangId={gangId}
+              userId={m.userId}
+              displayName={m.displayName}
+              role={m.role}
+              status={m.status}
+              isBlocked={m.isBlocked}
+              isCurrentUser={m.userId === currentUserId}
+              onRemove={onRemove}
+              onBlock={onBlock}
+              onUnblock={onUnblock}
+            />
+          ))}
+        </div>
+      ) : (
+        <EmptyState
+          className="mt-4"
+          icon={UsersRound}
+          headline="No other members yet"
+          description="Share your invite code to grow the gang."
+        />
+      )}
     </section>
   )
 }

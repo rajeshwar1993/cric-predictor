@@ -105,6 +105,7 @@ function GangInfoSection({
 }: GangInfoSectionProps) {
   const nameInputId = useId()
   const nameErrorId = useId()
+  const nameHintId = useId()
   const autoAcceptId = useId()
 
   // `savedName` is the "last known saved" name. This is the source of truth
@@ -141,6 +142,18 @@ function GangInfoSection({
 
   function handleNameSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+
+    // Validate inline BEFORE firing the server action so the admin gets
+    // immediate feedback instead of a silently-disabled Save button.
+    if (trimmed.length < NAME_MIN) {
+      setNameError(`Gang name must be at least ${NAME_MIN} characters.`)
+      return
+    }
+    if (trimmed.length > NAME_MAX) {
+      setNameError(`Gang name must be at most ${NAME_MAX} characters.`)
+      return
+    }
+
     if (!canSaveName) return
 
     setNameError(null)
@@ -164,6 +177,15 @@ function GangInfoSection({
     })
   }
 
+  function handleNameBlur() {
+    // Surface inline feedback on blur so the admin doesn't have to hit
+    // Save to learn the name is too short.
+    if (trimmed.length === 0) return
+    if (trimmed.length < NAME_MIN) {
+      setNameError(`Gang name must be at least ${NAME_MIN} characters.`)
+    }
+  }
+
   function handleAutoAcceptChange(next: boolean) {
     // Optimistic UI would be risky here (revalidate may flip back). Stick
     // with synchronous state update + toast on error revert pattern.
@@ -175,11 +197,7 @@ function GangInfoSection({
         const result = await onUpdateAutoAccept(gangId, next)
         if (result.success) {
           setSavedAutoAccept(next)
-          toast.success(
-            next
-              ? 'Auto-accept enabled. New requests will be accepted automatically.'
-              : 'Auto-accept disabled. New requests will need admin approval.',
-          )
+          toast.success(next ? 'Auto-accept enabled' : 'Auto-accept disabled')
         } else {
           // Revert optimistic update. The switch has no inline error slot,
           // so keep the toast here as the only surface for auto-accept failures.
@@ -213,12 +231,16 @@ function GangInfoSection({
           value={name}
           onChange={(e) => {
             setName(e.target.value)
+            // Clear any stale error as soon as the user types a
+            // potentially-valid value — they'll see fresh feedback on
+            // blur or Save if it's still invalid.
             if (nameError) setNameError(null)
           }}
+          onBlur={handleNameBlur}
           minLength={NAME_MIN}
           maxLength={NAME_MAX}
           aria-invalid={nameError ? true : undefined}
-          aria-describedby={nameError ? nameErrorId : undefined}
+          aria-describedby={nameError ? nameErrorId : nameHintId}
           disabled={isSavingName}
           autoComplete="off"
         />
@@ -227,7 +249,7 @@ function GangInfoSection({
             {nameError}
           </p>
         ) : (
-          <p className="text-xs text-text-muted">
+          <p id={nameHintId} className="text-xs text-text-muted">
             {NAME_MIN}–{NAME_MAX} characters.
           </p>
         )}
@@ -256,13 +278,25 @@ function GangInfoSection({
             New members are approved instantly when they use the invite link.
           </p>
         </div>
-        <Switch
-          id={autoAcceptId}
-          checked={autoAccept}
-          onCheckedChange={handleAutoAcceptChange}
-          disabled={isSavingAutoAccept}
-          aria-label="Auto-accept join requests"
-        />
+        {/* Switch + text state. The visible "On"/"Off" label provides a
+            non-color-dependent cue for sighted color-blind users; the
+            underlying Switch primitive already exposes aria-checked for
+            assistive tech. */}
+        <div className="flex shrink-0 items-center gap-2">
+          <span
+            className="min-w-[1.75rem] text-right text-caption font-semibold uppercase tracking-wide text-text-secondary"
+            aria-hidden="true"
+          >
+            {autoAccept ? 'On' : 'Off'}
+          </span>
+          <Switch
+            id={autoAcceptId}
+            checked={autoAccept}
+            onCheckedChange={handleAutoAcceptChange}
+            disabled={isSavingAutoAccept}
+            aria-label="Auto-accept join requests"
+          />
+        </div>
       </div>
     </section>
   )
@@ -306,8 +340,16 @@ function PredictionSettingsSection({
     setValue(String(initialMinutes))
   }, [initialMinutes])
 
-  const parsed = Number.parseInt(value, 10)
-  const isParsed = Number.isFinite(parsed) && String(parsed) === value.trim()
+  // Accept any string that parses to a non-negative integer — including
+  // leading-zero inputs like "015" and decimal-with-trailing-zero inputs
+  // like "15.0". Reject non-integer inputs such as "15.5" or "abc".
+  const trimmedValue = value.trim()
+  const numericValue = Number(trimmedValue)
+  const isParsed =
+    trimmedValue !== '' &&
+    Number.isInteger(numericValue) &&
+    numericValue >= 0
+  const parsed = isParsed ? numericValue : NaN
   const isValid =
     isParsed && parsed >= DEADLINE_MIN && parsed <= DEADLINE_MAX
   const isDirty = !isParsed || parsed !== savedMinutes

@@ -151,6 +151,23 @@ export const RemoveDialog: Story = {
 }
 
 /* ------------------------------------------------------------------ */
+/* SoloAdmin — only the admin exists; empty state prompts invite share */
+/* ------------------------------------------------------------------ */
+
+export const SoloAdmin: Story = {
+  args: {
+    members: [
+      makeMember({
+        userId: ADMIN_ID,
+        displayName: 'Rajesh K',
+        role: 'admin',
+        status: 'approved',
+      }),
+    ],
+  },
+}
+
+/* ------------------------------------------------------------------ */
 /* Loading — remove action never resolves so the dialog stays loading  */
 /* ------------------------------------------------------------------ */
 

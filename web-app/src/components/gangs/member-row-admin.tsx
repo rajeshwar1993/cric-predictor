@@ -109,7 +109,10 @@ export function MemberRowAdmin({
   const [isUnblocking, setIsUnblocking] = useState(false)
 
   const name = displayName ?? 'Unknown'
-  const initial = name.charAt(0).toUpperCase()
+  // `Array.from` splits by code points so we correctly pick up the first
+  // glyph for emoji prefixes and non-BMP scripts. `charAt(0)` would split
+  // surrogate pairs and produce a broken character in the avatar.
+  const initial = Array.from(name)[0]?.toUpperCase() ?? '?'
   const state = deriveState(localStatus, localIsBlocked)
   const isDeparted = state.kind !== 'active'
   const isAdmin = role === 'admin'
@@ -126,7 +129,7 @@ export function MemberRowAdmin({
       const result = await onRemove(gangId, userId)
 
       if (result.success) {
-        toast.success(`${name} has been removed.`)
+        toast.success(`${name} removed`)
         setIsDialogOpen(false)
       } else {
         // Keep the dialog open so the admin can retry without retyping the
@@ -159,7 +162,7 @@ export function MemberRowAdmin({
       const result = await onBlock(gangId, userId)
 
       if (result.success) {
-        toast.success(`${name} has been blocked.`)
+        toast.success(`${name} blocked`)
       } else {
         toast.error(result.error)
         setLocalStatus(prevStatus)
@@ -185,7 +188,7 @@ export function MemberRowAdmin({
       const result = await onUnblock(gangId, userId)
 
       if (result.success) {
-        toast.success(`${name} has been unblocked.`)
+        toast.success(`${name} unblocked`)
       } else {
         toast.error(result.error)
         setLocalIsBlocked(prevBlocked)
@@ -203,7 +206,11 @@ export function MemberRowAdmin({
       <div
         className={cn(
           'flex flex-wrap items-center gap-3 rounded-lg bg-dark-concrete px-4 py-3',
-          isDeparted && 'opacity-60',
+          // Departed rows carry the muted look via the already-muted
+          // token colors applied to the name + status text below. We
+          // avoid an `opacity-60` multiplier here because compounding
+          // opacity on top of already-muted tokens can push the text
+          // below WCAG AA contrast on darker surfaces.
         )}
         role="listitem"
         data-state={state.kind}

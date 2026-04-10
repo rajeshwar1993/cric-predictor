@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
+import { ANALYTICS_EVENTS } from '@/lib/analytics/events'
+
 // ---------------------------------------------------------------------------
 // Mocks
 // ---------------------------------------------------------------------------
@@ -1532,34 +1534,30 @@ describe('updateGangName server action', () => {
   /**
    * Sets up mockFrom for updateGangName calls.
    * The action calls .from() for:
-   * 1. v2_gangs — soft-delete / existence check (.maybeSingle) inside
-   *    `isApprovedGangAdmin`
-   * 2. v2_gang_members — admin verification (.maybeSingle)
-   * 3. v2_gangs — update name
+   * 1. v2_gangs — `isApprovedGangAdmin` single-query inner-join check
+   *    (resolves to `data: { id }` when admin, `data: null` otherwise)
+   * 2. v2_gangs — update name (chains `.select('id')` to count rows)
    */
   function setupUpdateNameFromMock(overrides?: {
-    softDeleteCheck?: { data: unknown }
     adminCheck?: { data: unknown }
-    updateResult?: { error: unknown }
+    updateResult?: { data?: unknown[]; error: unknown }
   }) {
     const opts = {
-      softDeleteCheck: { data: { id: validGangId } },
-      adminCheck: { data: { role: 'admin', status: 'approved' } },
-      updateResult: { error: null },
+      adminCheck: { data: { id: validGangId } },
+      updateResult: { data: [{ id: validGangId }], error: null } as {
+        data?: unknown[]
+        error: unknown
+      },
       ...overrides,
     }
 
-    let memberCallIndex = 0
     let gangCallIndex = 0
     mockFrom.mockImplementation((table: string) => {
-      if (table === 'v2_gang_members') {
-        memberCallIndex++
-        if (memberCallIndex === 1) return createQueryChain(opts.adminCheck)
-      }
       if (table === 'v2_gangs') {
         gangCallIndex++
-        // First v2_gangs call is the soft-delete existence check; second is the update.
-        if (gangCallIndex === 1) return createQueryChain(opts.softDeleteCheck)
+        // First v2_gangs call is the isApprovedGangAdmin inner-join check;
+        // second is the update with .select('id').
+        if (gangCallIndex === 1) return createQueryChain(opts.adminCheck)
         return createQueryChain(opts.updateResult)
       }
       return createQueryChain({ data: null })
@@ -1632,33 +1630,7 @@ describe('updateGangName server action', () => {
 
   // ---- Admin verification ----
 
-  test('returns error when user is not an admin', async () => {
-    setupUpdateNameFromMock({
-      adminCheck: { data: { role: 'member', status: 'approved' } },
-    })
-
-    const result = await updateGangName(validGangId, 'Valid Name')
-
-    expect(result).toEqual({
-      success: false,
-      error: "Gang not found or you don't have permission",
-    })
-  })
-
-  test('returns error when admin membership is not approved', async () => {
-    setupUpdateNameFromMock({
-      adminCheck: { data: { role: 'admin', status: 'pending' } },
-    })
-
-    const result = await updateGangName(validGangId, 'Valid Name')
-
-    expect(result).toEqual({
-      success: false,
-      error: "Gang not found or you don't have permission",
-    })
-  })
-
-  test('returns error when no membership row exists', async () => {
+  test('returns error when inner-join admin check returns null (non-admin, wrong status, or no row)', async () => {
     setupUpdateNameFromMock({ adminCheck: { data: null } })
 
     const result = await updateGangName(validGangId, 'Valid Name')
@@ -1672,14 +1644,20 @@ describe('updateGangName server action', () => {
   // ---- Soft-delete guard ----
 
   test('returns generic error and does NOT mutate when gang is soft-deleted', async () => {
-    // isApprovedGangAdmin's soft-delete SELECT filters on is_deleted=false,
-    // so a soft-deleted gang resolves to `data: null` from that query.
+    // isApprovedGangAdmin's inner-join query filters on is_deleted=false, so
+    // a soft-deleted gang resolves to `data: null` and the action bails
+    // before reaching the update branch.
     const updateSpy = vi.fn()
+    let gangCallIndex = 0
     mockFrom.mockImplementation((table: string) => {
       if (table === 'v2_gangs') {
-        // Soft-delete check returns no row (gang is deleted).
-        const chain = createQueryChain({ data: null })
-        // Track .update() calls on v2_gangs to assert no mutation occurred.
+        gangCallIndex++
+        if (gangCallIndex === 1) {
+          return createQueryChain({ data: null })
+        }
+        // Second call is the update branch — track `.update()` to assert
+        // it was never reached.
+        const chain = createQueryChain({ data: [], error: null })
         chain.update = updateSpy.mockImplementation(() => chain)
         return chain
       }
@@ -1692,7 +1670,6 @@ describe('updateGangName server action', () => {
       success: false,
       error: "Gang not found or you don't have permission",
     })
-    // Action bailed before reaching the update branch.
     expect(updateSpy).not.toHaveBeenCalled()
     expect(mockRevalidatePath).not.toHaveBeenCalled()
   })
@@ -1701,7 +1678,7 @@ describe('updateGangName server action', () => {
 
   test('returns error when update fails', async () => {
     setupUpdateNameFromMock({
-      updateResult: { error: { message: 'db error' } },
+      updateResult: { data: [], error: { message: 'db error' } },
     })
 
     const result = await updateGangName(validGangId, 'Valid Name')
@@ -1709,6 +1686,22 @@ describe('updateGangName server action', () => {
     expect(result).toEqual({
       success: false,
       error: 'Failed to update gang name. Please try again.',
+    })
+    expect(mockRevalidatePath).not.toHaveBeenCalled()
+  })
+
+  // ---- Zero-rows race ----
+
+  test('returns error when update affects zero rows (race with delete)', async () => {
+    setupUpdateNameFromMock({
+      updateResult: { data: [], error: null },
+    })
+
+    const result = await updateGangName(validGangId, 'Valid Name')
+
+    expect(result).toEqual({
+      success: false,
+      error: "Gang not found or you don't have permission",
     })
     expect(mockRevalidatePath).not.toHaveBeenCalled()
   })
@@ -1738,28 +1731,25 @@ describe('updateAutoAccept server action', () => {
   const validGangId = '550e8400-e29b-41d4-a716-446655440000'
 
   function setupUpdateAutoAcceptFromMock(overrides?: {
-    softDeleteCheck?: { data: unknown }
     adminCheck?: { data: unknown }
-    updateResult?: { error: unknown }
+    updateResult?: { data?: unknown[]; error: unknown }
   }) {
     const opts = {
-      softDeleteCheck: { data: { id: validGangId } },
-      adminCheck: { data: { role: 'admin', status: 'approved' } },
-      updateResult: { error: null },
+      adminCheck: { data: { id: validGangId } },
+      updateResult: { data: [{ id: validGangId }], error: null } as {
+        data?: unknown[]
+        error: unknown
+      },
       ...overrides,
     }
 
-    let memberCallIndex = 0
     let gangCallIndex = 0
     mockFrom.mockImplementation((table: string) => {
-      if (table === 'v2_gang_members') {
-        memberCallIndex++
-        if (memberCallIndex === 1) return createQueryChain(opts.adminCheck)
-      }
       if (table === 'v2_gangs') {
         gangCallIndex++
-        // First v2_gangs call is the soft-delete existence check; second is the update.
-        if (gangCallIndex === 1) return createQueryChain(opts.softDeleteCheck)
+        // First v2_gangs call is the isApprovedGangAdmin inner-join check;
+        // second is the update with .select('id').
+        if (gangCallIndex === 1) return createQueryChain(opts.adminCheck)
         return createQueryChain(opts.updateResult)
       }
       return createQueryChain({ data: null })
@@ -1811,9 +1801,9 @@ describe('updateAutoAccept server action', () => {
 
   // ---- Admin verification ----
 
-  test('returns error when user is not admin', async () => {
+  test('returns error when inner-join admin check returns null', async () => {
     setupUpdateAutoAcceptFromMock({
-      adminCheck: { data: { role: 'member', status: 'approved' } },
+      adminCheck: { data: null },
     })
 
     const result = await updateAutoAccept(validGangId, true)
@@ -1824,11 +1814,27 @@ describe('updateAutoAccept server action', () => {
     })
   })
 
+  // ---- Non-boolean autoAccept rejection (S-009) ----
+
+  test('returns error when autoAccept is not a boolean', async () => {
+    setupUpdateAutoAcceptFromMock()
+
+    // Deliberately bypass TypeScript to exercise the runtime guard that
+    // defends against malformed client payloads reaching the server action.
+    const callWithBadPayload = updateAutoAccept as unknown as (
+      gangId: string,
+      autoAccept: unknown,
+    ) => Promise<{ success: boolean; error?: string }>
+    const result = await callWithBadPayload(validGangId, 'yes')
+
+    expect(result).toEqual({ success: false, error: 'Invalid request' })
+  })
+
   // ---- Update failure ----
 
   test('returns error when update fails', async () => {
     setupUpdateAutoAcceptFromMock({
-      updateResult: { error: { message: 'db error' } },
+      updateResult: { data: [], error: { message: 'db error' } },
     })
 
     const result = await updateAutoAccept(validGangId, true)
@@ -1836,6 +1842,22 @@ describe('updateAutoAccept server action', () => {
     expect(result).toEqual({
       success: false,
       error: 'Failed to update setting. Please try again.',
+    })
+    expect(mockRevalidatePath).not.toHaveBeenCalled()
+  })
+
+  // ---- Zero-rows race ----
+
+  test('returns error when update affects zero rows (race with delete)', async () => {
+    setupUpdateAutoAcceptFromMock({
+      updateResult: { data: [], error: null },
+    })
+
+    const result = await updateAutoAccept(validGangId, true)
+
+    expect(result).toEqual({
+      success: false,
+      error: "Gang not found or you don't have permission",
     })
     expect(mockRevalidatePath).not.toHaveBeenCalled()
   })
@@ -1872,26 +1894,20 @@ describe('updatePredictionDeadline server action', () => {
   const validGangId = '550e8400-e29b-41d4-a716-446655440000'
 
   function setupUpdateDeadlineFromMock(overrides?: {
-    softDeleteCheck?: { data: unknown }
     adminCheck?: { data: unknown }
     updateResult?: { data: unknown[]; error: unknown }
   }) {
     const opts = {
-      softDeleteCheck: { data: { id: validGangId } },
-      adminCheck: { data: { role: 'admin', status: 'approved' } },
+      adminCheck: { data: { id: validGangId } },
       updateResult: { data: [{ gang_id: validGangId }], error: null },
       ...overrides,
     }
 
-    let memberCallIndex = 0
     mockFrom.mockImplementation((table: string) => {
       if (table === 'v2_gangs') {
-        // Soft-delete / existence check in isApprovedGangAdmin.
-        return createQueryChain(opts.softDeleteCheck)
-      }
-      if (table === 'v2_gang_members') {
-        memberCallIndex++
-        if (memberCallIndex === 1) return createQueryChain(opts.adminCheck)
+        // isApprovedGangAdmin inner-join check — returns `{ id }` when the
+        // caller is an approved admin, `null` otherwise.
+        return createQueryChain(opts.adminCheck)
       }
       if (table === 'v2_gang_league_seasons') {
         return createQueryChain(opts.updateResult)
@@ -1983,9 +1999,9 @@ describe('updatePredictionDeadline server action', () => {
 
   // ---- Admin verification ----
 
-  test('returns error when user is not admin', async () => {
+  test('returns error when inner-join admin check returns null', async () => {
     setupUpdateDeadlineFromMock({
-      adminCheck: { data: { role: 'member', status: 'approved' } },
+      adminCheck: { data: null },
     })
 
     const result = await updatePredictionDeadline(validGangId, 60)
@@ -2011,7 +2027,7 @@ describe('updatePredictionDeadline server action', () => {
     })
   })
 
-  test('returns friendly error when no active season row exists', async () => {
+  test('returns actionable error when no active season row exists', async () => {
     setupUpdateDeadlineFromMock({
       updateResult: { data: [], error: null },
     })
@@ -2020,8 +2036,33 @@ describe('updatePredictionDeadline server action', () => {
 
     expect(result).toEqual({
       success: false,
-      error: 'No active season found for this gang yet.',
+      error:
+        'This gang is not yet enrolled in an active season. Try again after the next season starts.',
     })
+  })
+
+  test('returns error when multiple active season rows are updated (data drift)', async () => {
+    const warnSpy = vi
+      .spyOn(console, 'warn')
+      .mockImplementation(() => undefined)
+
+    setupUpdateDeadlineFromMock({
+      updateResult: {
+        data: [{ gang_id: validGangId }, { gang_id: validGangId }],
+        error: null,
+      },
+    })
+
+    const result = await updatePredictionDeadline(validGangId, 60)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Unexpected number of active seasons. Please contact support.',
+    })
+    expect(warnSpy).toHaveBeenCalledOnce()
+    expect(mockRevalidatePath).not.toHaveBeenCalled()
+
+    warnSpy.mockRestore()
   })
 
   // ---- Success ----
@@ -2160,11 +2201,10 @@ describe('deleteGang server action', () => {
     expect(result).toEqual({ success: true })
     expect(mockRpc).toHaveBeenCalledWith('delete_gang', {
       p_gang_id: validGangId,
-      p_caller_id: 'admin-user-123',
     })
     expect(mockTrackEvent).toHaveBeenCalledWith(
       'admin-user-123',
-      'gang_deleted',
+      ANALYTICS_EVENTS.GANG_DELETED,
       expect.objectContaining({ gang_id: validGangId }),
     )
     expect(mockRevalidatePath).toHaveBeenCalledWith('/dashboard')
@@ -2172,6 +2212,33 @@ describe('deleteGang server action', () => {
     expect(mockRevalidatePath).toHaveBeenCalledWith(
       `/group/${validGangId}/settings`,
     )
+  })
+
+  // ---- RPC signature ----
+
+  test('does not pass p_caller_id to RPC (auth.uid() resolved server-side)', async () => {
+    await deleteGang(validGangId)
+
+    expect(mockRpc).toHaveBeenCalledOnce()
+    const [, args] = mockRpc.mock.calls[0] as [string, Record<string, unknown>]
+    expect(args).toEqual({ p_gang_id: validGangId })
+    expect(args).not.toHaveProperty('p_caller_id')
+  })
+
+  test('maps NOT_AUTHENTICATED RPC error to signed-in message', async () => {
+    mockRpc.mockResolvedValue({
+      data: null,
+      error: { message: 'NOT_AUTHENTICATED', code: '42501' },
+    })
+
+    const result = await deleteGang(validGangId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'You must be signed in',
+    })
+    expect(mockTrackEvent).not.toHaveBeenCalled()
+    expect(mockRevalidatePath).not.toHaveBeenCalled()
   })
 
   // ---- Order of operations ----
@@ -2208,20 +2275,17 @@ describe('removeMember server action', () => {
   /**
    * Sets up mockFrom for removeMember calls.
    * Flow:
-   *   1. v2_gangs — isApprovedGangAdmin soft-delete existence check
-   *   2. v2_gang_members — isApprovedGangAdmin role/status check
-   *   3. v2_gang_members — target member role lookup
-   *   4. v2_gang_members — update (with .select())
+   *   1. v2_gangs — isApprovedGangAdmin inner-join check
+   *   2. v2_gang_members — target member role lookup (.maybeSingle)
+   *   3. v2_gang_members — update (with .select())
    */
   function setupRemoveFromMock(overrides?: {
-    softDeleteCheck?: { data: unknown }
     adminCheck?: { data: unknown }
     targetLookup?: { data: unknown }
     updateResult?: { data: unknown[]; error: unknown }
   }) {
     const opts = {
-      softDeleteCheck: { data: { id: validGangId } },
-      adminCheck: { data: { role: 'admin', status: 'approved' } },
+      adminCheck: { data: { id: validGangId } },
       targetLookup: { data: { role: 'member' } },
       updateResult: { data: [{ status: 'removed' }], error: null },
       ...overrides,
@@ -2230,12 +2294,11 @@ describe('removeMember server action', () => {
     let memberCallIndex = 0
     mockFrom.mockImplementation((table: string) => {
       if (table === 'v2_gangs') {
-        return createQueryChain(opts.softDeleteCheck)
+        return createQueryChain(opts.adminCheck)
       }
       if (table === 'v2_gang_members') {
         memberCallIndex++
-        if (memberCallIndex === 1) return createQueryChain(opts.adminCheck)
-        if (memberCallIndex === 2) return createQueryChain(opts.targetLookup)
+        if (memberCallIndex === 1) return createQueryChain(opts.targetLookup)
         return createQueryChain(opts.updateResult)
       }
       return createQueryChain({ data: null })
@@ -2296,22 +2359,9 @@ describe('removeMember server action', () => {
 
   // ---- Admin verification ----
 
-  test('returns error when caller is not an admin', async () => {
+  test('returns error when inner-join admin check returns null (non-admin or soft-deleted)', async () => {
     setupRemoveFromMock({
-      adminCheck: { data: { role: 'member', status: 'approved' } },
-    })
-
-    const result = await removeMember(validGangId, validTargetId)
-
-    expect(result).toEqual({
-      success: false,
-      error: "Gang not found or you don't have permission",
-    })
-  })
-
-  test('returns error when gang is soft-deleted', async () => {
-    setupRemoveFromMock({
-      softDeleteCheck: { data: null },
+      adminCheck: { data: null },
     })
 
     const result = await removeMember(validGangId, validTargetId)
@@ -2331,7 +2381,7 @@ describe('removeMember server action', () => {
 
     expect(result).toEqual({
       success: false,
-      error: "You can't perform this action on yourself",
+      error: 'Admins cannot leave. Delete the gang instead.',
     })
     expect(mockTrackEvent).not.toHaveBeenCalled()
     expect(mockRevalidatePath).not.toHaveBeenCalled()
@@ -2398,7 +2448,7 @@ describe('removeMember server action', () => {
     expect(result).toEqual({ success: true })
     expect(mockTrackEvent).toHaveBeenCalledWith(
       mockAdmin.id,
-      'member_removed',
+      ANALYTICS_EVENTS.MEMBER_REMOVED,
       expect.objectContaining({
         gang_id: validGangId,
         removed_user_id: validTargetId,
@@ -2423,16 +2473,14 @@ describe('blockMember server action', () => {
   /**
    * Sets up mockFrom for blockMember calls.
    * Flow:
-   *   1. v2_gangs — isApprovedGangAdmin soft-delete existence check
-   *   2. v2_gang_members — isApprovedGangAdmin role/status check
-   *   3. v2_gang_members — target member role+status lookup
-   *   4. v2_gang_members — update (race-guarded when approved) OR plain
+   *   1. v2_gangs — isApprovedGangAdmin inner-join check
+   *   2. v2_gang_members — target member role+status lookup
+   *   3. v2_gang_members — update (race-guarded when approved) OR plain
    *      update for non-approved targets
-   *   5. v2_gang_members — OPTIONAL fallback update (only when approved +
+   *   4. v2_gang_members — OPTIONAL fallback update (only when approved +
    *      race-guarded update affected zero rows)
    */
   function setupBlockFromMock(overrides?: {
-    softDeleteCheck?: { data: unknown }
     adminCheck?: { data: unknown }
     targetLookup?: { data: unknown }
     /**
@@ -2448,8 +2496,7 @@ describe('blockMember server action', () => {
     fallbackUpdateResult?: { error: unknown }
   }) {
     const opts = {
-      softDeleteCheck: { data: { id: validGangId } },
-      adminCheck: { data: { role: 'admin', status: 'approved' } },
+      adminCheck: { data: { id: validGangId } },
       targetLookup: { data: { role: 'member', status: 'approved' } },
       updateResult: { data: [{ is_blocked: true }], error: null } as {
         data?: unknown[]
@@ -2462,13 +2509,12 @@ describe('blockMember server action', () => {
     let memberCallIndex = 0
     mockFrom.mockImplementation((table: string) => {
       if (table === 'v2_gangs') {
-        return createQueryChain(opts.softDeleteCheck)
+        return createQueryChain(opts.adminCheck)
       }
       if (table === 'v2_gang_members') {
         memberCallIndex++
-        if (memberCallIndex === 1) return createQueryChain(opts.adminCheck)
-        if (memberCallIndex === 2) return createQueryChain(opts.targetLookup)
-        if (memberCallIndex === 3) return createQueryChain(opts.updateResult)
+        if (memberCallIndex === 1) return createQueryChain(opts.targetLookup)
+        if (memberCallIndex === 2) return createQueryChain(opts.updateResult)
         return createQueryChain(opts.fallbackUpdateResult)
       }
       return createQueryChain({ data: null })
@@ -2518,9 +2564,9 @@ describe('blockMember server action', () => {
     expect(result).toEqual({ success: false, error: 'Invalid request' })
   })
 
-  test('returns error when caller is not an admin', async () => {
+  test('returns error when inner-join admin check returns null', async () => {
     setupBlockFromMock({
-      adminCheck: { data: { role: 'member', status: 'approved' } },
+      adminCheck: { data: null },
     })
 
     const result = await blockMember(validGangId, validTargetId)
@@ -2538,7 +2584,7 @@ describe('blockMember server action', () => {
 
     expect(result).toEqual({
       success: false,
-      error: "You can't perform this action on yourself",
+      error: 'Admins cannot leave. Delete the gang instead.',
     })
     expect(mockTrackEvent).not.toHaveBeenCalled()
   })
@@ -2607,7 +2653,7 @@ describe('blockMember server action', () => {
     expect(result).toEqual({ success: true })
     expect(mockTrackEvent).toHaveBeenCalledWith(
       mockAdmin.id,
-      'member_blocked',
+      ANALYTICS_EVENTS.MEMBER_BLOCKED,
       expect.objectContaining({
         gang_id: validGangId,
         blocked_user_id: validTargetId,
@@ -2659,7 +2705,7 @@ describe('blockMember server action', () => {
     expect(result).toEqual({ success: true })
     expect(mockTrackEvent).toHaveBeenCalledWith(
       mockAdmin.id,
-      'member_blocked',
+      ANALYTICS_EVENTS.MEMBER_BLOCKED,
       expect.objectContaining({
         gang_id: validGangId,
         blocked_user_id: validTargetId,
@@ -2698,18 +2744,18 @@ describe('unblockMember server action', () => {
   /**
    * Sets up mockFrom for unblockMember calls.
    * Flow:
-   *   1. v2_gangs — isApprovedGangAdmin soft-delete existence check
-   *   2. v2_gang_members — isApprovedGangAdmin role/status check
+   *   1. v2_gangs — isApprovedGangAdmin inner-join check
+   *   2. v2_gang_members — target member role lookup (.maybeSingle)
    *   3. v2_gang_members — update (with .select() to count affected rows)
    */
   function setupUnblockFromMock(overrides?: {
-    softDeleteCheck?: { data: unknown }
     adminCheck?: { data: unknown }
+    targetLookup?: { data: unknown }
     updateResult?: { data?: unknown[]; error: unknown }
   }) {
     const opts = {
-      softDeleteCheck: { data: { id: validGangId } },
-      adminCheck: { data: { role: 'admin', status: 'approved' } },
+      adminCheck: { data: { id: validGangId } },
+      targetLookup: { data: { role: 'member' } },
       updateResult: { data: [{ is_blocked: false }], error: null } as {
         data?: unknown[]
         error: unknown
@@ -2720,11 +2766,11 @@ describe('unblockMember server action', () => {
     let memberCallIndex = 0
     mockFrom.mockImplementation((table: string) => {
       if (table === 'v2_gangs') {
-        return createQueryChain(opts.softDeleteCheck)
+        return createQueryChain(opts.adminCheck)
       }
       if (table === 'v2_gang_members') {
         memberCallIndex++
-        if (memberCallIndex === 1) return createQueryChain(opts.adminCheck)
+        if (memberCallIndex === 1) return createQueryChain(opts.targetLookup)
         return createQueryChain(opts.updateResult)
       }
       return createQueryChain({ data: null })
@@ -2774,9 +2820,9 @@ describe('unblockMember server action', () => {
     expect(result).toEqual({ success: false, error: 'Invalid request' })
   })
 
-  test('returns error when caller is not an admin', async () => {
+  test('returns error when inner-join admin check returns null', async () => {
     setupUnblockFromMock({
-      adminCheck: { data: { role: 'member', status: 'approved' } },
+      adminCheck: { data: null },
     })
 
     const result = await unblockMember(validGangId, validTargetId)
@@ -2785,6 +2831,38 @@ describe('unblockMember server action', () => {
       success: false,
       error: "Gang not found or you don't have permission",
     })
+  })
+
+  // ---- Target guard (W-006) ----
+
+  test('returns error when target member does not exist (target lookup)', async () => {
+    setupUnblockFromMock({
+      targetLookup: { data: null },
+    })
+
+    const result = await unblockMember(validGangId, validTargetId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Member not found in this gang',
+    })
+    expect(mockTrackEvent).not.toHaveBeenCalled()
+    expect(mockRevalidatePath).not.toHaveBeenCalled()
+  })
+
+  test('returns error when attempting to unblock an admin', async () => {
+    setupUnblockFromMock({
+      targetLookup: { data: { role: 'admin' } },
+    })
+
+    const result = await unblockMember(validGangId, validTargetId)
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Admins cannot be blocked or unblocked',
+    })
+    expect(mockTrackEvent).not.toHaveBeenCalled()
+    expect(mockRevalidatePath).not.toHaveBeenCalled()
   })
 
   test('returns error when update fails', async () => {
@@ -2802,9 +2880,10 @@ describe('unblockMember server action', () => {
     expect(mockRevalidatePath).not.toHaveBeenCalled()
   })
 
-  test('returns error when target member does not exist', async () => {
-    // Update succeeds but affects zero rows — the target user is not a
-    // member of this gang. Must NOT fire analytics or revalidate.
+  test('returns error when update affects zero rows (race)', async () => {
+    // Target lookup found a member, but the update matches zero rows — the
+    // row was deleted or the status changed between the lookup and the
+    // update. Must NOT fire analytics or revalidate.
     setupUnblockFromMock({
       updateResult: { data: [], error: null },
     })
@@ -2827,7 +2906,7 @@ describe('unblockMember server action', () => {
     expect(result).toEqual({ success: true })
     expect(mockTrackEvent).toHaveBeenCalledWith(
       mockAdmin.id,
-      'member_unblocked',
+      ANALYTICS_EVENTS.MEMBER_UNBLOCKED,
       expect.objectContaining({
         gang_id: validGangId,
         unblocked_user_id: validTargetId,

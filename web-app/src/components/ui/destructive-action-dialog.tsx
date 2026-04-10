@@ -34,6 +34,14 @@ interface DestructiveActionDialogProps {
   isLoading?: boolean
   /** Additional class name for the dialog content */
   className?: string
+  /**
+   * Require the user's input to match `confirmValue` exactly (case and
+   * whitespace-trimmed). Defaults to `false` for backwards compatibility
+   * with member-removal flows that only need case-insensitive matching.
+   * Set to `true` for the highest-risk destructive actions (e.g. deleting
+   * a gang) where the confirmation step should be unambiguous.
+   */
+  caseSensitive?: boolean
 }
 
 function DestructiveActionDialog({
@@ -46,12 +54,14 @@ function DestructiveActionDialog({
   onConfirm,
   isLoading = false,
   className,
+  caseSensitive = false,
 }: DestructiveActionDialogProps) {
   const inputId = React.useId()
   const [inputValue, setInputValue] = React.useState('')
 
-  const isMatch =
-    inputValue.toLowerCase().trim() === confirmValue.toLowerCase().trim()
+  const isMatch = caseSensitive
+    ? inputValue.trim() === confirmValue.trim()
+    : inputValue.toLowerCase().trim() === confirmValue.toLowerCase().trim()
   const isConfirmEnabled = isMatch && !isLoading
 
   // Reset input value when dialog opens/closes

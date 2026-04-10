@@ -6,7 +6,6 @@ import { createServerClient } from '@/lib/supabase/server'
 import {
   getGangDetails,
   getGangPredictionDeadline,
-  DEFAULT_PREDICTION_DEADLINE_MINS,
 } from '@/lib/dal/gangs'
 import { PageWrapper } from '@/components/layout/page-wrapper'
 import { GangSettingsForm } from '@/components/gangs/gang-settings-form'
@@ -70,13 +69,10 @@ export default async function GangSettingsPage({
   }
 
   // Prediction deadline lives in v2_gang_league_seasons for the active season.
-  // Falls back to the default when no active row exists yet.
-  let predictionDeadlineMins: number
-  try {
-    predictionDeadlineMins = await getGangPredictionDeadline(groupId)
-  } catch {
-    predictionDeadlineMins = DEFAULT_PREDICTION_DEADLINE_MINS
-  }
+  // `getGangPredictionDeadline` returns the default when no active row
+  // exists yet, so we let real DB errors propagate to the Next.js error
+  // boundary instead of masking them as a default value.
+  const predictionDeadlineMins = await getGangPredictionDeadline(groupId)
 
   return (
     <PageWrapper className="py-8">
