@@ -8,8 +8,20 @@ const mockGetUser = vi.fn()
 const mockRateLimit = vi.fn()
 const mockTrackEvent = vi.fn()
 const mockRevalidatePath = vi.fn()
+const mockSignOut = vi.fn()
+const mockRpc = vi.fn()
+const mockCookieDelete = vi.fn()
 
 const mockFrom = vi.fn()
+
+/** Sentinel error thrown by the mocked `redirect()` to simulate Next.js behaviour. */
+class RedirectError extends Error {
+  url: string
+  constructor(url: string) {
+    super(`NEXT_REDIRECT: ${url}`)
+    this.url = url
+  }
+}
 
 function createQueryChain(resolvedValue: unknown) {
   const chain: Record<string, unknown> = {}
@@ -35,8 +47,10 @@ vi.mock('@/lib/supabase/server', () => ({
   createServerClient: vi.fn().mockImplementation(async () => ({
     auth: {
       getUser: (...args: unknown[]) => mockGetUser(...args),
+      signOut: (...args: unknown[]) => mockSignOut(...args),
     },
     from: (...args: unknown[]) => mockFrom(...args),
+    rpc: (...args: unknown[]) => mockRpc(...args),
   })),
 }))
 
@@ -52,8 +66,20 @@ vi.mock('next/cache', () => ({
   revalidatePath: (...args: unknown[]) => mockRevalidatePath(...args),
 }))
 
+vi.mock('next/headers', () => ({
+  cookies: vi.fn().mockResolvedValue({
+    delete: (...args: unknown[]) => mockCookieDelete(...args),
+  }),
+}))
+
+vi.mock('next/navigation', () => ({
+  redirect: vi.fn((url: string) => {
+    throw new RedirectError(url)
+  }),
+}))
+
 // Import after mocks
-const { updateDisplayName } = await import('./profile')
+const { updateDisplayName, deleteAccount } = await import('./profile')
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -454,5 +480,225 @@ describe('updateDisplayName server action', () => {
 
     expect(result).toEqual({ success: true })
     expect(mockRateLimit).not.toHaveBeenCalled()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// deleteAccount
+// ---------------------------------------------------------------------------
+
+describe('deleteAccount server action', () => {
+  const mockUser = { id: 'user-987', email: 'user@example.com' }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockGetUser.mockResolvedValue({ data: { user: mockUser }, error: null })
+    mockRpc.mockResolvedValue({ error: null })
+    mockSignOut.mockResolvedValue({ error: null })
+  })
+
+  // ---- Auth ----
+
+  test('returns error when user is not authenticated', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
+
+    const result = await deleteAccount()
+
+    expect(result).toEqual({ success: false, error: 'Not authenticated' })
+    expect(mockRpc).not.toHaveBeenCalled()
+    expect(mockSignOut).not.toHaveBeenCalled()
+    expect(mockCookieDelete).not.toHaveBeenCalled()
+    expect(mockTrackEvent).not.toHaveBeenCalled()
+  })
+
+  // ---- RPC failure ----
+
+  test('returns error and does NOT sign out when the RPC fails', async () => {
+    mockRpc.mockResolvedValue({
+      error: { message: 'USER_NOT_FOUND' },
+    })
+
+    const result = await deleteAccount()
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Failed to delete account. Please try again.',
+    })
+    expect(mockRpc).toHaveBeenCalledWith('delete_account', {
+      p_user_id: 'user-987',
+    })
+    // Critical: the RPC failed, so we must not sign the user out or
+    // clear cookies — their account is still intact.
+    expect(mockSignOut).not.toHaveBeenCalled()
+    expect(mockCookieDelete).not.toHaveBeenCalled()
+    expect(mockTrackEvent).not.toHaveBeenCalled()
+  })
+
+  // ---- signOut failure ----
+
+  test('completes redirect even when signOut fails after successful RPC', async () => {
+    // R-001 + R-002: once the RPC succeeds the account is durably deleted.
+    // A signOut failure from that point on is recoverable cleanup — the
+    // action must still fire analytics, attempt cookie cleanup, and
+    // redirect. It must NOT return `{ success: false }` and it must NOT
+    // swallow the NEXT_REDIRECT throw.
+    mockSignOut.mockResolvedValue({
+      error: { message: 'session_not_found' },
+    })
+    // Silence the expected console.error emitted by the best-effort path
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {})
+
+    const thrown = (await deleteAccount().catch(
+      (e: unknown) => e,
+    )) as unknown
+
+    // Redirect still fires — not an ActionResult
+    expect(thrown).toBeInstanceOf(RedirectError)
+    expect((thrown as RedirectError).url).toBe('/')
+
+    expect(mockRpc).toHaveBeenCalledWith('delete_account', {
+      p_user_id: 'user-987',
+    })
+    expect(mockSignOut).toHaveBeenCalledOnce()
+    // Analytics still fires — the "account deleted" event represents the
+    // RPC succeeding, not the signOut.
+    expect(mockTrackEvent).toHaveBeenCalledWith('user-987', 'account_deleted')
+    // Cookies are still cleared on a best-effort basis.
+    expect(mockCookieDelete).toHaveBeenCalledWith('bragg_onboarded')
+    expect(mockCookieDelete).toHaveBeenCalledWith('bragg_terms_version')
+    // And the signOut failure was logged.
+    expect(consoleErrorSpy).toHaveBeenCalled()
+
+    consoleErrorSpy.mockRestore()
+  })
+
+  test('completes redirect even when signOut throws after successful RPC', async () => {
+    // Same contract as the resolved-error case, but for a thrown
+    // exception from signOut (e.g. network failure after the session
+    // handshake but before Supabase responds).
+    mockSignOut.mockRejectedValue(new Error('network failure'))
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {})
+
+    const thrown = (await deleteAccount().catch(
+      (e: unknown) => e,
+    )) as unknown
+
+    expect(thrown).toBeInstanceOf(RedirectError)
+    expect((thrown as RedirectError).url).toBe('/')
+
+    expect(mockTrackEvent).toHaveBeenCalledWith('user-987', 'account_deleted')
+    expect(mockCookieDelete).toHaveBeenCalledWith('bragg_onboarded')
+    expect(mockCookieDelete).toHaveBeenCalledWith('bragg_terms_version')
+    expect(consoleErrorSpy).toHaveBeenCalled()
+
+    consoleErrorSpy.mockRestore()
+  })
+
+  // ---- Ordering ----
+
+  test('fires analytics event immediately after RPC success, before signOut', async () => {
+    // A call-order tracker proves analytics runs before signOut so a
+    // flaky signOut cannot skew deletion metrics (R-001 + R-002).
+    const calls: string[] = []
+    mockRpc.mockImplementation(async () => {
+      calls.push('rpc')
+      return { error: null }
+    })
+    mockTrackEvent.mockImplementation(() => {
+      calls.push('trackEvent')
+    })
+    mockSignOut.mockImplementation(async () => {
+      calls.push('signOut')
+      return { error: null }
+    })
+    mockCookieDelete.mockImplementation(() => {
+      calls.push('cookieDelete')
+    })
+
+    const thrown = (await deleteAccount().catch(
+      (e: unknown) => e,
+    )) as unknown
+
+    expect(thrown).toBeInstanceOf(RedirectError)
+
+    // rpc → trackEvent → signOut → cookieDelete (twice)
+    const rpcIdx = calls.indexOf('rpc')
+    const trackEventIdx = calls.indexOf('trackEvent')
+    const signOutIdx = calls.indexOf('signOut')
+    expect(rpcIdx).toBeGreaterThanOrEqual(0)
+    expect(trackEventIdx).toBeGreaterThan(rpcIdx)
+    expect(signOutIdx).toBeGreaterThan(trackEventIdx)
+    expect(calls).toEqual([
+      'rpc',
+      'trackEvent',
+      'signOut',
+      'cookieDelete',
+      'cookieDelete',
+    ])
+  })
+
+  // ---- Happy path ----
+
+  test('deletes account, signs out, clears cookies, fires analytics, and redirects to /', async () => {
+    // Order tracker — happy path must also fire analytics before signOut.
+    const calls: string[] = []
+    mockRpc.mockImplementation(async () => {
+      calls.push('rpc')
+      return { error: null }
+    })
+    mockTrackEvent.mockImplementation(() => {
+      calls.push('trackEvent')
+    })
+    mockSignOut.mockImplementation(async () => {
+      calls.push('signOut')
+      return { error: null }
+    })
+    mockCookieDelete.mockImplementation(() => {
+      calls.push('cookieDelete')
+    })
+
+    const error = (await deleteAccount().catch(
+      (e: unknown) => e,
+    )) as RedirectError
+
+    expect(error).toBeInstanceOf(RedirectError)
+    expect(error.url).toBe('/')
+
+    // RPC called with the authenticated user id
+    expect(mockRpc).toHaveBeenCalledWith('delete_account', {
+      p_user_id: 'user-987',
+    })
+    // Sign out after the RPC succeeds
+    expect(mockSignOut).toHaveBeenCalledOnce()
+    // Cookies cleared
+    expect(mockCookieDelete).toHaveBeenCalledWith('bragg_onboarded')
+    expect(mockCookieDelete).toHaveBeenCalledWith('bragg_terms_version')
+    // Analytics fires with the captured user id
+    expect(mockTrackEvent).toHaveBeenCalledWith('user-987', 'account_deleted')
+
+    // Analytics MUST fire before signOut — a flaky signOut cannot skew
+    // deletion metrics.
+    const trackEventIdx = calls.indexOf('trackEvent')
+    const signOutIdx = calls.indexOf('signOut')
+    expect(trackEventIdx).toBeGreaterThanOrEqual(0)
+    expect(signOutIdx).toBeGreaterThan(trackEventIdx)
+  })
+
+  test('returns generic error when an unexpected exception is thrown', async () => {
+    mockRpc.mockRejectedValue(new Error('network failure'))
+
+    const result = await deleteAccount()
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Failed to delete account. Please try again.',
+    })
+    expect(mockSignOut).not.toHaveBeenCalled()
+    expect(mockCookieDelete).not.toHaveBeenCalled()
+    expect(mockTrackEvent).not.toHaveBeenCalled()
   })
 })
