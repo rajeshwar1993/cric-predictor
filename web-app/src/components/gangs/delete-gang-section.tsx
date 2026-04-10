@@ -47,16 +47,21 @@ export function DeleteGangSection({
       const result = await onDelete(gangId)
 
       if (result.success) {
-        toast.success(`${gangName} has been deleted`)
+        toast.success(`${gangName} deleted`)
+        // The component is about to unmount (router.push navigates away).
+        // Intentionally do NOT call setIsLoading(false) here — that would
+        // cause a brief "unlocked dialog" flash while the navigation is
+        // in flight.
         router.push('/dashboard')
-      } else {
-        toast.error(result.error)
-        setIsDialogOpen(false)
+        return
       }
+
+      toast.error(result.error)
+      setIsDialogOpen(false)
+      setIsLoading(false)
     } catch {
       toast.error('Something went wrong. Please try again.')
       setIsDialogOpen(false)
-    } finally {
       setIsLoading(false)
     }
   }
@@ -91,6 +96,7 @@ export function DeleteGangSection({
         description="This will permanently delete the gang. All members will be notified. This cannot be undone."
         confirmValue={gangName}
         confirmLabel="Delete Gang"
+        caseSensitive
         onConfirm={handleConfirm}
         isLoading={isLoading}
       />

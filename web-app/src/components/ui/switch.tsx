@@ -26,6 +26,12 @@ function Switch({
         'peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-wire bg-dark-concrete transition-[color,background-color,border-color,box-shadow] duration-[150ms] ease-out outline-none',
         'focus-visible:ring-[3px] focus-visible:ring-bragg-lime/50 focus-visible:ring-offset-0',
         'disabled:cursor-not-allowed disabled:opacity-50',
+        // Color-independent state cue: the border thickness stays the
+        // same but the border color jumps from the muted `wire` token
+        // all the way to the vivid lime track. Combined with the
+        // aria-checked attribute (from Radix) and the parent's visible
+        // "On"/"Off" label (added at the call site), this gives both
+        // sighted and assistive users a non-color-dependent signal.
         'data-[state=checked]:border-bragg-lime data-[state=checked]:bg-bragg-lime',
         className,
       )}

@@ -37,6 +37,7 @@ function InteractiveWrapper(props: {
   confirmLabel?: string
   isLoading?: boolean
   buttonLabel?: string
+  caseSensitive?: boolean
 }) {
   const [open, setOpen] = useState(true)
   return (
@@ -52,6 +53,7 @@ function InteractiveWrapper(props: {
         confirmValue={props.confirmValue}
         confirmLabel={props.confirmLabel}
         isLoading={props.isLoading}
+        caseSensitive={props.caseSensitive}
         onConfirm={() => {
           // no-op in stories
         }}
@@ -175,4 +177,26 @@ export const Disabled: Story = {
     confirmValue: 'Street Legends',
     confirmLabel: 'Delete Gang',
   },
+}
+
+export const CaseSensitive: Story = {
+  args: {
+    open: true,
+    title: 'Delete Gang',
+    description:
+      'Case-sensitive confirmation — "street legends" will NOT match.',
+    confirmValue: 'Street Legends',
+    confirmLabel: 'Delete Gang',
+    caseSensitive: true,
+  },
+  render: () => (
+    <InteractiveWrapper
+      title="Delete Gang"
+      description='Case-sensitive confirmation — "street legends" will NOT match.'
+      confirmValue="Street Legends"
+      confirmLabel="Delete Gang"
+      caseSensitive
+      buttonLabel="Delete Gang (case-sensitive)"
+    />
+  ),
 }

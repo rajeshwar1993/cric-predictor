@@ -699,13 +699,18 @@ export async function leaveGang(gangId: string): Promise<ActionResult> {
  * present in the generated `Database['public']['Functions']` types. Cast only
  * at the `deleteGang` call site, not across the whole client.
  *
- * TODO: remove this shim once `src/types/database.ts` is regenerated and the
- * `delete_gang` RPC signature is auto-included.
+ * The RPC signature is `delete_gang(p_gang_id UUID)` — the caller is resolved
+ * via `auth.uid()` inside the function so the client must not pass a caller
+ * id. See migration 20260409000016_delete_gang_rpc_auth_uid.sql.
+ *
+ * TODO: regenerate src/types/database.ts via `npx supabase gen types
+ * typescript` so the new `delete_gang(p_gang_id)` signature is auto-included
+ * and this shim can be removed.
  */
 interface DeleteGangRpcClient {
   rpc(
     fn: 'delete_gang',
-    args: { p_gang_id: string; p_caller_id: string },
+    args: { p_gang_id: string },
   ): Promise<{ data: null; error: { message: string; code?: string } | null }>
 }
 
@@ -728,27 +733,22 @@ async function isApprovedGangAdmin(
   gangId: string,
   userId: string,
 ): Promise<boolean> {
-  // Soft-delete guard: verify the gang exists and is not deleted. Without
-  // this, admin mutations would happily mutate soft-deleted gangs.
-  const { data: gang } = await supabase
+  // Single round-trip: inner-join v2_gang_members on the gang so a
+  // non-admin caller (or a soft-deleted gang) resolves to `data: null`.
+  // Returning `false` for both cases avoids information leakage — the
+  // caller surfaces a generic "not found or no permission" message so a
+  // non-admin can't probe gang existence.
+  const { data, error } = await supabase
     .from('v2_gangs')
-    .select('id')
+    .select('id, members:v2_gang_members!inner(role, status)')
     .eq('id', gangId)
     .eq('is_deleted', false)
+    .eq('members.user_id', userId)
+    .eq('members.role', 'admin')
+    .eq('members.status', 'approved')
     .maybeSingle()
 
-  if (!gang) {
-    return false
-  }
-
-  const { data: member } = await supabase
-    .from('v2_gang_members')
-    .select('role, status')
-    .eq('gang_id', gangId)
-    .eq('user_id', userId)
-    .maybeSingle()
-
-  return member?.role === 'admin' && member?.status === 'approved'
+  return Boolean(data) && !error
 }
 
 /**
@@ -812,15 +812,25 @@ export async function updateGangName(
     }
   }
 
-  // Update — defense-in-depth soft-delete filter
-  const { error: updateError } = await supabase
+  // Update — defense-in-depth soft-delete filter. `.select('id')` lets us
+  // detect the zero-rows case (e.g. the gang was soft-deleted between the
+  // admin check and the update) so we don't silently report success.
+  const { data: updatedRows, error: updateError } = await supabase
     .from('v2_gangs')
     .update({ name: nameParsed.data })
     .eq('id', gangIdParsed.data)
     .eq('is_deleted', false)
+    .select('id')
 
   if (updateError) {
     return { success: false, error: 'Failed to update gang name. Please try again.' }
+  }
+
+  if (!updatedRows || updatedRows.length === 0) {
+    return {
+      success: false,
+      error: "Gang not found or you don't have permission",
+    }
   }
 
   // Revalidate
@@ -895,15 +905,25 @@ export async function updateAutoAccept(
     }
   }
 
-  // Update — defense-in-depth soft-delete filter
-  const { error: updateError } = await supabase
+  // Update — defense-in-depth soft-delete filter. `.select('id')` lets us
+  // detect the zero-rows case (e.g. the gang was soft-deleted between the
+  // admin check and the update) so we don't silently report success.
+  const { data: updatedRows, error: updateError } = await supabase
     .from('v2_gangs')
     .update({ auto_accept: autoAccept })
     .eq('id', gangIdParsed.data)
     .eq('is_deleted', false)
+    .select('id')
 
   if (updateError) {
     return { success: false, error: 'Failed to update setting. Please try again.' }
+  }
+
+  if (!updatedRows || updatedRows.length === 0) {
+    return {
+      success: false,
+      error: "Gang not found or you don't have permission",
+    }
   }
 
   // Revalidate
@@ -991,8 +1011,10 @@ export async function updatePredictionDeadline(
     }
   }
 
-  // Update active season row. Use .select() to detect missing rows —
-  // if no active season exists yet, we surface a friendly error.
+  // Update active season row. Use .select() to detect the zero- and
+  // multi-row cases — a strict assertion of "exactly one active season
+  // updated" so the admin never sees silent success when the row set is
+  // unexpected.
   const { data: updatedRows, error: updateError } = await supabase
     .from('v2_gang_league_seasons')
     .update({ prediction_deadline_mins: minutesParsed.data })
@@ -1007,7 +1029,21 @@ export async function updatePredictionDeadline(
   if (!updatedRows || updatedRows.length === 0) {
     return {
       success: false,
-      error: 'No active season found for this gang yet.',
+      error:
+        'This gang is not yet enrolled in an active season. Try again after the next season starts.',
+    }
+  }
+
+  if (updatedRows.length > 1) {
+    // Data-integrity drift: there should be at most one active season row
+    // per gang. A DB unique partial index is the real fix, but log + bail
+    // so we notice the drift and don't silently update multiple rows.
+    console.warn(
+      `[updatePredictionDeadline] unexpected multi-row update: gang_id=${gangIdParsed.data} rows=${updatedRows.length}`,
+    )
+    return {
+      success: false,
+      error: 'Unexpected number of active seasons. Please contact support.',
     }
   }
 
@@ -1064,20 +1100,29 @@ export async function deleteGang(gangId: string): Promise<ActionResult> {
   }
 
   // Call the delete_gang RPC. The generated Supabase Functions type does not
-  // yet include this RPC (migration 20260407000009 has not been picked up by
+  // yet include this RPC (migration 20260409000016 has not been picked up by
   // db:types), so we cast the client to a narrow typed shim.
+  //
+  // Since the RPC resolves the caller via `auth.uid()` we MUST NOT pass
+  // `p_caller_id` — the old signature was vulnerable to caller-id spoofing.
   // TODO: remove cast once `db:types` is regenerated.
   const rpcClient = supabase as unknown as DeleteGangRpcClient
   const { error } = await rpcClient.rpc('delete_gang', {
     p_gang_id: gangIdParsed.data,
-    p_caller_id: user.id,
   })
 
   if (error) {
-    // Admin check failure (custom SQLSTATE 42501)
+    // Auth failure (defensive — should not trigger because the action
+    // already calls supabase.auth.getUser() above).
+    if (error.message.includes('NOT_AUTHENTICATED')) {
+      return { success: false, error: 'You must be signed in' }
+    }
+    // Admin check failure — raised by the RPC with SQLSTATE 42501 and
+    // message 'NOT_GANG_ADMIN'. Match on the message first so the
+    // NOT_AUTHENTICATED branch above isn't shadowed by the shared errcode.
     if (
-      error.code === '42501' ||
-      error.message.includes('NOT_GANG_ADMIN')
+      error.message.includes('NOT_GANG_ADMIN') ||
+      error.code === '42501'
     ) {
       return {
         success: false,
@@ -1170,11 +1215,13 @@ export async function removeMember(
     }
   }
 
-  // Self-guard: admins cannot remove themselves via this action.
+  // Self-guard: admins cannot remove themselves via this action. Match the
+  // leaveGang copy so the admin sees a single consistent recovery hint
+  // across the product ("Delete the gang instead.").
   if (userIdParsed.data === user.id) {
     return {
       success: false,
-      error: "You can't perform this action on yourself",
+      error: 'Admins cannot leave. Delete the gang instead.',
     }
   }
 
@@ -1193,7 +1240,9 @@ export async function removeMember(
     }
   }
 
-  // Update — race-guarded by status='approved'.
+  // Update — race-guarded by status='approved'. `.neq('role', 'admin')` is
+  // belt-and-braces defense at the DB level in case a future role-change
+  // race flips the target to admin between the guard above and the update.
   const now = new Date().toISOString()
   const { data: updatedRows, error: updateError } = await supabase
     .from('v2_gang_members')
@@ -1204,6 +1253,7 @@ export async function removeMember(
     .eq('gang_id', gangIdParsed.data)
     .eq('user_id', userIdParsed.data)
     .eq('status', 'approved')
+    .neq('role', 'admin')
     .select()
 
   if (updateError) {
@@ -1301,11 +1351,12 @@ export async function blockMember(
     }
   }
 
-  // Self-guard
+  // Self-guard: match the leaveGang copy so the admin always sees a
+  // consistent recovery hint ("Delete the gang instead.").
   if (userIdParsed.data === user.id) {
     return {
       success: false,
-      error: "You can't perform this action on yourself",
+      error: 'Admins cannot leave. Delete the gang instead.',
     }
   }
 
@@ -1344,6 +1395,9 @@ export async function blockMember(
   //     update is enough.
   if (targetMember.status === 'approved') {
     const now = new Date().toISOString()
+    // `.neq('role', 'admin')` is belt-and-braces defense at the DB level
+    // against a future role-change race between the guard above and the
+    // update.
     const { data: guardedRows, error: guardedError } = await supabase
       .from('v2_gang_members')
       .update({
@@ -1354,6 +1408,7 @@ export async function blockMember(
       .eq('gang_id', gangIdParsed.data)
       .eq('user_id', userIdParsed.data)
       .eq('status', 'approved')
+      .neq('role', 'admin')
       .select()
 
     if (guardedError) {
@@ -1366,12 +1421,13 @@ export async function blockMember(
     if (!guardedRows || guardedRows.length === 0) {
       // Race lost — status is no longer 'approved'. Apply block without
       // touching status or departed_at so we preserve whatever transition
-      // happened between the read and the write.
+      // happened between the read and the write. Keep the admin filter.
       const { error: fallbackError } = await supabase
         .from('v2_gang_members')
         .update({ is_blocked: true })
         .eq('gang_id', gangIdParsed.data)
         .eq('user_id', userIdParsed.data)
+        .neq('role', 'admin')
 
       if (fallbackError) {
         return {
@@ -1386,6 +1442,7 @@ export async function blockMember(
       .update({ is_blocked: true })
       .eq('gang_id', gangIdParsed.data)
       .eq('user_id', userIdParsed.data)
+      .neq('role', 'admin')
 
     if (updateError) {
       return {
@@ -1468,6 +1525,29 @@ export async function unblockMember(
     return {
       success: false,
       error: "Gang not found or you don't have permission",
+    }
+  }
+
+  // Target lookup — surface a distinct error for missing rows and block
+  // admins from being unblocked via this action (parity with blockMember).
+  const { data: targetMember } = await supabase
+    .from('v2_gang_members')
+    .select('role')
+    .eq('gang_id', gangIdParsed.data)
+    .eq('user_id', userIdParsed.data)
+    .maybeSingle()
+
+  if (!targetMember) {
+    return {
+      success: false,
+      error: 'Member not found in this gang',
+    }
+  }
+
+  if (targetMember.role === 'admin') {
+    return {
+      success: false,
+      error: 'Admins cannot be blocked or unblocked',
     }
   }
 
