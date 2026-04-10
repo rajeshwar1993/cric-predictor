@@ -28,8 +28,8 @@ export interface FixtureScenarioRow {
 export interface UserPredictionRow {
   id: string
   scenarioId: string
-  answer: string
-  updatedAt: string
+  value: string
+  submittedAt: string
 }
 
 /**
@@ -77,16 +77,18 @@ export const PHASE_LABELS: Record<ResolutionPhase, string> = {
 // ---------------------------------------------------------------------------
 
 /**
- * Fetch all scenarios for a specific fixture.
+ * Fetch all scenarios for a specific fixture within a gang.
  *
- * Scenarios are scoped to a fixture (not gang) — the fixture_scenarios table
- * is populated by the pre-match sync Edge Function.
+ * Scenarios are per-gang-per-fixture (UNIQUE on gang_id, fixture_id, slug).
+ * Both gangId and fixtureId are required to return the correct scenario set
+ * for multi-gang users.
  *
  * Creates its own Supabase server client (DAL convention).
  * Returns empty array if no scenarios exist.
  * Throws on non-recoverable database errors.
  */
 export async function getFixtureScenarios(
+  gangId: string,
   fixtureId: string,
 ): Promise<FixtureScenarioRow[]> {
   const supabase = await createServerClient()
@@ -96,6 +98,7 @@ export async function getFixtureScenarios(
     .select(
       'id, fixture_id, title, description, input_type, options, resolution_phase, correct_answer, points_weight, sort_order',
     )
+    .eq('gang_id', gangId)
     .eq('fixture_id', fixtureId)
     .order('sort_order', { ascending: true })
 
@@ -138,7 +141,7 @@ export async function getUserPredictions(
 
   const { data, error } = await supabase
     .from('v2_predictions')
-    .select('id, scenario_id, answer, updated_at')
+    .select('id, scenario_id, value, submitted_at')
     .eq('gang_id', gangId)
     .eq('fixture_id', fixtureId)
     .eq('user_id', userId)
@@ -149,8 +152,8 @@ export async function getUserPredictions(
   return data.map((row) => ({
     id: row.id,
     scenarioId: row.scenario_id,
-    answer: row.answer,
-    updatedAt: row.updated_at,
+    value: row.value,
+    submittedAt: row.submitted_at,
   }))
 }
 
@@ -186,20 +189,23 @@ export async function getMatchPlayers(
   if (error) throw error
   if (!data || data.length === 0) return []
 
-  return data.map((row) => {
+  return data.flatMap((row) => {
     // PostgREST returns single-FK joins as objects, SDK types as arrays.
     const player = row.player as unknown as {
       id: string
       name: string
       role: string | null
-    }
+    } | null
 
-    return {
+    // Guard against null/invalid joins (e.g., deleted player)
+    if (!player || typeof player !== 'object' || !player.id) return []
+
+    return [{
       id: player.id,
       name: player.name,
       teamId: row.team_id,
       role: player.role,
-    }
+    }]
   })
 }
 

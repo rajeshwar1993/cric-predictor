@@ -91,7 +91,6 @@ export const Default: Story = {
     fixture: makeFixture({ hoursFromNow: 6 }),
     predictionDeadlineMins: 45,
     isWindowOpen: true,
-    lastSubmittedAt: null,
   },
 }
 
@@ -101,7 +100,6 @@ export const WithLastSubmitted: Story = {
     fixture: makeFixture({ hoursFromNow: 6 }),
     predictionDeadlineMins: 45,
     isWindowOpen: true,
-    lastSubmittedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
   },
 }
 
@@ -111,7 +109,6 @@ export const WindowNotOpen: Story = {
     fixture: makeFixture({ hoursFromNow: 24 }),
     predictionDeadlineMins: 45,
     isWindowOpen: false,
-    lastSubmittedAt: null,
   },
 }
 
@@ -121,7 +118,6 @@ export const Locked: Story = {
     fixture: makeFixture({ hoursFromNow: -1 }),
     predictionDeadlineMins: 45,
     isWindowOpen: false,
-    lastSubmittedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
   },
 }
 
@@ -137,7 +133,6 @@ export const DifferentTeams: Story = {
     }),
     predictionDeadlineMins: 30,
     isWindowOpen: true,
-    lastSubmittedAt: null,
   },
 }
 
@@ -147,6 +142,5 @@ export const Tomorrow: Story = {
     fixture: makeFixture({ hoursFromNow: 30, matchNumber: 3 }),
     predictionDeadlineMins: 45,
     isWindowOpen: true,
-    lastSubmittedAt: null,
   },
 }

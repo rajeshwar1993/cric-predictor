@@ -60,7 +60,7 @@ export function ScenarioCard({
 
         {/* Points badge — stat-block style */}
         <span
-          className="inline-flex shrink-0 items-center gap-1 bg-bragg-lime px-2.5 py-1 font-display text-[11px] font-bold uppercase tracking-[0.1em] text-text-on-primary"
+          className="inline-flex shrink-0 items-center gap-1 bg-bragg-lime px-2.5 py-1 font-display text-caption font-bold uppercase tracking-[0.1em] text-text-on-primary"
           aria-label={`${pointsWeight} points`}
         >
           {pointsWeight} PTS

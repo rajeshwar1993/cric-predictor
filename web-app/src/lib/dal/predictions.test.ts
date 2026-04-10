@@ -147,7 +147,7 @@ describe('getFixtureScenarios', () => {
   test('returns empty array when no scenarios exist', async () => {
     scenariosResult = { data: [], error: null }
 
-    const result = await getFixtureScenarios('fixture-1')
+    const result = await getFixtureScenarios('gang-1', 'fixture-1')
 
     expect(result).toEqual([])
     expect(mockFrom).toHaveBeenCalledWith('v2_fixture_scenarios')
@@ -159,7 +159,7 @@ describe('getFixtureScenarios', () => {
       error: null,
     }
 
-    const result = await getFixtureScenarios('fixture-1')
+    const result = await getFixtureScenarios('gang-1', 'fixture-1')
 
     expect(result).toHaveLength(2)
     expect(result[0]).toEqual({
@@ -200,7 +200,7 @@ describe('getFixtureScenarios', () => {
   test('returns empty array when data is null', async () => {
     scenariosResult = { data: null, error: null }
 
-    const result = await getFixtureScenarios('fixture-1')
+    const result = await getFixtureScenarios('gang-1', 'fixture-1')
     expect(result).toEqual([])
   })
 })
@@ -232,14 +232,14 @@ describe('getUserPredictions', () => {
         {
           id: 'pred-1',
           scenario_id: 'scenario-1',
-          answer: 'team-mi',
-          updated_at: '2026-04-09T10:00:00Z',
+          value: 'team-mi',
+          submitted_at: '2026-04-09T10:00:00Z',
         },
         {
           id: 'pred-2',
           scenario_id: 'scenario-2',
-          answer: '3-4',
-          updated_at: '2026-04-09T10:00:00Z',
+          value: '3-4',
+          submitted_at: '2026-04-09T10:00:00Z',
         },
       ],
       error: null,
@@ -251,8 +251,8 @@ describe('getUserPredictions', () => {
     expect(result[0]).toEqual({
       id: 'pred-1',
       scenarioId: 'scenario-1',
-      answer: 'team-mi',
-      updatedAt: '2026-04-09T10:00:00Z',
+      value: 'team-mi',
+      submittedAt: '2026-04-09T10:00:00Z',
     })
   })
 

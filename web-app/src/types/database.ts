@@ -278,37 +278,43 @@ export type Database = {
           id: string
           user_id: string
           gang_id: string
+          league_id: string
+          season_id: string
           fixture_id: string
           scenario_id: string
-          answer: string
-          points_earned: number | null
+          value: string
+          points_earned: number
           is_correct: boolean | null
+          submitted_at: string
           created_at: string
-          updated_at: string
         }
         Insert: {
           id?: string
           user_id: string
           gang_id: string
+          league_id: string
+          season_id: string
           fixture_id: string
           scenario_id: string
-          answer: string
-          points_earned?: number | null
+          value: string
+          points_earned?: number
           is_correct?: boolean | null
+          submitted_at?: string
           created_at?: string
-          updated_at?: string
         }
         Update: {
           id?: string
           user_id?: string
           gang_id?: string
+          league_id?: string
+          season_id?: string
           fixture_id?: string
           scenario_id?: string
-          answer?: string
-          points_earned?: number | null
+          value?: string
+          points_earned?: number
           is_correct?: boolean | null
+          submitted_at?: string
           created_at?: string
-          updated_at?: string
         }
         Relationships: []
       }

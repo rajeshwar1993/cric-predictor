@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import type { ResolutionPhase, ScenarioInputType } from '@/types'
 import type { FixtureTeam } from '@/lib/dal/fixtures'
 import type { MatchPlayer } from '@/lib/dal/predictions'
@@ -87,10 +87,13 @@ export function ScenarioList({
   disabled = false,
   onPredictionsChange,
 }: ScenarioListProps) {
-  // Local state: scenarioId → selected answer
+  // Local state: scenarioId → selected value
   const [predictions, setPredictions] = useState<Record<string, string>>(
     initialPredictions,
   )
+
+  // Skip the initial mount — parent already knows the initial values
+  const isFirstRender = useRef(true)
 
   const handleChange = useCallback((scenarioId: string, value: string) => {
     setPredictions((prev) => ({ ...prev, [scenarioId]: value }))
@@ -99,6 +102,10 @@ export function ScenarioList({
   // Notify parent after state settles — avoids side-effects inside updater
   // which can double-fire in React 18+ concurrent mode.
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      return
+    }
     onPredictionsChange?.(predictions)
   }, [predictions, onPredictionsChange])
 

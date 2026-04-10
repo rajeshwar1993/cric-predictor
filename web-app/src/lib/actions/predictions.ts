@@ -6,6 +6,7 @@ import { createServerClient } from '@/lib/supabase/server'
 import { rateLimit } from '@/lib/rate-limit'
 import { trackEvent } from '@/lib/analytics/server'
 import { ANALYTICS_EVENTS } from '@/lib/analytics/events'
+import { PREDICTION_WINDOW_MS } from '@/lib/constants'
 import type { ActionResult } from '@/types'
 
 // ---------------------------------------------------------------------------
@@ -65,7 +66,10 @@ function validatePickValue(
     case 'number_range':
     case 'over_range': {
       const parsedOptions = parseScenarioOptions(options)
-      if (parsedOptions.length > 0 && !parsedOptions.includes(value)) {
+      if (parsedOptions.length === 0) {
+        return 'Scenario has no valid options'
+      }
+      if (!parsedOptions.includes(value)) {
         return 'Invalid range selection'
       }
       break
@@ -188,8 +192,8 @@ export async function submitPredictions(
     return { success: false, error: 'Prediction deadline has passed' }
   }
 
-  // Window opens 12 hours before start
-  const windowOpens = new Date(startTime.getTime() - 12 * 60 * 60 * 1000)
+  // Window opens PREDICTION_WINDOW_HOURS before start
+  const windowOpens = new Date(startTime.getTime() - PREDICTION_WINDOW_MS)
   if (now < windowOpens) {
     return { success: false, error: 'Prediction window is not open yet' }
   }
@@ -257,10 +261,12 @@ export async function submitPredictions(
   const rows = validPicks.map((pick) => ({
     user_id: user.id,
     gang_id: validGangId,
+    league_id: gangSeason.league_id,
+    season_id: gangSeason.season_id,
     fixture_id: validFixtureId,
     scenario_id: pick.scenarioId,
-    answer: pick.value,
-    updated_at: now_iso,
+    value: pick.value,
+    submitted_at: now_iso,
   }))
 
   const { error: upsertError } = await supabase

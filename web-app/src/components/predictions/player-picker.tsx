@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Check, ChevronsUpDown } from 'lucide-react'
 import type { FixtureTeam } from '@/lib/dal/fixtures'
 import type { MatchPlayer } from '@/lib/dal/predictions'
@@ -43,17 +43,6 @@ export interface PlayerPickerProps {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Find a player by ID across both teams. */
-function findPlayer(
-  players: { home: MatchPlayer[]; away: MatchPlayer[] },
-  playerId: string,
-): MatchPlayer | undefined {
-  return (
-    players.home.find((p) => p.id === playerId) ??
-    players.away.find((p) => p.id === playerId)
-  )
-}
-
 /** Format role for display (e.g., "batsman" → "Batsman"). */
 function formatRole(role: string | null): string | null {
   if (!role) return null
@@ -83,7 +72,15 @@ export function PlayerPicker({
 }: PlayerPickerProps) {
   const [open, setOpen] = useState(false)
 
-  const selectedPlayer = value ? findPlayer(players, value) : undefined
+  // O(1) player lookup by ID — built once and cached
+  const playerMap = useMemo(() => {
+    const map = new Map<string, MatchPlayer>()
+    for (const p of players.home) map.set(p.id, p)
+    for (const p of players.away) map.set(p.id, p)
+    return map
+  }, [players])
+
+  const selectedPlayer = value ? playerMap.get(value) : undefined
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

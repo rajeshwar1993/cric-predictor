@@ -1,3 +1,4 @@
+import { PREDICTION_WINDOW_MS } from '@/lib/constants'
 import type { MatchStatus } from '@/types'
 import { Badge } from '@/components/ui/badge'
 import { Check } from 'lucide-react'
@@ -50,8 +51,8 @@ export function getPredictionStatus(
 
   if (hasPredicted) return 'predicted'
 
-  // Window opens 12 hours before start
-  const windowOpens = new Date(startTime.getTime() - 12 * 60 * 60 * 1000)
+  // Window opens PREDICTION_WINDOW_HOURS before start
+  const windowOpens = new Date(startTime.getTime() - PREDICTION_WINDOW_MS)
   if (now < windowOpens) return 'not_open'
 
   return 'predict'

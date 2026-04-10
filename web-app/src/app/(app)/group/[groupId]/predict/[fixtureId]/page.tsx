@@ -11,6 +11,7 @@ import {
   getGangLeagueSeason,
   groupScenariosByPhase,
 } from '@/lib/dal/predictions'
+import { PREDICTION_WINDOW_MS } from '@/lib/constants'
 import { PageWrapper } from '@/components/layout/page-wrapper'
 import { PredictPageHeader } from '@/components/predictions/predict-page-header'
 import { WindowNotOpenMessage } from '@/components/predictions/window-not-open-message'
@@ -32,6 +33,11 @@ interface PredictPageProps {
 
 type WindowStatus = 'not_open' | 'open' | 'locked'
 
+/** Buffer (in ms) to close the UI slightly before the DB deadline.
+ *  Prevents the case where the server shows "open" but the DB's `now()`
+ *  in RLS policies already considers the deadline passed. */
+const DEADLINE_BUFFER_MS = 30_000
+
 function getWindowStatus(
   startDatetime: string,
   predictionDeadlineMins: number,
@@ -43,12 +49,14 @@ function getWindowStatus(
   const now = new Date()
   const startTime = new Date(startDatetime)
 
-  // Deadline = start_datetime minus prediction_deadline_mins
-  const deadline = new Date(startTime.getTime() - predictionDeadlineMins * 60 * 1000)
+  // Deadline = start_datetime minus prediction_deadline_mins, with safety buffer
+  const deadline = new Date(
+    startTime.getTime() - predictionDeadlineMins * 60 * 1000 - DEADLINE_BUFFER_MS,
+  )
   if (now >= deadline) return 'locked'
 
   // Window opens 12 hours before start
-  const windowOpens = new Date(startTime.getTime() - 12 * 60 * 60 * 1000)
+  const windowOpens = new Date(startTime.getTime() - PREDICTION_WINDOW_MS)
   if (now < windowOpens) return 'not_open'
 
   return 'open'
@@ -154,7 +162,7 @@ export default async function PredictPage({ params }: PredictPageProps) {
   // Fetch data for open window
   // ---------------------------------------------------------------------------
   const [scenarios, predictions, players] = await Promise.all([
-    windowStatus === 'open' ? getFixtureScenarios(fixtureId) : Promise.resolve([]),
+    windowStatus === 'open' ? getFixtureScenarios(groupId, fixtureId) : Promise.resolve([]),
     windowStatus === 'open'
       ? getUserPredictions(groupId, fixtureId, user.id)
       : Promise.resolve([]),
@@ -163,23 +171,18 @@ export default async function PredictPage({ params }: PredictPageProps) {
       : Promise.resolve([]),
   ])
 
-  // Build a lookup map: scenarioId → answer (for initial prediction values)
-  const predictionMap = new Map(
-    predictions.map((p) => [p.scenarioId, p.answer]),
-  )
-
-  // Build initial predictions as a plain object for the client component
+  // Build initial predictions as a plain object for the client component: scenarioId → value
   const initialPredictions: Record<string, string> = {}
-  for (const [scenarioId, answer] of predictionMap) {
-    initialPredictions[scenarioId] = answer
+  for (const p of predictions) {
+    initialPredictions[p.scenarioId] = p.value
   }
 
   // Compute last submitted timestamp from predictions
   const firstPrediction = predictions[0]
   const lastSubmittedAt = firstPrediction
     ? predictions.reduce((latest, p) => {
-        return p.updatedAt > latest ? p.updatedAt : latest
-      }, firstPrediction.updatedAt)
+        return p.submittedAt > latest ? p.submittedAt : latest
+      }, firstPrediction.submittedAt)
     : null
 
   // Group scenarios by phase
@@ -207,7 +210,7 @@ export default async function PredictPage({ params }: PredictPageProps) {
 
   // Window opens 12h before start
   const windowOpensAt = new Date(
-    new Date(fixture.startDatetime).getTime() - 12 * 60 * 60 * 1000,
+    new Date(fixture.startDatetime).getTime() - PREDICTION_WINDOW_MS,
   ).toISOString()
 
   return (
@@ -216,7 +219,6 @@ export default async function PredictPage({ params }: PredictPageProps) {
         fixture={fixture}
         predictionDeadlineMins={gangSeason.predictionDeadlineMins}
         isWindowOpen={windowStatus === 'open'}
-        lastSubmittedAt={lastSubmittedAt}
       />
 
       {/* Not open — prediction window hasn't started */}

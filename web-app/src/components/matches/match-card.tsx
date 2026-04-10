@@ -10,6 +10,7 @@ import {
 } from './prediction-status-badge'
 import { MatchTime } from './match-time'
 import { MatchDeadline } from './match-deadline'
+import { PREDICTION_WINDOW_MS } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 
 // ---------------------------------------------------------------------------
@@ -176,7 +177,7 @@ function DeadlineDisplay({
   if (status === 'not_open') {
     // Window opens 12 hours before start
     const windowOpens = new Date(
-      new Date(startDatetime).getTime() - 12 * 60 * 60 * 1000,
+      new Date(startDatetime).getTime() - PREDICTION_WINDOW_MS,
     ).toISOString()
     return (
       <MatchDeadline

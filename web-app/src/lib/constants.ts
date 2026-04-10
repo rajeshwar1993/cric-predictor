@@ -10,6 +10,9 @@ export const MAX_USER_GANGS = 40
 /** Hours before match start that the prediction window opens. */
 export const PREDICTION_WINDOW_HOURS = 12
 
+/** Prediction window duration in milliseconds (derived from PREDICTION_WINDOW_HOURS). */
+export const PREDICTION_WINDOW_MS = PREDICTION_WINDOW_HOURS * 60 * 60 * 1000
+
 /** Default deadline before match start (in minutes). */
 export const DEFAULT_DEADLINE_MINS = 45
 

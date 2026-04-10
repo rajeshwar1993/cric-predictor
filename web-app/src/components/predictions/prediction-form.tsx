@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef, useMemo } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import type { FixtureTeam } from '@/lib/dal/fixtures'
 import type { MatchPlayer } from '@/lib/dal/predictions'
 import type { ScenarioGroupData } from '@/components/predictions/scenario-list'
@@ -68,11 +68,10 @@ export function PredictionForm({
   // while still having access to the latest state for submission.
   const predictionsRef = useRef<Record<string, string>>(initialPredictions)
 
-  // Snapshot of initial prediction keys for new-vs-unchanged tracking
-  const initialKeys = useMemo(
-    () => new Set(Object.keys(initialPredictions)),
-    [initialPredictions],
-  )
+  // Synchronous guard against double-click / concurrent submissions.
+  // React state updates are async, so two rapid clicks can both see
+  // isSubmitting === false. This ref blocks the second call immediately.
+  const submittingRef = useRef(false)
 
   // Count picked predictions for the progress bar.
   // This needs to be state so SubmitBar re-renders on changes.
@@ -89,24 +88,19 @@ export function PredictionForm({
   )
 
   const handleSubmit = useCallback(async () => {
+    // Synchronous double-click guard
+    if (submittingRef.current) return
+    submittingRef.current = true
+
     const current = predictionsRef.current
     const picksArray = Object.entries(current)
       .filter(([, value]) => value !== '')
       .map(([scenarioId, value]) => ({ scenarioId, value }))
 
-    if (picksArray.length === 0) return
-
-    // Track which picks are new vs unchanged for analytics (PRED-003 requirement).
-    // "new" = scenario had no initial prediction; "changed" = scenario had an initial
-    // prediction but the value differs now.
-    // TODO(PERF-001): Send newCount/changedCount to a dedicated analytics event when
-    // the analytics pipeline supports richer payloads.
-    const newCount = picksArray.filter((p) => !initialKeys.has(p.scenarioId)).length
-    const changedCount = picksArray.filter(
-      (p) =>
-        initialKeys.has(p.scenarioId) &&
-        initialPredictions[p.scenarioId] !== p.value,
-    ).length
+    if (picksArray.length === 0) {
+      submittingRef.current = false
+      return
+    }
 
     setIsSubmitting(true)
     try {
@@ -114,10 +108,6 @@ export function PredictionForm({
       if (result.success) {
         toast.success('Predictions saved!')
         setSubmittedAt(new Date().toISOString())
-        // newCount and changedCount are computed above for future analytics use.
-        // They will be sent to the analytics pipeline in PERF-001.
-        void newCount
-        void changedCount
       } else {
         toast.error(result.error)
       }
@@ -125,8 +115,9 @@ export function PredictionForm({
       toast.error('Something went wrong. Please try again.')
     } finally {
       setIsSubmitting(false)
+      submittingRef.current = false
     }
-  }, [gangId, fixtureId, initialKeys, initialPredictions])
+  }, [gangId, fixtureId])
 
   return (
     <>

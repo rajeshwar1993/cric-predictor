@@ -443,6 +443,82 @@ describe('submitPredictions server action', () => {
     expect(result).toEqual({ success: false, error: 'Invalid range selection' })
   })
 
+  test('returns error for invalid player_select value', async () => {
+    const playerSelectScenarioId = '33333333-3333-4333-a333-333333333336'
+    const scenariosWithPlayer = [
+      ...MOCK_SCENARIOS,
+      { id: playerSelectScenarioId, input_type: 'player_select', options: null },
+    ]
+
+    setupFromMock({
+      v2_gang_members: createQueryChain({
+        data: { status: 'approved' },
+        error: null,
+      }),
+      v2_league_season_fixtures: createQueryChain({
+        data: MOCK_FIXTURE,
+        error: null,
+      }),
+      v2_gang_league_seasons: createQueryChain({
+        data: MOCK_GANG_SEASON,
+        error: null,
+      }),
+      v2_fixture_scenarios: createQueryChain({
+        data: scenariosWithPlayer,
+        error: null,
+      }),
+      v2_league_season_team_players: createQueryChain({
+        data: [{ player_id: 'valid-player-1' }, { player_id: 'valid-player-2' }],
+        error: null,
+      }),
+    })
+
+    const result = await submitPredictions(MOCK_GANG_ID, MOCK_FIXTURE_ID, [
+      { scenarioId: playerSelectScenarioId, value: 'invalid-player-id' },
+    ])
+
+    expect(result).toEqual({ success: false, error: 'Invalid player selection' })
+  })
+
+  test('successfully submits multi-pick with mixed types', async () => {
+    const upsertChain = createQueryChain({ data: null, error: null })
+
+    setupFromMock({
+      v2_gang_members: createQueryChain({
+        data: { status: 'approved' },
+        error: null,
+      }),
+      v2_league_season_fixtures: createQueryChain({
+        data: MOCK_FIXTURE,
+        error: null,
+      }),
+      v2_gang_league_seasons: createQueryChain({
+        data: MOCK_GANG_SEASON,
+        error: null,
+      }),
+      v2_fixture_scenarios: createQueryChain({
+        data: MOCK_SCENARIOS,
+        error: null,
+      }),
+      v2_predictions: upsertChain,
+    })
+
+    const mixedPicks = [
+      { scenarioId: MOCK_SCENARIO_ID, value: MOCK_HOME_TEAM_ID },
+      { scenarioId: MOCK_YES_NO_SCENARIO_ID, value: 'Yes' },
+      { scenarioId: MOCK_RANGE_SCENARIO_ID, value: '<30' },
+    ]
+
+    const result = await submitPredictions(MOCK_GANG_ID, MOCK_FIXTURE_ID, mixedPicks)
+
+    expect(result).toEqual({ success: true })
+    expect(mockTrackEvent).toHaveBeenCalledWith(
+      'user-123',
+      'prediction_submitted',
+      expect.objectContaining({ pick_count: 3 }),
+    )
+  })
+
   // ---- Successful submission ----
 
   test('successfully submits predictions and returns success', async () => {

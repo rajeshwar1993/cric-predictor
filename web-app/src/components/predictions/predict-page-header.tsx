@@ -2,8 +2,6 @@ import Image from 'next/image'
 import type { FixtureTeam, FixtureWithTeams } from '@/lib/dal/fixtures'
 import { MatchTime } from '@/components/matches/match-time'
 import { MatchDeadline } from '@/components/matches/match-deadline'
-import { LastSubmittedIndicator } from '@/components/predictions/last-submitted-indicator'
-import { cn } from '@/lib/utils'
 
 // ---------------------------------------------------------------------------
 // Props
@@ -16,22 +14,15 @@ export interface PredictPageHeaderProps {
   predictionDeadlineMins: number
   /** Whether the prediction window is currently open */
   isWindowOpen: boolean
-  /** ISO string of when predictions were last submitted, or null if not submitted */
-  lastSubmittedAt: string | null
 }
 
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
 
-function TeamBadge({ team, align }: { team: FixtureTeam; align: 'left' | 'right' }) {
+function TeamBadge({ team }: { team: FixtureTeam }) {
   return (
-    <div
-      className={cn(
-        'flex flex-col items-center gap-2',
-        align === 'right' && 'items-center',
-      )}
-    >
+    <div className="flex flex-col items-center gap-2">
       {team.logoUrl ? (
         <Image
           src={team.logoUrl}
@@ -80,7 +71,6 @@ export function PredictPageHeader({
   fixture,
   predictionDeadlineMins,
   isWindowOpen,
-  lastSubmittedAt,
 }: PredictPageHeaderProps) {
   const deadlineTime = new Date(
     new Date(fixture.startDatetime).getTime() -
@@ -96,11 +86,11 @@ export function PredictPageHeader({
 
       {/* Teams */}
       <div className="flex w-full items-center justify-center gap-6">
-        <TeamBadge team={fixture.homeTeam} align="left" />
+        <TeamBadge team={fixture.homeTeam} />
         <span className="font-display text-h3 font-bold text-text-muted">
           vs
         </span>
-        <TeamBadge team={fixture.awayTeam} align="right" />
+        <TeamBadge team={fixture.awayTeam} />
       </div>
 
       {/* Date/time + venue */}
@@ -121,10 +111,6 @@ export function PredictPageHeader({
         />
       )}
 
-      {/* Last submitted */}
-      {lastSubmittedAt && (
-        <LastSubmittedIndicator submittedAt={lastSubmittedAt} />
-      )}
     </header>
   )
 }
