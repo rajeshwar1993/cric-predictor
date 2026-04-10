@@ -318,6 +318,48 @@ export async function getGangMemberStatus(
 }
 
 // ---------------------------------------------------------------------------
+// getGangPredictionDeadline
+// ---------------------------------------------------------------------------
+
+/**
+ * Default prediction deadline (minutes before match start) used when no
+ * active `v2_gang_league_seasons` row exists for a gang.
+ *
+ * Mirrors the database default on `v2_gang_league_seasons.prediction_deadline_mins`.
+ *
+ * @see docs/PRD.V2.md — Prediction Deadline
+ */
+export const DEFAULT_PREDICTION_DEADLINE_MINS = 45
+
+/**
+ * Fetch the active prediction deadline (in minutes before match start) for
+ * a gang, reading from `v2_gang_league_seasons` where `is_active = true`.
+ *
+ * Returns `DEFAULT_PREDICTION_DEADLINE_MINS` if no active row exists yet
+ * (e.g. pre-season, before the gang has been enrolled in the active league).
+ *
+ * Creates its own Supabase server client (DAL convention).
+ * Throws on database error.
+ */
+export async function getGangPredictionDeadline(
+  gangId: string,
+): Promise<number> {
+  const supabase = await createServerClient()
+
+  const { data, error } = await supabase
+    .from('v2_gang_league_seasons')
+    .select('prediction_deadline_mins')
+    .eq('gang_id', gangId)
+    .eq('is_active', true)
+    .maybeSingle()
+
+  if (error) throw error
+  if (!data) return DEFAULT_PREDICTION_DEADLINE_MINS
+
+  return data.prediction_deadline_mins
+}
+
+// ---------------------------------------------------------------------------
 // getPendingRequests
 // ---------------------------------------------------------------------------
 
