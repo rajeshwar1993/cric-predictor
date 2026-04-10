@@ -92,7 +92,7 @@ describe('getGangSeasonStandings', () => {
   })
 
   test('returns empty array when no standings exist', async () => {
-    queryResult = { data: [], error: null }
+    tableResults.set('v2_gang_season_standings', { data: [], error: null })
 
     const result = await getGangSeasonStandings('gang-1', 'season-1')
 
@@ -103,21 +103,22 @@ describe('getGangSeasonStandings', () => {
   })
 
   test('returns empty array when data is null', async () => {
-    queryResult = { data: null, error: null }
+    tableResults.set('v2_gang_season_standings', { data: null, error: null })
 
     const result = await getGangSeasonStandings('gang-1', 'season-1')
 
     expect(result).toEqual([])
   })
 
-  test('maps standings rows with profile data', async () => {
-    queryResult = {
+  test('maps standings rows with profile and member status data', async () => {
+    tableResults.set('v2_gang_season_standings', {
       data: [
         {
           user_id: 'user-1',
           total_points: 142,
           matches_predicted: 18,
           accuracy_pct: 85.5,
+          points_per_match: 7.9,
           rank: 1,
           v2_profiles: { display_name: 'Rajesh K', avatar_url: null },
         },
@@ -126,6 +127,7 @@ describe('getGangSeasonStandings', () => {
           total_points: 138,
           matches_predicted: 17,
           accuracy_pct: 82.3,
+          points_per_match: 8.1,
           rank: 2,
           v2_profiles: {
             display_name: 'Virat K',
@@ -134,7 +136,14 @@ describe('getGangSeasonStandings', () => {
         },
       ],
       error: null,
-    }
+    })
+    tableResults.set('v2_gang_members', {
+      data: [
+        { user_id: 'user-1', status: 'approved' },
+        { user_id: 'user-2', status: 'approved' },
+      ],
+      error: null,
+    })
 
     const result = await getGangSeasonStandings('gang-1', 'season-1')
 
@@ -144,35 +153,44 @@ describe('getGangSeasonStandings', () => {
       totalPoints: 142,
       matchesPredicted: 18,
       accuracyPct: 85.5,
+      pointsPerMatch: 7.9,
       rank: 1,
       displayName: 'Rajesh K',
       avatarUrl: null,
+      memberStatus: 'approved',
     })
     expect(result[1]).toEqual({
       userId: 'user-2',
       totalPoints: 138,
       matchesPredicted: 17,
       accuracyPct: 82.3,
+      pointsPerMatch: 8.1,
       rank: 2,
       displayName: 'Virat K',
       avatarUrl: 'https://example.com/avatar.jpg',
+      memberStatus: 'approved',
     })
   })
 
   test('handles null profile gracefully', async () => {
-    queryResult = {
+    tableResults.set('v2_gang_season_standings', {
       data: [
         {
           user_id: 'user-1',
           total_points: 50,
           matches_predicted: 5,
           accuracy_pct: 60.0,
+          points_per_match: 10.0,
           rank: 1,
           v2_profiles: null,
         },
       ],
       error: null,
-    }
+    })
+    tableResults.set('v2_gang_members', {
+      data: [{ user_id: 'user-1', status: 'approved' }],
+      error: null,
+    })
 
     const result = await getGangSeasonStandings('gang-1', 'season-1')
 
@@ -182,26 +200,33 @@ describe('getGangSeasonStandings', () => {
       totalPoints: 50,
       matchesPredicted: 5,
       accuracyPct: 60.0,
+      pointsPerMatch: 10.0,
       rank: 1,
       displayName: null,
       avatarUrl: null,
+      memberStatus: 'approved',
     })
   })
 
   test('handles null rank for unranked members', async () => {
-    queryResult = {
+    tableResults.set('v2_gang_season_standings', {
       data: [
         {
           user_id: 'user-1',
           total_points: 0,
           matches_predicted: 0,
           accuracy_pct: 0,
+          points_per_match: 0,
           rank: null,
           v2_profiles: { display_name: 'New User', avatar_url: null },
         },
       ],
       error: null,
-    }
+    })
+    tableResults.set('v2_gang_members', {
+      data: [{ user_id: 'user-1', status: 'approved' }],
+      error: null,
+    })
 
     const result = await getGangSeasonStandings('gang-1', 'season-1')
 
@@ -209,7 +234,7 @@ describe('getGangSeasonStandings', () => {
   })
 
   test('orders by rank ascending', async () => {
-    queryResult = { data: [], error: null }
+    tableResults.set('v2_gang_season_standings', { data: [], error: null })
 
     await getGangSeasonStandings('gang-1', 'season-1')
 
@@ -219,15 +244,158 @@ describe('getGangSeasonStandings', () => {
     })
   })
 
-  test('throws when the query errors', async () => {
-    queryResult = {
+  test('throws when the standings query errors', async () => {
+    tableResults.set('v2_gang_season_standings', {
       data: null,
       error: { message: 'db error', code: '42P01' },
-    }
+    })
 
     await expect(
       getGangSeasonStandings('gang-1', 'season-1'),
     ).rejects.toEqual(expect.objectContaining({ message: 'db error' }))
+  })
+
+  test('throws when the members query errors', async () => {
+    tableResults.set('v2_gang_season_standings', {
+      data: [
+        {
+          user_id: 'user-1',
+          total_points: 50,
+          matches_predicted: 5,
+          accuracy_pct: 60.0,
+          points_per_match: 10.0,
+          rank: 1,
+          v2_profiles: { display_name: 'User', avatar_url: null },
+        },
+      ],
+      error: null,
+    })
+    tableResults.set('v2_gang_members', {
+      data: null,
+      error: { message: 'members error', code: '42P01' },
+    })
+
+    await expect(
+      getGangSeasonStandings('gang-1', 'season-1'),
+    ).rejects.toEqual(expect.objectContaining({ message: 'members error' }))
+  })
+
+  test('sorts departed members to the end', async () => {
+    tableResults.set('v2_gang_season_standings', {
+      data: [
+        {
+          user_id: 'user-active',
+          total_points: 20,
+          matches_predicted: 5,
+          accuracy_pct: 50.0,
+          points_per_match: 4.0,
+          rank: 2,
+          v2_profiles: { display_name: 'Active User', avatar_url: null },
+        },
+        {
+          user_id: 'user-left',
+          total_points: 42,
+          matches_predicted: 8,
+          accuracy_pct: 75.0,
+          points_per_match: 5.25,
+          rank: 1,
+          v2_profiles: { display_name: 'Left User', avatar_url: null },
+        },
+      ],
+      error: null,
+    })
+    tableResults.set('v2_gang_members', {
+      data: [
+        { user_id: 'user-active', status: 'approved' },
+        { user_id: 'user-left', status: 'left' },
+      ],
+      error: null,
+    })
+
+    const result = await getGangSeasonStandings('gang-1', 'season-1')
+
+    expect(result).toHaveLength(2)
+    // Active member should be first despite departed member having rank 1
+    expect(result[0]?.userId).toBe('user-active')
+    expect(result[0]?.memberStatus).toBe('approved')
+    expect(result[1]?.userId).toBe('user-left')
+    expect(result[1]?.memberStatus).toBe('left')
+  })
+
+  test('defaults member status to approved when not found', async () => {
+    tableResults.set('v2_gang_season_standings', {
+      data: [
+        {
+          user_id: 'user-unknown',
+          total_points: 10,
+          matches_predicted: 2,
+          accuracy_pct: 40.0,
+          points_per_match: 5.0,
+          rank: 1,
+          v2_profiles: { display_name: 'Unknown', avatar_url: null },
+        },
+      ],
+      error: null,
+    })
+    tableResults.set('v2_gang_members', {
+      data: [],
+      error: null,
+    })
+
+    const result = await getGangSeasonStandings('gang-1', 'season-1')
+
+    expect(result[0]?.memberStatus).toBe('approved')
+  })
+
+  test('includes pointsPerMatch from database', async () => {
+    tableResults.set('v2_gang_season_standings', {
+      data: [
+        {
+          user_id: 'user-1',
+          total_points: 90,
+          matches_predicted: 12,
+          accuracy_pct: 72.5,
+          points_per_match: 7.5,
+          rank: 1,
+          v2_profiles: { display_name: 'Test User', avatar_url: null },
+        },
+      ],
+      error: null,
+    })
+    tableResults.set('v2_gang_members', {
+      data: [{ user_id: 'user-1', status: 'approved' }],
+      error: null,
+    })
+
+    const result = await getGangSeasonStandings('gang-1', 'season-1')
+
+    expect(result[0]?.pointsPerMatch).toBe(7.5)
+  })
+
+  test('queries v2_gang_members with correct filters', async () => {
+    tableResults.set('v2_gang_season_standings', {
+      data: [
+        {
+          user_id: 'user-1',
+          total_points: 10,
+          matches_predicted: 1,
+          accuracy_pct: 50.0,
+          points_per_match: 10.0,
+          rank: 1,
+          v2_profiles: { display_name: 'User', avatar_url: null },
+        },
+      ],
+      error: null,
+    })
+    tableResults.set('v2_gang_members', {
+      data: [{ user_id: 'user-1', status: 'approved' }],
+      error: null,
+    })
+
+    await getGangSeasonStandings('gang-1', 'season-1')
+
+    expect(mockFrom).toHaveBeenCalledWith('v2_gang_members')
+    expect(mockIn).toHaveBeenCalledWith('user_id', ['user-1'])
   })
 })
 

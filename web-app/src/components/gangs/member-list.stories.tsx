@@ -26,9 +26,11 @@ function makeStanding(
     totalPoints: 0,
     matchesPredicted: 0,
     accuracyPct: 0,
+    pointsPerMatch: 0,
     rank: null,
     displayName: null,
     avatarUrl: null,
+    memberStatus: 'approved',
     ...overrides,
   }
 }
