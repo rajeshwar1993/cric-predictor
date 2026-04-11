@@ -1,7 +1,8 @@
+import { cache } from 'react'
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase/server'
-import { getMembershipStatus } from '@/lib/dal/gangs'
+import { getGangDetails, getMembershipStatus } from '@/lib/dal/gangs'
 import {
   getGangActiveSeason,
   getGangSeasonStandings,
@@ -17,13 +18,25 @@ interface StandingsPageProps {
   params: Promise<{ groupId: string }>
 }
 
+// Dedupe the gang fetch between generateMetadata and the render path.
+const getCachedGangDetails = cache(getGangDetails)
+
 // ---------------------------------------------------------------------------
 // Metadata
 // ---------------------------------------------------------------------------
 
-export const metadata: Metadata = {
-  title: 'Season Standings — IPL 2026',
-  description: 'Cumulative season leaderboard across all matches',
+export async function generateMetadata({
+  params,
+}: StandingsPageProps): Promise<Metadata> {
+  const { groupId } = await params
+  const gang = await getCachedGangDetails(groupId)
+
+  return {
+    title: gang ? `Standings — ${gang.name}` : 'Standings',
+    description: gang
+      ? `Cumulative season leaderboard for ${gang.name}`
+      : 'Cumulative season leaderboard across all matches',
+  }
 }
 
 // ---------------------------------------------------------------------------

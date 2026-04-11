@@ -19,7 +19,8 @@ const getCachedGang = cache(getGangByInviteCode)
 
 /**
  * Dynamic metadata for the join page — shows the gang name in the title
- * if the invite code resolves to a valid gang.
+ * if the invite code resolves to a valid gang and layers Open Graph
+ * tags for shareable previews in WhatsApp / iMessage / Twitter.
  */
 export async function generateMetadata({
   params,
@@ -27,11 +28,34 @@ export async function generateMetadata({
   const { code } = await params
   const gang = await getCachedGang(code)
 
+  const title = gang ? `Join ${gang.name} on Bragg` : 'Join a Gang'
+  const description = gang
+    ? `You've been invited to join ${gang.name}. Make predictions, compete on leaderboards.`
+    : 'Join a prediction gang on Bragg'
+
   return {
-    title: gang ? `Join ${gang.name}` : 'Join a Gang',
-    description: gang
-      ? `You've been invited to join ${gang.name} on Bragg`
-      : 'Join a prediction gang on Bragg',
+    title,
+    description,
+    openGraph: {
+      type: 'website',
+      title,
+      description,
+      url: `/join/${code}`,
+      images: [
+        {
+          url: '/og-image.png',
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: ['/og-image.png'],
+    },
   }
 }
 

@@ -57,11 +57,13 @@ export async function generateMetadata({
   const fixture = await getFixtureWithTeams(fixtureId)
 
   if (!fixture) {
-    return { title: 'Match' }
+    return { title: 'Leaderboard' }
   }
 
+  const matchLabel = `${fixture.homeTeam.code} vs ${fixture.awayTeam.code}`
+
   return {
-    title: `${fixture.homeTeam.code} vs ${fixture.awayTeam.code} — Match ${fixture.matchNumber} Leaderboard`,
+    title: `Leaderboard — ${matchLabel}`,
     description: `Match leaderboard for ${fixture.homeTeam.name} vs ${fixture.awayTeam.name}`,
   }
 }

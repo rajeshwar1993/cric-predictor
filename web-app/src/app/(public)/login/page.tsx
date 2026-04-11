@@ -4,7 +4,7 @@ import { BraggWordmark } from '@/components/ui/bragg-wordmark'
 import { LEGAL_DISCLAIMER } from '@/lib/constants'
 
 export const metadata: Metadata = {
-  title: 'Log in',
+  title: 'Login',
   description: 'Sign in to Bragg with a magic link. No password needed.',
 }
 
