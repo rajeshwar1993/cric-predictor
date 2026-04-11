@@ -410,7 +410,21 @@ describe('joinGangByCode server action', () => {
     vi.clearAllMocks()
     mockGetUser.mockResolvedValue({ data: { user: mockUser }, error: null })
     mockRateLimit.mockResolvedValue({ allowed: true, remaining: 19 })
-    mockRpc.mockResolvedValue({ data: [mockGang], error: null })
+    // The join flow calls `.rpc()` twice: first to look up the gang by
+    // invite code, then to insert the admin notification. Route by
+    // function name so both paths resolve cleanly.
+    mockRpc.mockImplementation((fn: string) => {
+      if (fn === 'get_gang_by_invite_code') {
+        return Promise.resolve({ data: [mockGang], error: null })
+      }
+      if (
+        fn === 'create_new_member_notification' ||
+        fn === 'create_join_request_notification'
+      ) {
+        return Promise.resolve({ data: null, error: null })
+      }
+      return Promise.resolve({ data: null, error: null })
+    })
   })
 
   // ---- Auth checks ----
@@ -720,7 +734,6 @@ describe('joinGangByCode server action', () => {
   // ---- Notification type correctness ----
 
   test('sends new_member notification to admin on auto-accept', async () => {
-    const notificationChain = createQueryChain({ error: null })
     let memberCallIndex = 0
     mockFrom.mockImplementation((table: string) => {
       if (table === 'v2_gang_members') {
@@ -736,26 +749,29 @@ describe('joinGangByCode server action', () => {
         memberCallIndex++
         return createQueryChain({ data: { display_name: 'TestUser' } })
       }
-      if (table === 'v2_notifications') return notificationChain
       return createQueryChain({ data: null })
     })
 
     await joinGangByCode('XK42AB')
 
-    expect(notificationChain.insert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'new_member',
-        user_id: 'admin-456',
-      }),
-    )
+    // Verify the SECURITY DEFINER RPC was called for the new_member path.
+    expect(mockRpc).toHaveBeenCalledWith('create_new_member_notification', {
+      p_admin_user_id: 'admin-456',
+      p_gang_id: mockGang.id,
+      p_member_display_name: 'TestUser',
+    })
   })
 
   test('sends join_request notification to admin when auto-accept is off', async () => {
-    mockRpc.mockResolvedValue({
-      data: [{ ...mockGang, auto_accept: false }],
-      error: null,
+    mockRpc.mockImplementation((fn: string) => {
+      if (fn === 'get_gang_by_invite_code') {
+        return Promise.resolve({
+          data: [{ ...mockGang, auto_accept: false }],
+          error: null,
+        })
+      }
+      return Promise.resolve({ data: null, error: null })
     })
-    const notificationChain = createQueryChain({ error: null })
     let memberCallIndex = 0
     mockFrom.mockImplementation((table: string) => {
       if (table === 'v2_gang_members') {
@@ -771,18 +787,17 @@ describe('joinGangByCode server action', () => {
         memberCallIndex++
         return createQueryChain({ data: { display_name: 'TestUser' } })
       }
-      if (table === 'v2_notifications') return notificationChain
       return createQueryChain({ data: null })
     })
 
     await joinGangByCode('XK42AB')
 
-    expect(notificationChain.insert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'join_request',
-        user_id: 'admin-456',
-      }),
-    )
+    // Verify the SECURITY DEFINER RPC was called for the join_request path.
+    expect(mockRpc).toHaveBeenCalledWith('create_join_request_notification', {
+      p_admin_user_id: 'admin-456',
+      p_gang_id: mockGang.id,
+      p_requester_display_name: 'TestUser',
+    })
   })
 
   // ---- Order of operations ----
@@ -884,6 +899,9 @@ describe('approveJoinRequest server action', () => {
     vi.clearAllMocks()
     mockGetUser.mockResolvedValue({ data: { user: mockUser }, error: null })
     mockRateLimit.mockResolvedValue({ allowed: true, remaining: 59 })
+    // Notification insert goes through the create_join_approved_notification
+    // SECURITY DEFINER RPC (see migration 20260410000001_notification_rpcs.sql).
+    mockRpc.mockResolvedValue({ data: null, error: null })
   })
 
   // ---- Auth checks ----
@@ -1143,6 +1161,9 @@ describe('rejectJoinRequest server action', () => {
     vi.clearAllMocks()
     mockGetUser.mockResolvedValue({ data: { user: mockUser }, error: null })
     mockRateLimit.mockResolvedValue({ allowed: true, remaining: 59 })
+    // Notification insert goes through the create_join_rejected_notification
+    // SECURITY DEFINER RPC (see migration 20260410000001_notification_rpcs.sql).
+    mockRpc.mockResolvedValue({ data: null, error: null })
   })
 
   // ---- Auth checks ----

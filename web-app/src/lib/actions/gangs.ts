@@ -279,7 +279,13 @@ export async function joinGangByCode(
     }
   }
 
-  // Send notification to admin
+  // Send notification to admin via SECURITY DEFINER RPC.
+  //
+  // Direct inserts into `v2_notifications` are blocked by RLS (the policy
+  // only grants SELECT/UPDATE to authenticated users — INSERT is reserved
+  // for the service role). The RPCs below resolve the caller via
+  // `auth.uid()` and verify authority before inserting. See migration
+  // 20260410000001_notification_rpcs.sql.
   const { data: adminMember } = await supabase
     .from('v2_gang_members')
     .select('user_id')
@@ -290,27 +296,34 @@ export async function joinGangByCode(
     .single()
 
   if (adminMember) {
-    const notificationType = newStatus === 'approved' ? 'new_member' : 'join_request'
     const displayName = profile?.display_name ?? 'Someone'
-    const notificationTitle =
+    const { error: notifyError } =
       newStatus === 'approved'
-        ? 'New member joined'
-        : 'New join request'
-    const notificationBody =
-      newStatus === 'approved'
-        ? `${displayName} has joined your gang.`
-        : `${displayName} wants to join your gang.`
+        ? await supabase.rpc('create_new_member_notification', {
+            p_admin_user_id: adminMember.user_id,
+            p_gang_id: gang.id,
+            p_member_display_name: displayName,
+          })
+        : await supabase.rpc('create_join_request_notification', {
+            p_admin_user_id: adminMember.user_id,
+            p_gang_id: gang.id,
+            p_requester_display_name: displayName,
+          })
 
-    // TODO: Notification schema in database.ts uses title/body/data (placeholder).
-    // The PRD defines message/gang_id/fixture_id/is_read. Align when writing
-    // the notification migration (Phase 13 — NTF stories).
-    await supabase.from('v2_notifications').insert({
-      user_id: adminMember.user_id,
-      type: notificationType,
-      title: notificationTitle,
-      body: notificationBody,
-      data: { gang_id: gang.id, user_id: user.id },
-    })
+    // The membership row has already been committed above, so a
+    // notification failure should not fail the join itself. Surface the
+    // error in server logs so it is observable instead of silently
+    // swallowed.
+    if (notifyError) {
+      console.error(
+        `[joinGangByCode] Failed to insert ${newStatus === 'approved' ? 'new_member' : 'join_request'} notification`,
+        {
+          gang_id: gang.id,
+          admin_user_id: adminMember.user_id,
+          error: notifyError,
+        },
+      )
+    }
   }
 
   // Analytics
@@ -459,14 +472,28 @@ export async function approveJoinRequest(
 
   const gangName = gangData?.name ?? 'the gang'
 
-  // Send notification to the requester
-  await supabase.from('v2_notifications').insert({
-    user_id: userId,
-    type: 'join_approved' as const,
-    title: 'Request approved',
-    body: `Your request to join ${gangName} has been approved!`,
-    data: { gang_id: gangId },
-  })
+  // Send notification to the requester via SECURITY DEFINER RPC.
+  // Direct inserts are blocked by RLS; see migration
+  // 20260410000001_notification_rpcs.sql.
+  const { error: notifyError } = await supabase.rpc(
+    'create_join_approved_notification',
+    {
+      p_user_id: userId,
+      p_gang_id: gangId,
+      p_gang_name: gangName,
+    },
+  )
+
+  // The membership row has already been updated, so a notification
+  // failure should not fail the approval itself. Surface the error in
+  // server logs so it is observable instead of silently swallowed.
+  if (notifyError) {
+    console.error('[approveJoinRequest] Failed to insert join_approved notification', {
+      gang_id: gangId,
+      user_id: userId,
+      error: notifyError,
+    })
+  }
 
   // Revalidate paths
   revalidatePath(`/group/${gangId}`)
@@ -569,14 +596,28 @@ export async function rejectJoinRequest(
 
   const gangName = gangData?.name ?? 'the gang'
 
-  // Send notification to the requester
-  await supabase.from('v2_notifications').insert({
-    user_id: userId,
-    type: 'join_rejected' as const,
-    title: 'Request declined',
-    body: `Your request to join ${gangName} was declined.`,
-    data: { gang_id: gangId },
-  })
+  // Send notification to the requester via SECURITY DEFINER RPC.
+  // Direct inserts are blocked by RLS; see migration
+  // 20260410000001_notification_rpcs.sql.
+  const { error: notifyError } = await supabase.rpc(
+    'create_join_rejected_notification',
+    {
+      p_user_id: userId,
+      p_gang_id: gangId,
+      p_gang_name: gangName,
+    },
+  )
+
+  // The membership row has already been updated, so a notification
+  // failure should not fail the rejection itself. Surface the error in
+  // server logs so it is observable instead of silently swallowed.
+  if (notifyError) {
+    console.error('[rejectJoinRequest] Failed to insert join_rejected notification', {
+      gang_id: gangId,
+      user_id: userId,
+      error: notifyError,
+    })
+  }
 
   // Revalidate paths
   revalidatePath(`/group/${gangId}`)

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { createServerClient } from '@/lib/supabase/server'
 import { NotificationBell } from '@/components/notifications/notification-bell'
+import { getUnreadCount } from '@/lib/dal/notifications'
 import { UserMenu } from './user-menu'
 
 /**
@@ -26,11 +27,9 @@ export async function NavBar() {
     .eq('id', user.id)
     .single()
 
-  const { count: unreadCount } = await supabase
-    .from('v2_notifications')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', user.id)
-    .is('read_at', null)
+  // Use the shared DAL helper so the nav bar and the rest of the app
+  // stay on a single code path for unread counts.
+  const unreadCount = await getUnreadCount(user.id)
 
   return (
     <nav
@@ -47,7 +46,7 @@ export async function NavBar() {
       <div className="flex items-center gap-3">
         <NotificationBell
           userId={user.id}
-          initialUnreadCount={unreadCount ?? 0}
+          initialUnreadCount={unreadCount}
         />
         <UserMenu
           displayName={profile?.display_name ?? ''}
