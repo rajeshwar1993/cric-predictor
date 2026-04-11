@@ -30,7 +30,7 @@ Build the privacy policy (`/privacy`) and terms & conditions (`/terms`) static c
 - [ ] Footer at bottom
 
 ### Shared Behavior
-- [ ] Both pages are statically generated (no user data)
+- [ ] Both pages are pure content (no per-user data, no data fetching, no `force-dynamic`). Note: routes ship as `ƒ Dynamic` because the shared `(app)` layout's NavBar reads cookies — that is intentional and shared with every other `(app)` page.
 - [ ] Prose-style typography: Body text in DM Sans 400, headings in Space Grotesk
 - [ ] Max-width constrained by PageWrapper
 - [ ] Links open in new tab from onboarding/accept-terms forms

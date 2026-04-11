@@ -25,7 +25,7 @@ export const metadata: Metadata = {
  */
 export default function TermsPage() {
   return (
-    <PageWrapper className="py-8">
+    <PageWrapper className="pt-8">
       <h1 className="text-h1 text-text-primary">TERMS &amp; CONDITIONS</h1>
       <p className="mt-2 text-body-sm text-text-muted">Last updated: April 2026</p>
 
