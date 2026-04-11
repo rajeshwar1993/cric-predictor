@@ -108,4 +108,47 @@ describe('withTiming', () => {
     )
     expect(result).toEqual({ count: 42 })
   })
+
+  // -------------------------------------------------------------------------
+  // R-008: the inner trackEvent call inside `finally` must NEVER mask the
+  // original throw. NEXT_REDIRECT (and any other framework signal) has to
+  // propagate untouched even if PostHog is broken.
+  // -------------------------------------------------------------------------
+
+  test('does not mask the original throw when trackEvent in finally throws (NEXT_REDIRECT)', async () => {
+    mockTrackEvent.mockImplementationOnce(() => {
+      throw new Error('analytics broken')
+    })
+
+    const redirect = new Error('NEXT_REDIRECT')
+
+    await expect(
+      withTiming('redirectingAction', 'user-1', async () => {
+        throw redirect
+      }),
+    ).rejects.toBe(redirect)
+  })
+
+  test('still resolves the wrapped result when trackEvent in finally throws on success', async () => {
+    mockTrackEvent.mockImplementationOnce(() => {
+      throw new Error('analytics broken')
+    })
+
+    const result = await withTiming('happyAction', 'user-1', async () => 'ok')
+    expect(result).toBe('ok')
+  })
+
+  test('does not mask the original throw when trackEvent rejects asynchronously', async () => {
+    mockTrackEvent.mockImplementationOnce(async () => {
+      throw new Error('flush failed')
+    })
+
+    const original = new Error('boom')
+
+    await expect(
+      withTiming('asyncFailingAction', 'user-1', async () => {
+        throw original
+      }),
+    ).rejects.toBe(original)
+  })
 })

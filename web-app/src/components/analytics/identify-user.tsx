@@ -21,7 +21,6 @@ interface IdentifyUserProps {
  */
 export function IdentifyUser({ userId }: IdentifyUserProps) {
   useEffect(() => {
-    if (!userId) return
     identifyUser(userId)
   }, [userId])
 

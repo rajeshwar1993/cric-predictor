@@ -10,6 +10,7 @@ vi.mock('server-only', () => ({}))
 
 const mockCapture = vi.fn()
 const mockIdentify = vi.fn()
+const mockFlush = vi.fn().mockResolvedValue(undefined)
 const mockShutdown = vi.fn().mockResolvedValue(undefined)
 
 vi.mock('posthog-node', () => {
@@ -22,6 +23,9 @@ vi.mock('posthog-node', () => {
     identify(...args: unknown[]) {
       mockIdentify(...args)
     }
+    flush() {
+      return mockFlush()
+    }
     shutdown() {
       return mockShutdown()
     }
@@ -29,12 +33,11 @@ vi.mock('posthog-node', () => {
   return { PostHog }
 })
 
-vi.mock('@/lib/env', () => ({
-  env: {
-    NEXT_PUBLIC_POSTHOG_KEY: 'test-key',
-    NEXT_PUBLIC_POSTHOG_HOST: 'https://test.posthog.com',
-  },
-}))
+// Set the env var BEFORE importing server.ts so the lazy singleton init
+// sees the key. The production code reads `process.env.NEXT_PUBLIC_POSTHOG_KEY`
+// directly so it works on serverless without an `env.ts` round-trip.
+process.env.NEXT_PUBLIC_POSTHOG_KEY = 'test-key'
+process.env.NEXT_PUBLIC_POSTHOG_HOST = 'https://test.posthog.com'
 
 const { trackEvent, captureServerError } = await import('./server')
 
@@ -47,8 +50,8 @@ describe('trackEvent', () => {
     vi.clearAllMocks()
   })
 
-  test('forwards distinctId, event, and properties to posthog.capture', () => {
-    trackEvent('user-1', ANALYTICS_EVENTS.GANG_CREATED, { gang_name: 'Bulls' })
+  test('forwards distinctId, event, and properties to posthog.capture', async () => {
+    await trackEvent('user-1', ANALYTICS_EVENTS.GANG_CREATED, { gang_name: 'Bulls' })
 
     expect(mockCapture).toHaveBeenCalledWith({
       distinctId: 'user-1',
@@ -57,14 +60,41 @@ describe('trackEvent', () => {
     })
   })
 
-  test('works without properties', () => {
-    trackEvent('user-1', ANALYTICS_EVENTS.SIGNED_OUT)
+  test('works without properties', async () => {
+    await trackEvent('user-1', ANALYTICS_EVENTS.SIGNED_OUT)
 
     expect(mockCapture).toHaveBeenCalledWith({
       distinctId: 'user-1',
       event: ANALYTICS_EVENTS.SIGNED_OUT,
       properties: undefined,
     })
+  })
+
+  test('calls capture synchronously inside the trackEvent stack (R-001)', async () => {
+    // The capture call must run before any await — that's how the
+    // production fix guarantees the event is queued before the lambda
+    // freezes. Calling trackEvent without awaiting it should still
+    // produce a synchronous capture call.
+    const promise = trackEvent('user-2', ANALYTICS_EVENTS.SIGNED_OUT)
+    expect(mockCapture).toHaveBeenCalledTimes(1)
+    await promise
+  })
+
+  test('flushes after capture so serverless invocations push the event before suspending', async () => {
+    await trackEvent('user-1', ANALYTICS_EVENTS.SIGNED_OUT)
+
+    expect(mockCapture).toHaveBeenCalledTimes(1)
+    expect(mockFlush).toHaveBeenCalledTimes(1)
+  })
+
+  test('swallows flush errors so analytics never break action flow', async () => {
+    mockFlush.mockRejectedValueOnce(new Error('network down'))
+
+    await expect(
+      trackEvent('user-1', ANALYTICS_EVENTS.SIGNED_OUT),
+    ).resolves.toBeUndefined()
+
+    expect(mockCapture).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -77,9 +107,9 @@ describe('captureServerError', () => {
     vi.clearAllMocks()
   })
 
-  test('forwards Error message, stack, source, and metadata', () => {
+  test('forwards Error message, stack, source, and metadata', async () => {
     const error = new Error('something failed')
-    captureServerError('user-123', error, {
+    await captureServerError('user-123', error, {
       source: 'createGang',
       metadata: { gang_name: 'Bulls' },
     })
@@ -99,8 +129,8 @@ describe('captureServerError', () => {
     )
   })
 
-  test('handles non-Error values by stringifying them', () => {
-    captureServerError('user-1', 'string error', { source: 'someAction' })
+  test('handles non-Error values by stringifying them', async () => {
+    await captureServerError('user-1', 'string error', { source: 'someAction' })
 
     expect(mockCapture).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -113,9 +143,9 @@ describe('captureServerError', () => {
     )
   })
 
-  test('captures error without metadata', () => {
+  test('captures error without metadata', async () => {
     const error = new Error('boom')
-    captureServerError('user-1', error, { source: 'withoutMeta' })
+    await captureServerError('user-1', error, { source: 'withoutMeta' })
 
     expect(mockCapture).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -127,8 +157,8 @@ describe('captureServerError', () => {
     )
   })
 
-  test('uses provided userId as distinctId', () => {
-    captureServerError('specific-user', new Error('boom'), {
+  test('uses provided userId as distinctId', async () => {
+    await captureServerError('specific-user', new Error('boom'), {
       source: 'src',
     })
     const firstCall = mockCapture.mock.calls[0]!

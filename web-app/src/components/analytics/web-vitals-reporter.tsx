@@ -6,22 +6,16 @@ import { trackEvent } from '@/lib/analytics/client'
 import { ANALYTICS_EVENTS } from '@/lib/analytics/events'
 
 /**
- * Shape of the metric callback payload delivered by `useReportWebVitals`.
+ * Infer the metric callback shape directly from `useReportWebVitals`.
  *
- * Next.js re-exports the `Metric` type from the bundled `web-vitals`
- * package under `next/dist/compiled/web-vitals`, but there are no
- * shipped type declarations for that module — so we redeclare the
- * subset of fields we depend on here. Keeping the shape local avoids
- * reaching into `next/dist/*` (which is not a stable public API).
- *
- * @see https://github.com/GoogleChrome/web-vitals#metric
+ * Next.js's public types reference an internal `next/dist/compiled/web-vitals`
+ * module that ships no `.d.ts` file, so we cannot import the canonical
+ * `Metric` type. Reaching for the parameter type via `Parameters<>` is the
+ * type-safe equivalent — if Next ever changes the callback signature this
+ * compiles against the new shape automatically.
  */
-interface WebVitalMetric {
-  name: 'CLS' | 'FCP' | 'FID' | 'INP' | 'LCP' | 'TTFB'
-  value: number
-  rating: 'good' | 'needs-improvement' | 'poor'
-  id: string
-}
+type ReportWebVitalsCallback = Parameters<typeof useReportWebVitals>[0]
+type WebVitalMetric = Parameters<ReportWebVitalsCallback>[0]
 
 /**
  * Internal hook wrapper that registers the `useReportWebVitals`
@@ -33,6 +27,15 @@ interface WebVitalMetric {
  */
 function WebVitalsSubscriber() {
   useReportWebVitals((metric: WebVitalMetric) => {
+    // Defensive runtime guard. The inferred Metric type narrows the static
+    // surface but the callback runs on whatever the bundled web-vitals lib
+    // produces at runtime, so we sanity-check the two fields we forward
+    // before sending. A malformed metric quietly drops instead of polluting
+    // PostHog with NaNs / undefined names.
+    if (typeof metric.value !== 'number' || typeof metric.name !== 'string') {
+      return
+    }
+
     trackEvent(ANALYTICS_EVENTS.WEB_VITALS, {
       metric_name: metric.name,
       metric_value: metric.value,

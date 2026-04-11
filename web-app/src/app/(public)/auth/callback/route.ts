@@ -14,10 +14,13 @@ export async function GET(request: NextRequest) {
 
   // ── Missing code param ──────────────────────────────────────────────
   if (!code) {
-    trackEvent('anonymous', ANALYTICS_EVENTS.AUTH_CALLBACK_FAILURE, {
+    // The `reason` field already categorises the failure (missing_code,
+    // exchange_failed, no_user). Never include `error.message` — it can
+    // contain user-supplied fragments like an email or token.
+    await trackEvent('anonymous', ANALYTICS_EVENTS.AUTH_CALLBACK_FAILURE, {
       reason: 'missing_code',
     })
-    captureServerError('anonymous', new Error('auth_callback: missing code'), {
+    await captureServerError('anonymous', new Error('auth_callback: missing code'), {
       source: 'authCallback',
       metadata: { reason: 'missing_code', route: '/auth/callback' },
     })
@@ -29,11 +32,10 @@ export async function GET(request: NextRequest) {
   const { error } = await supabase.auth.exchangeCodeForSession(code)
 
   if (error) {
-    trackEvent('anonymous', ANALYTICS_EVENTS.AUTH_CALLBACK_FAILURE, {
+    await trackEvent('anonymous', ANALYTICS_EVENTS.AUTH_CALLBACK_FAILURE, {
       reason: 'exchange_failed',
-      error_message: error.message,
     })
-    captureServerError('anonymous', error, {
+    await captureServerError('anonymous', error, {
       source: 'authCallback',
       metadata: { reason: 'exchange_failed', route: '/auth/callback' },
     })
@@ -46,10 +48,10 @@ export async function GET(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   if (!user) {
-    trackEvent('anonymous', ANALYTICS_EVENTS.AUTH_CALLBACK_FAILURE, {
+    await trackEvent('anonymous', ANALYTICS_EVENTS.AUTH_CALLBACK_FAILURE, {
       reason: 'no_user',
     })
-    captureServerError('anonymous', new Error('auth_callback: no user after exchange'), {
+    await captureServerError('anonymous', new Error('auth_callback: no user after exchange'), {
       source: 'authCallback',
       metadata: { reason: 'no_user', route: '/auth/callback' },
     })
@@ -102,7 +104,7 @@ export async function GET(request: NextRequest) {
   }
 
   // ── Analytics ───────────────────────────────────────────────────────
-  trackEvent(user.id, ANALYTICS_EVENTS.AUTH_CALLBACK_SUCCESS, {
+  await trackEvent(user.id, ANALYTICS_EVENTS.AUTH_CALLBACK_SUCCESS, {
     is_onboarded: isOnboarded,
     is_restored: profile?.is_deleted === true,
   })

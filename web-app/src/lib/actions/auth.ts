@@ -67,11 +67,10 @@ export async function sendMagicLink(
     })
 
     if (error) {
-      captureServerError(pseudoUserId, error, {
+      await captureServerError(pseudoUserId, error, {
         source: 'sendMagicLink',
         metadata: {
           status: error.status,
-          email_hash: pseudoUserId,
         },
       })
       if (error.status === 429) {
@@ -80,10 +79,10 @@ export async function sendMagicLink(
       return { success: false, error: 'Failed to send magic link. Please try again.' }
     }
 
-    // Fire analytics event with hashed email as pseudo-userId
-    trackEvent(pseudoUserId, ANALYTICS_EVENTS.MAGIC_LINK_REQUESTED, {
-      email_hash: pseudoUserId,
-    })
+    // Fire analytics event with hashed email as pseudo-userId. The pseudoUserId
+    // is already passed as the distinctId (first arg) — duplicating it as
+    // `email_hash` would just leak the same identifier into a property column.
+    await trackEvent(pseudoUserId, ANALYTICS_EVENTS.MAGIC_LINK_REQUESTED)
 
     return { success: true }
   })
@@ -169,7 +168,7 @@ export async function completeOnboarding(
         .eq('id', userId)
 
       if (updateError) {
-        captureServerError(userId, updateError, {
+        await captureServerError(userId, updateError, {
           source: 'completeOnboarding',
           metadata: { stage: 'profile_update' },
         })
@@ -181,10 +180,10 @@ export async function completeOnboarding(
       cookieStore.set(COOKIE_NAMES.ONBOARDED, 'true', AUTH_COOKIE_OPTIONS)
       cookieStore.set(COOKIE_NAMES.TERMS_VERSION, CURRENT_TERMS_VERSION, AUTH_COOKIE_OPTIONS)
 
-      // Analytics
-      trackEvent(userId, ANALYTICS_EVENTS.ONBOARDING_COMPLETED, {
-        display_name: parsed.data.displayName,
-      })
+      // Analytics — never include the user's display_name as a property; the
+      // distinctId is enough to look it up later if needed and PostHog event
+      // payloads are read by more people than the v2_profiles table is.
+      await trackEvent(userId, ANALYTICS_EVENTS.ONBOARDING_COMPLETED)
 
       return { success: true }
     },
@@ -234,7 +233,7 @@ export async function acceptTerms(): Promise<ActionResult> {
         .eq('id', userId)
 
       if (updateError) {
-        captureServerError(userId, updateError, {
+        await captureServerError(userId, updateError, {
           source: 'acceptTerms',
           metadata: { stage: 'profile_update' },
         })
@@ -246,7 +245,7 @@ export async function acceptTerms(): Promise<ActionResult> {
       cookieStore.set(COOKIE_NAMES.TERMS_VERSION, CURRENT_TERMS_VERSION, AUTH_COOKIE_OPTIONS)
 
       // Analytics
-      trackEvent(userId, ANALYTICS_EVENTS.TERMS_ACCEPTED)
+      await trackEvent(userId, ANALYTICS_EVENTS.TERMS_ACCEPTED)
 
       return { success: true }
     },
@@ -284,7 +283,7 @@ export async function signOut(): Promise<ActionResult> {
       const { error } = await supabase.auth.signOut()
 
       if (error) {
-        captureServerError(userId, error, {
+        await captureServerError(userId, error, {
           source: 'signOut',
           metadata: { stage: 'auth_sign_out' },
         })
@@ -297,12 +296,12 @@ export async function signOut(): Promise<ActionResult> {
 
       // Fire analytics event if we had a user
       if (userId !== 'anonymous') {
-        trackEvent(userId, ANALYTICS_EVENTS.SIGNED_OUT)
+        await trackEvent(userId, ANALYTICS_EVENTS.SIGNED_OUT)
       }
 
       return { success: true }
     } catch (error) {
-      captureServerError(userId, error, {
+      await captureServerError(userId, error, {
         source: 'signOut',
         metadata: { stage: 'unexpected' },
       })

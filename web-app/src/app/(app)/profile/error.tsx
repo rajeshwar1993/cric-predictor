@@ -41,11 +41,11 @@ export default function ProfileError({
   const { hasExhausted, handleReset } = useResetAttempts(reset)
 
   useEffect(() => {
-    // Log so the failure shows up in the console during development and in
-    // whatever production logger picks up console errors. The digest (if
-    // present) is the server-side request id Next.js attaches to the error
-    // — useful for cross-referencing server logs.
-    console.error('[ProfileError]', error)
+    // captureError already console.errors in development with the source
+    // prefix (`[ProfileError]`), so a separate console.error here would
+    // duplicate the dev output. The digest (if present) is the server-side
+    // request id Next.js attaches to the error — useful for cross-
+    // referencing server logs.
     captureError(error, {
       source: 'ProfileError',
       metadata: { digest: error.digest, pathname },

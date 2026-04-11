@@ -162,7 +162,7 @@ export async function submitPredictions(
 
     if (fixtureError || !fixture) {
       if (fixtureError) {
-        captureServerError(userId, fixtureError, {
+        await captureServerError(userId, fixtureError, {
           source: 'submitPredictions',
           metadata: {
             stage: 'fetch_fixture',
@@ -221,7 +221,7 @@ export async function submitPredictions(
 
     if (scenariosError || !scenarios) {
       if (scenariosError) {
-        captureServerError(userId, scenariosError, {
+        await captureServerError(userId, scenariosError, {
           source: 'submitPredictions',
           metadata: {
             stage: 'fetch_scenarios',
@@ -298,7 +298,7 @@ export async function submitPredictions(
       .upsert(rows, { onConflict: 'user_id,scenario_id' })
 
     if (upsertError) {
-      captureServerError(userId, upsertError, {
+      await captureServerError(userId, upsertError, {
         source: 'submitPredictions',
         metadata: {
           stage: 'upsert',
@@ -310,11 +310,12 @@ export async function submitPredictions(
       return { success: false, error: 'Failed to save predictions. Please try again.' }
     }
 
-    // Fire-and-forget — analytics failure should not block the response.
-    // trackEvent is synchronous (PostHog node client batches internally),
-    // so errors here are caught by PostHog's internal error handling.
+    // Awaited so the event flushes before the serverless invocation
+    // suspends. trackEvent already swallows internal flush errors, but we
+    // wrap the call defensively so a future change to the analytics
+    // module cannot break the submission flow.
     try {
-      trackEvent(userId, ANALYTICS_EVENTS.PREDICTION_SUBMITTED, {
+      await trackEvent(userId, ANALYTICS_EVENTS.PREDICTION_SUBMITTED, {
         gang_id: validGangId,
         fixture_id: validFixtureId,
         pick_count: validPicks.length,

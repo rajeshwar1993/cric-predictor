@@ -62,16 +62,17 @@ export function InviteShare({
     try {
       await navigator.clipboard.writeText(inviteUrl)
       setCopied(true)
+      // Never include the raw invite code in analytics — it's a credential
+      // that grants gang access. The gang name is enough for funnel debug.
       trackEvent(ANALYTICS_EVENTS.INVITE_COPIED, {
         gangName,
-        inviteCode,
       })
       setTimeout(() => setCopied(false), 2000)
     } catch (error) {
       // Clipboard API may fail in some contexts — warn and degrade gracefully
       console.warn('Failed to copy to clipboard:', error)
     }
-  }, [inviteUrl, gangName, inviteCode])
+  }, [inviteUrl, gangName])
 
   const handleShare = useCallback(async () => {
     if (!canShare) {
@@ -86,9 +87,10 @@ export function InviteShare({
         text: `${inviterName} invited you to join ${gangName}. Use code ${inviteCode} or click the link.`,
         url: inviteUrl,
       })
+      // Never include the raw invite code in analytics — it's a credential
+      // that grants gang access. The gang name is enough for funnel debug.
       trackEvent(ANALYTICS_EVENTS.INVITE_SHARED, {
         gangName,
-        inviteCode,
       })
     } catch (err) {
       // User cancelled share — not an error
