@@ -28,6 +28,7 @@ export interface LiveScorecardData {
   away_team_overs: number | null;
   batting_team_api_id: number | null;
   current_run_rate: number | null;
+  last_6_balls: string | null;
   striker_name: string | null;
   striker_score: string | null;
   non_striker_name: string | null;
@@ -125,6 +126,25 @@ export function mapToBracket(value: number, options: string[]): string | null {
 }
 
 // ---------------------------------------------------------------------------
+// Helper: is the match in a "finished" state for resolution purposes?
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns true if the Sportmonks raw status indicates the match is over and
+ * post-match data (final scores, MoM, etc.) can be relied upon.
+ *
+ * Sportmonks uses several strings for a completed match — `Finished` is the
+ * common one for T20, but `Won` and `Draw` also appear. This must stay in
+ * sync with `mapSmStatusToInternal` in `live-poll-resolve-fixtures/index.ts`,
+ * which maps the same set to internal status `completed`.
+ */
+export function isMatchFinished(rawStatus: string | null | undefined): boolean {
+  if (!rawStatus) return false;
+  const lower = rawStatus.toLowerCase();
+  return lower === 'finished' || lower === 'won' || lower === 'draw';
+}
+
+// ---------------------------------------------------------------------------
 // Helper: get runs entry for a specific team
 // ---------------------------------------------------------------------------
 
@@ -180,8 +200,7 @@ export function extractTopScorer(fixture: SmFixture): ExtractResult {
   }
 
   // Only resolve when match is finished — mid-match batting data is incomplete
-  const status = fixture.status?.toLowerCase();
-  if (status !== 'finished') {
+  if (!isMatchFinished(fixture.status)) {
     return { resolved: false, reason: 'Match not finished yet' };
   }
 
@@ -216,8 +235,7 @@ export function extractTopWicketTaker(fixture: SmFixture): ExtractResult {
     return { resolved: false, reason: 'No bowling data available' };
   }
 
-  const status = fixture.status?.toLowerCase();
-  if (status !== 'finished') {
+  if (!isMatchFinished(fixture.status)) {
     return { resolved: false, reason: 'Match not finished yet' };
   }
 
@@ -253,8 +271,7 @@ export function extractMostSixesPlayer(fixture: SmFixture): ExtractResult {
     return { resolved: false, reason: 'No batting data available' };
   }
 
-  const status = fixture.status?.toLowerCase();
-  if (status !== 'finished') {
+  if (!isMatchFinished(fixture.status)) {
     return { resolved: false, reason: 'Match not finished yet' };
   }
 
@@ -316,8 +333,7 @@ export function extractHomeTeamInningsScore(fixture: SmFixture): ExtractResult {
 
   // Only resolve after the team's innings is complete (overs == 20 for T20,
   // or match is finished — team may be chased out early)
-  const status = fixture.status?.toLowerCase();
-  const isFinished = status === 'finished';
+  const isFinished = isMatchFinished(fixture.status);
   const isInningsComplete = runs.overs >= 20 || runs.wickets >= 10;
 
   if (!isFinished && !isInningsComplete) {
@@ -337,8 +353,7 @@ export function extractAwayTeamInningsScore(fixture: SmFixture): ExtractResult {
     return { resolved: false, reason: 'No runs data for away team' };
   }
 
-  const status = fixture.status?.toLowerCase();
-  const isFinished = status === 'finished';
+  const isFinished = isMatchFinished(fixture.status);
   const isInningsComplete = runs.overs >= 20 || runs.wickets >= 10;
 
   if (!isFinished && !isInningsComplete) {
@@ -401,8 +416,7 @@ export function extractTotalMatchRuns(fixture: SmFixture): ExtractResult {
     return { resolved: false, reason: 'No runs data available' };
   }
 
-  const status = fixture.status?.toLowerCase();
-  if (status !== 'finished') {
+  if (!isMatchFinished(fixture.status)) {
     return { resolved: false, reason: 'Match not finished yet' };
   }
 
@@ -419,8 +433,7 @@ export function extractTotalMatchSixes(fixture: SmFixture): ExtractResult {
     return { resolved: false, reason: 'No batting data available' };
   }
 
-  const status = fixture.status?.toLowerCase();
-  if (status !== 'finished') {
+  if (!isMatchFinished(fixture.status)) {
     return { resolved: false, reason: 'Match not finished yet' };
   }
 
@@ -437,8 +450,7 @@ export function extractTotalMatchWickets(fixture: SmFixture): ExtractResult {
     return { resolved: false, reason: 'No runs data available' };
   }
 
-  const status = fixture.status?.toLowerCase();
-  if (status !== 'finished') {
+  if (!isMatchFinished(fixture.status)) {
     return { resolved: false, reason: 'Match not finished yet' };
   }
 
@@ -488,8 +500,7 @@ export function extractFiftyScored(fixture: SmFixture): ExtractResult {
   }
 
   // Can only confirm "No" when match is finished
-  const status = fixture.status?.toLowerCase();
-  if (status !== 'finished') {
+  if (!isMatchFinished(fixture.status)) {
     return { resolved: false, reason: 'No fifty yet, match still in progress' };
   }
 
@@ -512,8 +523,7 @@ export function extractBowlerThreeWickets(fixture: SmFixture): ExtractResult {
   }
 
   // Can only confirm "No" when match is finished
-  const status = fixture.status?.toLowerCase();
-  if (status !== 'finished') {
+  if (!isMatchFinished(fixture.status)) {
     return { resolved: false, reason: 'No 3-wicket haul yet, match still in progress' };
   }
 
@@ -525,8 +535,7 @@ export function extractBowlerThreeWickets(fixture: SmFixture): ExtractResult {
  * Returns "Yes" or "No". Only resolve when match is finished.
  */
 export function extractSuperOver(fixture: SmFixture): ExtractResult {
-  const status = fixture.status?.toLowerCase();
-  if (status !== 'finished') {
+  if (!isMatchFinished(fixture.status)) {
     return { resolved: false, reason: 'Match not finished yet' };
   }
 

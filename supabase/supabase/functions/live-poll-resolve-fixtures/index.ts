@@ -23,6 +23,7 @@ import {
 import {
   extractForScenario,
   extractLiveScorecard,
+  isMatchFinished,
   mapToBracket,
   type ScenarioSlug,
   type ExtractResult,
@@ -94,7 +95,7 @@ function mapSmStatusToInternal(smStatus: string): InternalStatus {
   ) {
     return 'live';
   }
-  if (lower === 'finished' || lower === 'won' || lower === 'draw') {
+  if (isMatchFinished(lower)) {
     return 'completed';
   }
   if (lower === 'abandoned' || lower === 'cancl' || lower === 'aborted' || lower === 'cancelled') {
@@ -239,6 +240,8 @@ async function pollAndResolve(supabase: SupabaseClient): Promise<PollSummary> {
   // -----------------------------------------------------------------------
   // Fixtures to poll:
   //   - (upcoming or live) within time window: start-1h to start+6h
+  //     i.e. wall clock W is in [start-1h, start+6h], which rearranges to
+  //          start_datetime in [now-6h, now+1h]
   //   - OR completed within last 120 minutes (for post-match scenarios like POTM)
   const { data: fixturesToPoll, error: queryErr } = await supabase
     .rpc('get_fixtures_to_poll');
@@ -249,11 +252,16 @@ async function pollAndResolve(supabase: SupabaseClient): Promise<PollSummary> {
   if (queryErr || !fixturesToPoll) {
     console.log('[live-poll] RPC not found, using direct query...');
 
+    const now = Date.now();
+    const sixHoursAgo = new Date(now - 6 * 60 * 60 * 1000).toISOString();
+    const oneHourFromNow = new Date(now + 1 * 60 * 60 * 1000).toISOString();
+    const twoHoursAgo = new Date(now - 120 * 60 * 1000).toISOString();
+
     const { data: directFixtures, error: directErr } = await supabase
       .from('v2_league_season_fixtures')
       .select('id, api_id, home_team_id, away_team_id, status, status_changed_at, season_id')
       .or(
-        `and(status.in.(upcoming,live),start_datetime.gte.${new Date(Date.now() - 60 * 60 * 1000).toISOString()},start_datetime.lte.${new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString()}),and(status.eq.completed,status_changed_at.gte.${new Date(Date.now() - 120 * 60 * 1000).toISOString()})`
+        `and(status.in.(upcoming,live),start_datetime.gte.${sixHoursAgo},start_datetime.lte.${oneHourFromNow}),and(status.eq.completed,status_changed_at.gte.${twoHoursAgo})`
       );
 
     if (directErr || !directFixtures) {
@@ -427,15 +435,22 @@ async function processFixture(
   }
 
   // -----------------------------------------------------------------------
-  // Step 4: Live scorecard update (for live fixtures)
+  // Step 4: Live scorecard upsert
   // -----------------------------------------------------------------------
-  const effectiveStatus = newInternalStatus === 'live' || currentDbStatus === 'live'
-    ? 'live'
-    : newInternalStatus;
-
-  if (effectiveStatus === 'live') {
-    await upsertLiveScorecard(supabase, dbFixture, smFixture, idMapper);
-  }
+  // Called on every poll regardless of status. The cron only ever processes
+  // fixtures that are upcoming/live within the polling window or completed
+  // within the last 120 minutes (waiting on POTM), so refreshing the scorecard
+  // is always meaningful:
+  //   - upcoming → extractLiveScorecard returns null (no runs yet) and the
+  //     upsert is skipped internally
+  //   - live → normal scorecard refresh
+  //   - completed → freezes the final scorecard and keeps last_polled_at
+  //     ticking through the POTM wait, so downstream "is data stale?" checks
+  //     stay accurate
+  // The upsert payload does not include home_team_max_overs_seen /
+  // away_team_max_overs_seen, so step 5's max-overs tracking is preserved by
+  // PostgREST's ON CONFLICT DO UPDATE SET <only-provided-columns> semantics.
+  await upsertLiveScorecard(supabase, dbFixture, smFixture, idMapper);
 
   // -----------------------------------------------------------------------
   // Step 5: Load existing live scores for max overs tracking
