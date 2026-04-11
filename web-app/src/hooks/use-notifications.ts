@@ -222,22 +222,48 @@ export function useNotifications(
         },
         (payload) => {
           if (!activeRef.current) return
-          // Refresh the count on any change.
-          fetchUnreadCount()
 
-          // Pulse the bell only for new notifications.
+          // Merge realtime rows into local `notifications` state so an
+          // open panel reflects the event immediately. INSERT prepends
+          // the new row (deduped, capped at DEFAULT_NOTIFICATION_LIMIT),
+          // UPDATE merges payload.new into the matching row.
           if (payload.eventType === 'INSERT') {
+            const newRow = payload.new as Notification
+            setNotifications((current) => {
+              if (current.some((n) => n.id === newRow.id)) return current
+              return [newRow, ...current].slice(0, DEFAULT_NOTIFICATION_LIMIT)
+            })
             setPulse(true)
             window.setTimeout(() => {
               if (activeRef.current) setPulse(false)
             }, PULSE_DURATION_MS)
+          } else if (payload.eventType === 'UPDATE') {
+            const updated = payload.new as Notification
+            setNotifications((current) =>
+              current.map((n) => (n.id === updated.id ? updated : n)),
+            )
           }
+
+          // Refresh the count on any change.
+          fetchUnreadCount()
         },
       )
       .subscribe()
 
+    // Re-sync the unread count when the tab becomes visible again so we
+    // catch any events that might have been dropped while hidden. The
+    // list is not re-fetched here — it only hydrates on panel open.
+    const handleVisibilityChange = () => {
+      if (!activeRef.current) return
+      if (document.visibilityState === 'visible') {
+        void fetchUnreadCount()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
     return () => {
       activeRef.current = false
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
       supabase.removeChannel(channel)
     }
   }, [userId, fetchUnreadCount])
