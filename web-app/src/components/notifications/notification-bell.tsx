@@ -47,7 +47,7 @@ function NotificationBell({
     markReadLocally,
     revertMarkReadLocally,
     markAllReadLocally,
-    restoreNotifications,
+    refetchFromServer,
   } = useNotifications(userId, initialUnreadCount)
 
   // When the panel opens: fetch the latest list, fire analytics, and
@@ -104,7 +104,7 @@ function NotificationBell({
           onMarkRead={markReadLocally}
           onRevertMarkRead={revertMarkReadLocally}
           onMarkAllRead={markAllReadLocally}
-          onRestore={restoreNotifications}
+          onRefetch={refetchFromServer}
           onNavigate={() => setOpen(false)}
         />
       </SidePanel>

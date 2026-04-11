@@ -54,14 +54,12 @@ export interface UseNotificationsResult {
   /** Optimistically flip every notification to read in local state. */
   markAllReadLocally: () => void
   /**
-   * Restore a full unread snapshot after a failed `markAllNotificationsAsRead`.
-   * Takes the list and count captured before the optimistic flip so the
-   * panel can roll back cleanly.
+   * Re-derive the list and unread count from the server. Used as the
+   * failure-recovery path for a failed `markAllNotificationsAsRead` —
+   * restoring a literal client-side snapshot would lose any realtime
+   * INSERT that arrived mid-flight, so we re-fetch instead.
    */
-  restoreNotifications: (
-    previousNotifications: Notification[],
-    previousUnreadCount: number,
-  ) => void
+  refetchFromServer: () => Promise<void>
 }
 
 // ---------------------------------------------------------------------------
@@ -187,13 +185,13 @@ export function useNotifications(
     setUnreadCount(0)
   }, [])
 
-  const restoreNotifications = useCallback(
-    (previousNotifications: Notification[], previousUnreadCount: number) => {
-      setNotifications(previousNotifications)
-      setUnreadCount(previousUnreadCount)
-    },
-    [],
-  )
+  const refetchFromServer = useCallback(async () => {
+    // Run both in parallel — the server is the source of truth for both
+    // the list and the count, and any realtime INSERT that raced a
+    // failed `markAllNotificationsAsRead` will already be reflected in
+    // the server response.
+    await Promise.all([fetchUnreadCount(), fetchList()])
+  }, [fetchUnreadCount, fetchList])
 
   const clearPulse = useCallback(() => {
     setPulse(false)
@@ -280,6 +278,6 @@ export function useNotifications(
     markReadLocally,
     revertMarkReadLocally,
     markAllReadLocally,
-    restoreNotifications,
+    refetchFromServer,
   }
 }

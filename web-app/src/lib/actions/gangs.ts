@@ -296,18 +296,18 @@ export async function joinGangByCode(
     .single()
 
   if (adminMember) {
-    const displayName = profile?.display_name ?? 'Someone'
+    // Display name is resolved server-side inside the RPC from v2_profiles.
+    // Do not pass it from the client — that would let any authenticated
+    // gang member inject arbitrary text into an admin's inbox.
     const { error: notifyError } =
       newStatus === 'approved'
         ? await supabase.rpc('create_new_member_notification', {
             p_admin_user_id: adminMember.user_id,
             p_gang_id: gang.id,
-            p_member_display_name: displayName,
           })
         : await supabase.rpc('create_join_request_notification', {
             p_admin_user_id: adminMember.user_id,
             p_gang_id: gang.id,
-            p_requester_display_name: displayName,
           })
 
     // The membership row has already been committed above, so a
@@ -463,24 +463,15 @@ export async function approveJoinRequest(
     return { success: false, error: 'This request has already been processed.' }
   }
 
-  // Fetch gang name for notification
-  const { data: gangData } = await supabase
-    .from('v2_gangs')
-    .select('name')
-    .eq('id', gangId)
-    .single()
-
-  const gangName = gangData?.name ?? 'the gang'
-
   // Send notification to the requester via SECURITY DEFINER RPC.
   // Direct inserts are blocked by RLS; see migration
-  // 20260410000001_notification_rpcs.sql.
+  // 20260410000001_notification_rpcs.sql. The gang name is resolved
+  // server-side inside the RPC — never accept a client-supplied string.
   const { error: notifyError } = await supabase.rpc(
     'create_join_approved_notification',
     {
       p_user_id: userId,
       p_gang_id: gangId,
-      p_gang_name: gangName,
     },
   )
 
@@ -587,24 +578,15 @@ export async function rejectJoinRequest(
     return { success: false, error: 'This request has already been processed.' }
   }
 
-  // Fetch gang name for notification
-  const { data: gangData } = await supabase
-    .from('v2_gangs')
-    .select('name')
-    .eq('id', gangId)
-    .single()
-
-  const gangName = gangData?.name ?? 'the gang'
-
   // Send notification to the requester via SECURITY DEFINER RPC.
   // Direct inserts are blocked by RLS; see migration
-  // 20260410000001_notification_rpcs.sql.
+  // 20260410000001_notification_rpcs.sql. The gang name is resolved
+  // server-side inside the RPC — never accept a client-supplied string.
   const { error: notifyError } = await supabase.rpc(
     'create_join_rejected_notification',
     {
       p_user_id: userId,
       p_gang_id: gangId,
-      p_gang_name: gangName,
     },
   )
 

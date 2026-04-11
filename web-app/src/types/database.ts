@@ -740,7 +740,6 @@ export type Database = {
         Args: {
           p_admin_user_id: string
           p_gang_id: string
-          p_requester_display_name: string
         }
         Returns: undefined
       }
@@ -748,7 +747,6 @@ export type Database = {
         Args: {
           p_admin_user_id: string
           p_gang_id: string
-          p_member_display_name: string
         }
         Returns: undefined
       }
@@ -756,7 +754,6 @@ export type Database = {
         Args: {
           p_user_id: string
           p_gang_id: string
-          p_gang_name: string
         }
         Returns: undefined
       }
@@ -764,7 +761,6 @@ export type Database = {
         Args: {
           p_user_id: string
           p_gang_id: string
-          p_gang_name: string
         }
         Returns: undefined
       }

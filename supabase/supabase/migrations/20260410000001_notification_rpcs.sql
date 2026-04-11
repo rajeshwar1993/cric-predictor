@@ -11,7 +11,10 @@
 -- This migration adds SECURITY DEFINER RPCs that:
 --   1. Resolve the caller via auth.uid() (never trust client-supplied ids).
 --   2. Verify the caller has authority to create the notification.
---   3. Insert the notification row on behalf of the caller.
+--   3. Resolve display / gang names server-side (never trust client strings
+--      — a gang member could otherwise inject arbitrary message copy into
+--      an admin's inbox).
+--   4. Insert the notification row on behalf of the caller.
 --
 -- Each RPC mirrors the pattern used by `delete_gang` and `delete_account`.
 -- They are granted EXECUTE to the `authenticated` role only.
@@ -25,6 +28,23 @@
 --   - v2_notifications (RLS: SELECT/UPDATE only for authenticated users)
 -- =============================================================================
 
+-- ---------------------------------------------------------------------------
+-- Drop any previously-applied 3-arg overloads
+-- ---------------------------------------------------------------------------
+-- Earlier revisions of this migration accepted a client-supplied display /
+-- gang name as the third argument. Postgres identifies functions by
+-- (name, argument types), so `CREATE OR REPLACE FUNCTION` with fewer
+-- parameters creates a NEW function instead of replacing the old one.
+-- If a shared environment already applied the 3-arg version it would
+-- linger as a callable overload and bypass the server-side name
+-- resolution that closes the injection vector. Drop the old overloads
+-- explicitly so `supabase db push` against such an env converges cleanly.
+-- ---------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS create_join_request_notification(UUID, UUID, TEXT);
+DROP FUNCTION IF EXISTS create_new_member_notification(UUID, UUID, TEXT);
+DROP FUNCTION IF EXISTS create_join_approved_notification(UUID, UUID, TEXT);
+DROP FUNCTION IF EXISTS create_join_rejected_notification(UUID, UUID, TEXT);
+
 
 -- ---------------------------------------------------------------------------
 -- create_join_request_notification
@@ -36,9 +56,8 @@
 -- created a pending row).
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION create_join_request_notification(
-  p_admin_user_id          UUID,
-  p_gang_id                UUID,
-  p_requester_display_name TEXT
+  p_admin_user_id UUID,
+  p_gang_id       UUID
 )
 RETURNS VOID
 LANGUAGE plpgsql
@@ -46,9 +65,10 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_caller_id   UUID;
-  v_has_row     BOOLEAN;
-  v_gang_exists BOOLEAN;
+  v_caller_id           UUID;
+  v_has_row             BOOLEAN;
+  v_gang_exists         BOOLEAN;
+  v_requester_name      TEXT;
 BEGIN
   v_caller_id := auth.uid();
 
@@ -92,6 +112,14 @@ BEGIN
       USING ERRCODE = '42501';
   END IF;
 
+  -- Resolve the requester's display name server-side from their profile.
+  -- Never accept a client-supplied display name here: that would let any
+  -- authenticated gang member inject arbitrary text into an admin's inbox.
+  SELECT COALESCE(display_name, 'Someone')
+  INTO v_requester_name
+  FROM v2_profiles
+  WHERE id = v_caller_id;
+
   INSERT INTO v2_notifications (id, user_id, type, gang_id, fixture_id, message, is_read)
   VALUES (
     gen_random_uuid(),
@@ -99,16 +127,16 @@ BEGIN
     'join_request',
     p_gang_id,
     NULL,
-    p_requester_display_name || ' wants to join your gang.',
+    COALESCE(v_requester_name, 'Someone') || ' wants to join your gang.',
     false
   );
 END;
 $$;
 
-COMMENT ON FUNCTION create_join_request_notification(UUID, UUID, TEXT) IS
-  'Inserts a join_request notification for the gang admin. Caller must be a pending/approved member of the target gang (auth.uid()).';
+COMMENT ON FUNCTION create_join_request_notification(UUID, UUID) IS
+  'Inserts a join_request notification for the gang admin. Caller must be a pending/approved member of the target gang (auth.uid()). The requester''s display name is resolved server-side from v2_profiles.';
 
-GRANT EXECUTE ON FUNCTION create_join_request_notification(UUID, UUID, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION create_join_request_notification(UUID, UUID) TO authenticated;
 
 
 -- ---------------------------------------------------------------------------
@@ -120,8 +148,7 @@ GRANT EXECUTE ON FUNCTION create_join_request_notification(UUID, UUID, TEXT) TO 
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION create_new_member_notification(
   p_admin_user_id UUID,
-  p_gang_id       UUID,
-  p_member_display_name TEXT
+  p_gang_id       UUID
 )
 RETURNS VOID
 LANGUAGE plpgsql
@@ -131,6 +158,7 @@ AS $$
 DECLARE
   v_caller_id   UUID;
   v_gang_exists BOOLEAN;
+  v_member_name TEXT;
 BEGIN
   v_caller_id := auth.uid();
 
@@ -164,6 +192,13 @@ BEGIN
       USING ERRCODE = '42501';
   END IF;
 
+  -- Resolve the new member's display name server-side to prevent a
+  -- client-supplied string from being rendered into an admin's inbox.
+  SELECT COALESCE(display_name, 'A new member')
+  INTO v_member_name
+  FROM v2_profiles
+  WHERE id = v_caller_id;
+
   INSERT INTO v2_notifications (id, user_id, type, gang_id, fixture_id, message, is_read)
   VALUES (
     gen_random_uuid(),
@@ -171,16 +206,16 @@ BEGIN
     'new_member',
     p_gang_id,
     NULL,
-    p_member_display_name || ' has joined your gang.',
+    COALESCE(v_member_name, 'A new member') || ' has joined your gang.',
     false
   );
 END;
 $$;
 
-COMMENT ON FUNCTION create_new_member_notification(UUID, UUID, TEXT) IS
-  'Inserts a new_member notification for the gang admin. Caller must be an approved member of the target gang (auth.uid()).';
+COMMENT ON FUNCTION create_new_member_notification(UUID, UUID) IS
+  'Inserts a new_member notification for the gang admin. Caller must be an approved member of the target gang (auth.uid()). The new member''s display name is resolved server-side from v2_profiles.';
 
-GRANT EXECUTE ON FUNCTION create_new_member_notification(UUID, UUID, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION create_new_member_notification(UUID, UUID) TO authenticated;
 
 
 -- ---------------------------------------------------------------------------
@@ -191,9 +226,8 @@ GRANT EXECUTE ON FUNCTION create_new_member_notification(UUID, UUID, TEXT) TO au
 -- of the target gang.
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION create_join_approved_notification(
-  p_user_id   UUID,
-  p_gang_id   UUID,
-  p_gang_name TEXT
+  p_user_id UUID,
+  p_gang_id UUID
 )
 RETURNS VOID
 LANGUAGE plpgsql
@@ -202,6 +236,7 @@ SET search_path = public
 AS $$
 DECLARE
   v_caller_id UUID;
+  v_gang_name TEXT;
 BEGIN
   v_caller_id := auth.uid();
 
@@ -229,6 +264,15 @@ BEGIN
       USING ERRCODE = '42501';
   END IF;
 
+  -- Resolve the gang name server-side. A client-supplied gang name would
+  -- let an admin craft misleading copy ("your request to join Get rich
+  -- quick has been approved!") that bears no relation to the real gang.
+  SELECT name
+  INTO v_gang_name
+  FROM v2_gangs
+  WHERE id = p_gang_id
+    AND is_deleted = false;
+
   INSERT INTO v2_notifications (id, user_id, type, gang_id, fixture_id, message, is_read)
   VALUES (
     gen_random_uuid(),
@@ -236,16 +280,16 @@ BEGIN
     'join_approved',
     p_gang_id,
     NULL,
-    'Your request to join ' || p_gang_name || ' has been approved!',
+    'Your request to join ' || COALESCE(v_gang_name, 'the gang') || ' has been approved!',
     false
   );
 END;
 $$;
 
-COMMENT ON FUNCTION create_join_approved_notification(UUID, UUID, TEXT) IS
-  'Inserts a join_approved notification for the requester. Caller must be an approved admin of the target gang (auth.uid()).';
+COMMENT ON FUNCTION create_join_approved_notification(UUID, UUID) IS
+  'Inserts a join_approved notification for the requester. Caller must be an approved admin of the target gang (auth.uid()). The gang name is resolved server-side from v2_gangs.';
 
-GRANT EXECUTE ON FUNCTION create_join_approved_notification(UUID, UUID, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION create_join_approved_notification(UUID, UUID) TO authenticated;
 
 
 -- ---------------------------------------------------------------------------
@@ -256,9 +300,8 @@ GRANT EXECUTE ON FUNCTION create_join_approved_notification(UUID, UUID, TEXT) TO
 -- of the target gang.
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION create_join_rejected_notification(
-  p_user_id   UUID,
-  p_gang_id   UUID,
-  p_gang_name TEXT
+  p_user_id UUID,
+  p_gang_id UUID
 )
 RETURNS VOID
 LANGUAGE plpgsql
@@ -267,6 +310,7 @@ SET search_path = public
 AS $$
 DECLARE
   v_caller_id UUID;
+  v_gang_name TEXT;
 BEGIN
   v_caller_id := auth.uid();
 
@@ -294,6 +338,13 @@ BEGIN
       USING ERRCODE = '42501';
   END IF;
 
+  -- Resolve the gang name server-side to prevent client-supplied copy.
+  SELECT name
+  INTO v_gang_name
+  FROM v2_gangs
+  WHERE id = p_gang_id
+    AND is_deleted = false;
+
   INSERT INTO v2_notifications (id, user_id, type, gang_id, fixture_id, message, is_read)
   VALUES (
     gen_random_uuid(),
@@ -301,13 +352,13 @@ BEGIN
     'join_rejected',
     p_gang_id,
     NULL,
-    'Your request to join ' || p_gang_name || ' was declined.',
+    'Your request to join ' || COALESCE(v_gang_name, 'the gang') || ' was declined.',
     false
   );
 END;
 $$;
 
-COMMENT ON FUNCTION create_join_rejected_notification(UUID, UUID, TEXT) IS
-  'Inserts a join_rejected notification for the requester. Caller must be an approved admin of the target gang (auth.uid()).';
+COMMENT ON FUNCTION create_join_rejected_notification(UUID, UUID) IS
+  'Inserts a join_rejected notification for the requester. Caller must be an approved admin of the target gang (auth.uid()). The gang name is resolved server-side from v2_gangs.';
 
-GRANT EXECUTE ON FUNCTION create_join_rejected_notification(UUID, UUID, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION create_join_rejected_notification(UUID, UUID) TO authenticated;
