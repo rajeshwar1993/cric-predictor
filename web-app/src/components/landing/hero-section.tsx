@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { BraggWordmark } from '@/components/ui/bragg-wordmark'
 import { Button } from '@/components/ui/button'
 import { PageWrapper } from '@/components/layout/page-wrapper'
 
@@ -21,7 +22,7 @@ export function HeroSection() {
   return (
     <section
       aria-labelledby="hero-heading"
-      className="relative overflow-hidden bg-concrete-black pt-16 pb-20 md:pt-24 md:pb-28"
+      className="relative overflow-hidden pt-16 pb-20 md:pt-24 md:pb-28"
     >
       {/* Geometric accent — lime color block, sharp corners, offset shadow */}
       <div
@@ -35,13 +36,13 @@ export function HeroSection() {
       />
 
       <PageWrapper className="relative pt-8">
-        {/* Wordmark — acts as the visual logo */}
-        <p className="text-h1 mb-6 text-bragg-lime">BRAGG</p>
+        {/* Wordmark — decorative; the <h1> below carries the page title */}
+        <BraggWordmark decorative className="mb-6" />
 
         {/* Headline */}
         <h1
           id="hero-heading"
-          className="text-display mb-6 text-text-primary"
+          className="text-display mb-6 max-w-[560px] text-text-primary"
         >
           Predict right.
           <br />

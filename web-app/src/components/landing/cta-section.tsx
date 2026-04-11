@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { PageWrapper } from '@/components/layout/page-wrapper'
+import { LEGAL_DISCLAIMER } from '@/lib/constants'
 
 /**
  * CtaSection — bottom-of-page call-to-action.
@@ -40,8 +41,7 @@ export function CtaSection() {
         </div>
 
         <p className="text-caption mx-auto max-w-[560px] text-text-muted">
-          Bragg is a free prediction game for entertainment purposes only. No
-          real money. No betting. No prizes.
+          {LEGAL_DISCLAIMER}
         </p>
       </PageWrapper>
     </section>

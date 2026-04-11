@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { SearchX } from 'lucide-react'
 
+import { BraggWordmark } from '@/components/ui/bragg-wordmark'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 
@@ -13,9 +14,9 @@ import { EmptyState } from '@/components/ui/empty-state'
  * returns an HTTP 404 status automatically.
  *
  * Standalone shell (no nav / no footer) so the user sees a clean recovery
- * screen regardless of which segment they landed in. Matches the visual
- * language of the login / landing pages — BRAGG wordmark above an
- * `EmptyState` with a single "Go to Dashboard" escape hatch.
+ * screen regardless of which segment they landed in. The BRAGG wordmark
+ * IS the page `<h1>` so screen-reader users land on a single, meaningful
+ * top-level heading.
  *
  * Server Component: 404s are expected, so no client interactivity or
  * error-capture telemetry is needed here.
@@ -25,8 +26,11 @@ import { EmptyState } from '@/components/ui/empty-state'
  */
 export default function NotFound() {
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center gap-8 bg-concrete-black p-4">
-      <p className="text-h1 text-bragg-lime">BRAGG</p>
+    <main
+      id="main"
+      className="flex min-h-dvh flex-col items-center justify-center gap-8 p-4"
+    >
+      <BraggWordmark as="h1" />
 
       <EmptyState
         icon={SearchX}
@@ -38,6 +42,6 @@ export default function NotFound() {
           </Button>
         }
       />
-    </div>
+    </main>
   )
 }

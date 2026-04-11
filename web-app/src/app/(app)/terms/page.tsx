@@ -27,7 +27,7 @@ export default function TermsPage() {
   return (
     <PageWrapper className="pt-8">
       <h1 className="text-h1 text-text-primary">TERMS &amp; CONDITIONS</h1>
-      <p className="mt-2 text-body-sm text-text-muted">Last updated: April 2026</p>
+      <p className="mt-2 text-body-sm text-text-secondary">Last updated: April 2026</p>
 
       <section className="mt-8 space-y-4" aria-labelledby="terms-introduction">
         <h2 id="terms-introduction" className="text-h2 text-text-primary">

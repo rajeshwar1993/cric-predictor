@@ -63,7 +63,7 @@ export function PredictionPreview() {
   return (
     <section
       aria-labelledby="prediction-preview-heading"
-      className="bg-concrete-black py-16 md:py-20"
+      className="py-16 md:py-20"
     >
       <PageWrapper>
         <h2
@@ -83,24 +83,26 @@ export function PredictionPreview() {
         </div>
 
         {/* Scenario list */}
-        <div className="flex flex-col gap-3">
+        <ul role="list" className="flex flex-col gap-3">
           {MOCK_SCENARIOS.map((scenario) => (
-            <ScenarioCard
-              key={scenario.id}
-              title={scenario.title}
-              description={scenario.description}
-              pointsWeight={scenario.pointsWeight}
-              isPicked={false}
-            >
-              <div
-                className="rounded-md border border-wire bg-mid-concrete px-3 py-2 text-body-sm text-text-muted"
-                aria-hidden="true"
+            <li key={scenario.id}>
+              <ScenarioCard
+                title={scenario.title}
+                description={scenario.description}
+                pointsWeight={scenario.pointsWeight}
+                isPicked={false}
+                titleAs="h3"
               >
-                {scenario.inputLabel}
-              </div>
-            </ScenarioCard>
+                <div
+                  className="rounded-md border border-wire bg-mid-concrete px-3 py-2 text-body-sm text-text-muted"
+                  aria-hidden="true"
+                >
+                  {scenario.inputLabel}
+                </div>
+              </ScenarioCard>
+            </li>
           ))}
-        </div>
+        </ul>
       </PageWrapper>
     </section>
   )

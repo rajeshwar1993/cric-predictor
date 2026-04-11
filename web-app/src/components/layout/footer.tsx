@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { LEGAL_DISCLAIMER } from '@/lib/constants'
 
 /**
  * Global footer — Server Component.
@@ -14,10 +15,7 @@ export function Footer() {
   return (
     <footer className="border-t border-mid-concrete mt-12">
       <div className="mx-auto max-w-[720px] px-4 md:px-8 py-6 text-center">
-        <p className="text-caption text-text-muted mb-2">
-          Bragg is a free prediction game for entertainment purposes only. No
-          real money. No betting. No prizes.
-        </p>
+        <p className="text-caption text-text-muted mb-2">{LEGAL_DISCLAIMER}</p>
         <div className="flex items-center justify-center gap-4 text-xs text-text-secondary">
           <Link
             href="/privacy"

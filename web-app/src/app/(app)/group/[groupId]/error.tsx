@@ -1,17 +1,15 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { AlertTriangle } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageWrapper } from '@/components/layout/page-wrapper'
+import { useResetAttempts } from '@/hooks/use-reset-attempts'
 import { captureError } from '@/lib/analytics/error-handler'
-
-/** After this many failed resets we stop offering Try Again and surface a
- *  dashboard escape hatch so the user can't get stuck in a reset loop. */
-const MAX_RESET_ATTEMPTS = 2
 
 /**
  * Route-level error boundary for `/group/[groupId]`.
@@ -25,13 +23,15 @@ const MAX_RESET_ATTEMPTS = 2
  * full-viewport shell) so the NavBar remains accessible and the user can
  * navigate away without a hard reload.
  *
- * Reset-loop protection: after `MAX_RESET_ATTEMPTS` consecutive failures we
- * stop offering the Try Again button so the user can always escape a
- * persistent failure via the "Back to Dashboard" link.
+ * Reset-loop protection via the shared `useResetAttempts` hook: after the
+ * default max attempts we stop offering "Try again" so the user can always
+ * escape via "Back to Dashboard". The description copy moves through three
+ * states (initial → mid-retry → exhausted) so the user always knows where
+ * they are in the loop.
  *
- * Fires `captureError` to PostHog with the server-side `digest` (if
- * present) so the failure is visible in analytics and cross-referenceable
- * with server logs.
+ * Fires `captureError` to PostHog with the server-side `digest` and the
+ * current pathname (so triage can attribute the failure to a specific
+ * gang / sub-route without grepping logs).
  *
  * @see https://nextjs.org/docs/app/api-reference/file-conventions/error
  * @see web-app/src/app/(app)/profile/error.tsx — sibling pattern
@@ -44,28 +44,29 @@ export default function GroupError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
-  // Track reset attempts across re-renders. A ref keeps the count stable
-  // without causing an extra render loop, and a state counter re-renders
-  // once we hit the limit so the fallback UI can swap in.
-  const attemptsRef = useRef(0)
-  const [attempts, setAttempts] = useState(0)
-  const hasExhaustedResets = attempts >= MAX_RESET_ATTEMPTS
+  const pathname = usePathname()
+  const { attempts, hasExhausted, handleReset } = useResetAttempts(reset)
 
   useEffect(() => {
     captureError(error, {
       source: 'GroupError',
-      metadata: { digest: error.digest },
+      metadata: { digest: error.digest, pathname },
     })
-  }, [error])
+  }, [error, pathname])
 
-  function handleReset() {
-    attemptsRef.current += 1
-    setAttempts(attemptsRef.current)
-    reset()
+  let description: string
+  if (hasExhausted) {
+    description =
+      "We've tried a few times and it keeps failing. Head back to the dashboard and try again later."
+  } else if (attempts > 0) {
+    description =
+      "Still failing. One more try and we'll point you back to the dashboard."
+  } else {
+    description = "We couldn't load this gang. Please try again."
   }
 
   return (
-    <PageWrapper className="py-8">
+    <PageWrapper className="pt-8">
       <section
         className="mt-8 rounded-lg border border-wire bg-dark-concrete p-6"
         role="alert"
@@ -74,14 +75,10 @@ export default function GroupError({
         <EmptyState
           icon={AlertTriangle}
           headline="Something went wrong"
-          description={
-            hasExhaustedResets
-              ? "We've tried a few times and it keeps failing. Head back to the dashboard and try again later."
-              : "We couldn't load this gang. Please try again."
-          }
+          description={description}
           action={
             <div className="flex gap-3">
-              {hasExhaustedResets ? null : (
+              {hasExhausted ? null : (
                 <Button type="button" variant="default" onClick={handleReset}>
                   Try again
                 </Button>

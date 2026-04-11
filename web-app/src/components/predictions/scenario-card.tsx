@@ -14,6 +14,13 @@ export interface ScenarioCardProps {
   pointsWeight: number
   /** Whether the user has picked an answer for this scenario */
   isPicked: boolean
+  /**
+   * Heading element for the title. Defaults to `h4` (matches the predict
+   * page hierarchy where each card sits inside a `ScenarioGroup` h3).
+   * Override on surfaces where the parent heading is one level higher
+   * (e.g. landing prediction-preview uses `h3` to bridge an h2).
+   */
+  titleAs?: 'h3' | 'h4'
   /** Picker input area — rendered via children (actual pickers from PRED-002) */
   children?: React.ReactNode
 }
@@ -38,6 +45,7 @@ export function ScenarioCard({
   description,
   pointsWeight,
   isPicked,
+  titleAs: TitleTag = 'h4',
   children,
 }: ScenarioCardProps) {
   return (
@@ -50,9 +58,9 @@ export function ScenarioCard({
       {/* Header: Title + Points badge */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <h4 className="font-body text-h4 font-semibold text-text-primary">
+          <TitleTag className="font-body text-h4 font-semibold text-text-primary">
             {title}
-          </h4>
+          </TitleTag>
           {description && (
             <p className="text-body-sm text-text-muted">{description}</p>
           )}

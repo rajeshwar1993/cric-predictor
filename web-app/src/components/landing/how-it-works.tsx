@@ -1,4 +1,3 @@
-import { StatBlock } from '@/components/ui/stat-block'
 import { PageWrapper } from '@/components/layout/page-wrapper'
 
 interface Step {
@@ -30,10 +29,10 @@ const STEPS: readonly Step[] = [
 /**
  * HowItWorks — three-step explainer section.
  *
- * Uses the `StatBlock` primitive (lime, sharp-cornered, offset shadow)
- * to number each step, giving the section a strong graphic rhythm.
- *
- * Server Component — no interactivity.
+ * Renders inline static lime number blocks (sharp corners, offset
+ * shadow) so the entire section stays in the server-component subtree
+ * — the landing page is the LCP-critical surface and shouldn't ship
+ * client JS for static numbers.
  *
  * @see docs/stories/PUB-001-landing-page.md
  */
@@ -41,7 +40,7 @@ export function HowItWorks() {
   return (
     <section
       aria-labelledby="how-it-works-heading"
-      className="bg-concrete-black py-16 md:py-20"
+      className="py-16 md:py-20"
     >
       <PageWrapper>
         <h2
@@ -54,13 +53,17 @@ export function HowItWorks() {
         <ol className="flex flex-col gap-8">
           {STEPS.map((step) => (
             <li key={step.number} className="flex items-start gap-5">
-              <StatBlock
-                value={step.number}
-                label={`Step ${step.number}`}
+              <div
                 aria-hidden="true"
-              />
+                className="flex min-w-[72px] shrink-0 items-center justify-center bg-bragg-lime px-4 py-3 font-display text-stat font-bold text-text-on-primary shadow-[4px_4px_0_var(--color-lime-shade)]"
+              >
+                {step.number}
+              </div>
               <div className="flex min-w-0 flex-1 flex-col gap-1 pt-1">
-                <h3 className="text-h3 text-text-primary">{step.title}</h3>
+                <h3 className="text-h3 text-text-primary">
+                  <span className="sr-only">Step {step.number}: </span>
+                  {step.title}
+                </h3>
                 <p className="text-body text-text-secondary">
                   {step.description}
                 </p>

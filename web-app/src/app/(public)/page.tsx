@@ -38,8 +38,8 @@ export default async function LandingPage() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-concrete-black">
-      <main className="flex-1">
+    <div className="flex min-h-dvh flex-col">
+      <main id="main" className="flex-1">
         <HeroSection />
         <HowItWorks />
         <PredictionPreview />

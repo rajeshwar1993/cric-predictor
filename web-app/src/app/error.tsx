@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import Link from 'next/link'
 import { AlertTriangle } from 'lucide-react'
 
+import { BraggWordmark } from '@/components/ui/bragg-wordmark'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { captureError } from '@/lib/analytics/error-handler'
@@ -18,9 +19,8 @@ import { captureError } from '@/lib/analytics/error-handler'
  *
  * Standalone shell (no nav / no footer) mirrors the 404 page — we can't
  * assume the (app) layout loaded successfully when this fires, so we
- * render a self-contained recovery screen: BRAGG wordmark + `EmptyState`
- * with a "Try again" button (calls `reset()`) and a "Dashboard" escape
- * hatch for persistent failures.
+ * render a self-contained recovery screen. The BRAGG wordmark IS the
+ * page `<h1>` so screen-reader users land on a single meaningful heading.
  *
  * Fires `captureError` to PostHog so the failure is visible in analytics.
  * The `digest` field (when present) is the server-side request id Next.js
@@ -44,12 +44,13 @@ export default function GlobalError({
   }, [error])
 
   return (
-    <div
-      className="flex min-h-dvh flex-col items-center justify-center gap-8 bg-concrete-black p-4"
+    <main
+      id="main"
+      className="flex min-h-dvh flex-col items-center justify-center gap-8 p-4"
       role="alert"
       aria-live="polite"
     >
-      <p className="text-h1 text-bragg-lime">BRAGG</p>
+      <BraggWordmark as="h1" />
 
       <EmptyState
         icon={AlertTriangle}
@@ -66,6 +67,6 @@ export default function GlobalError({
           </div>
         }
       />
-    </div>
+    </main>
   )
 }

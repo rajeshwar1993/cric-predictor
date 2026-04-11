@@ -1,3 +1,12 @@
+/**
+ * Canonical legal disclaimer copy. PRD NFR requires this string on the
+ * landing page, the login page, the global footer, and anywhere else
+ * we ask the user to engage with the game. Keep this as the single
+ * source of truth so a legal-review change only needs to land here.
+ */
+export const LEGAL_DISCLAIMER =
+  'Bragg is a free prediction game for entertainment purposes only. No real money. No betting. No prizes.'
+
 /** Current terms of service version. Bump the major number to force re-acceptance. */
 export const CURRENT_TERMS_VERSION = '2.0'
 

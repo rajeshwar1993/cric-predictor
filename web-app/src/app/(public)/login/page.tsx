@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import { LoginForm } from '@/components/auth/login-form'
+import { BraggWordmark } from '@/components/ui/bragg-wordmark'
+import { LEGAL_DISCLAIMER } from '@/lib/constants'
 
 export const metadata: Metadata = {
   title: 'Log in',
@@ -16,8 +18,12 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-[400px]">
-        {/* Logo */}
-        <h1 className="text-h1 mb-8 text-center text-text-primary">BRAGG</h1>
+        {/* Logo — also serves as the page heading */}
+        <BraggWordmark
+          as="h1"
+          tone="primary"
+          className="mb-8 text-center"
+        />
 
         {/* Form card */}
         <div className="rounded-2xl border border-wire bg-dark-concrete p-6">
@@ -26,8 +32,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
         {/* Disclaimer */}
         <p className="text-body-sm mt-6 text-center text-text-muted">
-          Bragg is a free prediction game for entertainment purposes only. No real money. No
-          betting. No prizes.
+          {LEGAL_DISCLAIMER}
         </p>
       </div>
     </div>
