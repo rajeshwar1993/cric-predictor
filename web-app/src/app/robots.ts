@@ -22,7 +22,6 @@ export default function robots(): MetadataRoute.Robots {
         '/dashboard',
         '/group',
         '/profile',
-        '/settings',
         '/onboarding',
         '/accept-terms',
         '/auth',

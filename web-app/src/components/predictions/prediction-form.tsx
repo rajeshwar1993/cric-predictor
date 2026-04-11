@@ -96,16 +96,29 @@ export function PredictionForm({
     Object.values(initialPredictions).filter(Boolean).length,
   )
 
-  // Clear any pending PICK_CHANGED timer on unmount so a stale fire
-  // cannot reach trackEvent after the component is gone.
+  // On unmount, flush any pending PICK_CHANGED event synchronously BEFORE
+  // clearing the debounce timer. Tradeoff: a user who navigates away mid-edit
+  // would otherwise lose the most recent pick from analytics. We accept that
+  // this can fire one extra event right before unmount in exchange for never
+  // dropping the user's final intent. The pending ref + timer are then
+  // cleared so no stale fire reaches trackEvent after the component is gone.
   useEffect(() => {
     return () => {
       if (debounceTimerRef.current !== null) {
+        const pending = pendingPickRef.current
+        if (pending) {
+          trackEvent(ANALYTICS_EVENTS.PICK_CHANGED, {
+            scenario_id: pending.scenarioId,
+            gang_id: gangId,
+            fixture_id: fixtureId,
+          })
+        }
         clearTimeout(debounceTimerRef.current)
         debounceTimerRef.current = null
+        pendingPickRef.current = null
       }
     }
-  }, [])
+  }, [gangId, fixtureId])
 
   const handlePredictionsChange = useCallback(
     (predictions: Record<string, string>) => {
@@ -139,11 +152,13 @@ export function PredictionForm({
         debounceTimerRef.current = null
         pendingPickRef.current = null
         if (!pending) return
+        // Never include the actual pick `value` — the scenario id + gang +
+        // fixture is enough for funnel analytics, and pick values can leak
+        // user-identifying signals (player names, score predictions).
         trackEvent(ANALYTICS_EVENTS.PICK_CHANGED, {
           scenario_id: pending.scenarioId,
           gang_id: gangId,
           fixture_id: fixtureId,
-          value: pending.value,
         })
       }, PICK_CHANGED_DEBOUNCE_MS)
     },

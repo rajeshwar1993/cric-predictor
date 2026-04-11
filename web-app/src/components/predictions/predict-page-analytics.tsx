@@ -21,19 +21,24 @@ interface PredictPageAnalyticsProps {
  * prediction for this fixture (lastSubmittedAt === null), or
  * PREDICT_PAGE_REVISITED otherwise.
  *
- * The mounted-once guard via `useRef` prevents the event from firing twice
- * under React Strict Mode in development. Renders nothing.
+ * The fired-key ref is keyed by `${gangId}:${fixtureId}` so that a client
+ * navigation from one fixture to another (which keeps the React subtree
+ * mounted and only updates props) correctly fires a fresh event for the
+ * new fixture. A bare boolean ref would be preserved across the param
+ * change and the second fixture's view event would be silently dropped.
+ * Renders nothing.
  */
 export function PredictPageAnalytics({
   gangId,
   fixtureId,
   lastSubmittedAt,
 }: PredictPageAnalyticsProps) {
-  const firedRef = useRef(false)
+  const firedKeyRef = useRef<string | null>(null)
 
   useEffect(() => {
-    if (firedRef.current) return
-    firedRef.current = true
+    const key = `${gangId}:${fixtureId}`
+    if (firedKeyRef.current === key) return
+    firedKeyRef.current = key
 
     const event =
       lastSubmittedAt === null

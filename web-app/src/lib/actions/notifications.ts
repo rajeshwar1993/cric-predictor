@@ -84,7 +84,7 @@ export async function markNotificationAsRead(
       .eq('user_id', userId)
 
     if (error) {
-      captureServerError(userId, error, {
+      await captureServerError(userId, error, {
         source: 'markNotificationAsRead',
         metadata: { notification_id: parsed.data },
       })
@@ -92,7 +92,7 @@ export async function markNotificationAsRead(
     }
 
     // Analytics
-    trackEvent(userId, ANALYTICS_EVENTS.NOTIFICATION_MARKED_READ, {
+    await trackEvent(userId, ANALYTICS_EVENTS.NOTIFICATION_MARKED_READ, {
       notification_id: parsed.data,
     })
 
@@ -151,14 +151,14 @@ export async function markAllNotificationsAsRead(): Promise<ActionResult> {
       .eq('is_read', false)
 
     if (error) {
-      captureServerError(userId, error, {
+      await captureServerError(userId, error, {
         source: 'markAllNotificationsAsRead',
       })
       return { success: false, error: 'Failed to mark notifications as read.' }
     }
 
     // Analytics
-    trackEvent(userId, ANALYTICS_EVENTS.ALL_NOTIFICATIONS_MARKED_READ, {})
+    await trackEvent(userId, ANALYTICS_EVENTS.ALL_NOTIFICATIONS_MARKED_READ, {})
 
     return { success: true }
   })

@@ -60,7 +60,7 @@ export async function createGang(
     })
 
     if (error) {
-      captureServerError(userId, error, {
+      await captureServerError(userId, error, {
         source: 'createGang',
         metadata: { gang_name: parsed.data },
       })
@@ -80,7 +80,7 @@ export async function createGang(
     }
 
     // Analytics
-    trackEvent(userId, ANALYTICS_EVENTS.GANG_CREATED, {
+    await trackEvent(userId, ANALYTICS_EVENTS.GANG_CREATED, {
       gang_name: parsed.data,
     })
 
@@ -153,7 +153,7 @@ export async function joinGangByCode(
   )
 
   if (rpcError) {
-    captureServerError(userId, rpcError, {
+    await captureServerError(userId, rpcError, {
       source: 'joinGangByCode',
       metadata: { stage: 'invite_lookup' },
     })
@@ -278,7 +278,7 @@ export async function joinGangByCode(
       .eq('user_id', userId)
 
     if (updateError) {
-      captureServerError(userId, updateError, {
+      await captureServerError(userId, updateError, {
         source: 'joinGangByCode',
         metadata: { stage: 'rejoin_update', gang_id: gang.id },
       })
@@ -298,7 +298,7 @@ export async function joinGangByCode(
       })
 
     if (insertError) {
-      captureServerError(userId, insertError, {
+      await captureServerError(userId, insertError, {
         source: 'joinGangByCode',
         metadata: { stage: 'member_insert', gang_id: gang.id },
       })
@@ -353,11 +353,11 @@ export async function joinGangByCode(
     }
   }
 
-  // Analytics
-  trackEvent(userId, ANALYTICS_EVENTS.JOIN_REQUESTED, {
+  // Analytics — never include the raw invite code; the gang_id is sufficient
+  // for funnel analytics and PostHog event payloads should not store join codes.
+  await trackEvent(userId, ANALYTICS_EVENTS.JOIN_REQUESTED, {
     gang_id: gang.id,
     status: newStatus,
-    invite_code: parsed.data,
   })
 
   // Revalidate pages
@@ -486,7 +486,7 @@ export async function approveJoinRequest(
     .select()
 
   if (updateError) {
-    captureServerError(actorId, updateError, {
+    await captureServerError(actorId, updateError, {
       source: 'approveJoinRequest',
       metadata: { stage: 'member_update', gang_id: gangId, target_user_id: userId },
     })
@@ -526,7 +526,7 @@ export async function approveJoinRequest(
   revalidatePath(`/group/${gangId}/settings`)
 
   // Analytics
-  trackEvent(actorId, ANALYTICS_EVENTS.MEMBER_APPROVED, {
+  await trackEvent(actorId, ANALYTICS_EVENTS.MEMBER_APPROVED, {
     gang_id: gangId,
     approved_user_id: userId,
   })
@@ -609,7 +609,7 @@ export async function rejectJoinRequest(
     .select()
 
   if (updateError) {
-    captureServerError(actorId, updateError, {
+    await captureServerError(actorId, updateError, {
       source: 'rejectJoinRequest',
       metadata: { stage: 'member_update', gang_id: gangId, target_user_id: userId },
     })
@@ -649,7 +649,7 @@ export async function rejectJoinRequest(
   revalidatePath(`/group/${gangId}/settings`)
 
   // Analytics
-  trackEvent(actorId, ANALYTICS_EVENTS.MEMBER_REJECTED, {
+  await trackEvent(actorId, ANALYTICS_EVENTS.MEMBER_REJECTED, {
     gang_id: gangId,
     rejected_user_id: userId,
   })
@@ -740,7 +740,7 @@ export async function leaveGang(gangId: string): Promise<ActionResult> {
       .select()
 
     if (updateError) {
-      captureServerError(userId, updateError, {
+      await captureServerError(userId, updateError, {
         source: 'leaveGang',
         metadata: { gang_id: gangIdParsed.data },
       })
@@ -753,7 +753,7 @@ export async function leaveGang(gangId: string): Promise<ActionResult> {
     }
 
     // Analytics
-    trackEvent(userId, ANALYTICS_EVENTS.MEMBER_LEFT, {
+    await trackEvent(userId, ANALYTICS_EVENTS.MEMBER_LEFT, {
       gang_id: gangIdParsed.data,
     })
 
@@ -901,7 +901,7 @@ export async function updateGangName(
       .select('id')
 
     if (updateError) {
-      captureServerError(userId, updateError, {
+      await captureServerError(userId, updateError, {
         source: 'updateGangName',
         metadata: { gang_id: gangIdParsed.data },
       })
@@ -1002,7 +1002,7 @@ export async function updateAutoAccept(
       .select('id')
 
     if (updateError) {
-      captureServerError(userId, updateError, {
+      await captureServerError(userId, updateError, {
         source: 'updateAutoAccept',
         metadata: { gang_id: gangIdParsed.data, auto_accept: autoAccept },
       })
@@ -1117,7 +1117,7 @@ export async function updatePredictionDeadline(
       .select('gang_id')
 
     if (updateError) {
-      captureServerError(userId, updateError, {
+      await captureServerError(userId, updateError, {
         source: 'updatePredictionDeadline',
         metadata: { gang_id: gangIdParsed.data, minutes: minutesParsed.data },
       })
@@ -1139,7 +1139,7 @@ export async function updatePredictionDeadline(
       console.warn(
         `[updatePredictionDeadline] unexpected multi-row update: gang_id=${gangIdParsed.data} rows=${updatedRows.length}`,
       )
-      captureServerError(
+      await captureServerError(
         userId,
         new Error('updatePredictionDeadline: multi-row update'),
         {
@@ -1225,7 +1225,7 @@ export async function deleteGang(gangId: string): Promise<ActionResult> {
     })
 
     if (error) {
-      captureServerError(userId, error, {
+      await captureServerError(userId, error, {
         source: 'deleteGang',
         metadata: {
           gang_id: gangIdParsed.data,
@@ -1260,7 +1260,7 @@ export async function deleteGang(gangId: string): Promise<ActionResult> {
     }
 
     // Analytics
-    trackEvent(userId, ANALYTICS_EVENTS.GANG_DELETED, {
+    await trackEvent(userId, ANALYTICS_EVENTS.GANG_DELETED, {
       gang_id: gangIdParsed.data,
     })
 
@@ -1381,7 +1381,7 @@ export async function removeMember(
       .select()
 
     if (updateError) {
-      captureServerError(actorId, updateError, {
+      await captureServerError(actorId, updateError, {
         source: 'removeMember',
         metadata: {
           gang_id: gangIdParsed.data,
@@ -1402,7 +1402,7 @@ export async function removeMember(
     }
 
     // Analytics
-    trackEvent(actorId, ANALYTICS_EVENTS.MEMBER_REMOVED, {
+    await trackEvent(actorId, ANALYTICS_EVENTS.MEMBER_REMOVED, {
       gang_id: gangIdParsed.data,
       removed_user_id: userIdParsed.data,
     })
@@ -1547,7 +1547,7 @@ export async function blockMember(
       .select()
 
     if (guardedError) {
-      captureServerError(actorId, guardedError, {
+      await captureServerError(actorId, guardedError, {
         source: 'blockMember',
         metadata: {
           stage: 'race_guarded_update',
@@ -1573,7 +1573,7 @@ export async function blockMember(
         .neq('role', 'admin')
 
       if (fallbackError) {
-        captureServerError(actorId, fallbackError, {
+        await captureServerError(actorId, fallbackError, {
           source: 'blockMember',
           metadata: {
             stage: 'fallback_update',
@@ -1596,7 +1596,7 @@ export async function blockMember(
       .neq('role', 'admin')
 
     if (updateError) {
-      captureServerError(actorId, updateError, {
+      await captureServerError(actorId, updateError, {
         source: 'blockMember',
         metadata: {
           stage: 'plain_update',
@@ -1612,7 +1612,7 @@ export async function blockMember(
   }
 
   // Analytics
-  trackEvent(actorId, ANALYTICS_EVENTS.MEMBER_BLOCKED, {
+  await trackEvent(actorId, ANALYTICS_EVENTS.MEMBER_BLOCKED, {
     gang_id: gangIdParsed.data,
     blocked_user_id: userIdParsed.data,
   })
@@ -1726,7 +1726,7 @@ export async function unblockMember(
     .select()
 
   if (updateError) {
-    captureServerError(actorId, updateError, {
+    await captureServerError(actorId, updateError, {
       source: 'unblockMember',
       metadata: {
         gang_id: gangIdParsed.data,
@@ -1747,7 +1747,7 @@ export async function unblockMember(
   }
 
   // Analytics
-  trackEvent(actorId, ANALYTICS_EVENTS.MEMBER_UNBLOCKED, {
+  await trackEvent(actorId, ANALYTICS_EVENTS.MEMBER_UNBLOCKED, {
     gang_id: gangIdParsed.data,
     unblocked_user_id: userIdParsed.data,
   })

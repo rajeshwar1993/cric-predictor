@@ -85,7 +85,7 @@ export async function updateDisplayName(
       .single()
 
     if (profileError) {
-      captureServerError(userId, profileError, {
+      await captureServerError(userId, profileError, {
         source: 'updateDisplayName',
         metadata: { stage: 'fetch_current_profile' },
       })
@@ -134,7 +134,7 @@ export async function updateDisplayName(
       .eq('v2_gangs.is_deleted', false)
 
     if (membershipsError) {
-      captureServerError(userId, membershipsError, {
+      await captureServerError(userId, membershipsError, {
         source: 'updateDisplayName',
         metadata: { stage: 'fetch_memberships' },
       })
@@ -164,7 +164,7 @@ export async function updateDisplayName(
         .neq('user_id', userId)
 
       if (collisionsError) {
-        captureServerError(userId, collisionsError, {
+        await captureServerError(userId, collisionsError, {
           source: 'updateDisplayName',
           metadata: { stage: 'collision_check' },
         })
@@ -206,7 +206,7 @@ export async function updateDisplayName(
       .eq('id', userId)
 
     if (updateError) {
-      captureServerError(userId, updateError, {
+      await captureServerError(userId, updateError, {
         source: 'updateDisplayName',
         metadata: { stage: 'profile_update' },
       })
@@ -225,10 +225,10 @@ export async function updateDisplayName(
       revalidatePath(`/group/${gangId}`, 'layout')
     }
 
-    // Analytics
-    trackEvent(userId, ANALYTICS_EVENTS.DISPLAY_NAME_UPDATED, {
-      new_display_name: trimmedName,
-    })
+    // Analytics — never include the user's display_name as a property; the
+    // distinctId already identifies them and PostHog event payloads are
+    // visible to more people than the v2_profiles table is.
+    await trackEvent(userId, ANALYTICS_EVENTS.DISPLAY_NAME_UPDATED)
 
     return { success: true }
   })
@@ -309,7 +309,7 @@ export async function deleteAccount(): Promise<ActionResult> {
         })
 
         if (rpcError) {
-          captureServerError(userId, rpcError, {
+          await captureServerError(userId, rpcError, {
             source: 'deleteAccount',
             metadata: { stage: 'rpc' },
           })
@@ -324,7 +324,7 @@ export async function deleteAccount(): Promise<ActionResult> {
         // fires FIRST so a flaky signOut cannot skew deletion metrics (the
         // "account deleted" event represents the RPC succeeding, not the
         // session tear-down).
-        trackEvent(userId, ANALYTICS_EVENTS.ACCOUNT_DELETED)
+        await trackEvent(userId, ANALYTICS_EVENTS.ACCOUNT_DELETED)
 
         // Sign out (best effort). The profile is already soft-deleted, so a
         // failure here leaves the user in a half-authenticated state but does
@@ -379,7 +379,7 @@ export async function deleteAccount(): Promise<ActionResult> {
         // the `[deleteAccount]` log prefix used by the best-effort cleanup
         // steps above so failures across the whole action are easy to grep.
         console.error('[deleteAccount] unexpected failure:', error)
-        captureServerError(userId, error, {
+        await captureServerError(userId, error, {
           source: 'deleteAccount',
           metadata: { stage: 'unexpected' },
         })
