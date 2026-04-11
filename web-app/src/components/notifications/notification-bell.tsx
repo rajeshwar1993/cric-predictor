@@ -1,42 +1,87 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Bell } from 'lucide-react'
+
+import { cn } from '@/lib/utils'
 import { SidePanel } from '@/components/ui/side-panel'
+import { useNotifications } from '@/hooks/use-notifications'
+import { trackEvent } from '@/lib/analytics/client'
+import { ANALYTICS_EVENTS } from '@/lib/analytics/events'
+
+import { NotificationPanel } from './notification-panel'
 
 interface NotificationBellProps {
-  /** The authenticated user's ID (for future realtime subscription in NTF-001). */
+  /** The authenticated user's id (required for the realtime subscription). */
   userId: string
-  /** Server-fetched count of unread notifications. */
+  /** SSR-fetched count of unread notifications — used for the initial paint. */
   initialUnreadCount: number
 }
 
 /**
- * Notification bell icon with an unread-count badge.
+ * Notification bell with unread badge + realtime panel.
  *
- * Clicking the bell opens a SidePanel from the right. The panel body is a
- * placeholder — real notification content arrives in NTF-001.
+ * - SSR paints the initial unread count to avoid a hydration flicker.
+ * - On mount, `useNotifications` subscribes to `postgres_changes` on
+ *   `v2_notifications` and keeps the badge in sync in realtime.
+ * - Clicking the bell opens a `SidePanel`, lazy-fetches the latest 20
+ *   notifications, and clears the pulse animation.
+ * - Optimistic mark-read is handled by the panel + item components;
+ *   this shell just wires the state through.
+ *
+ * @see docs/stories/NTF-001-notification-bell-panel.md
+ * @see docs/architecture.md §"Notifications (Realtime)"
  */
-function NotificationBell({ userId: _userId, initialUnreadCount }: NotificationBellProps) {
+function NotificationBell({
+  userId,
+  initialUnreadCount,
+}: NotificationBellProps) {
   const [open, setOpen] = useState(false)
+  const {
+    notifications,
+    unreadCount,
+    isLoadingList,
+    pulse,
+    fetchList,
+    clearPulse,
+    markReadLocally,
+    revertMarkReadLocally,
+    markAllReadLocally,
+    restoreNotifications,
+  } = useNotifications(userId, initialUnreadCount)
 
-  const displayCount =
-    initialUnreadCount > 99 ? '99+' : String(initialUnreadCount)
+  // When the panel opens: fetch the latest list, fire analytics, and
+  // stop the pulse animation since the user has "seen" the new badge.
+  useEffect(() => {
+    if (!open) return
+    trackEvent(ANALYTICS_EVENTS.BELL_OPENED, { unread_count: unreadCount })
+    clearPulse()
+    void fetchList()
+    // We intentionally only react to `open` flipping to true — re-running
+    // this effect on every `unreadCount` tick would spam analytics and
+    // re-fetch the list on every realtime event while the panel is open.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+
+  const displayCount = unreadCount > 99 ? '99+' : String(unreadCount)
 
   return (
     <>
       <button
         type="button"
         aria-label={
-          initialUnreadCount > 0
-            ? `Notifications — ${initialUnreadCount} unread`
+          unreadCount > 0
+            ? `Notifications — ${unreadCount} unread`
             : 'Notifications'
         }
         onClick={() => setOpen(true)}
-        className="relative flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-text-primary transition-colors duration-150 ease-out hover:bg-dark-concrete focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-bragg-lime/50"
+        className={cn(
+          'relative flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-text-primary transition-colors duration-150 ease-out hover:bg-dark-concrete focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-bragg-lime/50',
+          pulse && 'animate-pulse',
+        )}
       >
         <Bell className="size-6" />
-        {initialUnreadCount > 0 && (
+        {unreadCount > 0 && (
           <span
             aria-hidden="true"
             className="absolute -top-0.5 -right-0.5 flex min-w-[18px] items-center justify-center rounded-full bg-electric-coral px-1 py-px font-body text-[10px] font-bold leading-none text-text-on-primary"
@@ -48,16 +93,20 @@ function NotificationBell({ userId: _userId, initialUnreadCount }: NotificationB
 
       <SidePanel
         side="right"
-        title="Notifications"
+        title="NOTIFICATIONS"
         open={open}
         onOpenChange={setOpen}
       >
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <p className="text-h4 text-text-secondary">No notifications yet</p>
-          <p className="mt-1 text-body-sm text-text-muted">
-            We&apos;ll let you know when something happens.
-          </p>
-        </div>
+        <NotificationPanel
+          notifications={notifications}
+          isLoading={isLoadingList}
+          unreadCount={unreadCount}
+          onMarkRead={markReadLocally}
+          onRevertMarkRead={revertMarkReadLocally}
+          onMarkAllRead={markAllReadLocally}
+          onRestore={restoreNotifications}
+          onNavigate={() => setOpen(false)}
+        />
       </SidePanel>
     </>
   )

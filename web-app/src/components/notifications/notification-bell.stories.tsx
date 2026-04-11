@@ -32,31 +32,44 @@ export const NoUnread: Story = {
 }
 
 /* ------------------------------------------------------------------ */
-/* With unread count: 3                                                */
+/* Three unread notifications                                          */
 /* ------------------------------------------------------------------ */
 
-export const WithUnread3: Story = {
+export const ThreeUnread: Story = {
   args: {
     initialUnreadCount: 3,
   },
 }
 
 /* ------------------------------------------------------------------ */
-/* With unread count: 9                                                */
+/* 99+ unread notifications                                            */
 /* ------------------------------------------------------------------ */
 
-export const WithUnread9: Story = {
+export const NinetyNinePlus: Story = {
   args: {
-    initialUnreadCount: 9,
+    initialUnreadCount: 150,
   },
 }
 
 /* ------------------------------------------------------------------ */
-/* With unread count: 99+ (over 99)                                    */
+/* Pulsing — a new notification just arrived                            */
+/*                                                                      */
+/* The pulse animation is driven by a realtime INSERT event, which is   */
+/* not available in a static Storybook sandbox. This story previews the  */
+/* unread badge so designers can eyeball the idle treatment; the live   */
+/* pulse is triggered at runtime by the `useNotifications` hook.        */
 /* ------------------------------------------------------------------ */
 
-export const WithUnread99Plus: Story = {
+export const PulsingNew: Story = {
   args: {
-    initialUnreadCount: 150,
+    initialUnreadCount: 1,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Pulse animation fires at runtime when a new notification arrives via the realtime subscription. Storybook shows the static badge preview.',
+      },
+    },
   },
 }

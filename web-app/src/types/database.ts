@@ -323,30 +323,30 @@ export type Database = {
           id: string
           user_id: string
           type: Database['public']['Enums']['v2_notification_type']
-          title: string
-          body: string
-          data: Json | null
-          read_at: string | null
+          message: string
+          gang_id: string | null
+          fixture_id: string | null
+          is_read: boolean
           created_at: string
         }
         Insert: {
           id?: string
           user_id: string
           type: Database['public']['Enums']['v2_notification_type']
-          title: string
-          body: string
-          data?: Json | null
-          read_at?: string | null
+          message: string
+          gang_id?: string | null
+          fixture_id?: string | null
+          is_read?: boolean
           created_at?: string
         }
         Update: {
           id?: string
           user_id?: string
           type?: Database['public']['Enums']['v2_notification_type']
-          title?: string
-          body?: string
-          data?: Json | null
-          read_at?: string | null
+          message?: string
+          gang_id?: string | null
+          fixture_id?: string | null
+          is_read?: boolean
           created_at?: string
         }
         Relationships: []
@@ -736,6 +736,38 @@ export type Database = {
         }
         Returns: string[]
       }
+      create_join_request_notification: {
+        Args: {
+          p_admin_user_id: string
+          p_gang_id: string
+          p_requester_display_name: string
+        }
+        Returns: undefined
+      }
+      create_new_member_notification: {
+        Args: {
+          p_admin_user_id: string
+          p_gang_id: string
+          p_member_display_name: string
+        }
+        Returns: undefined
+      }
+      create_join_approved_notification: {
+        Args: {
+          p_user_id: string
+          p_gang_id: string
+          p_gang_name: string
+        }
+        Returns: undefined
+      }
+      create_join_rejected_notification: {
+        Args: {
+          p_user_id: string
+          p_gang_id: string
+          p_gang_name: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       v2_match_status: 'upcoming' | 'live' | 'completed' | 'resolved' | 'abandoned' | 'no_result'
@@ -749,14 +781,14 @@ export type Database = {
         | 'yes_no'
       v2_resolution_phase: 'toss' | 'first_wicket' | 'team_powerplay_end' | 'mid_match' | 'team_innings_end' | 'end' | 'post_match'
       v2_notification_type:
-        | 'gang_invite'
         | 'join_request'
         | 'join_approved'
         | 'join_rejected'
         | 'new_member'
-        | 'member_removed'
-        | 'match_reminder'
-        | 'results_ready'
+        | 'deadline_reminder'
+        | 'results_available'
+        | 'gang_deleted'
+        | 'admin_promoted'
     }
     CompositeTypes: {
       [_ in never]: never
