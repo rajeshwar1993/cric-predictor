@@ -97,7 +97,7 @@ function PanelHarness(props: {
           onMarkRead={fn()}
           onRevertMarkRead={fn()}
           onMarkAllRead={fn()}
-          onRestore={fn()}
+          onRefetch={fn()}
           onNavigate={fn()}
         />
       </SidePanel>
@@ -120,7 +120,7 @@ const meta = {
     onMarkRead: fn(),
     onRevertMarkRead: fn(),
     onMarkAllRead: fn(),
-    onRestore: fn(),
+    onRefetch: fn(),
     onNavigate: fn(),
   },
   parameters: {

@@ -755,10 +755,11 @@ describe('joinGangByCode server action', () => {
     await joinGangByCode('XK42AB')
 
     // Verify the SECURITY DEFINER RPC was called for the new_member path.
+    // The display name is resolved server-side from v2_profiles inside the
+    // RPC — the client must not pass it.
     expect(mockRpc).toHaveBeenCalledWith('create_new_member_notification', {
       p_admin_user_id: 'admin-456',
       p_gang_id: mockGang.id,
-      p_member_display_name: 'TestUser',
     })
   })
 
@@ -793,10 +794,11 @@ describe('joinGangByCode server action', () => {
     await joinGangByCode('XK42AB')
 
     // Verify the SECURITY DEFINER RPC was called for the join_request path.
+    // The display name is resolved server-side from v2_profiles inside the
+    // RPC — the client must not pass it.
     expect(mockRpc).toHaveBeenCalledWith('create_join_request_notification', {
       p_admin_user_id: 'admin-456',
       p_gang_id: mockGang.id,
-      p_requester_display_name: 'TestUser',
     })
   })
 
@@ -848,8 +850,9 @@ describe('approveJoinRequest server action', () => {
    * 3. v2_profiles — requester display name (.single)
    * 4. v2_gang_members — display name dup check (.select)
    * 5. v2_gang_members — update status
-   * 6. v2_gangs — fetch gang name (.single)
-   * 7. v2_notifications — insert notification
+   *
+   * The notification is sent via create_join_approved_notification RPC,
+   * which resolves the gang name server-side — no v2_gangs .from() call.
    */
   function setupApproveFromMock(overrides?: {
     adminCheck?: { data: unknown }
@@ -857,8 +860,6 @@ describe('approveJoinRequest server action', () => {
     requesterProfile?: { data: unknown }
     duplicateName?: { data: unknown[] }
     updateResult?: { data: unknown[]; error: unknown }
-    gangData?: { data: unknown }
-    notificationResult?: { error: unknown }
   }) {
     const opts = {
       adminCheck: { data: { role: 'admin', status: 'approved' } },
@@ -866,13 +867,10 @@ describe('approveJoinRequest server action', () => {
       requesterProfile: { data: { display_name: 'NewUser' } },
       duplicateName: { data: [] },
       updateResult: { data: [{ status: 'approved' }], error: null },
-      gangData: { data: { name: 'Test Gang' } },
-      notificationResult: { error: null },
       ...overrides,
     }
 
     let memberCallIndex = 0
-    let gangsCallIndex = 0
     mockFrom.mockImplementation((table: string) => {
       if (table === 'v2_gang_members') {
         memberCallIndex++
@@ -883,13 +881,6 @@ describe('approveJoinRequest server action', () => {
       }
       if (table === 'v2_profiles') {
         return createQueryChain(opts.requesterProfile)
-      }
-      if (table === 'v2_gangs') {
-        gangsCallIndex++
-        if (gangsCallIndex === 1) return createQueryChain(opts.gangData)
-      }
-      if (table === 'v2_notifications') {
-        return createQueryChain(opts.notificationResult)
       }
       return createQueryChain({ data: null })
     })
@@ -1123,20 +1114,17 @@ describe('rejectJoinRequest server action', () => {
    * The action calls .from() for:
    * 1. v2_gang_members — admin verification (.maybeSingle)
    * 2. v2_gang_members — update status
-   * 3. v2_gangs — fetch gang name (.single)
-   * 4. v2_notifications — insert notification
+   *
+   * The notification is sent via create_join_rejected_notification RPC,
+   * which resolves the gang name server-side — no v2_gangs .from() call.
    */
   function setupRejectFromMock(overrides?: {
     adminCheck?: { data: unknown }
     updateResult?: { data: unknown[]; error: unknown }
-    gangData?: { data: unknown }
-    notificationResult?: { error: unknown }
   }) {
     const opts = {
       adminCheck: { data: { role: 'admin', status: 'approved' } },
       updateResult: { data: [{ status: 'rejected' }], error: null },
-      gangData: { data: { name: 'Test Gang' } },
-      notificationResult: { error: null },
       ...overrides,
     }
 
@@ -1146,12 +1134,6 @@ describe('rejectJoinRequest server action', () => {
         memberCallIndex++
         if (memberCallIndex === 1) return createQueryChain(opts.adminCheck)
         if (memberCallIndex === 2) return createQueryChain(opts.updateResult)
-      }
-      if (table === 'v2_gangs') {
-        return createQueryChain(opts.gangData)
-      }
-      if (table === 'v2_notifications') {
-        return createQueryChain(opts.notificationResult)
       }
       return createQueryChain({ data: null })
     })

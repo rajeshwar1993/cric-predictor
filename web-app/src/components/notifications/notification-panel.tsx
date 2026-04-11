@@ -29,13 +29,12 @@ interface NotificationPanelProps {
   /** Optimistically flip every item to read in the parent hook. */
   onMarkAllRead: () => void
   /**
-   * Restore the full notification list + unread count after a failed
-   * `markAllNotificationsAsRead` server call.
+   * Re-derive the list and unread count from the server. Called after a
+   * failed `markAllNotificationsAsRead` so any realtime INSERTs that
+   * arrived mid-flight are preserved (a literal client-side snapshot
+   * would erase them).
    */
-  onRestore: (
-    previousNotifications: Notification[],
-    previousUnreadCount: number,
-  ) => void
+  onRefetch: () => Promise<void>
   /** Called when the user navigates away so the parent can close the panel. */
   onNavigate: () => void
 }
@@ -62,17 +61,13 @@ export function NotificationPanel({
   onMarkRead,
   onRevertMarkRead,
   onMarkAllRead,
-  onRestore,
+  onRefetch,
   onNavigate,
 }: NotificationPanelProps) {
   const [isMarkingAll, startMarkAllTransition] = useTransition()
   const hasUnread = unreadCount > 0
 
   const handleMarkAllRead = () => {
-    // Snapshot the previous state so we can revert if the server fails.
-    const previousNotifications = notifications
-    const previousUnreadCount = unreadCount
-
     // Optimistic: clear unread state immediately. The analytics event is
     // fired server-side inside `markAllNotificationsAsRead` so we don't
     // double-count it here.
@@ -81,7 +76,10 @@ export function NotificationPanel({
     startMarkAllTransition(async () => {
       const result = await markAllNotificationsAsRead()
       if (!result.success) {
-        onRestore(previousNotifications, previousUnreadCount)
+        // Re-derive from the server instead of restoring a client-side
+        // snapshot — any realtime INSERT that arrived between the click
+        // and the failure would be lost from a literal rollback.
+        await onRefetch()
         toast.error("Couldn't mark as read. Try again.")
       }
     })
