@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { SidePanel } from '@/components/ui/side-panel'
 import { cn, getAvatarInitials } from '@/lib/utils'
 import { signOut } from '@/lib/actions/auth'
+import { resetIdentity } from '@/lib/analytics/client'
 import { toast } from 'sonner'
 
 interface UserMenuProps {
@@ -31,6 +32,11 @@ function UserMenu({ displayName, email }: UserMenuProps) {
   const pathname = usePathname()
 
   function handleSignOut() {
+    // Reset PostHog identity BEFORE invoking the server action so subsequent
+    // anonymous events on the landing page (post-redirect) are not attributed
+    // to the just-signed-out user. PostHog stores the distinct id in
+    // localStorage; resetIdentity() clears it and assigns a fresh anonymous id.
+    resetIdentity()
     startTransition(async () => {
       const result = await signOut()
       if (result && !result.success) {

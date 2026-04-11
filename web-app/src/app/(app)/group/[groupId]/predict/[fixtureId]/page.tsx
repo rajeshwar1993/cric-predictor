@@ -16,6 +16,7 @@ import { PageWrapper } from '@/components/layout/page-wrapper'
 import { PredictPageHeader } from '@/components/predictions/predict-page-header'
 import { WindowNotOpenMessage } from '@/components/predictions/window-not-open-message'
 import { PredictionForm } from '@/components/predictions/prediction-form'
+import { PredictPageAnalytics } from '@/components/predictions/predict-page-analytics'
 import type { ScenarioGroupData } from '@/components/predictions/scenario-list'
 import { Button } from '@/components/ui/button'
 
@@ -215,6 +216,11 @@ export default async function PredictPage({ params }: PredictPageProps) {
 
   return (
     <PageWrapper className="py-8">
+      <PredictPageAnalytics
+        gangId={groupId}
+        fixtureId={fixtureId}
+        lastSubmittedAt={lastSubmittedAt}
+      />
       <PredictPageHeader
         fixture={fixture}
         predictionDeadlineMins={gangSeason.predictionDeadlineMins}

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { ANALYTICS_EVENTS } from '@/lib/analytics/events'
-import { trackEvent } from '@/lib/analytics/server'
+import { captureServerError, trackEvent } from '@/lib/analytics/server'
 import { AUTH_COOKIE_OPTIONS, COOKIE_NAMES, CURRENT_TERMS_VERSION, getMajorVersion } from '@/lib/constants'
 import { createServerClient } from '@/lib/supabase/server'
 import { sanitizeRedirect } from '@/lib/url'
@@ -17,6 +17,10 @@ export async function GET(request: NextRequest) {
     trackEvent('anonymous', ANALYTICS_EVENTS.AUTH_CALLBACK_FAILURE, {
       reason: 'missing_code',
     })
+    captureServerError('anonymous', new Error('auth_callback: missing code'), {
+      source: 'authCallback',
+      metadata: { reason: 'missing_code', route: '/auth/callback' },
+    })
     return NextResponse.redirect(new URL('/login?error=missing_code', request.url))
   }
 
@@ -29,6 +33,10 @@ export async function GET(request: NextRequest) {
       reason: 'exchange_failed',
       error_message: error.message,
     })
+    captureServerError('anonymous', error, {
+      source: 'authCallback',
+      metadata: { reason: 'exchange_failed', route: '/auth/callback' },
+    })
     return NextResponse.redirect(new URL('/login?error=auth_callback_failed', request.url))
   }
 
@@ -40,6 +48,10 @@ export async function GET(request: NextRequest) {
   if (!user) {
     trackEvent('anonymous', ANALYTICS_EVENTS.AUTH_CALLBACK_FAILURE, {
       reason: 'no_user',
+    })
+    captureServerError('anonymous', new Error('auth_callback: no user after exchange'), {
+      source: 'authCallback',
+      metadata: { reason: 'no_user', route: '/auth/callback' },
     })
     return NextResponse.redirect(new URL('/login?error=auth_callback_failed', request.url))
   }

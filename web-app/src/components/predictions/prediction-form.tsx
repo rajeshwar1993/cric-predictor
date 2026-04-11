@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { FixtureTeam } from '@/lib/dal/fixtures'
 import type { MatchPlayer } from '@/lib/dal/predictions'
 import type { ScenarioGroupData } from '@/components/predictions/scenario-list'
@@ -8,7 +8,16 @@ import { ScenarioList } from '@/components/predictions/scenario-list'
 import { SubmitBar } from '@/components/predictions/submit-bar'
 import { LastSubmittedIndicator } from '@/components/predictions/last-submitted-indicator'
 import { submitPredictions } from '@/lib/actions/predictions'
+import { trackEvent } from '@/lib/analytics/client'
+import { ANALYTICS_EVENTS } from '@/lib/analytics/events'
 import { toast } from '@/components/ui/toast'
+
+/**
+ * Debounce window (ms) for PICK_CHANGED. The user often clicks several
+ * options in rapid succession while figuring out a scenario; we only want
+ * to record the last value they settle on.
+ */
+const PICK_CHANGED_DEBOUNCE_MS = 500
 
 // ---------------------------------------------------------------------------
 // Props
@@ -73,18 +82,72 @@ export function PredictionForm({
   // isSubmitting === false. This ref blocks the second call immediately.
   const submittingRef = useRef(false)
 
+  // Debounced PICK_CHANGED state. We keep the most recent (scenarioId,value)
+  // pair pending until the debounce window expires, then fire a single
+  // analytics event. The previous snapshot lets us detect which scenario
+  // changed when the form re-emits its full predictions map.
+  const previousPredictionsRef = useRef<Record<string, string>>(initialPredictions)
+  const pendingPickRef = useRef<{ scenarioId: string; value: string } | null>(null)
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   // Count picked predictions for the progress bar.
   // This needs to be state so SubmitBar re-renders on changes.
   const [pickedCount, setPickedCount] = useState(() =>
     Object.values(initialPredictions).filter(Boolean).length,
   )
 
+  // Clear any pending PICK_CHANGED timer on unmount so a stale fire
+  // cannot reach trackEvent after the component is gone.
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current !== null) {
+        clearTimeout(debounceTimerRef.current)
+        debounceTimerRef.current = null
+      }
+    }
+  }, [])
+
   const handlePredictionsChange = useCallback(
     (predictions: Record<string, string>) => {
+      // Detect which scenario changed by diffing against the previous
+      // snapshot. If multiple changed in one tick (rare but possible) we
+      // record the first diff — the debounced fire will only ever capture
+      // the most recent value anyway.
+      const previous = previousPredictionsRef.current
+      let changed: { scenarioId: string; value: string } | null = null
+      for (const [scenarioId, value] of Object.entries(predictions)) {
+        if (previous[scenarioId] !== value) {
+          changed = { scenarioId, value }
+          break
+        }
+      }
+
+      previousPredictionsRef.current = predictions
       predictionsRef.current = predictions
       setPickedCount(Object.values(predictions).filter(Boolean).length)
+
+      if (!changed) return
+
+      // Coalesce rapid edits to the same / different scenarios into a
+      // single event using a 500ms trailing-edge debounce.
+      pendingPickRef.current = changed
+      if (debounceTimerRef.current !== null) {
+        clearTimeout(debounceTimerRef.current)
+      }
+      debounceTimerRef.current = setTimeout(() => {
+        const pending = pendingPickRef.current
+        debounceTimerRef.current = null
+        pendingPickRef.current = null
+        if (!pending) return
+        trackEvent(ANALYTICS_EVENTS.PICK_CHANGED, {
+          scenario_id: pending.scenarioId,
+          gang_id: gangId,
+          fixture_id: fixtureId,
+          value: pending.value,
+        })
+      }, PICK_CHANGED_DEBOUNCE_MS)
     },
-    [],
+    [gangId, fixtureId],
   )
 
   const handleSubmit = useCallback(async () => {

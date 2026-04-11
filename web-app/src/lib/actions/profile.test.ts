@@ -4,9 +4,12 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 // Mocks
 // ---------------------------------------------------------------------------
 
+vi.mock('server-only', () => ({}))
+
 const mockGetUser = vi.fn()
 const mockRateLimit = vi.fn()
 const mockTrackEvent = vi.fn()
+const mockCaptureServerError = vi.fn()
 const mockRevalidatePath = vi.fn()
 const mockSignOut = vi.fn()
 const mockRpc = vi.fn()
@@ -61,6 +64,22 @@ vi.mock('@/lib/rate-limit', () => ({
 
 vi.mock('@/lib/analytics/server', () => ({
   trackEvent: (...args: unknown[]) => mockTrackEvent(...args),
+  captureServerError: (...args: unknown[]) => mockCaptureServerError(...args),
+}))
+
+const mockWithTiming = vi.fn(
+  async <T,>(_actionName: string, _userId: string, fn: () => Promise<T>): Promise<T> => {
+    return fn()
+  },
+)
+
+vi.mock('@/lib/analytics/timing', () => ({
+  withTiming: (...args: unknown[]) =>
+    mockWithTiming(
+      args[0] as string,
+      args[1] as string,
+      args[2] as () => Promise<unknown>,
+    ),
 }))
 
 vi.mock('next/cache', () => ({
@@ -470,6 +489,12 @@ describe('updateDisplayName server action', () => {
     })
     expect(mockRevalidatePath).not.toHaveBeenCalled()
     expect(mockTrackEvent).not.toHaveBeenCalled()
+    // Failure path forwards the error to PostHog with the action source
+    expect(mockCaptureServerError).toHaveBeenCalledWith(
+      'user-123',
+      expect.anything(),
+      expect.objectContaining({ source: 'updateDisplayName' }),
+    )
   })
 
   // ---- Success cases ----
@@ -490,6 +515,12 @@ describe('updateDisplayName server action', () => {
       'user-123',
       'display_name_updated',
       expect.objectContaining({ new_display_name: 'New Name' }),
+    )
+    // Wrapped in withTiming with the camelCase action name + resolved user id
+    expect(mockWithTiming).toHaveBeenCalledWith(
+      'updateDisplayName',
+      'user-123',
+      expect.any(Function),
     )
   })
 

@@ -23,8 +23,10 @@ vi.mock('@/lib/supabase/server', () => ({
 }))
 
 const mockTrackEvent = vi.fn()
+const mockCaptureServerError = vi.fn()
 vi.mock('@/lib/analytics/server', () => ({
   trackEvent: (...args: unknown[]) => mockTrackEvent(...args),
+  captureServerError: (...args: unknown[]) => mockCaptureServerError(...args),
 }))
 
 vi.mock('@/lib/analytics/events', () => ({

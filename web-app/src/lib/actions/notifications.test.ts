@@ -6,9 +6,12 @@ import { ANALYTICS_EVENTS } from '@/lib/analytics/events'
 // Mocks
 // ---------------------------------------------------------------------------
 
+vi.mock('server-only', () => ({}))
+
 const mockGetUser = vi.fn()
 const mockRateLimit = vi.fn()
 const mockTrackEvent = vi.fn()
+const mockCaptureServerError = vi.fn()
 const mockRevalidatePath = vi.fn()
 const mockFrom = vi.fn()
 
@@ -39,6 +42,22 @@ vi.mock('@/lib/rate-limit', () => ({
 
 vi.mock('@/lib/analytics/server', () => ({
   trackEvent: (...args: unknown[]) => mockTrackEvent(...args),
+  captureServerError: (...args: unknown[]) => mockCaptureServerError(...args),
+}))
+
+const mockWithTiming = vi.fn(
+  async <T,>(_actionName: string, _userId: string, fn: () => Promise<T>): Promise<T> => {
+    return fn()
+  },
+)
+
+vi.mock('@/lib/analytics/timing', () => ({
+  withTiming: (...args: unknown[]) =>
+    mockWithTiming(
+      args[0] as string,
+      args[1] as string,
+      args[2] as () => Promise<unknown>,
+    ),
 }))
 
 vi.mock('next/cache', () => ({
@@ -135,6 +154,12 @@ describe('markNotificationAsRead', () => {
         notification_id: '11111111-1111-4111-8111-111111111111',
       }),
     )
+    // Wrapped in withTiming with the camelCase action name + resolved user id
+    expect(mockWithTiming).toHaveBeenCalledWith(
+      'markNotificationAsRead',
+      'user-123',
+      expect.any(Function),
+    )
   })
 
   test('returns error when update fails', async () => {
@@ -151,6 +176,12 @@ describe('markNotificationAsRead', () => {
       error: 'Failed to mark notification as read.',
     })
     expect(mockTrackEvent).not.toHaveBeenCalled()
+    // Failure path forwards the error to PostHog with the action source
+    expect(mockCaptureServerError).toHaveBeenCalledWith(
+      'user-123',
+      expect.anything(),
+      expect.objectContaining({ source: 'markNotificationAsRead' }),
+    )
   })
 })
 
