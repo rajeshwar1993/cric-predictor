@@ -1,7 +1,7 @@
 /**
  * Sportmonks Live Match Poller
  *
- * Polls APIs that change during a live IPL match at 45-second intervals.
+ * Polls APIs that change during a live IPL match at 15-second intervals.
  *
  * Usage:
  *   npx tsx src/sportsmonk/poll-live.ts <count> [fixture_id]
@@ -26,12 +26,14 @@ import { callApi, getLeagueId } from "./client.js";
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
-const INTERVAL_MS = 45_000; // 45 seconds between rounds
+const INTERVAL_MS = 15_000; // 15 seconds between rounds
 const count = parseInt(process.argv[2] || "10", 10);
 const forcedFixtureId = process.argv[3] ? parseInt(process.argv[3], 10) : null;
 
 if (isNaN(count) || count < 1) {
-  console.error("Usage: npx tsx src/sportsmonk/poll-live.ts <count> [fixture_id]");
+  console.error(
+    "Usage: npx tsx src/sportsmonk/poll-live.ts <count> [fixture_id]",
+  );
   console.error("  e.g., npx tsx src/sportsmonk/poll-live.ts 20");
   console.error("  e.g., npx tsx src/sportsmonk/poll-live.ts 40 69525");
   process.exit(1);
@@ -46,11 +48,19 @@ const todayStr = now.toISOString().split("T")[0];
 // Full includes for live fixture detail
 // Nested includes (batting.batsman, etc.) resolve player names inline
 const FIXTURE_INCLUDES = [
-  "batting.batsman", "batting.bowler", "batting.catchstump",
+  "batting.batsman",
+  "batting.bowler",
+  "batting.catchstump",
   "bowling.bowler",
-  "runs", "scoreboards",
-  "lineup", "manofmatch", "tosswon", "venue",
-  "localteam", "visitorteam", "winnerteam",
+  "runs",
+  "scoreboards",
+  "lineup",
+  "manofmatch",
+  "tosswon",
+  "venue",
+  "localteam",
+  "visitorteam",
+  "winnerteam",
 ].join(",");
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -107,7 +117,9 @@ function ts(): string {
 
 function formatScore(runs: any[]): string {
   if (!Array.isArray(runs) || runs.length === 0) return "—";
-  return runs.map((r: any) => `${r.score}/${r.wickets} (${r.overs})`).join(", ");
+  return runs
+    .map((r: any) => `${r.score}/${r.wickets} (${r.overs})`)
+    .join(", ");
 }
 
 function extractSnapshot(fixture: any): FixtureSnapshot {
@@ -126,24 +138,39 @@ function extractSnapshot(fixture: any): FixtureSnapshot {
   };
 }
 
-function diffSnapshot(prev: FixtureSnapshot | undefined, curr: FixtureSnapshot): string[] {
+function diffSnapshot(
+  prev: FixtureSnapshot | undefined,
+  curr: FixtureSnapshot,
+): string[] {
   if (!prev) return ["NEW — first observation"];
   const changes: string[] = [];
-  if (prev.status !== curr.status) changes.push(`status: ${prev.status} → ${curr.status}`);
-  if (prev.score1 !== curr.score1) changes.push(`inn1: ${prev.score1} → ${curr.score1}`);
-  if (prev.score2 !== curr.score2) changes.push(`inn2: ${prev.score2} → ${curr.score2}`);
-  if (prev.battingCount !== curr.battingCount) changes.push(`batting entries: ${prev.battingCount} → ${curr.battingCount}`);
-  if (prev.bowlingCount !== curr.bowlingCount) changes.push(`bowling entries: ${prev.bowlingCount} → ${curr.bowlingCount}`);
+  if (prev.status !== curr.status)
+    changes.push(`status: ${prev.status} → ${curr.status}`);
+  if (prev.score1 !== curr.score1)
+    changes.push(`inn1: ${prev.score1} → ${curr.score1}`);
+  if (prev.score2 !== curr.score2)
+    changes.push(`inn2: ${prev.score2} → ${curr.score2}`);
+  if (prev.battingCount !== curr.battingCount)
+    changes.push(
+      `batting entries: ${prev.battingCount} → ${curr.battingCount}`,
+    );
+  if (prev.bowlingCount !== curr.bowlingCount)
+    changes.push(
+      `bowling entries: ${prev.bowlingCount} → ${curr.bowlingCount}`,
+    );
   return changes;
 }
 
 // ─── API Calls ───────────────────────────────────────────────────────────────
 
-async function pollLivescores(roundDir: string): Promise<{ result: ApiCallResult; liveIds: number[] }> {
+async function pollLivescores(
+  roundDir: string,
+): Promise<{ result: ApiCallResult; liveIds: number[] }> {
   const file = "livescores.json";
   try {
     const { raw, data } = await callApi<any[]>("livescores", {
-      include: "batting,bowling,runs,scoreboards,localteam,visitorteam,tosswon,manofmatch",
+      include:
+        "batting,bowling,runs,scoreboards,localteam,visitorteam,tosswon,manofmatch",
     });
     save(roundDir, file, raw);
 
@@ -156,11 +183,17 @@ async function pollLivescores(roundDir: string): Promise<{ result: ApiCallResult
         const inn2 = runs.find((r: any) => r.inning === 2);
         const local = m.localteam?.code || m.localteam_id;
         const visitor = m.visitorteam?.code || m.visitorteam_id;
-        const score1 = inn1 ? `${inn1.score}/${inn1.wickets} (${inn1.overs})` : "—";
-        const score2 = inn2 ? `${inn2.score}/${inn2.wickets} (${inn2.overs})` : "—";
+        const score1 = inn1
+          ? `${inn1.score}/${inn1.wickets} (${inn1.overs})`
+          : "—";
+        const score2 = inn2
+          ? `${inn2.score}/${inn2.wickets} (${inn2.overs})`
+          : "—";
         const isIpl = m.league_id === Number(leagueId);
         const tag = isIpl ? "🏏 IPL" : "  " + (m.league_id || "?");
-        console.log(`    ${tag} [${m.id}] ${local} ${score1} vs ${visitor} ${score2} — ${m.status} | ${m.note || ""}`);
+        console.log(
+          `    ${tag} [${m.id}] ${local} ${score1} vs ${visitor} ${score2} — ${m.status} | ${m.note || ""}`,
+        );
 
         if (isIpl) {
           liveIds.push(m.id);
@@ -169,19 +202,35 @@ async function pollLivescores(roundDir: string): Promise<{ result: ApiCallResult
     }
 
     return {
-      result: { name: "livescores", endpoint: "livescores?include=batting,bowling,...", success: true, itemCount: Array.isArray(data) ? data.length : 0, error: null, file },
+      result: {
+        name: "livescores",
+        endpoint: "livescores?include=batting,bowling,...",
+        success: true,
+        itemCount: Array.isArray(data) ? data.length : 0,
+        error: null,
+        file,
+      },
       liveIds,
     };
   } catch (err) {
     save(roundDir, file, { error: String(err) });
     return {
-      result: { name: "livescores", endpoint: "livescores", success: false, itemCount: null, error: String(err), file },
+      result: {
+        name: "livescores",
+        endpoint: "livescores",
+        success: false,
+        itemCount: null,
+        error: String(err),
+        file,
+      },
       liveIds: [],
     };
   }
 }
 
-async function pollTodayFixtures(roundDir: string): Promise<{ result: ApiCallResult; fixtureIds: number[] }> {
+async function pollTodayFixtures(
+  roundDir: string,
+): Promise<{ result: ApiCallResult; fixtureIds: number[] }> {
   const file = "today-fixtures.json";
   try {
     const { raw, data } = await callApi<any[]>("fixtures", {
@@ -197,38 +246,73 @@ async function pollTodayFixtures(roundDir: string): Promise<{ result: ApiCallRes
         ids.push(f.id);
         const inn1 = f.runs?.find((r: any) => r.inning === 1);
         const inn2 = f.runs?.find((r: any) => r.inning === 2);
-        console.log(`    ${f.localteam?.code || f.localteam_id} vs ${f.visitorteam?.code || f.visitorteam_id} — status=${f.status} | ${inn1 ? `${inn1.score}/${inn1.wickets}` : "—"} | ${inn2 ? `${inn2.score}/${inn2.wickets}` : "—"}`);
+        console.log(
+          `    ${f.localteam?.code || f.localteam_id} vs ${f.visitorteam?.code || f.visitorteam_id} — status=${f.status} | ${inn1 ? `${inn1.score}/${inn1.wickets}` : "—"} | ${inn2 ? `${inn2.score}/${inn2.wickets}` : "—"}`,
+        );
       }
     }
 
     return {
-      result: { name: "today-fixtures", endpoint: "fixtures?filter[starts_between]", success: true, itemCount: ids.length, error: null, file },
+      result: {
+        name: "today-fixtures",
+        endpoint: "fixtures?filter[starts_between]",
+        success: true,
+        itemCount: ids.length,
+        error: null,
+        file,
+      },
       fixtureIds: ids,
     };
   } catch (err) {
     save(roundDir, file, { error: String(err) });
     return {
-      result: { name: "today-fixtures", endpoint: "fixtures?filter[starts_between]", success: false, itemCount: null, error: String(err), file },
+      result: {
+        name: "today-fixtures",
+        endpoint: "fixtures?filter[starts_between]",
+        success: false,
+        itemCount: null,
+        error: String(err),
+        file,
+      },
       fixtureIds: [],
     };
   }
 }
 
-async function pollFixtureDetail(roundDir: string, fixtureId: number): Promise<{ result: ApiCallResult; snapshot: FixtureSnapshot | null }> {
+async function pollFixtureDetail(
+  roundDir: string,
+  fixtureId: number,
+): Promise<{ result: ApiCallResult; snapshot: FixtureSnapshot | null }> {
   const file = `fixture-${fixtureId}.json`;
   try {
-    const { raw, data } = await callApi<any>(`fixtures/${fixtureId}`, { include: FIXTURE_INCLUDES });
+    const { raw, data } = await callApi<any>(`fixtures/${fixtureId}`, {
+      include: FIXTURE_INCLUDES,
+    });
     save(roundDir, file, raw);
 
     const snapshot = extractSnapshot(data);
     return {
-      result: { name: `fixture-${fixtureId}`, endpoint: `fixtures/${fixtureId}?include=...`, success: true, itemCount: null, error: null, file },
+      result: {
+        name: `fixture-${fixtureId}`,
+        endpoint: `fixtures/${fixtureId}?include=...`,
+        success: true,
+        itemCount: null,
+        error: null,
+        file,
+      },
       snapshot,
     };
   } catch (err) {
     save(roundDir, file, { error: String(err) });
     return {
-      result: { name: `fixture-${fixtureId}`, endpoint: `fixtures/${fixtureId}`, success: false, itemCount: null, error: String(err), file },
+      result: {
+        name: `fixture-${fixtureId}`,
+        endpoint: `fixtures/${fixtureId}`,
+        success: false,
+        itemCount: null,
+        error: String(err),
+        file,
+      },
       snapshot: null,
     };
   }
@@ -237,7 +321,10 @@ async function pollFixtureDetail(roundDir: string, fixtureId: number): Promise<{
 // ─── Round ───────────────────────────────────────────────────────────────────
 
 async function runRound(roundNum: number): Promise<RoundResult> {
-  const roundDir = path.join(sessionDir, `round-${String(roundNum).padStart(3, "0")}`);
+  const roundDir = path.join(
+    sessionDir,
+    `round-${String(roundNum).padStart(3, "0")}`,
+  );
   ensureDir(roundDir);
 
   const start = Date.now();
@@ -259,7 +346,8 @@ async function runRound(roundNum: number): Promise<RoundResult> {
 
   // 2. Today's fixtures — get today's match list with status
   console.log("  📅 Today's IPL fixtures...");
-  const { result: todayResult, fixtureIds: todayIds } = await pollTodayFixtures(roundDir);
+  const { result: todayResult, fixtureIds: todayIds } =
+    await pollTodayFixtures(roundDir);
   apis.push(todayResult);
 
   // Update tracked fixture list: merge live + today + forced
@@ -273,9 +361,14 @@ async function runRound(roundNum: number): Promise<RoundResult> {
 
   // 3. Detailed poll for each tracked fixture
   if (trackedFixtureIds.length > 0) {
-    console.log(`  🏏 Polling ${trackedFixtureIds.length} fixture(s) with full scorecard...`);
+    console.log(
+      `  🏏 Polling ${trackedFixtureIds.length} fixture(s) with full scorecard...`,
+    );
     for (const fixtureId of trackedFixtureIds) {
-      const { result: fResult, snapshot } = await pollFixtureDetail(roundDir, fixtureId);
+      const { result: fResult, snapshot } = await pollFixtureDetail(
+        roundDir,
+        fixtureId,
+      );
       apis.push(fResult);
 
       if (snapshot) {
@@ -292,7 +385,9 @@ async function runRound(roundNum: number): Promise<RoundResult> {
             console.log(`       • ${c}`);
           }
         } else {
-          console.log(`    ⏸  [${fixtureId}] ${label} — ${snapshot.status} | ${snapshot.score1} | ${snapshot.score2} (no change)`);
+          console.log(
+            `    ⏸  [${fixtureId}] ${label} — ${snapshot.status} | ${snapshot.score1} | ${snapshot.score2} (no change)`,
+          );
         }
 
         prevSnapshots.set(fixtureId, snapshot);
@@ -302,7 +397,9 @@ async function runRound(roundNum: number): Promise<RoundResult> {
       await new Promise((r) => setTimeout(r, 200));
     }
   } else {
-    console.log("  ⚠  No fixtures to track. Run during a match day or pass a fixture_id.");
+    console.log(
+      "  ⚠  No fixtures to track. Run during a match day or pass a fixture_id.",
+    );
   }
 
   const durationMs = Date.now() - start;
@@ -327,7 +424,9 @@ async function main() {
 
   console.log("\n╔════════════════════════════════════════════════════════╗");
   console.log("║  Sportmonks Live Match Poller                          ║");
-  console.log(`║  ${count} rounds × 45s = ~${String(totalMinutes).padStart(3)} minutes                         ║`);
+  console.log(
+    `║  ${count} rounds × 15s = ~${String(totalMinutes).padStart(3)} minutes                         ║`,
+  );
   console.log(`║  Session: ${sessionId}       ║`);
   console.log("╚════════════════════════════════════════════════════════╝");
   console.log(`\n  League: IPL (id=${leagueId})`);
@@ -335,14 +434,25 @@ async function main() {
   if (forcedFixtureId) console.log(`  Forced fixture: ${forcedFixtureId}`);
   console.log(`  Output: ${sessionDir}/`);
   console.log(`\n  APIs polled each round:`);
-  console.log(`    1. GET /livescores?include=batting,bowling,runs,scoreboards,localteam,visitorteam,...`);
-  console.log(`    2. GET /fixtures?filter[starts_between]=${todayStr}&include=localteam,visitorteam,runs`);
-  console.log(`    3. GET /fixtures/{id}?include=${FIXTURE_INCLUDES}  (per tracked fixture)`);
+  console.log(
+    `    1. GET /livescores?include=batting,bowling,runs,scoreboards,localteam,visitorteam,...`,
+  );
+  console.log(
+    `    2. GET /fixtures?filter[starts_between]=${todayStr}&include=localteam,visitorteam,runs`,
+  );
+  console.log(
+    `    3. GET /fixtures/{id}?include=${FIXTURE_INCLUDES}  (per tracked fixture)`,
+  );
 
   ensureDir(sessionDir);
 
   const allResults: RoundResult[] = [];
-  const changeLog: { round: number; timestamp: string; fixtureId: number; changes: string[] }[] = [];
+  const changeLog: {
+    round: number;
+    timestamp: string;
+    fixtureId: number;
+    changes: string[];
+  }[] = [];
 
   for (let i = 1; i <= count; i++) {
     const result = await runRound(i);
@@ -374,13 +484,24 @@ async function main() {
         liveFixtureIds: r.liveFixtureIds,
         trackedFixtureIds: r.trackedFixtureIds,
         fixtureStatuses: r.fixtureStatuses,
-        apiCalls: r.apis.map((a) => ({ name: a.name, success: a.success, itemCount: a.itemCount, error: a.error })),
+        apiCalls: r.apis.map((a) => ({
+          name: a.name,
+          success: a.success,
+          itemCount: a.itemCount,
+          error: a.error,
+        })),
       })),
       summary: {
         totalRounds: allResults.length,
         totalApiCalls: allResults.reduce((s, r) => s + r.apis.length, 0),
-        successfulCalls: allResults.reduce((s, r) => s + r.apis.filter((a) => a.success).length, 0),
-        failedCalls: allResults.reduce((s, r) => s + r.apis.filter((a) => !a.success).length, 0),
+        successfulCalls: allResults.reduce(
+          (s, r) => s + r.apis.filter((a) => a.success).length,
+          0,
+        ),
+        failedCalls: allResults.reduce(
+          (s, r) => s + r.apis.filter((a) => !a.success).length,
+          0,
+        ),
       },
     };
     save(sessionDir, "manifest.json", manifest);
@@ -396,14 +517,21 @@ async function main() {
 
   // ─── Final Summary ──────────────────────────────────────────────────────────
   const totalCalls = allResults.reduce((s, r) => s + r.apis.length, 0);
-  const okCalls = allResults.reduce((s, r) => s + r.apis.filter((a) => a.success).length, 0);
+  const okCalls = allResults.reduce(
+    (s, r) => s + r.apis.filter((a) => a.success).length,
+    0,
+  );
 
   console.log(`\n${"═".repeat(58)}`);
   console.log("  POLLING COMPLETE");
   console.log(`${"═".repeat(58)}\n`);
   console.log(`  Rounds:       ${allResults.length}/${count}`);
-  console.log(`  API calls:    ${totalCalls} (${okCalls} ok, ${totalCalls - okCalls} failed)`);
-  console.log(`  Fixtures:     ${trackedFixtureIds.length} tracked (${trackedFixtureIds.join(", ")})`);
+  console.log(
+    `  API calls:    ${totalCalls} (${okCalls} ok, ${totalCalls - okCalls} failed)`,
+  );
+  console.log(
+    `  Fixtures:     ${trackedFixtureIds.length} tracked (${trackedFixtureIds.join(", ")})`,
+  );
   console.log(`  Output:       ${sessionDir}/`);
   console.log(`  Manifest:     ${sessionDir}/manifest.json`);
 
@@ -411,9 +539,13 @@ async function main() {
   if (prevSnapshots.size > 0) {
     console.log(`\n  Final fixture states:`);
     for (const [id, snap] of prevSnapshots) {
-      console.log(`    [${id}] ${snap.localteam} vs ${snap.visitorteam} — ${snap.status}`);
+      console.log(
+        `    [${id}] ${snap.localteam} vs ${snap.visitorteam} — ${snap.status}`,
+      );
       console.log(`           Inn1: ${snap.score1} | Inn2: ${snap.score2}`);
-      console.log(`           Batting entries: ${snap.battingCount} | Bowling entries: ${snap.bowlingCount}`);
+      console.log(
+        `           Batting entries: ${snap.battingCount} | Bowling entries: ${snap.bowlingCount}`,
+      );
     }
   }
 
