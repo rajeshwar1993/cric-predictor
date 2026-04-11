@@ -4,9 +4,12 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 // Mocks
 // ---------------------------------------------------------------------------
 
+vi.mock('server-only', () => ({}))
+
 const mockGetUser = vi.fn()
 const mockRateLimit = vi.fn()
 const mockTrackEvent = vi.fn()
+const mockCaptureServerError = vi.fn()
 const mockRevalidatePath = vi.fn()
 const mockFrom = vi.fn()
 
@@ -50,6 +53,22 @@ vi.mock('@/lib/rate-limit', () => ({
 
 vi.mock('@/lib/analytics/server', () => ({
   trackEvent: (...args: unknown[]) => mockTrackEvent(...args),
+  captureServerError: (...args: unknown[]) => mockCaptureServerError(...args),
+}))
+
+const mockWithTiming = vi.fn(
+  async <T,>(_actionName: string, _userId: string, fn: () => Promise<T>): Promise<T> => {
+    return fn()
+  },
+)
+
+vi.mock('@/lib/analytics/timing', () => ({
+  withTiming: (...args: unknown[]) =>
+    mockWithTiming(
+      args[0] as string,
+      args[1] as string,
+      args[2] as () => Promise<unknown>,
+    ),
 }))
 
 vi.mock('next/cache', () => ({
@@ -564,6 +583,13 @@ describe('submitPredictions server action', () => {
     expect(mockRevalidatePath).toHaveBeenCalledWith(
       `/group/${MOCK_GANG_ID}/predict/${MOCK_FIXTURE_ID}`,
     )
+
+    // Wrapped in withTiming with the camelCase action name + resolved user id
+    expect(mockWithTiming).toHaveBeenCalledWith(
+      'submitPredictions',
+      'user-123',
+      expect.any(Function),
+    )
   })
 
   // ---- Upsert error ----
@@ -601,6 +627,12 @@ describe('submitPredictions server action', () => {
       error: 'Failed to save predictions. Please try again.',
     })
     expect(mockTrackEvent).not.toHaveBeenCalled()
+    // Failure path forwards the error to PostHog with the action source
+    expect(mockCaptureServerError).toHaveBeenCalledWith(
+      'user-123',
+      expect.anything(),
+      expect.objectContaining({ source: 'submitPredictions' }),
+    )
   })
 
   // ---- Gang season validation ----

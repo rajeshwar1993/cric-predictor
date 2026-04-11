@@ -3,7 +3,8 @@
 import { z } from 'zod'
 import { createServerClient } from '@/lib/supabase/server'
 import { rateLimit } from '@/lib/rate-limit'
-import { trackEvent } from '@/lib/analytics/server'
+import { captureServerError, trackEvent } from '@/lib/analytics/server'
+import { withTiming } from '@/lib/analytics/timing'
 import { ANALYTICS_EVENTS } from '@/lib/analytics/events'
 import type { ActionResult } from '@/types'
 
@@ -56,39 +57,47 @@ export async function markNotificationAsRead(
     return { success: false, error: 'Not authenticated' }
   }
 
-  // Validate BEFORE rate limiting so a bogus id doesn't eat the budget.
-  const parsed = notificationIdSchema.safeParse(notificationId)
-  if (!parsed.success) {
-    return { success: false, error: 'Invalid notification id' }
-  }
+  const userId = user.id
 
-  // Rate limit: 60 per minute — clicking through a busy bell panel
-  // should never hit this under normal use.
-  const rl = await rateLimit(user.id, 'mark_notification_read', {
-    max: 60,
-    windowSeconds: 60,
+  return withTiming('markNotificationAsRead', userId, async () => {
+    // Validate BEFORE rate limiting so a bogus id doesn't eat the budget.
+    const parsed = notificationIdSchema.safeParse(notificationId)
+    if (!parsed.success) {
+      return { success: false, error: 'Invalid notification id' }
+    }
+
+    // Rate limit: 60 per minute — clicking through a busy bell panel
+    // should never hit this under normal use.
+    const rl = await rateLimit(userId, 'mark_notification_read', {
+      max: 60,
+      windowSeconds: 60,
+    })
+    if (!rl.allowed) {
+      return { success: false, error: 'Too many requests. Try again later.' }
+    }
+
+    // Update — RLS enforces user_id = auth.uid()
+    const { error } = await supabase
+      .from('v2_notifications')
+      .update({ is_read: true })
+      .eq('id', parsed.data)
+      .eq('user_id', userId)
+
+    if (error) {
+      captureServerError(userId, error, {
+        source: 'markNotificationAsRead',
+        metadata: { notification_id: parsed.data },
+      })
+      return { success: false, error: 'Failed to mark notification as read.' }
+    }
+
+    // Analytics
+    trackEvent(userId, ANALYTICS_EVENTS.NOTIFICATION_MARKED_READ, {
+      notification_id: parsed.data,
+    })
+
+    return { success: true }
   })
-  if (!rl.allowed) {
-    return { success: false, error: 'Too many requests. Try again later.' }
-  }
-
-  // Update — RLS enforces user_id = auth.uid()
-  const { error } = await supabase
-    .from('v2_notifications')
-    .update({ is_read: true })
-    .eq('id', parsed.data)
-    .eq('user_id', user.id)
-
-  if (error) {
-    return { success: false, error: 'Failed to mark notification as read.' }
-  }
-
-  // Analytics
-  trackEvent(user.id, ANALYTICS_EVENTS.NOTIFICATION_MARKED_READ, {
-    notification_id: parsed.data,
-  })
-
-  return { success: true }
 }
 
 // ---------------------------------------------------------------------------
@@ -121,29 +130,36 @@ export async function markAllNotificationsAsRead(): Promise<ActionResult> {
     return { success: false, error: 'Not authenticated' }
   }
 
-  // Rate limit: 10 per minute — clicking "mark all" repeatedly is
-  // rare but cheap to protect against.
-  const rl = await rateLimit(user.id, 'mark_all_notifications_read', {
-    max: 10,
-    windowSeconds: 60,
+  const userId = user.id
+
+  return withTiming('markAllNotificationsAsRead', userId, async () => {
+    // Rate limit: 10 per minute — clicking "mark all" repeatedly is
+    // rare but cheap to protect against.
+    const rl = await rateLimit(userId, 'mark_all_notifications_read', {
+      max: 10,
+      windowSeconds: 60,
+    })
+    if (!rl.allowed) {
+      return { success: false, error: 'Too many requests. Try again later.' }
+    }
+
+    // Bulk update — RLS scopes to user, filter skips already-read rows.
+    const { error } = await supabase
+      .from('v2_notifications')
+      .update({ is_read: true })
+      .eq('user_id', userId)
+      .eq('is_read', false)
+
+    if (error) {
+      captureServerError(userId, error, {
+        source: 'markAllNotificationsAsRead',
+      })
+      return { success: false, error: 'Failed to mark notifications as read.' }
+    }
+
+    // Analytics
+    trackEvent(userId, ANALYTICS_EVENTS.ALL_NOTIFICATIONS_MARKED_READ, {})
+
+    return { success: true }
   })
-  if (!rl.allowed) {
-    return { success: false, error: 'Too many requests. Try again later.' }
-  }
-
-  // Bulk update — RLS scopes to user, filter skips already-read rows.
-  const { error } = await supabase
-    .from('v2_notifications')
-    .update({ is_read: true })
-    .eq('user_id', user.id)
-    .eq('is_read', false)
-
-  if (error) {
-    return { success: false, error: 'Failed to mark notifications as read.' }
-  }
-
-  // Analytics
-  trackEvent(user.id, ANALYTICS_EVENTS.ALL_NOTIFICATIONS_MARKED_READ, {})
-
-  return { success: true }
 }

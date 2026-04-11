@@ -2,11 +2,13 @@
 
 import { useEffect } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageWrapper } from '@/components/layout/page-wrapper'
 import { useResetAttempts } from '@/hooks/use-reset-attempts'
+import { captureError } from '@/lib/analytics/error-handler'
 
 /**
  * Route-level error boundary for `/profile`.
@@ -35,6 +37,7 @@ export default function ProfileError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  const pathname = usePathname()
   const { hasExhausted, handleReset } = useResetAttempts(reset)
 
   useEffect(() => {
@@ -43,7 +46,11 @@ export default function ProfileError({
     // present) is the server-side request id Next.js attaches to the error
     // — useful for cross-referencing server logs.
     console.error('[ProfileError]', error)
-  }, [error])
+    captureError(error, {
+      source: 'ProfileError',
+      metadata: { digest: error.digest, pathname },
+    })
+  }, [error, pathname])
 
   return (
     <PageWrapper className="py-8">

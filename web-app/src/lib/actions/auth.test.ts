@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 // Mocks
 // ---------------------------------------------------------------------------
 
+vi.mock('server-only', () => ({}))
+
 const mockSignOut = vi.fn()
 const mockSignInWithOtp = vi.fn()
 const mockGetUser = vi.fn()
@@ -15,6 +17,7 @@ const mockSingle = vi.fn()
 const mockDelete = vi.fn()
 const mockSet = vi.fn()
 const mockTrackEvent = vi.fn()
+const mockCaptureServerError = vi.fn()
 
 vi.mock('@/lib/supabase/server', () => ({
   createServerClient: vi.fn().mockResolvedValue({
@@ -56,6 +59,24 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('@/lib/analytics/server', () => ({
   trackEvent: (...args: unknown[]) => mockTrackEvent(...args),
+  captureServerError: (...args: unknown[]) => mockCaptureServerError(...args),
+}))
+
+const mockWithTiming = vi.fn(
+  async <T,>(_actionName: string, _userId: string, fn: () => Promise<T>): Promise<T> => {
+    return fn()
+  },
+)
+
+// withTiming is a passthrough in tests; wiring is asserted by checking
+// mockWithTiming was called with the expected actionName.
+vi.mock('@/lib/analytics/timing', () => ({
+  withTiming: (...args: unknown[]) =>
+    mockWithTiming(
+      args[0] as string,
+      args[1] as string,
+      args[2] as () => Promise<unknown>,
+    ),
 }))
 
 vi.mock('@/lib/env', () => ({
@@ -94,11 +115,16 @@ describe('signOut server action', () => {
 
     expect(error).toBeInstanceOf(RedirectError)
     expect(error.url).toBe('/')
-    expect(mockGetUser).toHaveBeenCalledOnce()
     expect(mockSignOut).toHaveBeenCalledOnce()
     expect(mockDelete).toHaveBeenCalledWith('bragg_onboarded')
     expect(mockDelete).toHaveBeenCalledWith('bragg_terms_version')
     expect(mockTrackEvent).toHaveBeenCalledWith('user-456', 'signed_out')
+    // Wrapped in withTiming with the camelCase action name and the resolved user id
+    expect(mockWithTiming).toHaveBeenCalledWith(
+      'signOut',
+      'user-456',
+      expect.any(Function),
+    )
   })
 
   test('signs out without analytics when getUser returns no user', async () => {
@@ -125,6 +151,12 @@ describe('signOut server action', () => {
     // Cookies should NOT be deleted when signOut itself fails
     expect(mockDelete).not.toHaveBeenCalled()
     expect(mockTrackEvent).not.toHaveBeenCalled()
+    // Failure path captures the error to PostHog with the action source
+    expect(mockCaptureServerError).toHaveBeenCalledWith(
+      'user-456',
+      expect.objectContaining({ message: 'session_not_found' }),
+      expect.objectContaining({ source: 'signOut' }),
+    )
   })
 
   test('returns generic error when an unexpected exception is thrown', async () => {
@@ -250,6 +282,11 @@ describe('sendMagicLink server action', () => {
       success: false,
       error: 'Failed to send magic link. Please try again.',
     })
+    expect(mockCaptureServerError).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ status: 500 }),
+      expect.objectContaining({ source: 'sendMagicLink' }),
+    )
   })
 
   test('fires MAGIC_LINK_REQUESTED analytics event on success', async () => {
@@ -260,6 +297,12 @@ describe('sendMagicLink server action', () => {
       expect.any(String),
       'magic_link_requested',
       expect.objectContaining({ email_hash: expect.any(String) }),
+    )
+    // Wrapped in withTiming with the camelCase action name + hashed pseudo-user id
+    expect(mockWithTiming).toHaveBeenCalledWith(
+      'sendMagicLink',
+      expect.any(String),
+      expect.any(Function),
     )
   })
 

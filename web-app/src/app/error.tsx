@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { AlertTriangle } from 'lucide-react'
 
 import { BraggWordmark } from '@/components/ui/bragg-wordmark'
@@ -36,12 +37,14 @@ export default function GlobalError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  const pathname = usePathname()
+
   useEffect(() => {
     captureError(error, {
       source: 'GlobalErrorPage',
-      metadata: { digest: error.digest },
+      metadata: { digest: error.digest, pathname },
     })
-  }, [error])
+  }, [error, pathname])
 
   return (
     <main

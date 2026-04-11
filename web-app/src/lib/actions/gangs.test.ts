@@ -6,10 +6,13 @@ import { ANALYTICS_EVENTS } from '@/lib/analytics/events'
 // Mocks
 // ---------------------------------------------------------------------------
 
+vi.mock('server-only', () => ({}))
+
 const mockGetUser = vi.fn()
 const mockRpc = vi.fn()
 const mockRateLimit = vi.fn()
 const mockTrackEvent = vi.fn()
+const mockCaptureServerError = vi.fn()
 const mockRevalidatePath = vi.fn()
 
 // Chainable query builder mock for .from().select().eq().maybeSingle(), etc.
@@ -50,6 +53,22 @@ vi.mock('@/lib/rate-limit', () => ({
 
 vi.mock('@/lib/analytics/server', () => ({
   trackEvent: (...args: unknown[]) => mockTrackEvent(...args),
+  captureServerError: (...args: unknown[]) => mockCaptureServerError(...args),
+}))
+
+const mockWithTiming = vi.fn(
+  async <T,>(_actionName: string, _userId: string, fn: () => Promise<T>): Promise<T> => {
+    return fn()
+  },
+)
+
+vi.mock('@/lib/analytics/timing', () => ({
+  withTiming: (...args: unknown[]) =>
+    mockWithTiming(
+      args[0] as string,
+      args[1] as string,
+      args[2] as () => Promise<unknown>,
+    ),
 }))
 
 vi.mock('next/cache', () => ({
@@ -206,6 +225,13 @@ describe('createGang server action', () => {
       'gang_created',
       expect.objectContaining({ gang_name: 'Mumbai Mavericks' }),
     )
+
+    // Wrapped in withTiming with the camelCase action name + resolved user id
+    expect(mockWithTiming).toHaveBeenCalledWith(
+      'createGang',
+      'user-123',
+      expect.any(Function),
+    )
   })
 
   test('trims gang name before passing to RPC', async () => {
@@ -282,6 +308,12 @@ describe('createGang server action', () => {
       error: 'Failed to create gang. Please try again.',
     })
     expect(mockTrackEvent).not.toHaveBeenCalled()
+    // Failure path forwards the error to PostHog with the action source
+    expect(mockCaptureServerError).toHaveBeenCalledWith(
+      'user-123',
+      expect.objectContaining({ message: 'unexpected error' }),
+      expect.objectContaining({ source: 'createGang' }),
+    )
   })
 
   // ---- Order of operations ----

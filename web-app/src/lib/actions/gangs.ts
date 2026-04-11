@@ -4,7 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createServerClient } from '@/lib/supabase/server'
 import { rateLimit } from '@/lib/rate-limit'
-import { trackEvent } from '@/lib/analytics/server'
+import { captureServerError, trackEvent } from '@/lib/analytics/server'
+import { withTiming } from '@/lib/analytics/timing'
 import { ANALYTICS_EVENTS } from '@/lib/analytics/events'
 import type { ActionResult } from '@/types'
 
@@ -34,55 +35,63 @@ export async function createGang(
     return { success: false, error: 'Not authenticated' }
   }
 
-  // Rate limit: 10 per hour
-  const rl = await rateLimit(user.id, 'create_gang', {
-    max: 10,
-    windowSeconds: 3600,
-  })
-  if (!rl.allowed) {
-    return { success: false, error: 'Too many requests. Try again later.' }
-  }
+  const userId = user.id
 
-  // Validate gang name
-  const parsed = gangNameSchema.safeParse(gangName)
-  if (!parsed.success) {
-    return { success: false, error: 'Gang name must be 3\u201350 characters' }
-  }
-
-  // Call RPC
-  const { data, error } = await supabase.rpc('create_gang', {
-    p_gang_name: parsed.data,
-    p_creator_id: user.id,
-  })
-
-  if (error) {
-    if (error.message.includes('MAX_GANGS_REACHED')) {
-      return {
-        success: false,
-        error: "You've reached the maximum of 40 gangs.",
-      }
+  return withTiming('createGang', userId, async () => {
+    // Rate limit: 10 per hour
+    const rl = await rateLimit(userId, 'create_gang', {
+      max: 10,
+      windowSeconds: 3600,
+    })
+    if (!rl.allowed) {
+      return { success: false, error: 'Too many requests. Try again later.' }
     }
-    if (error.message.includes('INVITE_CODE_GENERATION_FAILED')) {
-      return {
-        success: false,
-        error: 'Unable to generate invite code. Please try again.',
-      }
+
+    // Validate gang name
+    const parsed = gangNameSchema.safeParse(gangName)
+    if (!parsed.success) {
+      return { success: false, error: 'Gang name must be 3\u201350 characters' }
     }
-    return { success: false, error: 'Failed to create gang. Please try again.' }
-  }
 
-  // Analytics
-  trackEvent(user.id, ANALYTICS_EVENTS.GANG_CREATED, {
-    gang_name: parsed.data,
+    // Call RPC
+    const { data, error } = await supabase.rpc('create_gang', {
+      p_gang_name: parsed.data,
+      p_creator_id: userId,
+    })
+
+    if (error) {
+      captureServerError(userId, error, {
+        source: 'createGang',
+        metadata: { gang_name: parsed.data },
+      })
+      if (error.message.includes('MAX_GANGS_REACHED')) {
+        return {
+          success: false,
+          error: "You've reached the maximum of 40 gangs.",
+        }
+      }
+      if (error.message.includes('INVITE_CODE_GENERATION_FAILED')) {
+        return {
+          success: false,
+          error: 'Unable to generate invite code. Please try again.',
+        }
+      }
+      return { success: false, error: 'Failed to create gang. Please try again.' }
+    }
+
+    // Analytics
+    trackEvent(userId, ANALYTICS_EVENTS.GANG_CREATED, {
+      gang_name: parsed.data,
+    })
+
+    // Revalidate dashboard to reflect new gang
+    revalidatePath('/dashboard')
+
+    // data is the new gang_id returned by the RPC.
+    // inviteCode is empty here because the RPC only returns the gang_id.
+    // The invite code is fetched separately on the gang detail page via the gangs DAL.
+    return { success: true, data: { gangId: data as string, inviteCode: '' } }
   })
-
-  // Revalidate dashboard to reflect new gang
-  revalidatePath('/dashboard')
-
-  // data is the new gang_id returned by the RPC.
-  // inviteCode is empty here because the RPC only returns the gang_id.
-  // The invite code is fetched separately on the gang detail page via the gangs DAL.
-  return { success: true, data: { gangId: data as string, inviteCode: '' } }
 }
 
 // ---------------------------------------------------------------------------
@@ -119,8 +128,11 @@ export async function joinGangByCode(
     return { success: false, error: 'Not authenticated' }
   }
 
+  const userId = user.id
+
+  return withTiming('joinGangByCode', userId, async () => {
   // Rate limit: 20 per hour
-  const rl = await rateLimit(user.id, 'join_gang', {
+  const rl = await rateLimit(userId, 'join_gang', {
     max: 20,
     windowSeconds: 3600,
   })
@@ -140,6 +152,13 @@ export async function joinGangByCode(
     { p_invite_code: parsed.data },
   )
 
+  if (rpcError) {
+    captureServerError(userId, rpcError, {
+      source: 'joinGangByCode',
+      metadata: { stage: 'invite_lookup' },
+    })
+  }
+
   const gang = !rpcError && gangRows && gangRows.length > 0 ? gangRows[0] : null
 
   if (!gang) {
@@ -156,7 +175,7 @@ export async function joinGangByCode(
     .from('v2_gang_members')
     .select('status, is_blocked')
     .eq('gang_id', gang.id)
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .maybeSingle()
 
   if (existingMember) {
@@ -202,7 +221,7 @@ export async function joinGangByCode(
   const { count: userGangCount } = await supabase
     .from('v2_gang_members')
     .select('*', { count: 'exact', head: true })
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .eq('status', 'approved')
 
   if ((userGangCount ?? 0) >= 40) {
@@ -216,7 +235,7 @@ export async function joinGangByCode(
   const { data: profile } = await supabase
     .from('v2_profiles')
     .select('display_name')
-    .eq('id', user.id)
+    .eq('id', userId)
     .single()
 
   if (profile?.display_name) {
@@ -226,7 +245,7 @@ export async function joinGangByCode(
       .eq('gang_id', gang.id)
       .eq('status', 'approved')
       .eq('v2_profiles.display_name', profile.display_name)
-      .neq('user_id', user.id)
+      .neq('user_id', userId)
       .limit(1)
 
     if (duplicateName && duplicateName.length > 0) {
@@ -256,9 +275,13 @@ export async function joinGangByCode(
         ...(newStatus === 'approved' ? { approved_at: now } : {}),
       })
       .eq('gang_id', gang.id)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
 
     if (updateError) {
+      captureServerError(userId, updateError, {
+        source: 'joinGangByCode',
+        metadata: { stage: 'rejoin_update', gang_id: gang.id },
+      })
       return { success: false, error: 'Failed to join gang. Please try again.' }
     }
   } else {
@@ -267,7 +290,7 @@ export async function joinGangByCode(
       .from('v2_gang_members')
       .insert({
         gang_id: gang.id,
-        user_id: user.id,
+        user_id: userId,
         role: 'member' as const,
         status: newStatus,
         is_blocked: false,
@@ -275,6 +298,10 @@ export async function joinGangByCode(
       })
 
     if (insertError) {
+      captureServerError(userId, insertError, {
+        source: 'joinGangByCode',
+        metadata: { stage: 'member_insert', gang_id: gang.id },
+      })
       return { success: false, error: 'Failed to join gang. Please try again.' }
     }
   }
@@ -327,7 +354,7 @@ export async function joinGangByCode(
   }
 
   // Analytics
-  trackEvent(user.id, ANALYTICS_EVENTS.JOIN_REQUESTED, {
+  trackEvent(userId, ANALYTICS_EVENTS.JOIN_REQUESTED, {
     gang_id: gang.id,
     status: newStatus,
     invite_code: parsed.data,
@@ -338,6 +365,7 @@ export async function joinGangByCode(
   revalidatePath(`/group/${gang.id}`)
 
   return { success: true, data: { gangId: gang.id, status: newStatus } }
+  })
 }
 
 // ---------------------------------------------------------------------------
@@ -374,8 +402,11 @@ export async function approveJoinRequest(
     return { success: false, error: 'Not authenticated' }
   }
 
+  const actorId = user.id
+
+  return withTiming('approveJoinRequest', actorId, async () => {
   // Rate limit: 60 per hour
-  const rl = await rateLimit(user.id, 'approve_join_request', {
+  const rl = await rateLimit(actorId, 'approve_join_request', {
     max: 60,
     windowSeconds: 3600,
   })
@@ -395,7 +426,7 @@ export async function approveJoinRequest(
     .from('v2_gang_members')
     .select('role, status')
     .eq('gang_id', gangIdParsed.data)
-    .eq('user_id', user.id)
+    .eq('user_id', actorId)
     .maybeSingle()
 
   if (!adminMember || adminMember.role !== 'admin' || adminMember.status !== 'approved') {
@@ -455,6 +486,10 @@ export async function approveJoinRequest(
     .select()
 
   if (updateError) {
+    captureServerError(actorId, updateError, {
+      source: 'approveJoinRequest',
+      metadata: { stage: 'member_update', gang_id: gangId, target_user_id: userId },
+    })
     return { success: false, error: 'Failed to approve request. Please try again.' }
   }
 
@@ -491,12 +526,13 @@ export async function approveJoinRequest(
   revalidatePath(`/group/${gangId}/settings`)
 
   // Analytics
-  trackEvent(user.id, ANALYTICS_EVENTS.MEMBER_APPROVED, {
+  trackEvent(actorId, ANALYTICS_EVENTS.MEMBER_APPROVED, {
     gang_id: gangId,
     approved_user_id: userId,
   })
 
   return { success: true }
+  })
 }
 
 // ---------------------------------------------------------------------------
@@ -530,8 +566,11 @@ export async function rejectJoinRequest(
     return { success: false, error: 'Not authenticated' }
   }
 
+  const actorId = user.id
+
+  return withTiming('rejectJoinRequest', actorId, async () => {
   // Rate limit: 60 per hour
-  const rl = await rateLimit(user.id, 'reject_join_request', {
+  const rl = await rateLimit(actorId, 'reject_join_request', {
     max: 60,
     windowSeconds: 3600,
   })
@@ -551,7 +590,7 @@ export async function rejectJoinRequest(
     .from('v2_gang_members')
     .select('role, status')
     .eq('gang_id', gangIdParsed.data)
-    .eq('user_id', user.id)
+    .eq('user_id', actorId)
     .maybeSingle()
 
   if (!adminMember || adminMember.role !== 'admin' || adminMember.status !== 'approved') {
@@ -570,6 +609,10 @@ export async function rejectJoinRequest(
     .select()
 
   if (updateError) {
+    captureServerError(actorId, updateError, {
+      source: 'rejectJoinRequest',
+      metadata: { stage: 'member_update', gang_id: gangId, target_user_id: userId },
+    })
     return { success: false, error: 'Failed to reject request. Please try again.' }
   }
 
@@ -606,12 +649,13 @@ export async function rejectJoinRequest(
   revalidatePath(`/group/${gangId}/settings`)
 
   // Analytics
-  trackEvent(user.id, ANALYTICS_EVENTS.MEMBER_REJECTED, {
+  trackEvent(actorId, ANALYTICS_EVENTS.MEMBER_REJECTED, {
     gang_id: gangId,
     rejected_user_id: userId,
   })
 
   return { success: true }
+  })
 }
 
 // ---------------------------------------------------------------------------
@@ -645,72 +689,80 @@ export async function leaveGang(gangId: string): Promise<ActionResult> {
     return { success: false, error: 'Not authenticated' }
   }
 
-  // Rate limit: 10 per hour
-  const rl = await rateLimit(user.id, 'leave_gang', {
-    max: 10,
-    windowSeconds: 3600,
-  })
-  if (!rl.allowed) {
-    return { success: false, error: 'Too many requests. Try again later.' }
-  }
+  const userId = user.id
 
-  // Validate gangId
-  const gangIdParsed = uuidSchema.safeParse(gangId)
-  if (!gangIdParsed.success) {
-    return { success: false, error: 'Invalid request' }
-  }
-
-  // Verify user is an approved member with role='member' (not admin)
-  const { data: membership } = await supabase
-    .from('v2_gang_members')
-    .select('role, status')
-    .eq('gang_id', gangIdParsed.data)
-    .eq('user_id', user.id)
-    .maybeSingle()
-
-  if (!membership || membership.status !== 'approved') {
-    return { success: false, error: 'You are not a member of this gang' }
-  }
-
-  if (membership.role === 'admin') {
-    return {
-      success: false,
-      error: 'Admins cannot leave. Delete the gang instead.',
-    }
-  }
-
-  // Update status to 'left' with departed_at — use .select() for race condition guard
-  const now = new Date().toISOString()
-  const { data: updatedRows, error: updateError } = await supabase
-    .from('v2_gang_members')
-    .update({
-      status: 'left' as const,
-      departed_at: now,
+  return withTiming('leaveGang', userId, async () => {
+    // Rate limit: 10 per hour
+    const rl = await rateLimit(userId, 'leave_gang', {
+      max: 10,
+      windowSeconds: 3600,
     })
-    .eq('gang_id', gangIdParsed.data)
-    .eq('user_id', user.id)
-    .eq('status', 'approved')
-    .select()
+    if (!rl.allowed) {
+      return { success: false, error: 'Too many requests. Try again later.' }
+    }
 
-  if (updateError) {
-    return { success: false, error: 'Failed to leave gang. Please try again.' }
-  }
+    // Validate gangId
+    const gangIdParsed = uuidSchema.safeParse(gangId)
+    if (!gangIdParsed.success) {
+      return { success: false, error: 'Invalid request' }
+    }
 
-  // Race condition: if no rows updated, the status was already changed
-  if (!updatedRows || updatedRows.length === 0) {
-    return { success: false, error: 'You are not a member of this gang' }
-  }
+    // Verify user is an approved member with role='member' (not admin)
+    const { data: membership } = await supabase
+      .from('v2_gang_members')
+      .select('role, status')
+      .eq('gang_id', gangIdParsed.data)
+      .eq('user_id', userId)
+      .maybeSingle()
 
-  // Analytics
-  trackEvent(user.id, ANALYTICS_EVENTS.MEMBER_LEFT, {
-    gang_id: gangIdParsed.data,
+    if (!membership || membership.status !== 'approved') {
+      return { success: false, error: 'You are not a member of this gang' }
+    }
+
+    if (membership.role === 'admin') {
+      return {
+        success: false,
+        error: 'Admins cannot leave. Delete the gang instead.',
+      }
+    }
+
+    // Update status to 'left' with departed_at — use .select() for race condition guard
+    const now = new Date().toISOString()
+    const { data: updatedRows, error: updateError } = await supabase
+      .from('v2_gang_members')
+      .update({
+        status: 'left' as const,
+        departed_at: now,
+      })
+      .eq('gang_id', gangIdParsed.data)
+      .eq('user_id', userId)
+      .eq('status', 'approved')
+      .select()
+
+    if (updateError) {
+      captureServerError(userId, updateError, {
+        source: 'leaveGang',
+        metadata: { gang_id: gangIdParsed.data },
+      })
+      return { success: false, error: 'Failed to leave gang. Please try again.' }
+    }
+
+    // Race condition: if no rows updated, the status was already changed
+    if (!updatedRows || updatedRows.length === 0) {
+      return { success: false, error: 'You are not a member of this gang' }
+    }
+
+    // Analytics
+    trackEvent(userId, ANALYTICS_EVENTS.MEMBER_LEFT, {
+      gang_id: gangIdParsed.data,
+    })
+
+    // Revalidate paths
+    revalidatePath('/dashboard')
+    revalidatePath(`/group/${gangIdParsed.data}`)
+
+    return { success: true }
   })
-
-  // Revalidate paths
-  revalidatePath('/dashboard')
-  revalidatePath(`/group/${gangIdParsed.data}`)
-
-  return { success: true }
 }
 
 // ---------------------------------------------------------------------------
@@ -801,67 +853,75 @@ export async function updateGangName(
     return { success: false, error: 'Not authenticated' }
   }
 
-  // Rate limit: 30 per hour
-  const rl = await rateLimit(user.id, 'update_gang_name', {
-    max: 30,
-    windowSeconds: 3600,
+  const userId = user.id
+
+  return withTiming('updateGangName', userId, async () => {
+    // Rate limit: 30 per hour
+    const rl = await rateLimit(userId, 'update_gang_name', {
+      max: 30,
+      windowSeconds: 3600,
+    })
+    if (!rl.allowed) {
+      return { success: false, error: 'Too many requests. Try again later.' }
+    }
+
+    // Validate gangId
+    const gangIdParsed = uuidSchema.safeParse(gangId)
+    if (!gangIdParsed.success) {
+      return { success: false, error: 'Invalid request' }
+    }
+
+    // Validate name
+    const nameParsed = gangNameSchema.safeParse(newName)
+    if (!nameParsed.success) {
+      return { success: false, error: 'Gang name must be 3\u201350 characters' }
+    }
+
+    // Admin verification (also guards against soft-deleted gangs)
+    const isAdmin = await isApprovedGangAdmin(
+      supabase,
+      gangIdParsed.data,
+      userId,
+    )
+    if (!isAdmin) {
+      return {
+        success: false,
+        error: "Gang not found or you don't have permission",
+      }
+    }
+
+    // Update — defense-in-depth soft-delete filter. `.select('id')` lets us
+    // detect the zero-rows case (e.g. the gang was soft-deleted between the
+    // admin check and the update) so we don't silently report success.
+    const { data: updatedRows, error: updateError } = await supabase
+      .from('v2_gangs')
+      .update({ name: nameParsed.data })
+      .eq('id', gangIdParsed.data)
+      .eq('is_deleted', false)
+      .select('id')
+
+    if (updateError) {
+      captureServerError(userId, updateError, {
+        source: 'updateGangName',
+        metadata: { gang_id: gangIdParsed.data },
+      })
+      return { success: false, error: 'Failed to update gang name. Please try again.' }
+    }
+
+    if (!updatedRows || updatedRows.length === 0) {
+      return {
+        success: false,
+        error: "Gang not found or you don't have permission",
+      }
+    }
+
+    // Revalidate
+    revalidatePath('/dashboard')
+    revalidatePath(`/group/${gangIdParsed.data}`)
+    revalidatePath(`/group/${gangIdParsed.data}/settings`)
+
+    return { success: true }
   })
-  if (!rl.allowed) {
-    return { success: false, error: 'Too many requests. Try again later.' }
-  }
-
-  // Validate gangId
-  const gangIdParsed = uuidSchema.safeParse(gangId)
-  if (!gangIdParsed.success) {
-    return { success: false, error: 'Invalid request' }
-  }
-
-  // Validate name
-  const nameParsed = gangNameSchema.safeParse(newName)
-  if (!nameParsed.success) {
-    return { success: false, error: 'Gang name must be 3\u201350 characters' }
-  }
-
-  // Admin verification (also guards against soft-deleted gangs)
-  const isAdmin = await isApprovedGangAdmin(
-    supabase,
-    gangIdParsed.data,
-    user.id,
-  )
-  if (!isAdmin) {
-    return {
-      success: false,
-      error: "Gang not found or you don't have permission",
-    }
-  }
-
-  // Update — defense-in-depth soft-delete filter. `.select('id')` lets us
-  // detect the zero-rows case (e.g. the gang was soft-deleted between the
-  // admin check and the update) so we don't silently report success.
-  const { data: updatedRows, error: updateError } = await supabase
-    .from('v2_gangs')
-    .update({ name: nameParsed.data })
-    .eq('id', gangIdParsed.data)
-    .eq('is_deleted', false)
-    .select('id')
-
-  if (updateError) {
-    return { success: false, error: 'Failed to update gang name. Please try again.' }
-  }
-
-  if (!updatedRows || updatedRows.length === 0) {
-    return {
-      success: false,
-      error: "Gang not found or you don't have permission",
-    }
-  }
-
-  // Revalidate
-  revalidatePath('/dashboard')
-  revalidatePath(`/group/${gangIdParsed.data}`)
-  revalidatePath(`/group/${gangIdParsed.data}/settings`)
-
-  return { success: true }
 }
 
 // ---------------------------------------------------------------------------
@@ -895,65 +955,73 @@ export async function updateAutoAccept(
     return { success: false, error: 'Not authenticated' }
   }
 
-  // Rate limit: 30 per hour
-  const rl = await rateLimit(user.id, 'update_auto_accept', {
-    max: 30,
-    windowSeconds: 3600,
+  const userId = user.id
+
+  return withTiming('updateAutoAccept', userId, async () => {
+    // Rate limit: 30 per hour
+    const rl = await rateLimit(userId, 'update_auto_accept', {
+      max: 30,
+      windowSeconds: 3600,
+    })
+    if (!rl.allowed) {
+      return { success: false, error: 'Too many requests. Try again later.' }
+    }
+
+    // Validate gangId
+    const gangIdParsed = uuidSchema.safeParse(gangId)
+    if (!gangIdParsed.success) {
+      return { success: false, error: 'Invalid request' }
+    }
+
+    // Validate payload
+    if (typeof autoAccept !== 'boolean') {
+      return { success: false, error: 'Invalid request' }
+    }
+
+    // Admin verification (also guards against soft-deleted gangs)
+    const isAdmin = await isApprovedGangAdmin(
+      supabase,
+      gangIdParsed.data,
+      userId,
+    )
+    if (!isAdmin) {
+      return {
+        success: false,
+        error: "Gang not found or you don't have permission",
+      }
+    }
+
+    // Update — defense-in-depth soft-delete filter. `.select('id')` lets us
+    // detect the zero-rows case (e.g. the gang was soft-deleted between the
+    // admin check and the update) so we don't silently report success.
+    const { data: updatedRows, error: updateError } = await supabase
+      .from('v2_gangs')
+      .update({ auto_accept: autoAccept })
+      .eq('id', gangIdParsed.data)
+      .eq('is_deleted', false)
+      .select('id')
+
+    if (updateError) {
+      captureServerError(userId, updateError, {
+        source: 'updateAutoAccept',
+        metadata: { gang_id: gangIdParsed.data, auto_accept: autoAccept },
+      })
+      return { success: false, error: 'Failed to update setting. Please try again.' }
+    }
+
+    if (!updatedRows || updatedRows.length === 0) {
+      return {
+        success: false,
+        error: "Gang not found or you don't have permission",
+      }
+    }
+
+    // Revalidate
+    revalidatePath(`/group/${gangIdParsed.data}`)
+    revalidatePath(`/group/${gangIdParsed.data}/settings`)
+
+    return { success: true }
   })
-  if (!rl.allowed) {
-    return { success: false, error: 'Too many requests. Try again later.' }
-  }
-
-  // Validate gangId
-  const gangIdParsed = uuidSchema.safeParse(gangId)
-  if (!gangIdParsed.success) {
-    return { success: false, error: 'Invalid request' }
-  }
-
-  // Validate payload
-  if (typeof autoAccept !== 'boolean') {
-    return { success: false, error: 'Invalid request' }
-  }
-
-  // Admin verification (also guards against soft-deleted gangs)
-  const isAdmin = await isApprovedGangAdmin(
-    supabase,
-    gangIdParsed.data,
-    user.id,
-  )
-  if (!isAdmin) {
-    return {
-      success: false,
-      error: "Gang not found or you don't have permission",
-    }
-  }
-
-  // Update — defense-in-depth soft-delete filter. `.select('id')` lets us
-  // detect the zero-rows case (e.g. the gang was soft-deleted between the
-  // admin check and the update) so we don't silently report success.
-  const { data: updatedRows, error: updateError } = await supabase
-    .from('v2_gangs')
-    .update({ auto_accept: autoAccept })
-    .eq('id', gangIdParsed.data)
-    .eq('is_deleted', false)
-    .select('id')
-
-  if (updateError) {
-    return { success: false, error: 'Failed to update setting. Please try again.' }
-  }
-
-  if (!updatedRows || updatedRows.length === 0) {
-    return {
-      success: false,
-      error: "Gang not found or you don't have permission",
-    }
-  }
-
-  // Revalidate
-  revalidatePath(`/group/${gangIdParsed.data}`)
-  revalidatePath(`/group/${gangIdParsed.data}/settings`)
-
-  return { success: true }
 }
 
 // ---------------------------------------------------------------------------
@@ -996,85 +1064,104 @@ export async function updatePredictionDeadline(
     return { success: false, error: 'Not authenticated' }
   }
 
-  // Rate limit: 30 per hour
-  const rl = await rateLimit(user.id, 'update_prediction_deadline', {
-    max: 30,
-    windowSeconds: 3600,
-  })
-  if (!rl.allowed) {
-    return { success: false, error: 'Too many requests. Try again later.' }
-  }
+  const userId = user.id
 
-  // Validate gangId
-  const gangIdParsed = uuidSchema.safeParse(gangId)
-  if (!gangIdParsed.success) {
-    return { success: false, error: 'Invalid request' }
-  }
-
-  // Validate minutes
-  const minutesParsed = predictionDeadlineSchema.safeParse(minutes)
-  if (!minutesParsed.success) {
-    const issue = minutesParsed.error.issues[0]
-    return {
-      success: false,
-      error: issue?.message ?? 'Deadline must be between 15 and 720 minutes',
+  return withTiming('updatePredictionDeadline', userId, async () => {
+    // Rate limit: 30 per hour
+    const rl = await rateLimit(userId, 'update_prediction_deadline', {
+      max: 30,
+      windowSeconds: 3600,
+    })
+    if (!rl.allowed) {
+      return { success: false, error: 'Too many requests. Try again later.' }
     }
-  }
 
-  // Admin verification (also guards against soft-deleted gangs)
-  const isAdmin = await isApprovedGangAdmin(
-    supabase,
-    gangIdParsed.data,
-    user.id,
-  )
-  if (!isAdmin) {
-    return {
-      success: false,
-      error: "Gang not found or you don't have permission",
+    // Validate gangId
+    const gangIdParsed = uuidSchema.safeParse(gangId)
+    if (!gangIdParsed.success) {
+      return { success: false, error: 'Invalid request' }
     }
-  }
 
-  // Update active season row. Use .select() to detect the zero- and
-  // multi-row cases — a strict assertion of "exactly one active season
-  // updated" so the admin never sees silent success when the row set is
-  // unexpected.
-  const { data: updatedRows, error: updateError } = await supabase
-    .from('v2_gang_league_seasons')
-    .update({ prediction_deadline_mins: minutesParsed.data })
-    .eq('gang_id', gangIdParsed.data)
-    .eq('is_active', true)
-    .select('gang_id')
-
-  if (updateError) {
-    return { success: false, error: 'Failed to update deadline. Please try again.' }
-  }
-
-  if (!updatedRows || updatedRows.length === 0) {
-    return {
-      success: false,
-      error:
-        'This gang is not yet enrolled in an active season. Try again after the next season starts.',
+    // Validate minutes
+    const minutesParsed = predictionDeadlineSchema.safeParse(minutes)
+    if (!minutesParsed.success) {
+      const issue = minutesParsed.error.issues[0]
+      return {
+        success: false,
+        error: issue?.message ?? 'Deadline must be between 15 and 720 minutes',
+      }
     }
-  }
 
-  if (updatedRows.length > 1) {
-    // Data-integrity drift: there should be at most one active season row
-    // per gang. A DB unique partial index is the real fix, but log + bail
-    // so we notice the drift and don't silently update multiple rows.
-    console.warn(
-      `[updatePredictionDeadline] unexpected multi-row update: gang_id=${gangIdParsed.data} rows=${updatedRows.length}`,
+    // Admin verification (also guards against soft-deleted gangs)
+    const isAdmin = await isApprovedGangAdmin(
+      supabase,
+      gangIdParsed.data,
+      userId,
     )
-    return {
-      success: false,
-      error: 'Unexpected number of active seasons. Please contact support.',
+    if (!isAdmin) {
+      return {
+        success: false,
+        error: "Gang not found or you don't have permission",
+      }
     }
-  }
 
-  // Revalidate
-  revalidatePath(`/group/${gangIdParsed.data}`)
-  revalidatePath(`/group/${gangIdParsed.data}/settings`)
+    // Update active season row. Use .select() to detect the zero- and
+    // multi-row cases — a strict assertion of "exactly one active season
+    // updated" so the admin never sees silent success when the row set is
+    // unexpected.
+    const { data: updatedRows, error: updateError } = await supabase
+      .from('v2_gang_league_seasons')
+      .update({ prediction_deadline_mins: minutesParsed.data })
+      .eq('gang_id', gangIdParsed.data)
+      .eq('is_active', true)
+      .select('gang_id')
 
-  return { success: true }
+    if (updateError) {
+      captureServerError(userId, updateError, {
+        source: 'updatePredictionDeadline',
+        metadata: { gang_id: gangIdParsed.data, minutes: minutesParsed.data },
+      })
+      return { success: false, error: 'Failed to update deadline. Please try again.' }
+    }
+
+    if (!updatedRows || updatedRows.length === 0) {
+      return {
+        success: false,
+        error:
+          'This gang is not yet enrolled in an active season. Try again after the next season starts.',
+      }
+    }
+
+    if (updatedRows.length > 1) {
+      // Data-integrity drift: there should be at most one active season row
+      // per gang. A DB unique partial index is the real fix, but log + bail
+      // so we notice the drift and don't silently update multiple rows.
+      console.warn(
+        `[updatePredictionDeadline] unexpected multi-row update: gang_id=${gangIdParsed.data} rows=${updatedRows.length}`,
+      )
+      captureServerError(
+        userId,
+        new Error('updatePredictionDeadline: multi-row update'),
+        {
+          source: 'updatePredictionDeadline',
+          metadata: {
+            gang_id: gangIdParsed.data,
+            row_count: updatedRows.length,
+          },
+        },
+      )
+      return {
+        success: false,
+        error: 'Unexpected number of active seasons. Please contact support.',
+      }
+    }
+
+    // Revalidate
+    revalidatePath(`/group/${gangIdParsed.data}`)
+    revalidatePath(`/group/${gangIdParsed.data}/settings`)
+
+    return { success: true }
+  })
 }
 
 // ---------------------------------------------------------------------------
@@ -1107,72 +1194,83 @@ export async function deleteGang(gangId: string): Promise<ActionResult> {
     return { success: false, error: 'Not authenticated' }
   }
 
-  // Rate limit: 5 per hour (conservative — deletion is destructive)
-  const rl = await rateLimit(user.id, 'delete_gang', {
-    max: 5,
-    windowSeconds: 3600,
-  })
-  if (!rl.allowed) {
-    return { success: false, error: 'Too many requests. Try again later.' }
-  }
+  const userId = user.id
 
-  // Validate gangId
-  const gangIdParsed = uuidSchema.safeParse(gangId)
-  if (!gangIdParsed.success) {
-    return { success: false, error: 'Invalid request' }
-  }
-
-  // Call the delete_gang RPC. The generated Supabase Functions type does not
-  // yet include this RPC (migration 20260409000016 has not been picked up by
-  // db:types), so we cast the client to a narrow typed shim.
-  //
-  // Since the RPC resolves the caller via `auth.uid()` we MUST NOT pass
-  // `p_caller_id` — the old signature was vulnerable to caller-id spoofing.
-  // TODO: remove cast once `db:types` is regenerated.
-  const rpcClient = supabase as unknown as DeleteGangRpcClient
-  const { error } = await rpcClient.rpc('delete_gang', {
-    p_gang_id: gangIdParsed.data,
-  })
-
-  if (error) {
-    // Auth failure (defensive — should not trigger because the action
-    // already calls supabase.auth.getUser() above).
-    if (error.message.includes('NOT_AUTHENTICATED')) {
-      return { success: false, error: 'You must be signed in' }
+  return withTiming('deleteGang', userId, async () => {
+    // Rate limit: 5 per hour (conservative — deletion is destructive)
+    const rl = await rateLimit(userId, 'delete_gang', {
+      max: 5,
+      windowSeconds: 3600,
+    })
+    if (!rl.allowed) {
+      return { success: false, error: 'Too many requests. Try again later.' }
     }
-    // Admin check failure — raised by the RPC with SQLSTATE 42501 and
-    // message 'NOT_GANG_ADMIN'. Match on the message first so the
-    // NOT_AUTHENTICATED branch above isn't shadowed by the shared errcode.
-    if (
-      error.message.includes('NOT_GANG_ADMIN') ||
-      error.code === '42501'
-    ) {
-      return {
-        success: false,
-        error: 'Only gang admins can delete the gang',
+
+    // Validate gangId
+    const gangIdParsed = uuidSchema.safeParse(gangId)
+    if (!gangIdParsed.success) {
+      return { success: false, error: 'Invalid request' }
+    }
+
+    // Call the delete_gang RPC. The generated Supabase Functions type does not
+    // yet include this RPC (migration 20260409000016 has not been picked up by
+    // db:types), so we cast the client to a narrow typed shim.
+    //
+    // Since the RPC resolves the caller via `auth.uid()` we MUST NOT pass
+    // `p_caller_id` — the old signature was vulnerable to caller-id spoofing.
+    // TODO: remove cast once `db:types` is regenerated.
+    const rpcClient = supabase as unknown as DeleteGangRpcClient
+    const { error } = await rpcClient.rpc('delete_gang', {
+      p_gang_id: gangIdParsed.data,
+    })
+
+    if (error) {
+      captureServerError(userId, error, {
+        source: 'deleteGang',
+        metadata: {
+          gang_id: gangIdParsed.data,
+          error_code: error.code,
+        },
+      })
+      // Auth failure (defensive — should not trigger because the action
+      // already calls supabase.auth.getUser() above).
+      if (error.message.includes('NOT_AUTHENTICATED')) {
+        return { success: false, error: 'You must be signed in' }
       }
+      // Admin check failure — raised by the RPC with SQLSTATE 42501 and
+      // message 'NOT_GANG_ADMIN'. Match on the message first so the
+      // NOT_AUTHENTICATED branch above isn't shadowed by the shared errcode.
+      if (
+        error.message.includes('NOT_GANG_ADMIN') ||
+        error.code === '42501'
+      ) {
+        return {
+          success: false,
+          error: 'Only gang admins can delete the gang',
+        }
+      }
+      // Not-found / already-deleted (custom SQLSTATE P0001)
+      if (
+        error.message.includes('GANG_NOT_FOUND') ||
+        error.message.includes('GANG_ALREADY_DELETED')
+      ) {
+        return { success: false, error: 'This gang no longer exists' }
+      }
+      return { success: false, error: 'Failed to delete gang. Please try again.' }
     }
-    // Not-found / already-deleted (custom SQLSTATE P0001)
-    if (
-      error.message.includes('GANG_NOT_FOUND') ||
-      error.message.includes('GANG_ALREADY_DELETED')
-    ) {
-      return { success: false, error: 'This gang no longer exists' }
-    }
-    return { success: false, error: 'Failed to delete gang. Please try again.' }
-  }
 
-  // Analytics
-  trackEvent(user.id, ANALYTICS_EVENTS.GANG_DELETED, {
-    gang_id: gangIdParsed.data,
+    // Analytics
+    trackEvent(userId, ANALYTICS_EVENTS.GANG_DELETED, {
+      gang_id: gangIdParsed.data,
+    })
+
+    // Revalidate
+    revalidatePath('/dashboard')
+    revalidatePath(`/group/${gangIdParsed.data}`)
+    revalidatePath(`/group/${gangIdParsed.data}/settings`)
+
+    return { success: true }
   })
-
-  // Revalidate
-  revalidatePath('/dashboard')
-  revalidatePath(`/group/${gangIdParsed.data}`)
-  revalidatePath(`/group/${gangIdParsed.data}/settings`)
-
-  return { success: true }
 }
 
 // ---------------------------------------------------------------------------
@@ -1209,101 +1307,112 @@ export async function removeMember(
     return { success: false, error: 'Not authenticated' }
   }
 
-  // Rate limit: 30 per hour
-  const rl = await rateLimit(user.id, 'remove_member', {
-    max: 30,
-    windowSeconds: 3600,
-  })
-  if (!rl.allowed) {
-    return { success: false, error: 'Too many requests. Try again later.' }
-  }
+  const actorId = user.id
 
-  // Validate UUIDs
-  const gangIdParsed = uuidSchema.safeParse(gangId)
-  const userIdParsed = uuidSchema.safeParse(userId)
-  if (!gangIdParsed.success || !userIdParsed.success) {
-    return { success: false, error: 'Invalid request' }
-  }
-
-  // Admin verification (also guards against soft-deleted gangs)
-  const isAdmin = await isApprovedGangAdmin(
-    supabase,
-    gangIdParsed.data,
-    user.id,
-  )
-  if (!isAdmin) {
-    return {
-      success: false,
-      error: "Gang not found or you don't have permission",
-    }
-  }
-
-  // Self-guard: admins cannot remove themselves via this action. Match the
-  // leaveGang copy so the admin sees a single consistent recovery hint
-  // across the product ("Delete the gang instead.").
-  if (userIdParsed.data === user.id) {
-    return {
-      success: false,
-      error: 'Admins cannot leave. Delete the gang instead.',
-    }
-  }
-
-  // Admin target guard: cannot remove another admin.
-  const { data: targetMember } = await supabase
-    .from('v2_gang_members')
-    .select('role')
-    .eq('gang_id', gangIdParsed.data)
-    .eq('user_id', userIdParsed.data)
-    .maybeSingle()
-
-  if (targetMember?.role === 'admin') {
-    return {
-      success: false,
-      error: 'Admins cannot be removed or blocked',
-    }
-  }
-
-  // Update — race-guarded by status='approved'. `.neq('role', 'admin')` is
-  // belt-and-braces defense at the DB level in case a future role-change
-  // race flips the target to admin between the guard above and the update.
-  const now = new Date().toISOString()
-  const { data: updatedRows, error: updateError } = await supabase
-    .from('v2_gang_members')
-    .update({
-      status: 'removed' as const,
-      departed_at: now,
+  return withTiming('removeMember', actorId, async () => {
+    // Rate limit: 30 per hour
+    const rl = await rateLimit(actorId, 'remove_member', {
+      max: 30,
+      windowSeconds: 3600,
     })
-    .eq('gang_id', gangIdParsed.data)
-    .eq('user_id', userIdParsed.data)
-    .eq('status', 'approved')
-    .neq('role', 'admin')
-    .select()
-
-  if (updateError) {
-    return {
-      success: false,
-      error: 'Failed to remove member. Please try again.',
+    if (!rl.allowed) {
+      return { success: false, error: 'Too many requests. Try again later.' }
     }
-  }
 
-  if (!updatedRows || updatedRows.length === 0) {
-    return {
-      success: false,
-      error: 'This member is no longer active in the gang.',
+    // Validate UUIDs
+    const gangIdParsed = uuidSchema.safeParse(gangId)
+    const userIdParsed = uuidSchema.safeParse(userId)
+    if (!gangIdParsed.success || !userIdParsed.success) {
+      return { success: false, error: 'Invalid request' }
     }
-  }
 
-  // Analytics
-  trackEvent(user.id, ANALYTICS_EVENTS.MEMBER_REMOVED, {
-    gang_id: gangIdParsed.data,
-    removed_user_id: userIdParsed.data,
+    // Admin verification (also guards against soft-deleted gangs)
+    const isAdmin = await isApprovedGangAdmin(
+      supabase,
+      gangIdParsed.data,
+      actorId,
+    )
+    if (!isAdmin) {
+      return {
+        success: false,
+        error: "Gang not found or you don't have permission",
+      }
+    }
+
+    // Self-guard: admins cannot remove themselves via this action. Match the
+    // leaveGang copy so the admin sees a single consistent recovery hint
+    // across the product ("Delete the gang instead.").
+    if (userIdParsed.data === actorId) {
+      return {
+        success: false,
+        error: 'Admins cannot leave. Delete the gang instead.',
+      }
+    }
+
+    // Admin target guard: cannot remove another admin.
+    const { data: targetMember } = await supabase
+      .from('v2_gang_members')
+      .select('role')
+      .eq('gang_id', gangIdParsed.data)
+      .eq('user_id', userIdParsed.data)
+      .maybeSingle()
+
+    if (targetMember?.role === 'admin') {
+      return {
+        success: false,
+        error: 'Admins cannot be removed or blocked',
+      }
+    }
+
+    // Update — race-guarded by status='approved'. `.neq('role', 'admin')` is
+    // belt-and-braces defense at the DB level in case a future role-change
+    // race flips the target to admin between the guard above and the update.
+    const now = new Date().toISOString()
+    const { data: updatedRows, error: updateError } = await supabase
+      .from('v2_gang_members')
+      .update({
+        status: 'removed' as const,
+        departed_at: now,
+      })
+      .eq('gang_id', gangIdParsed.data)
+      .eq('user_id', userIdParsed.data)
+      .eq('status', 'approved')
+      .neq('role', 'admin')
+      .select()
+
+    if (updateError) {
+      captureServerError(actorId, updateError, {
+        source: 'removeMember',
+        metadata: {
+          gang_id: gangIdParsed.data,
+          target_user_id: userIdParsed.data,
+        },
+      })
+      return {
+        success: false,
+        error: 'Failed to remove member. Please try again.',
+      }
+    }
+
+    if (!updatedRows || updatedRows.length === 0) {
+      return {
+        success: false,
+        error: 'This member is no longer active in the gang.',
+      }
+    }
+
+    // Analytics
+    trackEvent(actorId, ANALYTICS_EVENTS.MEMBER_REMOVED, {
+      gang_id: gangIdParsed.data,
+      removed_user_id: userIdParsed.data,
+    })
+
+    // Revalidate
+    revalidatePath(`/group/${gangIdParsed.data}`)
+    revalidatePath(`/group/${gangIdParsed.data}/settings`)
+
+    return { success: true }
   })
-
-  // Revalidate
-  revalidatePath(`/group/${gangIdParsed.data}`)
-  revalidatePath(`/group/${gangIdParsed.data}/settings`)
-
-  return { success: true }
 }
 
 // ---------------------------------------------------------------------------
@@ -1345,8 +1454,11 @@ export async function blockMember(
     return { success: false, error: 'Not authenticated' }
   }
 
+  const actorId = user.id
+
+  return withTiming('blockMember', actorId, async () => {
   // Rate limit: 30 per hour
-  const rl = await rateLimit(user.id, 'block_member', {
+  const rl = await rateLimit(actorId, 'block_member', {
     max: 30,
     windowSeconds: 3600,
   })
@@ -1365,7 +1477,7 @@ export async function blockMember(
   const isAdmin = await isApprovedGangAdmin(
     supabase,
     gangIdParsed.data,
-    user.id,
+    actorId,
   )
   if (!isAdmin) {
     return {
@@ -1376,7 +1488,7 @@ export async function blockMember(
 
   // Self-guard: match the leaveGang copy so the admin always sees a
   // consistent recovery hint ("Delete the gang instead.").
-  if (userIdParsed.data === user.id) {
+  if (userIdParsed.data === actorId) {
     return {
       success: false,
       error: 'Admins cannot leave. Delete the gang instead.',
@@ -1435,6 +1547,14 @@ export async function blockMember(
       .select()
 
     if (guardedError) {
+      captureServerError(actorId, guardedError, {
+        source: 'blockMember',
+        metadata: {
+          stage: 'race_guarded_update',
+          gang_id: gangIdParsed.data,
+          target_user_id: userIdParsed.data,
+        },
+      })
       return {
         success: false,
         error: 'Failed to block member. Please try again.',
@@ -1453,6 +1573,14 @@ export async function blockMember(
         .neq('role', 'admin')
 
       if (fallbackError) {
+        captureServerError(actorId, fallbackError, {
+          source: 'blockMember',
+          metadata: {
+            stage: 'fallback_update',
+            gang_id: gangIdParsed.data,
+            target_user_id: userIdParsed.data,
+          },
+        })
         return {
           success: false,
           error: 'Failed to block member. Please try again.',
@@ -1468,6 +1596,14 @@ export async function blockMember(
       .neq('role', 'admin')
 
     if (updateError) {
+      captureServerError(actorId, updateError, {
+        source: 'blockMember',
+        metadata: {
+          stage: 'plain_update',
+          gang_id: gangIdParsed.data,
+          target_user_id: userIdParsed.data,
+        },
+      })
       return {
         success: false,
         error: 'Failed to block member. Please try again.',
@@ -1476,7 +1612,7 @@ export async function blockMember(
   }
 
   // Analytics
-  trackEvent(user.id, ANALYTICS_EVENTS.MEMBER_BLOCKED, {
+  trackEvent(actorId, ANALYTICS_EVENTS.MEMBER_BLOCKED, {
     gang_id: gangIdParsed.data,
     blocked_user_id: userIdParsed.data,
   })
@@ -1486,6 +1622,7 @@ export async function blockMember(
   revalidatePath(`/group/${gangIdParsed.data}/settings`)
 
   return { success: true }
+  })
 }
 
 // ---------------------------------------------------------------------------
@@ -1522,8 +1659,11 @@ export async function unblockMember(
     return { success: false, error: 'Not authenticated' }
   }
 
+  const actorId = user.id
+
+  return withTiming('unblockMember', actorId, async () => {
   // Rate limit: 30 per hour
-  const rl = await rateLimit(user.id, 'unblock_member', {
+  const rl = await rateLimit(actorId, 'unblock_member', {
     max: 30,
     windowSeconds: 3600,
   })
@@ -1542,7 +1682,7 @@ export async function unblockMember(
   const isAdmin = await isApprovedGangAdmin(
     supabase,
     gangIdParsed.data,
-    user.id,
+    actorId,
   )
   if (!isAdmin) {
     return {
@@ -1586,6 +1726,13 @@ export async function unblockMember(
     .select()
 
   if (updateError) {
+    captureServerError(actorId, updateError, {
+      source: 'unblockMember',
+      metadata: {
+        gang_id: gangIdParsed.data,
+        target_user_id: userIdParsed.data,
+      },
+    })
     return {
       success: false,
       error: 'Failed to unblock member. Please try again.',
@@ -1600,7 +1747,7 @@ export async function unblockMember(
   }
 
   // Analytics
-  trackEvent(user.id, ANALYTICS_EVENTS.MEMBER_UNBLOCKED, {
+  trackEvent(actorId, ANALYTICS_EVENTS.MEMBER_UNBLOCKED, {
     gang_id: gangIdParsed.data,
     unblocked_user_id: userIdParsed.data,
   })
@@ -1610,4 +1757,5 @@ export async function unblockMember(
   revalidatePath(`/group/${gangIdParsed.data}/settings`)
 
   return { success: true }
+  })
 }
