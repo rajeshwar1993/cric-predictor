@@ -18,7 +18,7 @@ function isPublicRoute(pathname: string): boolean {
 
 // ---------------------------------------------------------------------------
 // Proxy (Next.js 16 replacement for the deprecated `middleware` convention)
-// ---------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
