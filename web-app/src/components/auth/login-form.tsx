@@ -17,9 +17,15 @@ const RESEND_COOLDOWN_SECONDS = 60
 
 interface LoginFormProps {
   redirectTo?: string
+  /**
+   * Override the magic-link server action for Storybook/testing.
+   * Defaults to the real `sendMagicLink` so production usage is
+   * unchanged.
+   */
+  action?: typeof sendMagicLink
 }
 
-export function LoginForm({ redirectTo }: LoginFormProps) {
+export function LoginForm({ redirectTo, action = sendMagicLink }: LoginFormProps) {
   const [formState, setFormState] = useState<FormState>('EMAIL_INPUT')
   const [email, setEmail] = useState('')
   const [error, setError] = useState('')
@@ -55,7 +61,7 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
       setError('')
       setFormState('SENDING')
 
-      const result = await sendMagicLink(email, redirectTo)
+      const result = await action(email, redirectTo)
 
       if (result.success) {
         setFormState('CONFIRMATION')
@@ -69,7 +75,7 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
         }
       }
     },
-    [email, redirectTo, validateEmail],
+    [action, email, redirectTo, validateEmail],
   )
 
   const handleResend = useCallback(async () => {
@@ -77,7 +83,7 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
 
     setFormState('SENDING')
 
-    const result = await sendMagicLink(email, redirectTo)
+    const result = await action(email, redirectTo)
 
     if (result.success) {
       setFormState('CONFIRMATION')
@@ -91,7 +97,7 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
         toast.error(result.error)
       }
     }
-  }, [cooldown, email, redirectTo])
+  }, [action, cooldown, email, redirectTo])
 
   const handleBackToInput = useCallback(() => {
     setFormState('EMAIL_INPUT')

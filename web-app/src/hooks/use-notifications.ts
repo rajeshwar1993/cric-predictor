@@ -89,14 +89,26 @@ export interface UseNotificationsResult {
 export function useNotifications(
   userId: string,
   initialUnreadCount: number = 0,
+  options: { enableRealtime?: boolean } = {},
 ): UseNotificationsResult {
+  // `enableRealtime` defaults to `true` so production callers get the
+  // normal realtime subscription + fetching behavior unchanged. Pass
+  // `false` in Storybook/tests to render with just `initialUnreadCount`
+  // and skip all Supabase network calls.
+  const { enableRealtime = true } = options
+
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(initialUnreadCount)
-  const [isLoadingCount, setIsLoadingCount] = useState(true)
+  // When realtime is disabled we never run the initial fetch, so start
+  // the loading flag at `false` — otherwise the count spinner would be
+  // stuck forever in a static preview.
+  const [isLoadingCount, setIsLoadingCount] = useState(enableRealtime)
   // Start as `true` so the panel shows the skeleton on first open instead
   // of flashing the empty state for one paint before the fetch resolves.
   // The first call to `fetchList` flips this to `false` on completion.
-  const [isLoadingList, setIsLoadingList] = useState(true)
+  // When realtime is disabled, start as `false` so the panel preview shows
+  // its empty state immediately instead of a perpetual skeleton.
+  const [isLoadingList, setIsLoadingList] = useState(enableRealtime)
   const [error, setError] = useState<string | null>(null)
   const [pulse, setPulse] = useState(false)
 
@@ -137,6 +149,14 @@ export function useNotifications(
   // ----- fetchList (public) ----------------------------------------------
 
   const fetchList = useCallback(async () => {
+    // In realtime-disabled mode (Storybook / tests) we never hit the
+    // network — just flip the loading flag off so the panel preview
+    // renders its empty state on open.
+    if (!enableRealtime) {
+      setIsLoadingList(false)
+      return
+    }
+
     setIsLoadingList(true)
     try {
       const { data, error: listError } = await supabaseRef.current
@@ -162,7 +182,7 @@ export function useNotifications(
     } finally {
       if (activeRef.current) setIsLoadingList(false)
     }
-  }, [userId])
+  }, [userId, enableRealtime])
 
   // ----- Optimistic helpers ----------------------------------------------
 
@@ -201,6 +221,16 @@ export function useNotifications(
 
   useEffect(() => {
     activeRef.current = true
+
+    // Storybook / tests opt out of realtime + fetching entirely. We still
+    // register the `activeRef` flag above so optimistic helpers behave
+    // correctly, and return a no-op cleanup so React is happy.
+    if (!enableRealtime) {
+      return () => {
+        activeRef.current = false
+      }
+    }
+
     const supabase = supabaseRef.current
 
     // Seed the unread count. We always refetch on mount even when the
@@ -264,7 +294,7 @@ export function useNotifications(
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       supabase.removeChannel(channel)
     }
-  }, [userId, fetchUnreadCount])
+  }, [userId, fetchUnreadCount, enableRealtime])
 
   return {
     notifications,

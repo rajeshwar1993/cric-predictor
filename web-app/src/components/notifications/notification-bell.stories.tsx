@@ -8,6 +8,10 @@ const meta = {
   args: {
     userId: 'user-123',
     initialUnreadCount: 0,
+    // Storybook runs in a static sandbox with no Supabase connection —
+    // opt out of the realtime subscription so the bell renders purely
+    // from `initialUnreadCount` without touching the network.
+    enableRealtime: false,
   },
   decorators: [
     (Story) => (

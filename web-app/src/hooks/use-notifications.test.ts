@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { renderHook, waitFor, act } from '@testing-library/react'
+import { cleanup, renderHook, waitFor, act } from '@testing-library/react'
 import { useNotifications } from './use-notifications'
 import type { Notification } from '@/types'
 
@@ -265,6 +265,76 @@ describe('useNotifications', () => {
     })
     await waitFor(() => {
       expect(result.current.unreadCount).toBe(5)
+    })
+  })
+
+  describe('when enableRealtime is false', () => {
+    beforeEach(() => {
+      // Earlier tests in this file mount hooks that register a
+      // document `visibilitychange` listener. This project doesn't
+      // enable `globals: true` in vitest, so `@testing-library/react`
+      // can't auto-cleanup between tests — stale listeners linger on
+      // `document`. Explicitly tear them down before each test in this
+      // block so they can't react to our `dispatchEvent` calls and
+      // pollute the `mockFrom` spy. Then re-clear the mocks the outer
+      // `beforeEach` already cleared, since `cleanup()` itself runs
+      // effect-cleanups that touch `mockRemoveChannel`.
+      cleanup()
+      mockFrom.mockClear()
+      mockChannel.mockClear()
+      mockSubscribe.mockClear()
+      mockOn.mockClear()
+      mockRemoveChannel.mockClear()
+    })
+
+    it('does not hit the network and exposes initialUnreadCount immediately', async () => {
+      const { result } = renderHook(() =>
+        useNotifications(USER_ID, 7, { enableRealtime: false }),
+      )
+
+      // No initial count fetch → loading flag starts false.
+      expect(result.current.isLoadingCount).toBe(false)
+      // `initialUnreadCount` surfaces directly on the badge.
+      expect(result.current.unreadCount).toBe(7)
+      // No Supabase query or realtime channel setup.
+      expect(mockFrom).not.toHaveBeenCalled()
+      expect(mockChannel).not.toHaveBeenCalled()
+      expect(mockOn).not.toHaveBeenCalled()
+      expect(mockSubscribe).not.toHaveBeenCalled()
+
+      // Panel list also starts non-loading and calling `fetchList` does
+      // not hit the network either.
+      expect(result.current.isLoadingList).toBe(false)
+      await act(async () => {
+        await result.current.fetchList()
+      })
+      expect(mockFrom).not.toHaveBeenCalled()
+      expect(result.current.isLoadingList).toBe(false)
+      expect(result.current.notifications).toEqual([])
+    })
+
+    it('does not subscribe to visibility changes or a realtime channel when disabled', async () => {
+      const { unmount } = renderHook(() =>
+        useNotifications(USER_ID, 0, { enableRealtime: false }),
+      )
+
+      // No channel was ever created and no `from` query was issued.
+      expect(mockChannel).not.toHaveBeenCalled()
+      expect(mockSubscribe).not.toHaveBeenCalled()
+      expect(mockFrom).not.toHaveBeenCalled()
+
+      // Dispatching a visibility change should NOT trigger a fetch —
+      // the hook in this mode never registers a visibilitychange
+      // listener at all.
+      await act(async () => {
+        document.dispatchEvent(new Event('visibilitychange'))
+      })
+      expect(mockFrom).not.toHaveBeenCalled()
+
+      // Unmount does not try to remove a channel that was never
+      // created.
+      unmount()
+      expect(mockRemoveChannel).not.toHaveBeenCalled()
     })
   })
 

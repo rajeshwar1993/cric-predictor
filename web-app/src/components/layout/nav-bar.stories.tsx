@@ -31,7 +31,14 @@ function NavBarPresentation({
       </Link>
 
       <div className="flex items-center gap-3">
-        <NotificationBell userId="user-123" initialUnreadCount={unreadCount} />
+        <NotificationBell
+          userId="user-123"
+          initialUnreadCount={unreadCount}
+          // Static Storybook sandbox — skip the realtime subscription so
+          // the bell renders from `initialUnreadCount` without hitting
+          // the network.
+          enableRealtime={false}
+        />
         <UserMenu displayName={displayName} email={email} />
       </div>
     </nav>

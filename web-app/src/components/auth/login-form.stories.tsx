@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { expect, within, userEvent, fn } from 'storybook/test'
+import type { sendMagicLink } from '@/lib/actions/auth'
 import { LoginForm } from './login-form'
 
 const meta = {
@@ -47,17 +48,23 @@ export const WithRedirect: Story = {
 /* ------------------------------------------------------------------ */
 
 export const Sending: Story = {
-  args: {},
+  args: {
+    // The real `sendMagicLink` would fire a network request to Supabase
+    // OTP. Use a never-resolving promise so the form stays pinned in
+    // the SENDING state for the story preview — no network calls, no
+    // flicker. Plain arrow (not wrapped in `fn()`) so that
+    // Storybook/Vitest teardown can't `mockReset` the implementation
+    // out from under the pending await and accidentally resolve it.
+    action: (() => new Promise<never>(() => {})) as typeof sendMagicLink,
+  },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const emailInput = canvas.getByLabelText('Email address')
     const submitButton = canvas.getByRole('button', { name: /send magic link/i })
 
     await userEvent.type(emailInput, 'user@example.com')
-    // Click submit to trigger sending state
-    // Note: the form will call the real server action which will fail in Storybook,
-    // but we can at least show the interaction
     await userEvent.click(submitButton)
+    // Form is now stuck in the Sending state for the story preview.
   },
 }
 

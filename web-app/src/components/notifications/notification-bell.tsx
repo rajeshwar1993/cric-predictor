@@ -16,6 +16,13 @@ interface NotificationBellProps {
   userId: string
   /** SSR-fetched count of unread notifications — used for the initial paint. */
   initialUnreadCount: number
+  /**
+   * Set to `false` in Storybook/tests to skip the realtime subscription
+   * and render with just `initialUnreadCount`. Defaults to `true` — real
+   * product usage (Server Components rendering the nav bar) never passes
+   * this prop so production behavior is unchanged.
+   */
+  enableRealtime?: boolean
 }
 
 /**
@@ -35,6 +42,7 @@ interface NotificationBellProps {
 function NotificationBell({
   userId,
   initialUnreadCount,
+  enableRealtime = true,
 }: NotificationBellProps) {
   const [open, setOpen] = useState(false)
   const {
@@ -48,7 +56,7 @@ function NotificationBell({
     revertMarkReadLocally,
     markAllReadLocally,
     refetchFromServer,
-  } = useNotifications(userId, initialUnreadCount)
+  } = useNotifications(userId, initialUnreadCount, { enableRealtime })
 
   // When the panel opens: fetch the latest list, fire analytics, and
   // stop the pulse animation since the user has "seen" the new badge.
