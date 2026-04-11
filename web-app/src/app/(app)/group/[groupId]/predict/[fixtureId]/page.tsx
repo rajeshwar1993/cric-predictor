@@ -77,8 +77,10 @@ export async function generateMetadata({
     return { title: 'Predict' }
   }
 
+  const matchLabel = `${fixture.homeTeam.code} vs ${fixture.awayTeam.code}`
+
   return {
-    title: `Predict: ${fixture.homeTeam.code} vs ${fixture.awayTeam.code} — Match ${fixture.matchNumber}`,
+    title: `Predict — ${matchLabel}`,
     description: `Make your predictions for ${fixture.homeTeam.name} vs ${fixture.awayTeam.name}`,
   }
 }

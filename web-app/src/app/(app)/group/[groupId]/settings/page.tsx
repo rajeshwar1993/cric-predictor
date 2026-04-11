@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
@@ -12,13 +13,25 @@ import { GangSettingsForm } from '@/components/gangs/gang-settings-form'
 import { DeleteGangSection } from '@/components/gangs/delete-gang-section'
 import { MemberManagement } from '@/components/gangs/member-management'
 
-export const metadata: Metadata = {
-  title: 'Gang Settings',
-  description: 'Manage your gang settings on Bragg',
-}
-
 interface GangSettingsPageProps {
   params: Promise<{ groupId: string }>
+}
+
+// Dedupe the gang fetch between generateMetadata and the render path.
+const getCachedGangDetails = cache(getGangDetails)
+
+export async function generateMetadata({
+  params,
+}: GangSettingsPageProps): Promise<Metadata> {
+  const { groupId } = await params
+  const gang = await getCachedGangDetails(groupId)
+
+  return {
+    title: gang ? `Settings — ${gang.name}` : 'Settings',
+    description: gang
+      ? `Manage ${gang.name} settings on Bragg`
+      : 'Manage your gang settings on Bragg',
+  }
 }
 
 /**
@@ -50,8 +63,8 @@ export default async function GangSettingsPage({
     redirect('/login')
   }
 
-  // Fetch gang details
-  const gang = await getGangDetails(groupId)
+  // Fetch gang details (shared with generateMetadata via `cache()`)
+  const gang = await getCachedGangDetails(groupId)
 
   // 404 if not found or deleted
   if (!gang) {

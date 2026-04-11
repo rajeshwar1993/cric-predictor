@@ -7,10 +7,37 @@ import { PredictionPreview } from '@/components/landing/prediction-preview'
 import { CtaSection } from '@/components/landing/cta-section'
 import { Footer } from '@/components/layout/footer'
 
+const LANDING_TITLE = 'Bragg — Predict Right. Prove It.'
+const LANDING_DESCRIPTION =
+  'The prediction game that settles debates in your group chat. Form a gang, pick winners, and bragg your way to #1.'
+
 export const metadata: Metadata = {
-  title: 'Bragg — Predict Right. Prove It. Bragg.',
-  description:
-    'The prediction game that settles debates in your group chat. Form a gang, pick winners, and bragg your way to #1.',
+  // Using `absolute` so the title isn't run through the template
+  // ("%s | Bragg") — the landing title already contains the brand.
+  title: { absolute: LANDING_TITLE },
+  description: LANDING_DESCRIPTION,
+  openGraph: {
+    type: 'website',
+    title: LANDING_TITLE,
+    description:
+      'The prediction game that settles debates in your group chat.',
+    url: '/',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Bragg — Predict Right. Prove It.',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: LANDING_TITLE,
+    description:
+      'The prediction game that settles debates in your group chat.',
+    images: ['/og-image.png'],
+  },
 }
 
 /**
