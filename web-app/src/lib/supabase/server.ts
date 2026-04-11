@@ -12,9 +12,19 @@ export async function createServerClient() {
         return cookieStore.getAll()
       },
       setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          cookieStore.set(name, value, options)
-        })
+        try {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options)
+          })
+        } catch {
+          // `cookies().set()` throws when called from a Server Component.
+          // This is safe to ignore: `proxy.ts` refreshes the Supabase
+          // session on every request and writes the new cookies before
+          // Server Components render, so this path only runs when
+          // Supabase's client auto-refreshes mid-render — the refreshed
+          // tokens are already in flight via proxy and will reach the
+          // browser on the next request.
+        }
       },
     },
   })

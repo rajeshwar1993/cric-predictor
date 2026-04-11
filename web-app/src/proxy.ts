@@ -5,8 +5,8 @@ import { createMiddlewareClient } from '@/lib/supabase/middleware'
 import { sanitizeRedirect } from '@/lib/url'
 
 // ---------------------------------------------------------------------------
-// Public route prefixes that bypass all middleware gates.
-// The landing page `/` is handled explicitly in the middleware function
+// Public route prefixes that bypass all proxy gates.
+// The landing page `/` is handled explicitly in the proxy function
 // because the matcher regex cannot exclude bare `/`.
 // ---------------------------------------------------------------------------
 const PUBLIC_PATH_PREFIXES = ['/login', '/auth', '/join', '/privacy', '/terms', '/api'] as const
@@ -17,10 +17,10 @@ function isPublicRoute(pathname: string): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Middleware
+// Proxy (Next.js 16 replacement for the deprecated `middleware` convention)
 // ---------------------------------------------------------------------------
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // ── Gate 0: Skip public routes ──────────────────────────────────────

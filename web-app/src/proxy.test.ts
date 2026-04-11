@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { getMajorVersion } from '@/lib/constants'
 import { sanitizeRedirect } from '@/lib/url'
-import { middleware } from './middleware'
+import { proxy } from './proxy'
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -95,7 +95,7 @@ describe('getMajorVersion', () => {
 })
 
 // ---------------------------------------------------------------------------
-// middleware() integration tests
+// proxy() integration tests
 // ---------------------------------------------------------------------------
 
 /** Build a NextRequest for testing with optional cookies. */
@@ -110,7 +110,7 @@ function buildRequest(pathname: string, cookies: Record<string, string> = {}): N
   return new NextRequest(url, { headers })
 }
 
-describe('middleware – gate interaction (redirect loop prevention)', () => {
+describe('proxy – gate interaction (redirect loop prevention)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -122,7 +122,7 @@ describe('middleware – gate interaction (redirect loop prevention)', () => {
     mockGetUser.mockResolvedValue(authenticatedUser)
 
     const request = buildRequest('/onboarding')
-    const response = await middleware(request)
+    const response = await proxy(request)
 
     // Should pass through (200), NOT redirect
     expect(response.status).toBe(200)
@@ -133,7 +133,7 @@ describe('middleware – gate interaction (redirect loop prevention)', () => {
     mockGetUser.mockResolvedValue(authenticatedUser)
 
     const request = buildRequest('/accept-terms')
-    const response = await middleware(request)
+    const response = await proxy(request)
 
     // Should pass through (200), NOT redirect
     expect(response.status).toBe(200)
@@ -143,7 +143,7 @@ describe('middleware – gate interaction (redirect loop prevention)', () => {
     mockGetUser.mockResolvedValue(authenticatedUser)
 
     const request = buildRequest('/dashboard')
-    const response = await middleware(request)
+    const response = await proxy(request)
 
     expect(response.status).toBeGreaterThanOrEqual(300)
     expect(response.status).toBeLessThan(400)
@@ -156,7 +156,7 @@ describe('middleware – gate interaction (redirect loop prevention)', () => {
     mockGetUser.mockResolvedValue(authenticatedUser)
 
     const request = buildRequest('/dashboard', { bragg_onboarded: '1' })
-    const response = await middleware(request)
+    const response = await proxy(request)
 
     expect(response.status).toBeGreaterThanOrEqual(300)
     expect(response.status).toBeLessThan(400)
@@ -168,7 +168,7 @@ describe('middleware – gate interaction (redirect loop prevention)', () => {
     mockGetUser.mockResolvedValue({ data: { user: null } })
 
     const request = buildRequest('/dashboard')
-    const response = await middleware(request)
+    const response = await proxy(request)
 
     expect(response.status).toBeGreaterThanOrEqual(300)
     expect(response.status).toBeLessThan(400)
@@ -183,7 +183,7 @@ describe('middleware – gate interaction (redirect loop prevention)', () => {
       bragg_onboarded: '1',
       bragg_terms_version: '2.0',
     })
-    const response = await middleware(request)
+    const response = await proxy(request)
 
     expect(response.status).toBe(200)
   })
@@ -192,7 +192,7 @@ describe('middleware – gate interaction (redirect loop prevention)', () => {
     mockGetUser.mockResolvedValue({ data: { user: null } })
 
     const request = buildRequest('/')
-    const response = await middleware(request)
+    const response = await proxy(request)
 
     expect(response.status).toBe(200)
   })
