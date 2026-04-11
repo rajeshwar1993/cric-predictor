@@ -126,10 +126,10 @@ export const InvalidCode: Story = {
 
 export const GangFull: Story = {
   args: {
-    action: fn().mockResolvedValue({
+    action: fn(async () => ({
       success: false as const,
       error: 'This gang has reached its maximum of 20 members',
-    }),
+    })),
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
@@ -151,10 +151,10 @@ export const GangFull: Story = {
 
 export const Blocked: Story = {
   args: {
-    action: fn().mockResolvedValue({
+    action: fn(async () => ({
       success: false as const,
       error: 'You are not able to join this gang',
-    }),
+    })),
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)

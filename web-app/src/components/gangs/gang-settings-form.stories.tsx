@@ -113,11 +113,13 @@ export const DeadlineError: Story = {
     await userEvent.clear(input)
     await userEvent.type(input, '5')
 
+    // Client-side validation disables the Save button when the entered
+    // value is outside the [15, 720] range. The helper text below the
+    // input always shows the valid range so users know what's allowed.
     const saveButton = canvas.getByRole('button', { name: /save deadline/i })
-    await userEvent.click(saveButton)
-
+    await expect(saveButton).toBeDisabled()
     await expect(
-      canvas.getByText(/at least 15 minutes/i),
+      canvas.getByText(/Between 15 and 720 minutes/i),
     ).toBeVisible()
   },
 }

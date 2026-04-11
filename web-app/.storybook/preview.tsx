@@ -3,6 +3,13 @@ import '../src/app/globals.css'
 
 const preview: Preview = {
   parameters: {
+    // Tell `@storybook/nextjs-vite` to use the App Router navigation mocks
+    // (useRouter, useParams, useSearchParams, usePathname) so client
+    // components that call these hooks render without "invariant expected
+    // app router to be mounted" errors.
+    nextjs: {
+      appDirectory: true,
+    },
     backgrounds: {
       default: 'concrete-black',
       values: [

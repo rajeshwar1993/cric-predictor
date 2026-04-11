@@ -39,6 +39,21 @@ export default defineConfig({
             instances: [{ browser: 'chromium' }],
           },
         },
+        resolve: {
+          alias: {
+            '@': path.join(dirname, 'src'),
+            // `posthog-node` crashes at module load in chromium (Error.stack
+            // parsing differs from Node). Stories transitively import it via
+            // server actions → @/lib/analytics/server. Stub it out for the
+            // storybook project only; unit tests already mock the server
+            // analytics module per-test.
+            'posthog-node': path.join(dirname, '.storybook/posthog-node-stub.ts'),
+            // `next/web-vitals` re-exports a CJS bundle that calls `__dirname`
+            // at module load, which is undefined in ESM browser mode. Next's
+            // compiler handles this in production but vitest-browser doesn't.
+            'next/web-vitals': path.join(dirname, '.storybook/next-web-vitals-stub.ts'),
+          },
+        },
       },
     ],
   },

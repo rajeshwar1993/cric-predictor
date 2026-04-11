@@ -85,10 +85,10 @@ export const Loading: Story = {
 
 export const MaxGangsError: Story = {
   args: {
-    action: fn().mockResolvedValue({
+    action: fn(async () => ({
       success: false as const,
       error: "You've reached the maximum of 40 gangs.",
-    }),
+    })),
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
