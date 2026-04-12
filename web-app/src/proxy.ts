@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 
 import { COOKIE_NAMES, CURRENT_TERMS_VERSION, getMajorVersion } from '@/lib/constants'
+import { isSystemAdmin } from '@/lib/dal/admin/auth'
 import { createMiddlewareClient } from '@/lib/supabase/middleware'
 import { sanitizeRedirect } from '@/lib/url'
 
@@ -47,6 +48,20 @@ export async function proxy(request: NextRequest) {
     loginUrl.search = ''
     loginUrl.searchParams.set('redirectTo', redirectTo)
     return NextResponse.redirect(loginUrl)
+  }
+
+  // ── Gate 1b: Admin routes ───────────────────────────────────────────
+  // Admin routes skip onboarding/terms gates (admins may not have
+  // completed regular onboarding). Access requires is_system_admin flag.
+  if (pathname.startsWith('/admin')) {
+    const isAdmin = await isSystemAdmin(user.id)
+    if (!isAdmin) {
+      const dashUrl = request.nextUrl.clone()
+      dashUrl.pathname = '/dashboard'
+      dashUrl.search = ''
+      return NextResponse.redirect(dashUrl)
+    }
+    return response
   }
 
   // ── Gate 2: Onboarding ──────────────────────────────────────────────

@@ -576,9 +576,17 @@ All data available via single call: `GET /fixtures/{id}?include=batting,bowling,
 - **Triggers:**
   - Join request received (sent to the admin)
   - Join request approved/rejected (sent to requester)
+  - New member joined (sent to admin when auto-accept is enabled)
   - Prediction deadline approaching (sent to members who haven't predicted)
   - Match results available (sent to gang members)
+  - Gang deleted (sent to all approved members when gang is soft-deleted)
   - **Admin promoted** (sent to a member who has been auto-promoted to admin because the previous sole admin deleted their account). Message: _"You've been promoted to admin of {gang_name} because the previous admin left Bragg."_ Clicking navigates to the gang page. Emitted by the `delete_account` RPC inside the same transaction as the promotion, one row per affected gang.
+- **Notification RPCs** (SECURITY DEFINER, called from server actions):
+  - `create_join_request_notification(p_admin_user_id, p_gang_id)` — inserts `join_request` notification for gang admin; caller must have membership row; display name resolved server-side
+  - `create_new_member_notification(p_admin_user_id, p_gang_id)` — inserts `new_member` notification for gang admin (auto-accept case); caller must be approved member
+  - `create_join_approved_notification(p_user_id, p_gang_id)` — inserts `join_approved` notification for requester; caller must be approved admin; gang name resolved server-side
+  - `create_join_rejected_notification(p_user_id, p_gang_id)` — inserts `join_rejected` notification; same authorization as approved
+  - All RPCs resolve caller via `auth.uid()` (never trust client-supplied IDs) and resolve display/gang names server-side to prevent injection
 - **Limits**
   - Fetches latest 20 notifications
 
@@ -609,12 +617,13 @@ Both files must be consulted together when building or reviewing UI components. 
 - **Provider:** PostHog
 - **Pageviews & Sessions:** PostHog autocapture (pageviews, funnels defined in dashboard). Session recording is **disabled by default at launch** and gated behind a PostHog feature flag (`session-recording-enabled`); it can be rolled out to a sampled % or specific users post-launch without a code change. When enabled, masking is applied so inputs and `[data-ph-mask]` elements are not captured.
 - **Custom events tracked:**
-  - **Auth:** magic link requested, magic link resent, callback success/failure, onboarding completed, signed out, account deleted
-  - **Gangs:** created, join requested, invite copied, invite shared, member approved/rejected, member removed, member left, gang deleted
+  - **Auth:** magic link requested, magic link resent, callback success/failure, onboarding completed, terms accepted, signed out, account deleted, display name updated
+  - **Gangs:** created, join requested, invite copied, invite shared, member approved/rejected, member removed, member blocked/unblocked, member left, gang deleted
   - **Predictions:** submitted, pick changed, predict page viewed/revisited
   - **Notifications:** bell opened, notification clicked, marked read, all marked read
   - **Performance:** Web Vitals (LCP, INP, CLS), page load time, server action duration
   - **Security:** rate limit hit (user_id, action, count, window) — fires when a user exceeds a per-action rate limit
+  - **Errors:** error logged (client-side errors captured to PostHog with source, metadata, digest)
 - **Error Reporting:**
   - All client-side errors captured (error boundaries, unhandled errors)
   - All Next.js server action errors captured
@@ -647,13 +656,19 @@ Both files must be consulted together when building or reviewing UI components. 
   - Server actions verify auth + membership + role before any mutation
   - Predictions only visible to the user before deadline; visible to gang after deadline (RLS enforced)
 - **Input validation:**
-  - All server actions validate input via Zod schemas
+  - All server actions validate input server-side (manual type checks, string length, regex, enum guards)
   - Client-side validation for immediate feedback, server-side as source of truth
 - **Redirect protection:**
   - `redirectTo` params sanitized to relative paths only (prevents open redirect attacks)
 - **Rate limiting:**
   - Magic link: 60-second cooldown + Supabase email rate limits
-  - Server actions: per-user rate limits on mutations (gang creation, join requests, prediction submissions, profile edits) — specific limits TBD during implementation
+  - Server actions: per-user window-based rate limits stored in `v2_rate_limits` table:
+    - `submit_predictions`: 60/hour
+    - `create_gang`: 10/hour
+    - `join_gang`: 20/hour
+    - `update_display_name`: 10/hour
+    - `mark_notification_read`: 60/minute
+    - `mark_all_notifications_read`: 10/minute
 - **Data privacy:**
   - No passwords stored (magic link auth)
   - Analytics use hashed identifiers for pre-auth events (no PII leak)
@@ -1234,12 +1249,26 @@ Admin UI for managing these is a Pending Item (not needed for launch).
      - `super_over` — resolve from fixture field (available throughout)
      - For each resolved scenario: set `correct_answer`, `is_resolved = true`, update affected predictions' `is_correct` and `points_earned`
      - Trigger `update-standings` for affected gangs
-  8. **Final resolution:** when all scenarios for a fixture are resolved → set fixture status to `resolved`, set `resolved_at` on fixture results, stop polling this fixture. Create a `results_available` notification for every approved member of every gang that has predictions on this fixture.
-  9. **120-minute cutoff:** if fixture has been in `completed` status for 120+ minutes with unresolved scenarios → stop polling, notify system admin for manual resolution (flow TBD)
+  8. **Match-end reconciliation:** after a match completes, compare Sportmonks stats against already-stored `v2_fixture_results`. If any stat has changed (e.g., Sportmonks revises top scorer after third-umpire review), call `re_resolve_scenario` to re-score affected predictions and recalculate standings. This self-healing mechanism handles post-resolution stat corrections without manual intervention.
+  9. **Final resolution:** when all scenarios for a fixture are resolved → set fixture status to `resolved`, set `resolved_at` on fixture results, stop polling this fixture. Create a `results_available` notification for every approved member of every gang that has predictions on this fixture.
+  10. **120-minute cutoff:** if fixture has been in `completed` status for 120+ minutes with unresolved scenarios → stop polling, notify system admin for manual resolution (flow TBD)
 - **Writes to:** `v2_fixture_live_scores`, `v2_fixture_results`, `v2_fixture_scenarios`, `v2_predictions`, `v2_league_season_fixtures`, `v2_gang_fixture_standings`, `v2_gang_season_standings`, `v2_notifications`
 - **Notes:**
   - Resolution is idempotent — skip scenarios where `is_resolved = true`
   - Single unified function polls both live and recently-completed fixtures (same endpoint, same includes, different filter criteria)
+
+### `re_resolve_scenario` — Post-resolution stat correction RPC
+
+- **Purpose:** Re-score predictions when Sportmonks revises stats after initial resolution (e.g., third-umpire review changes top scorer, DRS overturns a wicket)
+- **RPC:** `re_resolve_scenario(p_scenario_id UUID, p_correct_answer TEXT)` → TEXT (returns previous `correct_answer`, or NULL if answer unchanged)
+- **Security:** SECURITY DEFINER
+- **Precondition:** Scenario must already be resolved (`is_resolved = true`); raises exception otherwise
+- **Action:**
+  1. Updates `correct_answer` on the scenario
+  2. Re-evaluates all predictions: sets `is_correct = (value = new_correct_answer)`, recalculates `points_earned`
+  3. Explicitly calls `recalculate_full_standings` (the resolution trigger only fires on `false→true` transitions, so re-resolution must call it directly)
+- **Caller responsibility:** Range scenario values must be converted to bracket strings before calling (e.g., `155` → `140-159`)
+- **Called by:** `live-poll-resolve-fixtures` during match-end reconciliation when a stat discrepancy is detected
 
 ### `update-standings` — Standings recalculation (DB trigger, not cron)
 
@@ -1278,22 +1307,23 @@ Admin UI for managing these is a Pending Item (not needed for launch).
 
 **General principles:**
 - All cron functions are idempotent — safe to re-run without side effects
-- Log all errors to PostHog (see Analytics section)
-- Partial failures don't block other work — one fixture failing doesn't stop processing of others
-- Alert system admin after 3 consecutive failures (not on single failures)
-- On Sportmonks rate limit (HTTP 429): drop the request, log error, notify admin, wait for next cron cycle
+- Partial failures don't block other work — one fixture failing doesn't stop processing of others (per-fixture try/catch in all edge functions)
+- On Sportmonks rate limit (HTTP 429): drop the request, log error, wait for next cron cycle
 - Sportmonks quota: confirm plan limits before launch; daily polling volume (~4/min × 180 min live × 1 match/day = ~720 live calls/day plus fixture syncs) should be within quota
+- All edge functions return JSON summaries with error arrays for observability
 
 **Per-function retry strategy:**
 
 | Function | Retry Strategy | Alert Admin |
 |----------|---------------|-------------|
-| `sync-fixtures` | In-function retries: 2 retries per API call with exponential backoff (1s, 2s) | After all retries fail |
-| `sync-fixtures-pre-match` | No retries (runs every 15 min, next cycle acts as retry) | After 3 consecutive failures |
-| `seed-scenarios` | No retries (next cycle acts as retry) | After 3 consecutive failures |
-| `live-poll-resolve-fixtures` | No retries (next cycle in 15s) | After 10 consecutive failures (~2.5 min down) |
-| `update-standings` | DB transaction — rollback on error, log | After any failure (rare, indicates DB issue) |
-| `deadline-reminders` | No retries (next cycle in 15 min) | After 3 consecutive failures |
+| `sync-fixtures` | No in-function retries (runs daily, next cycle acts as retry) | Not yet implemented |
+| `sync-fixtures-pre-match` | No retries (runs every 15 min, next cycle acts as retry) | Not yet implemented |
+| `seed-scenarios` | No retries (next cycle acts as retry) | Not yet implemented |
+| `live-poll-resolve-fixtures` | No retries (next cycle in 15s); self-heals via match-end reconciliation | Not yet implemented |
+| `update-standings` | DB transaction — rollback on error | Not yet implemented |
+| `deadline-reminders` | No retries (next cycle in 15 min) | Not yet implemented |
+
+**Implementation status:** Error logging is captured in edge function return payloads. Consecutive-failure tracking and admin alerting are not yet implemented — all functions currently rely on next-cycle recovery. PostHog error reporting from edge functions is not yet wired (edge functions don't have a PostHog client). These are tracked as pending items for operational readiness.
 
 ## Implementation Plan
 
@@ -1309,7 +1339,7 @@ cric-predictor/
 
 ### Supabase migration files
 
-16 migration files split by concern (in `supabase/supabase/migrations/`):
+18 migration files split by concern (in `supabase/supabase/migrations/`):
 
 1. `20260406000001_initial_schema.sql` — all `v2_*` tables, enums
 2. `20260406000002_rls_policies.sql` — RLS policies and helper functions
@@ -1323,10 +1353,14 @@ cric-predictor/
 10. `20260407000010_seed_scenarios_cron.sql` — `run_seed_scenarios_cron` function
 11. `20260407000011_add_fixture_round.sql` — adds `round` column to fixtures
 12. `20260407000012_grant_table_permissions.sql` — table-level grants
-13. `20260408000013_scenario_resolution_functions.sql` — resolution RPCs
+13. `20260408000013_scenario_resolution_functions.sql` — resolution RPCs (`resolve_scenario`, `void_fixture_scenarios`, `mark_fixture_resolved`, `all_scenarios_resolved`)
 14. `20260408000014_deadline_reminders_cron.sql` — `run_deadline_reminders_cron` function
 15. `20260408000015_rate_limits_table.sql` — rate limits table and cleanup cron
-16. `20260406000012_delete_account_rpc.sql` — `delete_account` RPC
+16. `20260409000016_delete_gang_rpc_auth_uid.sql` — hardens `delete_gang` RPC to resolve caller via `auth.uid()` instead of client-supplied `caller_id`
+17. `20260410000001_notification_rpcs.sql` — 4 notification creation RPCs (`create_join_request_notification`, `create_new_member_notification`, `create_join_approved_notification`, `create_join_rejected_notification`)
+18. `20260411000001_re_resolve_scenario_rpc.sql` — `re_resolve_scenario` RPC for post-resolution stat corrections
+
+**Note:** `delete_account` RPC is defined within the initial schema migration (migration 1).
 
 ### One-time migration strategy
 
@@ -1409,3 +1443,23 @@ Open items to address in future iterations:
 ### Account deletion and gang deletion data handling
 - Currently both are soft-delete (marked in DB); actual data cleanup policy is TBD
 - Questions to resolve: Are predictions from deleted accounts preserved? What happens to standings when all members of a gang delete their accounts? Data retention period before hard delete?
+
+### Operational alerting
+- Consecutive-failure tracking and admin alerting for cron/edge functions is not yet implemented
+- All edge functions currently rely on next-cycle recovery and return error arrays in their JSON response
+- Need: alerting mechanism (e.g., PostHog alerts, PagerDuty, or Slack webhook) when functions fail repeatedly
+- Need: PostHog client in edge functions for error reporting (currently edge functions don't report to PostHog)
+
+### Cron schedule activation
+- `pg_cron` schedules for `run_seed_scenarios_cron` and `run_deadline_reminders_cron` are commented out in their migration files
+- Must be enabled in production via Supabase dashboard or direct SQL before launch
+- Edge function schedules (`sync-fixtures`, `sync-fixtures-pre-match`, `live-poll-resolve-fixtures`) must be configured separately in Supabase dashboard
+
+### `global-error.tsx`
+- The root-layout-level error handler (`global-error.tsx`) is not implemented
+- `app/error.tsx` exists and catches errors in route segments, but errors within the root layout itself are not caught
+- Next.js requires `global-error.tsx` at `app/` root to handle root layout errors — should be added before launch
+
+### `PAGE_LOAD` analytics event
+- Event constant is defined in `events.ts` but is never fired anywhere in the codebase
+- Either implement a component/hook that fires this event on page transitions, or remove the unused constant

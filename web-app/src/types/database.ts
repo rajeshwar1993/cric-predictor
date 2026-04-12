@@ -23,6 +23,7 @@ export type Database = {
           onboarding_completed: boolean
           is_deleted: boolean
           deleted_at: string | null
+          is_system_admin: boolean
           created_at: string
         }
         Insert: {
@@ -35,6 +36,7 @@ export type Database = {
           onboarding_completed?: boolean
           is_deleted?: boolean
           deleted_at?: string | null
+          is_system_admin?: boolean
           created_at?: string
         }
         Update: {
@@ -47,6 +49,7 @@ export type Database = {
           onboarding_completed?: boolean
           is_deleted?: boolean
           deleted_at?: string | null
+          is_system_admin?: boolean
           created_at?: string
         }
         Relationships: []
@@ -692,6 +695,138 @@ export type Database = {
           season_id?: string
           team_id?: string
           player_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      v2_sports: {
+        Row: {
+          id: string
+          api_id: string
+          name: string
+          code: string
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          api_id: string
+          name: string
+          code: string
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          api_id?: string
+          name?: string
+          code?: string
+          is_active?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
+      v2_leagues: {
+        Row: {
+          id: string
+          api_id: string
+          sport_id: string
+          name: string
+          code: string
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          api_id: string
+          sport_id: string
+          name: string
+          code: string
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          api_id?: string
+          sport_id?: string
+          name?: string
+          code?: string
+          is_active?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
+      v2_seasons: {
+        Row: {
+          id: string
+          api_id: string
+          league_id: string
+          name: string
+          year: number
+          start_date: string | null
+          end_date: string | null
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          api_id: string
+          league_id: string
+          name: string
+          year: number
+          start_date?: string | null
+          end_date?: string | null
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          api_id?: string
+          league_id?: string
+          name?: string
+          year?: number
+          start_date?: string | null
+          end_date?: string | null
+          is_active?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
+      v2_scenario_templates: {
+        Row: {
+          id: string
+          sport_id: string
+          slug: string
+          title: string
+          input_type: Database['public']['Enums']['v2_scenario_input_type']
+          options: Json | null
+          points: number
+          resolution_phase: Database['public']['Enums']['v2_resolution_phase']
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          sport_id: string
+          slug: string
+          title: string
+          input_type: Database['public']['Enums']['v2_scenario_input_type']
+          options?: Json | null
+          points: number
+          resolution_phase: Database['public']['Enums']['v2_resolution_phase']
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          sport_id?: string
+          slug?: string
+          title?: string
+          input_type?: Database['public']['Enums']['v2_scenario_input_type']
+          options?: Json | null
+          points?: number
+          resolution_phase?: Database['public']['Enums']['v2_resolution_phase']
+          is_active?: boolean
           created_at?: string
         }
         Relationships: []
