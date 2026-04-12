@@ -42,6 +42,7 @@ const eslintConfig = defineConfig([
       'src/app/api/webhooks/**',
       'src/app/api/admin/**',
       'src/lib/supabase/service-role.ts',
+      'src/lib/dal/admin/**',
     ],
     rules: {
       'no-restricted-imports': 'off',

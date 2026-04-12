@@ -174,6 +174,25 @@ Stories must be implemented in phase order. Within a phase, stories can be paral
 | [PERF-001](PERF-001-posthog-events.md) | PostHog Events + Error Capture | FND-006, all feature stories |
 | [PERF-002](PERF-002-web-vitals-seo.md) | Web Vitals + SEO + Open Graph | LAY-001, PUB-001 |
 
+### Phase 16: Admin Dashboard (ADM)
+| Story | Title | Dependencies |
+|-------|-------|-------------|
+| [ADM-001](ADM-001-admin-foundation.md) | Admin Foundation (DB migration, layout, sidebar, auth) | FND-002, FND-005 |
+| [ADM-002](ADM-002-platform-overview.md) | Platform Overview (metrics, cron health, freshness) | ADM-001 |
+| [ADM-003](ADM-003-reference-data.md) | Reference Data Browser (sports, teams, players, templates) | ADM-001 |
+| [ADM-004](ADM-004-fixture-pipeline.md) | Fixture Pipeline (Kanban, table, detail, alerts) | ADM-001, ADM-003 |
+| [ADM-005](ADM-005-scenario-resolution.md) | Scenario Resolution Tracking (by phase, slug, anomalies) | ADM-001 |
+| [ADM-006](ADM-006-user-insights.md) | User Insights (growth, activity, retention, lookup) | ADM-001 |
+| [ADM-007](ADM-007-gang-insights.md) | Gang Insights (size, activity, health, lookup) | ADM-001 |
+| [ADM-008](ADM-008-prediction-insights.md) | Prediction Insights (volume, timing, accuracy) | ADM-001 |
+| [ADM-009](ADM-009-standings-monitoring.md) | Leaderboard & Standings Monitoring (health checks) | ADM-001 |
+| [ADM-010](ADM-010-notification-monitoring.md) | Notification Monitoring (volume, delivery health) | ADM-001 |
+| [ADM-011](ADM-011-operational-health.md) | Operational Health & Alerts (edge functions, alert board) | ADM-001 |
+| [ADM-012](ADM-012-data-integrity.md) | Data Integrity Checks (referential, logic, scenarios) | ADM-001 |
+| [ADM-013](ADM-013-rate-limiting.md) | Rate Limiting (table monitoring) | ADM-001 |
+| [ADM-014](ADM-014-moderation-support.md) | Moderation & Support (blocked, deleted, pending) | ADM-001 |
+| [ADM-015](ADM-015-admin-polish.md) | Admin Dashboard Polish (breadcrumbs, search, responsive) | ADM-001 through ADM-014 |
+
 ---
 
 ## Story Count Summary
@@ -195,7 +214,8 @@ Stories must be implemented in phase order. Within a phase, stories can be paral
 | 13. Notifications | 2 | Bell, panel, realtime |
 | 14. Public | 3 | Landing, privacy, terms, errors |
 | 15. Analytics | 2 | PostHog, Web Vitals, SEO |
-| **Total** | **45** | |
+| 16. Admin Dashboard | 15 | Admin foundation, overview, fixtures, scenarios, users, gangs, predictions, standings, notifications, operations, integrity, rate limits, moderation, polish |
+| **Total** | **60** | |
 
 ---
 
@@ -208,6 +228,13 @@ Within each phase, stories without explicit dependency chains can be built in pa
 - **Track B:** Design system components → Matches → Predictions → Leaderboards
 - **Track C:** Notifications → Profile → Settings
 - **Track D:** Public pages (can start after Phase 3)
+
+**Phase 16 parallelization (after ADM-001):**
+- **Track E:** ADM-002, ADM-003, ADM-004 (overview, reference data, fixtures)
+- **Track F:** ADM-005, ADM-006, ADM-007 (scenarios, users, gangs)
+- **Track G:** ADM-008, ADM-009, ADM-010 (predictions, standings, notifications)
+- **Track H:** ADM-011, ADM-012, ADM-013, ADM-014 (operations, integrity, rate limits, moderation)
+- **Track I:** ADM-015 (polish — after all other ADM stories complete)
 
 ---
 
