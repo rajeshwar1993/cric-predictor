@@ -43,6 +43,7 @@ const eslintConfig = defineConfig([
       'src/app/api/admin/**',
       'src/lib/supabase/service-role.ts',
       'src/lib/dal/admin/**',
+      'src/lib/actions/admin/**',
     ],
     rules: {
       'no-restricted-imports': 'off',

@@ -9,6 +9,7 @@ import {
 import { FixturePipelineView } from '@/components/admin/fixtures/fixture-pipeline'
 import { FixtureTable } from '@/components/admin/fixtures/fixture-table'
 import { FixtureAlerts } from '@/components/admin/fixtures/fixture-alerts'
+import { StaleFixtureCleanup } from '@/components/admin/fixtures/stale-fixture-cleanup'
 
 export default async function FixturesPage() {
   const season = await getActiveSeason()
@@ -48,6 +49,9 @@ export default async function FixturesPage() {
 
       {/* Alerts */}
       <FixtureAlerts alerts={alerts} />
+
+      {/* Stale Fixture Cleanup */}
+      <StaleFixtureCleanup />
 
       {/* Pipeline */}
       <FixturePipelineView pipeline={pipeline} />
