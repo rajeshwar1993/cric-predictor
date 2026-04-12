@@ -18,7 +18,6 @@ export type Database = {
           display_name: string | null
           email: string
           date_of_birth: string | null
-          avatar_url: string | null
           terms_version: string | null
           terms_accepted_at: string | null
           onboarding_completed: boolean
@@ -31,7 +30,6 @@ export type Database = {
           display_name?: string | null
           email: string
           date_of_birth?: string | null
-          avatar_url?: string | null
           terms_version?: string | null
           terms_accepted_at?: string | null
           onboarding_completed?: boolean
@@ -44,7 +42,6 @@ export type Database = {
           display_name?: string | null
           email?: string
           date_of_birth?: string | null
-          avatar_url?: string | null
           terms_version?: string | null
           terms_accepted_at?: string | null
           onboarding_completed?: boolean

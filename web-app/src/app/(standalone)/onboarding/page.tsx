@@ -2,9 +2,11 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase/server'
 import { OnboardingForm } from '@/components/auth/onboarding-form'
+import { BraggWordmark } from '@/components/ui/bragg-wordmark'
+import { LEGAL_DISCLAIMER } from '@/lib/constants'
 
 export const metadata: Metadata = {
-  title: 'Complete your profile',
+  title: 'Claim your spot',
   description: 'Set up your Bragg profile to start making predictions.',
 }
 
@@ -38,24 +40,29 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
   const { redirectTo } = await searchParams
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center px-4 py-12">
-      <div className="w-full max-w-[400px]">
+    <div className="flex min-h-dvh flex-col items-center justify-center px-4 pb-[max(48px,env(safe-area-inset-bottom))] pt-12">
+      <div className="w-full max-w-[480px]">
         {/* Logo */}
-        <h1 className="text-h1 mb-2 text-center text-text-primary">BRAGG</h1>
+        <BraggWordmark as="h1" tone="primary" className="mb-2 text-center text-[44px]" />
 
         {/* Subheading */}
-        <p className="text-body mb-8 text-center text-text-secondary">Complete your profile</p>
+        <p className="text-body-lg mb-10 text-center uppercase tracking-[0.08em] text-text-secondary">
+          Claim your spot
+        </p>
 
-        {/* Form card */}
-        <div className="rounded-2xl border border-wire bg-dark-concrete p-6">
-          <OnboardingForm redirectTo={redirectTo} />
+        {/* Card with lime accent stripe */}
+        <div className="motion-safe:animate-pop-in">
+          {/* Lime accent stripe — sharp corners contrast the rounded card */}
+          <div aria-hidden="true" className="h-1 bg-bragg-lime" />
+
+          {/* Form card */}
+          <div className="rounded-b-2xl border border-t-0 border-wire bg-dark-concrete p-6 shadow-elevation-1">
+            <OnboardingForm redirectTo={redirectTo} />
+          </div>
         </div>
 
         {/* Disclaimer */}
-        <p className="text-body-sm mt-6 text-center text-text-muted">
-          Bragg is a free prediction game for entertainment purposes only. No real money. No
-          betting. No prizes.
-        </p>
+        <p className="text-body-sm mt-6 text-center text-text-muted">{LEGAL_DISCLAIMER}</p>
       </div>
     </div>
   )

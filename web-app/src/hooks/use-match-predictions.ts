@@ -57,7 +57,7 @@ export interface UseMatchPredictionsResult {
   error: string | null
 }
 
-type ProfileShape = { display_name: string | null; avatar_url: string | null } | null
+type ProfileShape = { display_name: string | null } | null
 
 // ---------------------------------------------------------------------------
 // Hook
@@ -107,7 +107,7 @@ export function useMatchPredictions(
         .select(
           `
           user_id, rank,
-          v2_profiles (display_name, avatar_url)
+          v2_profiles (display_name)
         `,
         )
         .eq('gang_id', gangId)
@@ -152,7 +152,7 @@ export function useMatchPredictions(
           return {
             userId: row.user_id,
             displayName: profile?.display_name ?? null,
-            avatarUrl: profile?.avatar_url ?? null,
+            avatarUrl: null,
             memberStatus: resolvedStatus,
             rank: row.rank,
           }

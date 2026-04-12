@@ -69,16 +69,10 @@ export function useLiveScores(fixtureId: string): UseLiveScoresResult {
         .from('v2_fixture_live_scores')
         .select('*')
         .eq('fixture_id', fixtureId)
-        .single()
+        .maybeSingle()
 
       if (fetchError) {
-        // PGRST116 = no rows — not an error, just no live data yet
-        if (fetchError.code === 'PGRST116') {
-          setData(null)
-          setError(null)
-        } else {
-          setError(fetchError.message)
-        }
+        setError(fetchError.message)
       } else if (scoreData) {
         // Coerce DECIMAL(4,2) columns (current_run_rate) from supabase-js.
         // Postgres DECIMALs can round-trip as strings via PostgREST even

@@ -6,8 +6,8 @@ import { useLiveScores } from './use-live-scores'
 // Mocks
 // ---------------------------------------------------------------------------
 
-const mockSingle = vi.fn()
-const mockEq = vi.fn(() => ({ single: mockSingle }))
+const mockMaybeSingle = vi.fn()
+const mockEq = vi.fn(() => ({ maybeSingle: mockMaybeSingle }))
 const mockSelect = vi.fn(() => ({ eq: mockEq }))
 const mockFrom = vi.fn(() => ({ select: mockSelect }))
 
@@ -58,7 +58,7 @@ describe('useLiveScores', () => {
     vi.clearAllMocks()
 
     // Default: return valid data
-    mockSingle.mockResolvedValue({ data: makeLiveScoreData(), error: null })
+    mockMaybeSingle.mockResolvedValue({ data: makeLiveScoreData(), error: null })
 
     // Mock document.visibilityState
     Object.defineProperty(document, 'visibilityState', {
@@ -105,7 +105,7 @@ describe('useLiveScores', () => {
     })
 
     // First call on mount
-    expect(mockSingle).toHaveBeenCalledTimes(1)
+    expect(mockMaybeSingle).toHaveBeenCalledTimes(1)
 
     // Advance by 15 seconds
     await act(async () => {
@@ -113,13 +113,13 @@ describe('useLiveScores', () => {
     })
 
     await waitFor(() => {
-      expect(mockSingle).toHaveBeenCalledTimes(2)
+      expect(mockMaybeSingle).toHaveBeenCalledTimes(2)
     })
   })
 
   it('reports isStale when last_polled_at is older than 1 minute', async () => {
     const staleTime = new Date(Date.now() - 2 * 60_000).toISOString()
-    mockSingle.mockResolvedValue({
+    mockMaybeSingle.mockResolvedValue({
       data: makeLiveScoreData({ last_polled_at: staleTime }),
       error: null,
     })
@@ -135,7 +135,7 @@ describe('useLiveScores', () => {
 
   it('reports isStale=false when last_polled_at is within 1 minute', async () => {
     const freshTime = new Date(Date.now() - 30_000).toISOString()
-    mockSingle.mockResolvedValue({
+    mockMaybeSingle.mockResolvedValue({
       data: makeLiveScoreData({ last_polled_at: freshTime }),
       error: null,
     })
@@ -150,7 +150,7 @@ describe('useLiveScores', () => {
   })
 
   it('handles fetch error gracefully', async () => {
-    mockSingle.mockResolvedValue({
+    mockMaybeSingle.mockResolvedValue({
       data: null,
       error: { code: '500', message: 'Server error' },
     })
@@ -165,10 +165,10 @@ describe('useLiveScores', () => {
     expect(result.current.data).toBeNull()
   })
 
-  it('treats PGRST116 (no rows) as null data, not an error', async () => {
-    mockSingle.mockResolvedValue({
+  it('returns null data when no rows exist (maybeSingle returns null)', async () => {
+    mockMaybeSingle.mockResolvedValue({
       data: null,
-      error: { code: 'PGRST116', message: 'No rows found' },
+      error: null,
     })
 
     const { result } = renderHook(() => useLiveScores(FIXTURE_ID))
@@ -194,20 +194,20 @@ describe('useLiveScores', () => {
       get: () => 'hidden',
     })
 
-    const callCountBeforeInterval = mockSingle.mock.calls.length
+    const callCountBeforeInterval = mockMaybeSingle.mock.calls.length
 
     // Advance timer — should NOT trigger poll
     await act(async () => {
       vi.advanceTimersByTime(15_000)
     })
 
-    expect(mockSingle).toHaveBeenCalledTimes(callCountBeforeInterval)
+    expect(mockMaybeSingle).toHaveBeenCalledTimes(callCountBeforeInterval)
   })
 
   it('prevents concurrent in-flight requests', async () => {
     // Make the first poll take a long time (never resolves within the test step)
     let resolveFirst: ((value: { data: unknown; error: unknown }) => void) | null = null
-    mockSingle.mockImplementationOnce(
+    mockMaybeSingle.mockImplementationOnce(
       () =>
         new Promise((resolve) => {
           resolveFirst = resolve
@@ -222,8 +222,8 @@ describe('useLiveScores', () => {
       vi.advanceTimersByTime(15_000)
     })
 
-    // Only 1 call to mockSingle because the second was blocked by the guard
-    expect(mockSingle).toHaveBeenCalledTimes(1)
+    // Only 1 call to mockMaybeSingle because the second was blocked by the guard
+    expect(mockMaybeSingle).toHaveBeenCalledTimes(1)
 
     // Now resolve the first poll so the hook can finish
     await act(async () => {
@@ -235,13 +235,13 @@ describe('useLiveScores', () => {
     })
 
     // After the first poll resolves, a new interval tick should succeed
-    mockSingle.mockResolvedValue({ data: makeLiveScoreData(), error: null })
+    mockMaybeSingle.mockResolvedValue({ data: makeLiveScoreData(), error: null })
     await act(async () => {
       vi.advanceTimersByTime(15_000)
     })
 
     await waitFor(() => {
-      expect(mockSingle).toHaveBeenCalledTimes(2)
+      expect(mockMaybeSingle).toHaveBeenCalledTimes(2)
     })
   })
 
@@ -252,7 +252,7 @@ describe('useLiveScores', () => {
       expect(result.current.isLoading).toBe(false)
     })
 
-    const callCountBeforeUnmount = mockSingle.mock.calls.length
+    const callCountBeforeUnmount = mockMaybeSingle.mock.calls.length
     unmount()
 
     // Advance timer — should NOT trigger more polls
@@ -260,6 +260,6 @@ describe('useLiveScores', () => {
       vi.advanceTimersByTime(30_000)
     })
 
-    expect(mockSingle).toHaveBeenCalledTimes(callCountBeforeUnmount)
+    expect(mockMaybeSingle).toHaveBeenCalledTimes(callCountBeforeUnmount)
   })
 })

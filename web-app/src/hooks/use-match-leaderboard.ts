@@ -94,7 +94,7 @@ export function useMatchLeaderboard(
         .select(
           `
           user_id, predicted_count, resolved_count, correct_count, points_earned, rank, last_submitted_at,
-          v2_profiles (display_name, avatar_url)
+          v2_profiles (display_name)
         `,
         )
         .eq('gang_id', gangId)
@@ -131,7 +131,7 @@ export function useMatchLeaderboard(
         (members ?? []).map((m) => [m.user_id, m.status]),
       )
 
-      type ProfileShape = { display_name: string | null; avatar_url: string | null } | null
+      type ProfileShape = { display_name: string | null } | null
 
       const entries: MatchLeaderboardEntry[] = standings.map((row) => {
         const profile = row.v2_profiles as unknown as ProfileShape
@@ -153,7 +153,7 @@ export function useMatchLeaderboard(
           rank: row.rank,
           lastSubmittedAt: row.last_submitted_at,
           displayName: profile?.display_name ?? null,
-          avatarUrl: profile?.avatar_url ?? null,
+          avatarUrl: null,
           memberStatus: resolvedStatus,
         }
       })
