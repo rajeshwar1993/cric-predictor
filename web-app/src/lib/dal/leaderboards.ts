@@ -9,7 +9,7 @@ import { isDeparted } from '@/lib/member-status'
 
 type ProfileRow = Pick<
   Database['public']['Tables']['v2_profiles']['Row'],
-  'display_name' | 'avatar_url'
+  'display_name'
 >
 
 /**
@@ -60,7 +60,7 @@ export async function getGangSeasonStandings(
     .select(
       `
       user_id, total_points, matches_predicted, accuracy_pct, points_per_match, rank,
-      v2_profiles (display_name, avatar_url)
+      v2_profiles (display_name)
     `,
     )
     .eq('gang_id', gangId)
@@ -108,7 +108,7 @@ export async function getGangSeasonStandings(
       pointsPerMatch: Number(row.points_per_match),
       rank: row.rank,
       displayName: profile?.display_name ?? null,
-      avatarUrl: profile?.avatar_url ?? null,
+      avatarUrl: null,
       memberStatus: resolvedStatus,
     }
   })
@@ -201,7 +201,7 @@ export async function getMatchLeaderboard(
     .select(
       `
       user_id, predicted_count, resolved_count, correct_count, points_earned, rank, last_submitted_at,
-      v2_profiles (display_name, avatar_url)
+      v2_profiles (display_name)
     `,
     )
     .eq('gang_id', gangId)
@@ -248,7 +248,7 @@ export async function getMatchLeaderboard(
       rank: row.rank,
       lastSubmittedAt: row.last_submitted_at,
       displayName: profile?.display_name ?? null,
-      avatarUrl: profile?.avatar_url ?? null,
+      avatarUrl: null,
       memberStatus: resolvedStatus,
     }
   })
