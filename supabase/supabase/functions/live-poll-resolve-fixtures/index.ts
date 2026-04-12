@@ -61,12 +61,21 @@ interface DbScenario {
   gang_id: string;
   is_resolved: boolean;
   is_voided: boolean;
+  // Only loaded by the reconciliation pass; the regular resolution loop
+  // doesn't need it because it only operates on unresolved scenarios.
+  correct_answer?: string | null;
 }
 
 interface DbLiveScore {
   fixture_id: string;
   home_team_max_overs_seen: number | null;
   away_team_max_overs_seen: number | null;
+  // Loaded BEFORE upsertLiveScorecard so we can compare current Sportmonks
+  // state against the prior poll's values for regression detection.
+  home_team_overs: number | null;
+  away_team_overs: number | null;
+  home_team_score: string | null;
+  away_team_score: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -197,6 +206,21 @@ const RANGE_SLUGS: Set<string> = new Set([
 ]);
 
 // ---------------------------------------------------------------------------
+// Slugs whose answers are captured live as a snapshot at the moment a
+// threshold is crossed (end of powerplay) and CANNOT be retroactively
+// re-derived from the final fixture data. The reconciliation pass skips
+// these because re-running their extractor against final data would yield
+// the wrong value (the score at innings-end, not the score at end-of-PP).
+// ---------------------------------------------------------------------------
+
+const SNAPSHOT_ONLY_SLUGS: Set<string> = new Set([
+  'home_team_powerplay_runs',
+  'away_team_powerplay_runs',
+  'home_team_powerplay_wickets_lost',
+  'away_team_powerplay_wickets_lost',
+]);
+
+// ---------------------------------------------------------------------------
 // Slugs to fixture_results column mapping (for storing raw values)
 // ---------------------------------------------------------------------------
 
@@ -221,6 +245,76 @@ const SLUG_TO_RESULT_COLUMN: Record<string, string> = {
   bowler_three_wickets: 'bowler_three_wickets',
   super_over: 'super_over',
 };
+
+// ---------------------------------------------------------------------------
+// Live data regression observability (Option B from the audit report)
+// ---------------------------------------------------------------------------
+//
+// Sportmonks occasionally revises stats between polls (no-ball reclassification,
+// third-umpire wicket reviews, scoring corrections). The 69534 capture has 3
+// such events. Most of the time these revisions don't cross a scenario
+// boundary, but when they do they can flip a resolved answer's correctness.
+//
+// detectRunsRowRegressions logs structured warnings whenever it observes
+// `runs.overs`, `runs.score`, or `runs.wickets` decreasing between consecutive
+// polls for either team. It does NOT change behavior — it exists so we have
+// production signal to count and triage these events. The match-end
+// reconciliation pass (Step 6.5) is the actual corrective action.
+
+function parseScoreString(s: string | null | undefined): { score: number; wickets: number } | null {
+  if (!s) return null;
+  const parts = s.split('/');
+  if (parts.length !== 2) return null;
+  const score = parseInt(parts[0], 10);
+  const wickets = parseInt(parts[1], 10);
+  if (Number.isNaN(score) || Number.isNaN(wickets)) return null;
+  return { score, wickets };
+}
+
+function detectRunsRowRegressions(
+  fixtureApiId: string,
+  smFixture: SmFixture,
+  prior: DbLiveScore | null
+): void {
+  if (!prior || !smFixture.runs) return;
+
+  for (const run of smFixture.runs) {
+    let label: 'home' | 'away';
+    let priorOvers: number | null;
+    let priorScoreStr: string | null;
+    if (run.team_id === smFixture.localteam_id) {
+      label = 'home';
+      priorOvers = prior.home_team_overs;
+      priorScoreStr = prior.home_team_score;
+    } else if (run.team_id === smFixture.visitorteam_id) {
+      label = 'away';
+      priorOvers = prior.away_team_overs;
+      priorScoreStr = prior.away_team_score;
+    } else {
+      continue;
+    }
+
+    if (priorOvers != null && run.overs < priorOvers) {
+      console.warn(
+        `[live-poll] REGRESSION fixture=${fixtureApiId} team=${label} field=overs ${priorOvers} -> ${run.overs}`
+      );
+    }
+
+    const priorScore = parseScoreString(priorScoreStr);
+    if (priorScore) {
+      if (run.score < priorScore.score) {
+        console.warn(
+          `[live-poll] REGRESSION fixture=${fixtureApiId} team=${label} field=score ${priorScore.score} -> ${run.score}`
+        );
+      }
+      if (run.wickets < priorScore.wickets) {
+        console.warn(
+          `[live-poll] REGRESSION fixture=${fixtureApiId} team=${label} field=wickets ${priorScore.wickets} -> ${run.wickets}`
+        );
+      }
+    }
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Main poll logic
@@ -333,6 +427,90 @@ async function pollAndResolve(supabase: SupabaseClient): Promise<PollSummary> {
 }
 
 // ---------------------------------------------------------------------------
+// Shared helper: compute the correct_answer string for a scenario
+// ---------------------------------------------------------------------------
+//
+// Used by both the regular resolution loop and the match-end reconciliation
+// pass. Runs the extractor, applies player/team UUID mapping, applies range
+// bracket conversion, and writes the raw value into v2_fixture_results.
+// Returns the final correct_answer string (what the caller should pass to
+// resolve_scenario / re_resolve_scenario), or null if not resolvable for any
+// reason (extractor not ready, missing UUID mapping, no bracket match, etc.)
+// — the caller should treat null as "skip this scenario this poll".
+
+async function computeCorrectAnswer(
+  supabase: SupabaseClient,
+  fixtureId: string,
+  scenario: DbScenario,
+  smFixture: SmFixture,
+  idMapper: IdMapper,
+  ctx: { homeTeamPreviousMaxOvers: number | null; awayTeamPreviousMaxOvers: number | null }
+): Promise<string | null> {
+  const slug = scenario.slug as ScenarioSlug;
+
+  const extractResult: ExtractResult = extractForScenario(slug, smFixture, ctx);
+  if (!extractResult.resolved) {
+    return null;
+  }
+
+  let rawValue = extractResult.value;
+
+  // Map player API IDs to UUIDs
+  if (PLAYER_SLUGS.has(slug)) {
+    const playerApiId = parseInt(rawValue, 10);
+    const playerUuid = await idMapper.getPlayerUuid(playerApiId);
+    if (!playerUuid) {
+      console.warn(`[live-poll] Player UUID not found for API ID ${playerApiId} (slug: ${slug})`);
+      return null;
+    }
+    rawValue = playerUuid;
+    await upsertFixtureResult(supabase, fixtureId, slug, playerUuid);
+  }
+
+  // Map team API IDs to UUIDs
+  if (TEAM_SLUGS.has(slug)) {
+    const teamApiId = parseInt(rawValue, 10);
+    const teamUuid = await idMapper.getTeamUuid(teamApiId);
+    if (!teamUuid) {
+      console.warn(`[live-poll] Team UUID not found for API ID ${teamApiId} (slug: ${slug})`);
+      return null;
+    }
+    rawValue = teamUuid;
+    await upsertFixtureResult(supabase, fixtureId, slug, teamUuid);
+  }
+
+  // For range scenarios: store raw numeric in fixture_results, convert to bracket
+  if (RANGE_SLUGS.has(slug)) {
+    const numericValue = parseInt(rawValue, 10);
+    await upsertFixtureResult(supabase, fixtureId, slug, numericValue);
+
+    const options = scenario.options;
+    if (!options || options.length === 0) {
+      console.warn(`[live-poll] No options for range scenario ${slug}`);
+      return null;
+    }
+
+    const bracketStr = mapToBracket(numericValue, options);
+    if (!bracketStr) {
+      console.warn(
+        `[live-poll] No bracket match for ${slug}: value=${numericValue}, options=${JSON.stringify(options)}`
+      );
+      return null;
+    }
+
+    rawValue = bracketStr;
+  }
+
+  // For yes_no scenarios: store boolean in fixture_results
+  if (scenario.input_type === 'yes_no') {
+    const boolValue = rawValue === 'Yes';
+    await upsertFixtureResult(supabase, fixtureId, slug, boolValue);
+  }
+
+  return rawValue;
+}
+
+// ---------------------------------------------------------------------------
 // Per-fixture processing
 // ---------------------------------------------------------------------------
 
@@ -368,6 +546,12 @@ async function processFixture(
   // -----------------------------------------------------------------------
   const newInternalStatus = mapSmStatusToInternal(smFixture.status);
   const currentDbStatus = dbFixture.status;
+
+  // Captured BEFORE the transition is applied: did this poll observe the
+  // moment the match flipped from non-completed to completed? Used by the
+  // match-end reconciliation pass below.
+  const justCompletedThisPoll =
+    currentDbStatus !== 'completed' && newInternalStatus === 'completed';
 
   // Handle status transitions
   if (newInternalStatus !== currentDbStatus) {
@@ -435,7 +619,36 @@ async function processFixture(
   }
 
   // -----------------------------------------------------------------------
-  // Step 4: Live scorecard upsert
+  // Step 4: Load prior live-score state
+  // -----------------------------------------------------------------------
+  // Loaded BEFORE upsertLiveScorecard so we have a snapshot of the previous
+  // poll's score/overs/wickets to feed into the regression detector and the
+  // powerplay max-overs tracker. After step 5 writes the new scorecard, the
+  // prior values are gone from the row.
+  const { data: liveScoreRow } = await supabase
+    .from('v2_fixture_live_scores')
+    .select(
+      'fixture_id, home_team_max_overs_seen, away_team_max_overs_seen, ' +
+      'home_team_overs, away_team_overs, home_team_score, away_team_score'
+    )
+    .eq('fixture_id', dbFixture.id)
+    .single();
+
+  const existingLiveScore = liveScoreRow as DbLiveScore | null;
+
+  // -----------------------------------------------------------------------
+  // Step 4.5: Detect Sportmonks data regressions (observability only)
+  // -----------------------------------------------------------------------
+  // Compares current Sportmonks runs.overs / runs.score / runs.wickets against
+  // the prior poll's persisted values. Logs structured warnings on any
+  // decrease — these are signals that Sportmonks revised stats between polls
+  // (no-ball reclassification, third-umpire wicket review, scoring correction).
+  // This is observability only — the corrective action lives in the
+  // reconciliation pass at step 6.5.
+  detectRunsRowRegressions(dbFixture.api_id, smFixture, existingLiveScore);
+
+  // -----------------------------------------------------------------------
+  // Step 5: Live scorecard upsert
   // -----------------------------------------------------------------------
   // Called on every poll regardless of status. The cron only ever processes
   // fixtures that are upcoming/live within the polling window or completed
@@ -448,22 +661,11 @@ async function processFixture(
   //     ticking through the POTM wait, so downstream "is data stale?" checks
   //     stay accurate
   // The upsert payload does not include home_team_max_overs_seen /
-  // away_team_max_overs_seen, so step 5's max-overs tracking is preserved by
+  // away_team_max_overs_seen, so the max-overs tracking below is preserved by
   // PostgREST's ON CONFLICT DO UPDATE SET <only-provided-columns> semantics.
   await upsertLiveScorecard(supabase, dbFixture, smFixture, idMapper);
 
-  // -----------------------------------------------------------------------
-  // Step 5: Load existing live scores for max overs tracking
-  // -----------------------------------------------------------------------
-  const { data: liveScoreRow } = await supabase
-    .from('v2_fixture_live_scores')
-    .select('fixture_id, home_team_max_overs_seen, away_team_max_overs_seen')
-    .eq('fixture_id', dbFixture.id)
-    .single();
-
-  const existingLiveScore = liveScoreRow as DbLiveScore | null;
-
-  // Update max overs tracking
+  // Update max overs tracking using the pre-step-5 prior values
   const homeMaxOvers = existingLiveScore?.home_team_max_overs_seen ?? null;
   const awayMaxOvers = existingLiveScore?.away_team_max_overs_seen ?? null;
 
@@ -522,87 +724,27 @@ async function processFixture(
 
   for (const scenario of scenarios) {
     try {
-      const slug = scenario.slug as ScenarioSlug;
+      const slug = scenario.slug;
 
       // Check if we already computed this slug's value (for another gang)
-      let correctAnswer: string | undefined;
-      const cachedValue = resolvedValues.get(slug);
+      let correctAnswer: string | undefined = resolvedValues.get(slug);
 
-      if (cachedValue !== undefined) {
-        correctAnswer = cachedValue;
-      } else {
-        // Call the extractor
-        const extractResult: ExtractResult = extractForScenario(slug, smFixture, {
-          homeTeamPreviousMaxOvers: homeMaxOvers,
-          awayTeamPreviousMaxOvers: awayMaxOvers,
-        });
-
-        if (!extractResult.resolved) {
-          continue; // Skip — not yet resolvable
-        }
-
-        let rawValue = extractResult.value;
-
-        // Map player API IDs to UUIDs
-        if (PLAYER_SLUGS.has(slug)) {
-          const playerApiId = parseInt(rawValue, 10);
-          const playerUuid = await idMapper.getPlayerUuid(playerApiId);
-          if (!playerUuid) {
-            console.warn(`[live-poll] Player UUID not found for API ID ${playerApiId} (slug: ${slug})`);
-            continue;
+      if (correctAnswer === undefined) {
+        const computed = await computeCorrectAnswer(
+          supabase,
+          dbFixture.id,
+          scenario,
+          smFixture,
+          idMapper,
+          {
+            homeTeamPreviousMaxOvers: homeMaxOvers,
+            awayTeamPreviousMaxOvers: awayMaxOvers,
           }
-          rawValue = playerUuid;
-
-          // Store raw value in fixture_results
-          await upsertFixtureResult(supabase, dbFixture.id, slug, playerUuid);
+        );
+        if (computed === null) {
+          continue; // Not yet resolvable (or skipped due to mapping/bracket failure)
         }
-
-        // Map team API IDs to UUIDs
-        if (TEAM_SLUGS.has(slug)) {
-          const teamApiId = parseInt(rawValue, 10);
-          const teamUuid = await idMapper.getTeamUuid(teamApiId);
-          if (!teamUuid) {
-            console.warn(`[live-poll] Team UUID not found for API ID ${teamApiId} (slug: ${slug})`);
-            continue;
-          }
-          rawValue = teamUuid;
-
-          // Store raw value in fixture_results
-          await upsertFixtureResult(supabase, dbFixture.id, slug, teamUuid);
-        }
-
-        // For range scenarios: map numeric value to bracket string
-        if (RANGE_SLUGS.has(slug)) {
-          const numericValue = parseInt(rawValue, 10);
-
-          // Store raw numeric value in fixture_results
-          await upsertFixtureResult(supabase, dbFixture.id, slug, numericValue);
-
-          // Map to bracket for scenario resolution
-          const options = scenario.options;
-          if (!options || options.length === 0) {
-            console.warn(`[live-poll] No options for range scenario ${slug}`);
-            continue;
-          }
-
-          const bracketStr = mapToBracket(numericValue, options);
-          if (!bracketStr) {
-            console.warn(
-              `[live-poll] No bracket match for ${slug}: value=${numericValue}, options=${JSON.stringify(options)}`
-            );
-            continue;
-          }
-
-          rawValue = bracketStr;
-        }
-
-        // For yes_no scenarios: store boolean in fixture_results
-        if (scenario.input_type === 'yes_no') {
-          const boolValue = rawValue === 'Yes';
-          await upsertFixtureResult(supabase, dbFixture.id, slug, boolValue);
-        }
-
-        correctAnswer = rawValue;
+        correctAnswer = computed;
         resolvedValues.set(slug, correctAnswer);
       }
 
@@ -627,6 +769,26 @@ async function processFixture(
       const message = err instanceof Error ? err.message : String(err);
       console.error(`[live-poll] Error processing scenario ${scenario.id}: ${message}`);
     }
+  }
+
+  // -----------------------------------------------------------------------
+  // Step 6.5: Match-end reconciliation pass
+  // -----------------------------------------------------------------------
+  // Fires exactly once per fixture, on the poll where status first transitions
+  // to 'completed'. For every already-resolved scenario, re-runs the extractor
+  // against the now-final fixture data and compares to the stored
+  // correct_answer. If Sportmonks revised stats after the original resolution
+  // (third-umpire wicket review, no-ball reclassification, etc.), the answer
+  // may have changed — we call re_resolve_scenario to update correct_answer,
+  // re-score predictions, and recompute standings.
+  //
+  // Powerplay slugs are skipped: their answers are live-snapshot captures and
+  // cannot be retroactively re-derived from the final fixture data.
+  if (justCompletedThisPoll) {
+    await reconcileResolvedScenarios(supabase, dbFixture, smFixture, idMapper, {
+      homeTeamPreviousMaxOvers: homeMaxOvers,
+      awayTeamPreviousMaxOvers: awayMaxOvers,
+    });
   }
 
   // -----------------------------------------------------------------------
@@ -656,6 +818,138 @@ async function processFixture(
   }
 
   return { scenariosResolved, fullyResolved };
+}
+
+// ---------------------------------------------------------------------------
+// Match-end reconciliation pass
+// ---------------------------------------------------------------------------
+//
+// Re-checks every already-resolved (non-voided) scenario for a fixture against
+// the final fixture data. If Sportmonks revised stats since the original
+// resolution, calls re_resolve_scenario to correct the answer, re-score
+// predictions, and recompute standings.
+//
+// Designed to fire exactly once per fixture, on the poll where status first
+// transitions to 'completed'. The caller is responsible for that gating.
+//
+// Skips SNAPSHOT_ONLY_SLUGS (powerplay scenarios) because their answers are
+// live captures that cannot be re-derived from the final fixture data.
+
+interface ReconcileSummary {
+  checked: number;
+  revised: number;
+}
+
+async function reconcileResolvedScenarios(
+  supabase: SupabaseClient,
+  dbFixture: DbFixture,
+  smFixture: SmFixture,
+  idMapper: IdMapper,
+  ctx: { homeTeamPreviousMaxOvers: number | null; awayTeamPreviousMaxOvers: number | null }
+): Promise<ReconcileSummary> {
+  const { data: resolvedRows, error: loadErr } = await supabase
+    .from('v2_fixture_scenarios')
+    .select('id, slug, input_type, options, gang_id, is_resolved, is_voided, correct_answer')
+    .eq('fixture_id', dbFixture.id)
+    .eq('is_resolved', true)
+    .eq('is_voided', false);
+
+  if (loadErr || !resolvedRows) {
+    console.error(
+      `[live-poll] reconciliation: failed to load resolved scenarios for fixture ${dbFixture.api_id}: ${loadErr?.message ?? 'no data'}`
+    );
+    return { checked: 0, revised: 0 };
+  }
+
+  const resolved = resolvedRows as DbScenario[];
+
+  // Per-slug cache: multiple gangs share the same slug for the same fixture
+  // and would re-compute the same answer. Compute once per slug.
+  const recomputed = new Map<string, string>();
+
+  let checked = 0;
+  let revised = 0;
+
+  for (const scenario of resolved) {
+    const slug = scenario.slug;
+
+    // Powerplay scenarios are snapshot-based; final fixture data cannot be
+    // used to re-derive their values. Trust the live snapshot.
+    if (SNAPSHOT_ONLY_SLUGS.has(slug)) continue;
+
+    // A row marked is_resolved=true should always have a correct_answer.
+    // Defend anyway: skip rows without one rather than crash.
+    if (scenario.correct_answer == null) continue;
+
+    let newAnswer = recomputed.get(slug);
+    if (newAnswer === undefined) {
+      try {
+        const computed = await computeCorrectAnswer(
+          supabase,
+          dbFixture.id,
+          scenario,
+          smFixture,
+          idMapper,
+          ctx
+        );
+        if (computed === null) {
+          // Extractor not ready or mapping failure — leave the existing answer
+          // alone (the original resolution was based on data that was sufficient
+          // at the time, even if the current re-extraction can't reproduce it).
+          continue;
+        }
+        newAnswer = computed;
+        recomputed.set(slug, newAnswer);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(
+          `[live-poll] reconciliation: error recomputing ${slug} for fixture ${dbFixture.api_id}: ${msg}`
+        );
+        continue;
+      }
+    }
+
+    checked++;
+
+    if (newAnswer === scenario.correct_answer) {
+      // Sportmonks didn't revise this one — most common case
+      continue;
+    }
+
+    // Mismatch: ask the DB to re-resolve. The RPC re-scores all predictions
+    // for this scenario and explicitly recalculates standings.
+    const { data: prevAnswer, error: rrErr } = await supabase.rpc('re_resolve_scenario', {
+      p_scenario_id: scenario.id,
+      p_correct_answer: newAnswer,
+    });
+
+    if (rrErr) {
+      console.error(
+        `[live-poll] reconciliation: re_resolve_scenario failed for ${scenario.id} (${slug}): ${rrErr.message}`
+      );
+      continue;
+    }
+
+    revised++;
+    console.warn(
+      `[live-poll] RECONCILED ${slug} for fixture ${dbFixture.api_id} (gang ${scenario.gang_id}): ` +
+      `"${prevAnswer ?? scenario.correct_answer}" -> "${newAnswer}"`
+    );
+  }
+
+  if (revised > 0) {
+    console.warn(
+      `[live-poll] reconciliation pass for fixture ${dbFixture.api_id}: ` +
+      `${revised} of ${checked} resolved scenarios revised by Sportmonks stat correction`
+    );
+  } else {
+    console.log(
+      `[live-poll] reconciliation pass for fixture ${dbFixture.api_id}: ` +
+      `${checked} resolved scenarios checked, none revised`
+    );
+  }
+
+  return { checked, revised };
 }
 
 // ---------------------------------------------------------------------------
