@@ -596,6 +596,40 @@ Deno.test('extractTopScorer', async (t) => {
     assert(result.resolved);
     if (result.resolved) assertStrictEquals(result.value, '1001');
   });
+
+  await t.step('aggregates score across multiple batting entries (super over)', () => {
+    // Player 1001 bats in main innings AND super over: 40 + 12 = 52 total
+    // Player 1002 bats only in main innings: 45
+    // Without aggregation, 1002 would "win" (45 > 40). With aggregation, 1001 wins (52 > 45).
+    const fixture = makeFixture({
+      status: 'Finished',
+      batting: [
+        makeBatting({ player_id: 1001, score: 40, ball: 30, scoreboard: 'S1' }),
+        makeBatting({ player_id: 1002, score: 45, ball: 35, scoreboard: 'S2' }),
+        makeBatting({ player_id: 1001, score: 12, ball: 8, scoreboard: 'S3' }), // super over
+      ],
+    });
+    const result = extractTopScorer(fixture);
+    assert(result.resolved);
+    if (result.resolved) assertStrictEquals(result.value, '1001');
+  });
+
+  await t.step('aggregates balls for tiebreaker across entries', () => {
+    // Player 1001: 30 + 10 = 40 runs, 20 + 5 = 25 balls
+    // Player 1002: 40 runs in one entry, 30 balls
+    // Same total score (40), 1001 has fewer total balls (25 < 30) → wins
+    const fixture = makeFixture({
+      status: 'Finished',
+      batting: [
+        makeBatting({ player_id: 1001, score: 30, ball: 20, scoreboard: 'S1' }),
+        makeBatting({ player_id: 1001, score: 10, ball: 5, scoreboard: 'S3' }),
+        makeBatting({ player_id: 1002, score: 40, ball: 30, scoreboard: 'S2' }),
+      ],
+    });
+    const result = extractTopScorer(fixture);
+    assert(result.resolved);
+    if (result.resolved) assertStrictEquals(result.value, '1001');
+  });
 });
 
 // =============================================================================
@@ -644,6 +678,40 @@ Deno.test('extractTopWicketTaker', async (t) => {
     const fixture = makeFixture({ status: 'Finished' });
     const result = extractTopWicketTaker(fixture);
     assertStrictEquals(result.resolved, false);
+  });
+
+  await t.step('aggregates wickets across multiple bowling entries (super over)', () => {
+    // Bowler 2001 bowls in main match AND super over: 2 + 1 = 3 wickets
+    // Bowler 2002 bowls only in main match: 2 wickets
+    // Without aggregation, they'd tie at 2. With aggregation, 2001 wins (3 > 2).
+    const fixture = makeFixture({
+      status: 'Finished',
+      bowling: [
+        makeBowling({ player_id: 2001, wickets: 2, runs: 30, scoreboard: 'S1' }),
+        makeBowling({ player_id: 2002, wickets: 2, runs: 25, scoreboard: 'S2' }),
+        makeBowling({ player_id: 2001, wickets: 1, runs: 8, scoreboard: 'S3' }), // super over
+      ],
+    });
+    const result = extractTopWicketTaker(fixture);
+    assert(result.resolved);
+    if (result.resolved) assertStrictEquals(result.value, '2001');
+  });
+
+  await t.step('aggregates runs for tiebreaker across entries', () => {
+    // Bowler 2001: 2 + 1 = 3 wickets, 20 + 5 = 25 runs
+    // Bowler 2002: 3 wickets in one entry, 30 runs
+    // Same total wickets (3), 2001 has fewer total runs (25 < 30) → wins
+    const fixture = makeFixture({
+      status: 'Finished',
+      bowling: [
+        makeBowling({ player_id: 2001, wickets: 2, runs: 20, scoreboard: 'S1' }),
+        makeBowling({ player_id: 2001, wickets: 1, runs: 5, scoreboard: 'S3' }),
+        makeBowling({ player_id: 2002, wickets: 3, runs: 30, scoreboard: 'S2' }),
+      ],
+    });
+    const result = extractTopWicketTaker(fixture);
+    assert(result.resolved);
+    if (result.resolved) assertStrictEquals(result.value, '2001');
   });
 });
 

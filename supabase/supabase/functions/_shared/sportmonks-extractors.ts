@@ -192,6 +192,8 @@ export function extractMatchWinner(fixture: SmFixture): ExtractResult {
 /**
  * Scenario 3: top_scorer
  * Returns the Sportmonks player API ID of the top run scorer.
+ * Aggregates score and balls per player across all batting entries (handles
+ * super over edge case where a player bats in both main innings and SO).
  * Tiebreaker: fewer balls faced.
  */
 export function extractTopScorer(fixture: SmFixture): ExtractResult {
@@ -204,30 +206,45 @@ export function extractTopScorer(fixture: SmFixture): ExtractResult {
     return { resolved: false, reason: 'Match not finished yet' };
   }
 
-  let topPlayer: SmBatting | null = null;
+  // Aggregate score and balls per player across both innings
+  const playerStats = new Map<number, { score: number; balls: number }>();
   for (const b of fixture.batting) {
-    if (!topPlayer) {
-      topPlayer = b;
-      continue;
-    }
-    if (
-      b.score > topPlayer.score ||
-      (b.score === topPlayer.score && b.ball < topPlayer.ball)
-    ) {
-      topPlayer = b;
+    const existing = playerStats.get(b.player_id);
+    if (existing) {
+      existing.score += b.score;
+      existing.balls += b.ball;
+    } else {
+      playerStats.set(b.player_id, { score: b.score, balls: b.ball });
     }
   }
 
-  if (!topPlayer) {
+  let topPlayerId: number | null = null;
+  let topScore = -1;
+  let topBalls = Infinity;
+
+  for (const [playerId, stats] of playerStats) {
+    if (
+      stats.score > topScore ||
+      (stats.score === topScore && stats.balls < topBalls)
+    ) {
+      topPlayerId = playerId;
+      topScore = stats.score;
+      topBalls = stats.balls;
+    }
+  }
+
+  if (topPlayerId == null) {
     return { resolved: false, reason: 'No batting entries found' };
   }
 
-  return { resolved: true, value: String(topPlayer.player_id) };
+  return { resolved: true, value: String(topPlayerId) };
 }
 
 /**
  * Scenario 4: top_wicket_taker
  * Returns the Sportmonks player API ID of the top wicket-taker.
+ * Aggregates wickets and runs per player across all bowling entries (handles
+ * super over edge case where a bowler bowls in both main match and SO).
  * Tiebreaker: fewer runs conceded.
  */
 export function extractTopWicketTaker(fixture: SmFixture): ExtractResult {
@@ -239,25 +256,38 @@ export function extractTopWicketTaker(fixture: SmFixture): ExtractResult {
     return { resolved: false, reason: 'Match not finished yet' };
   }
 
-  let topBowler: SmBowling | null = null;
+  // Aggregate wickets and runs per player across both innings
+  const bowlerStats = new Map<number, { wickets: number; runs: number }>();
   for (const b of fixture.bowling) {
-    if (!topBowler) {
-      topBowler = b;
-      continue;
-    }
-    if (
-      b.wickets > topBowler.wickets ||
-      (b.wickets === topBowler.wickets && b.runs < topBowler.runs)
-    ) {
-      topBowler = b;
+    const existing = bowlerStats.get(b.player_id);
+    if (existing) {
+      existing.wickets += b.wickets;
+      existing.runs += b.runs;
+    } else {
+      bowlerStats.set(b.player_id, { wickets: b.wickets, runs: b.runs });
     }
   }
 
-  if (!topBowler) {
+  let topBowlerId: number | null = null;
+  let topWickets = -1;
+  let topRuns = Infinity;
+
+  for (const [playerId, stats] of bowlerStats) {
+    if (
+      stats.wickets > topWickets ||
+      (stats.wickets === topWickets && stats.runs < topRuns)
+    ) {
+      topBowlerId = playerId;
+      topWickets = stats.wickets;
+      topRuns = stats.runs;
+    }
+  }
+
+  if (topBowlerId == null) {
     return { resolved: false, reason: 'No bowling entries found' };
   }
 
-  return { resolved: true, value: String(topBowler.player_id) };
+  return { resolved: true, value: String(topBowlerId) };
 }
 
 /**
