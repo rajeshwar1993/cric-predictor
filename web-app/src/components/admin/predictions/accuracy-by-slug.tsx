@@ -8,15 +8,15 @@ interface AccuracyBySlugTableProps {
 export function AccuracyBySlugTable({ slugs }: AccuracyBySlugTableProps) {
   if (slugs.length === 0) {
     return (
-      <div className="rounded-lg border border-[#333333] bg-[#1a1a1a] p-6">
+      <div className="rounded-lg border border-wire bg-dark-concrete p-6">
         <p className="text-sm text-text-muted">No accuracy data available.</p>
       </div>
     )
   }
 
   return (
-    <div className="rounded-lg border border-[#333333] bg-[#1a1a1a]">
-      <div className="border-b border-[#333333] px-4 py-3">
+    <div className="rounded-lg border border-wire bg-dark-concrete">
+      <div className="border-b border-wire px-4 py-3">
         <h3 className="text-sm font-semibold text-text-primary">
           Accuracy by Scenario Slug
         </h3>
@@ -24,7 +24,7 @@ export function AccuracyBySlugTable({ slugs }: AccuracyBySlugTableProps) {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[#333333] text-left text-xs uppercase tracking-wider text-text-muted">
+            <tr className="border-b border-wire text-left text-xs uppercase tracking-wider text-text-muted">
               <th className="px-4 py-3">Slug</th>
               <th className="px-4 py-3 text-right">Total</th>
               <th className="px-4 py-3 text-right">Correct</th>
@@ -36,7 +36,7 @@ export function AccuracyBySlugTable({ slugs }: AccuracyBySlugTableProps) {
             {slugs.map((slug) => (
               <tr
                 key={slug.slug}
-                className="border-b border-[#242424] last:border-b-0"
+                className="border-b border-mid-concrete last:border-b-0"
               >
                 <td className="px-4 py-3 font-mono text-text-primary">
                   {slug.slug}
@@ -62,7 +62,7 @@ export function AccuracyBySlugTable({ slugs }: AccuracyBySlugTableProps) {
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  <div className="h-2 w-24 overflow-hidden rounded-full bg-[#333333]">
+                  <div className="h-2 w-24 overflow-hidden rounded-full bg-wire">
                     <div
                       className="h-full rounded-full bg-bragg-lime"
                       style={{ width: `${slug.accuracyRate}%` }}

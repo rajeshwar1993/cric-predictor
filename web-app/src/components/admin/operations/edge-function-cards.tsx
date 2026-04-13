@@ -8,7 +8,7 @@ interface EdgeFunctionCardsProps {
 const statusStyles: Record<EdgeFunctionHealth['status'], { bg: string; text: string; dot: string }> = {
   healthy: { bg: 'border-green-400/20', text: 'text-green-400', dot: 'bg-green-400' },
   stale: { bg: 'border-yellow-400/20', text: 'text-yellow-400', dot: 'bg-yellow-400' },
-  unknown: { bg: 'border-[#333333]', text: 'text-text-muted', dot: 'bg-text-muted' },
+  unknown: { bg: 'border-wire', text: 'text-text-muted', dot: 'bg-text-muted' },
 }
 
 export function EdgeFunctionCards({ functions }: EdgeFunctionCardsProps) {
@@ -20,7 +20,7 @@ export function EdgeFunctionCards({ functions }: EdgeFunctionCardsProps) {
           <div
             key={fn.name}
             className={cn(
-              'rounded-lg border bg-[#1a1a1a] p-4',
+              'rounded-lg border bg-dark-concrete p-4',
               style.bg,
             )}
           >

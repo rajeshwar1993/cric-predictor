@@ -21,7 +21,7 @@ export default async function FixturesPage() {
           <Calendar size={24} className="text-bragg-lime" />
           <h1 className="text-h2 text-text-primary">Fixtures</h1>
         </div>
-        <div className="rounded-lg border border-[#333333] bg-[#111111] px-4 py-12 text-center">
+        <div className="rounded-lg border border-wire bg-concrete-black px-4 py-12 text-center">
           <p className="text-sm text-text-muted">
             No active season found. Fixture data will appear once a season is
             activated.

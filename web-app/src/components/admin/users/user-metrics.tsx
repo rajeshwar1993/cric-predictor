@@ -18,7 +18,7 @@ export function UserMetricsCards({ metrics }: UserMetricsCardsProps) {
       {cards.map((card) => (
         <div
           key={card.key}
-          className="rounded-lg border border-[#333333] bg-[#1a1a1a] p-4"
+          className="rounded-lg border border-wire bg-dark-concrete p-4"
         >
           <p className="text-xs font-medium uppercase tracking-wider text-text-muted">
             {card.label}

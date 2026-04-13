@@ -7,7 +7,7 @@ interface StandingsOverviewCardsProps {
 export function StandingsOverviewCards({ overview }: StandingsOverviewCardsProps) {
   return (
     <div className="grid grid-cols-2 gap-4">
-      <div className="rounded-lg border border-[#333333] bg-[#1a1a1a] p-4">
+      <div className="rounded-lg border border-wire bg-dark-concrete p-4">
         <p className="text-xs font-medium uppercase tracking-wider text-text-muted">
           Season Standings Rows
         </p>
@@ -15,7 +15,7 @@ export function StandingsOverviewCards({ overview }: StandingsOverviewCardsProps
           {overview.seasonStandingsRows.toLocaleString()}
         </p>
       </div>
-      <div className="rounded-lg border border-[#333333] bg-[#1a1a1a] p-4">
+      <div className="rounded-lg border border-wire bg-dark-concrete p-4">
         <p className="text-xs font-medium uppercase tracking-wider text-text-muted">
           Fixture Standings Rows
         </p>

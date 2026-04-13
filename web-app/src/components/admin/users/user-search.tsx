@@ -43,8 +43,8 @@ export function UserSearch({ initialResults }: UserSearchProps) {
   }
 
   return (
-    <div className="rounded-lg border border-[#333333] bg-[#1a1a1a]">
-      <div className="border-b border-[#333333] px-4 py-3">
+    <div className="rounded-lg border border-wire bg-dark-concrete">
+      <div className="border-b border-wire px-4 py-3">
         <h3 className="text-sm font-semibold text-text-primary">
           User Search
         </h3>
@@ -65,7 +65,7 @@ export function UserSearch({ initialResults }: UserSearchProps) {
               if (e.key === 'Enter') handleSearch()
             }}
             placeholder="Search by email or name..."
-            className="flex-1 rounded-md border border-[#333333] bg-[#242424] px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-bragg-lime focus:outline-none"
+            className="flex-1 rounded-md border border-wire bg-mid-concrete px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-bragg-lime focus:outline-none"
           />
           <button
             onClick={handleSearch}
@@ -80,7 +80,7 @@ export function UserSearch({ initialResults }: UserSearchProps) {
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#333333] text-left text-xs uppercase tracking-wider text-text-muted">
+                <tr className="border-b border-wire text-left text-xs uppercase tracking-wider text-text-muted">
                   <th className="px-3 py-2">Name</th>
                   <th className="px-3 py-2">Email</th>
                   <th className="px-3 py-2">Status</th>
@@ -91,7 +91,7 @@ export function UserSearch({ initialResults }: UserSearchProps) {
                 {filtered.map((user) => (
                   <tr
                     key={user.id}
-                    className="border-b border-[#242424] last:border-b-0"
+                    className="border-b border-mid-concrete last:border-b-0"
                   >
                     <td className="px-3 py-2">
                       <Link

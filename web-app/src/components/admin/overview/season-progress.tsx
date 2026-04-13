@@ -8,7 +8,7 @@ interface SeasonProgressProps {
 export function SeasonProgress({ season }: SeasonProgressProps) {
   if (!season) {
     return (
-      <div className="rounded-lg border border-[#333333] bg-[#1a1a1a] p-6">
+      <div className="rounded-lg border border-wire bg-dark-concrete p-6">
         <div className="flex items-center gap-2 text-text-muted">
           <Calendar size={18} />
           <p className="text-body-sm">No active season found</p>
@@ -32,7 +32,7 @@ export function SeasonProgress({ season }: SeasonProgressProps) {
   }
 
   return (
-    <div className="rounded-lg border border-[#333333] bg-[#1a1a1a] p-6">
+    <div className="rounded-lg border border-wire bg-dark-concrete p-6">
       <div className="flex items-start justify-between">
         <div>
           <h2 className="text-h3 text-text-primary">{season.name}</h2>
@@ -60,7 +60,7 @@ export function SeasonProgress({ season }: SeasonProgressProps) {
             {Math.round(progressPercent)}%
           </span>
         </div>
-        <div className="h-2 w-full overflow-hidden rounded-full bg-[#242424]">
+        <div className="h-2 w-full overflow-hidden rounded-full bg-mid-concrete">
           <div
             className="h-full rounded-full bg-bragg-lime transition-all duration-500"
             style={{ width: `${progressPercent}%` }}

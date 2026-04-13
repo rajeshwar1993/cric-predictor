@@ -57,7 +57,7 @@ const STATUS_ORDER: MatchStatus[] = [
 
 export function FixtureStatusChips({ counts }: FixtureStatusChipsProps) {
   return (
-    <div className="rounded-lg border border-[#333333] bg-[#1a1a1a] p-4">
+    <div className="rounded-lg border border-wire bg-dark-concrete p-4">
       <h3 className="text-caption text-text-muted mb-3">Fixture Status</h3>
       <div className="flex flex-wrap gap-2">
         {STATUS_ORDER.map((status) => {

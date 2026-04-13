@@ -11,7 +11,7 @@ export function UserDetailView({ user }: UserDetailViewProps) {
   return (
     <div className="space-y-6">
       {/* Profile Info */}
-      <div className="rounded-lg border border-[#333333] bg-[#1a1a1a] p-4">
+      <div className="rounded-lg border border-wire bg-dark-concrete p-4">
         <h3 className="mb-3 text-sm font-semibold text-text-primary">
           Profile
         </h3>
@@ -76,7 +76,7 @@ export function UserDetailView({ user }: UserDetailViewProps) {
                   'rounded-full px-2 py-0.5 text-xs font-medium',
                   user.isSystemAdmin
                     ? 'bg-bragg-lime/10 text-bragg-lime'
-                    : 'bg-[#333333] text-text-muted',
+                    : 'bg-wire text-text-muted',
                 )}
               >
                 {user.isSystemAdmin ? 'Yes' : 'No'}
@@ -87,8 +87,8 @@ export function UserDetailView({ user }: UserDetailViewProps) {
       </div>
 
       {/* Gang Memberships */}
-      <div className="rounded-lg border border-[#333333] bg-[#1a1a1a]">
-        <div className="border-b border-[#333333] px-4 py-3">
+      <div className="rounded-lg border border-wire bg-dark-concrete">
+        <div className="border-b border-wire px-4 py-3">
           <h3 className="text-sm font-semibold text-text-primary">
             Gang Memberships ({user.gangMemberships.length})
           </h3>
@@ -97,7 +97,7 @@ export function UserDetailView({ user }: UserDetailViewProps) {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#333333] text-left text-xs uppercase tracking-wider text-text-muted">
+                <tr className="border-b border-wire text-left text-xs uppercase tracking-wider text-text-muted">
                   <th className="px-4 py-2">Gang</th>
                   <th className="px-4 py-2">Role</th>
                   <th className="px-4 py-2">Status</th>
@@ -107,7 +107,7 @@ export function UserDetailView({ user }: UserDetailViewProps) {
                 {user.gangMemberships.map((m) => (
                   <tr
                     key={m.gangId}
-                    className="border-b border-[#242424] last:border-b-0"
+                    className="border-b border-mid-concrete last:border-b-0"
                   >
                     <td className="px-4 py-2">
                       <Link
@@ -134,8 +134,8 @@ export function UserDetailView({ user }: UserDetailViewProps) {
       </div>
 
       {/* Season Standings */}
-      <div className="rounded-lg border border-[#333333] bg-[#1a1a1a]">
-        <div className="border-b border-[#333333] px-4 py-3">
+      <div className="rounded-lg border border-wire bg-dark-concrete">
+        <div className="border-b border-wire px-4 py-3">
           <h3 className="text-sm font-semibold text-text-primary">
             Season Standings ({user.seasonStandings.length})
           </h3>
@@ -144,7 +144,7 @@ export function UserDetailView({ user }: UserDetailViewProps) {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#333333] text-left text-xs uppercase tracking-wider text-text-muted">
+                <tr className="border-b border-wire text-left text-xs uppercase tracking-wider text-text-muted">
                   <th className="px-4 py-2">Gang</th>
                   <th className="px-4 py-2 text-right">Points</th>
                   <th className="px-4 py-2 text-right">Rank</th>
@@ -155,7 +155,7 @@ export function UserDetailView({ user }: UserDetailViewProps) {
                 {user.seasonStandings.map((s, i) => (
                   <tr
                     key={`${s.gangId}-${s.seasonId}-${i}`}
-                    className="border-b border-[#242424] last:border-b-0"
+                    className="border-b border-mid-concrete last:border-b-0"
                   >
                     <td className="px-4 py-2 text-text-primary">
                       {s.gangName}
@@ -180,8 +180,8 @@ export function UserDetailView({ user }: UserDetailViewProps) {
       </div>
 
       {/* Recent Predictions */}
-      <div className="rounded-lg border border-[#333333] bg-[#1a1a1a]">
-        <div className="border-b border-[#333333] px-4 py-3">
+      <div className="rounded-lg border border-wire bg-dark-concrete">
+        <div className="border-b border-wire px-4 py-3">
           <h3 className="text-sm font-semibold text-text-primary">
             Recent Predictions ({user.recentPredictions.length})
           </h3>
@@ -190,7 +190,7 @@ export function UserDetailView({ user }: UserDetailViewProps) {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#333333] text-left text-xs uppercase tracking-wider text-text-muted">
+                <tr className="border-b border-wire text-left text-xs uppercase tracking-wider text-text-muted">
                   <th className="px-4 py-2">Scenario</th>
                   <th className="px-4 py-2">Value</th>
                   <th className="px-4 py-2 text-right">Points</th>
@@ -202,7 +202,7 @@ export function UserDetailView({ user }: UserDetailViewProps) {
                 {user.recentPredictions.map((p) => (
                   <tr
                     key={p.id}
-                    className="border-b border-[#242424] last:border-b-0"
+                    className="border-b border-mid-concrete last:border-b-0"
                   >
                     <td className="max-w-[200px] truncate px-4 py-2 text-text-primary">
                       {p.scenarioTitle}

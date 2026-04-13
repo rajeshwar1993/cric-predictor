@@ -166,20 +166,20 @@ export function FixtureTable({ rows }: FixtureTableProps) {
         <div className="relative">
           <button
             onClick={() => setFilterOpen(!filterOpen)}
-            className="flex items-center gap-1.5 rounded-md border border-[#333333] bg-[#1a1a1a] px-3 py-1.5 text-xs text-text-secondary transition-colors hover:bg-[#242424]"
+            className="flex items-center gap-1.5 rounded-md border border-wire bg-dark-concrete px-3 py-1.5 text-xs text-text-secondary transition-colors hover:bg-mid-concrete"
           >
             Status: {statusFilter === 'all' ? 'All' : STATUS_BADGE[statusFilter].label}
             <ChevronDown size={14} />
           </button>
           {filterOpen && (
-            <div className="absolute right-0 z-10 mt-1 w-40 rounded-md border border-[#333333] bg-[#1a1a1a] py-1 shadow-lg">
+            <div className="absolute right-0 z-10 mt-1 w-40 rounded-md border border-wire bg-dark-concrete py-1 shadow-lg">
               <button
                 onClick={() => {
                   setStatusFilter('all')
                   setFilterOpen(false)
                 }}
                 className={cn(
-                  'flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-[#242424]',
+                  'flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-mid-concrete',
                   statusFilter === 'all'
                     ? 'text-bragg-lime'
                     : 'text-text-secondary',
@@ -197,7 +197,7 @@ export function FixtureTable({ rows }: FixtureTableProps) {
                       setFilterOpen(false)
                     }}
                     className={cn(
-                      'flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-[#242424]',
+                      'flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-mid-concrete',
                       statusFilter === s
                         ? 'text-bragg-lime'
                         : 'text-text-secondary',
@@ -219,10 +219,10 @@ export function FixtureTable({ rows }: FixtureTableProps) {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-md border border-[#333333]">
+      <div className="overflow-x-auto rounded-md border border-wire">
         <table className="w-full">
           <thead>
-            <tr className="bg-[#1a1a1a]">
+            <tr className="bg-dark-concrete">
               <SortableHeader
                 label="Match #"
                 field="matchNumber"
@@ -293,7 +293,7 @@ export function FixtureTable({ rows }: FixtureTableProps) {
                 <tr
                   key={row.id}
                   onClick={() => router.push(`/admin/fixtures/${row.id}`)}
-                  className="cursor-pointer border-t border-[#333333] bg-[#111111] transition-colors hover:bg-[#1a1a1a]"
+                  className="cursor-pointer border-t border-wire bg-concrete-black transition-colors hover:bg-dark-concrete"
                 >
                   <td className="px-4 py-2.5 text-sm font-medium tabular-nums text-text-primary">
                     {row.matchNumber}
@@ -394,7 +394,7 @@ function TeamCell({ code, color }: TeamCellProps) {
   return (
     <div className="flex items-center gap-1.5">
       <span
-        className="inline-block h-3 w-3 rounded-full border border-[#333333]"
+        className="inline-block h-3 w-3 rounded-full border border-wire"
         style={{ backgroundColor: color }}
       />
       <span className="text-sm font-medium text-text-primary">{code}</span>

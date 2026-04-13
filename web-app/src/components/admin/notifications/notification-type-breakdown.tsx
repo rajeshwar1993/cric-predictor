@@ -9,7 +9,7 @@ export function NotificationTypeBreakdownTable({
 }: NotificationTypeBreakdownTableProps) {
   if (types.length === 0) {
     return (
-      <div className="rounded-lg border border-[#333333] bg-[#1a1a1a] p-6">
+      <div className="rounded-lg border border-wire bg-dark-concrete p-6">
         <p className="text-sm text-text-muted">No notification data available.</p>
       </div>
     )
@@ -18,8 +18,8 @@ export function NotificationTypeBreakdownTable({
   const maxCount = Math.max(...types.map((t) => t.count), 1)
 
   return (
-    <div className="rounded-lg border border-[#333333] bg-[#1a1a1a]">
-      <div className="border-b border-[#333333] px-4 py-3">
+    <div className="rounded-lg border border-wire bg-dark-concrete">
+      <div className="border-b border-wire px-4 py-3">
         <h3 className="text-sm font-semibold text-text-primary">
           Notifications by Type
         </h3>
@@ -27,7 +27,7 @@ export function NotificationTypeBreakdownTable({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[#333333] text-left text-xs uppercase tracking-wider text-text-muted">
+            <tr className="border-b border-wire text-left text-xs uppercase tracking-wider text-text-muted">
               <th className="px-4 py-3">Type</th>
               <th className="px-4 py-3 text-right">Count</th>
               <th className="px-4 py-3">Distribution</th>
@@ -42,7 +42,7 @@ export function NotificationTypeBreakdownTable({
               return (
                 <tr
                   key={type.type}
-                  className="border-b border-[#242424] last:border-b-0"
+                  className="border-b border-mid-concrete last:border-b-0"
                 >
                   <td className="px-4 py-3 font-mono text-text-primary">
                     {type.type}
@@ -51,7 +51,7 @@ export function NotificationTypeBreakdownTable({
                     {type.count.toLocaleString()}
                   </td>
                   <td className="px-4 py-3">
-                    <div className="h-2 w-32 overflow-hidden rounded-full bg-[#333333]">
+                    <div className="h-2 w-32 overflow-hidden rounded-full bg-wire">
                       <div
                         className="h-full rounded-full bg-bragg-lime"
                         style={{ width: `${pct}%` }}

@@ -60,7 +60,7 @@ export function FixtureDetail({ data }: FixtureDetailProps) {
       <div className="flex items-center gap-3">
         <Link
           href="/admin/fixtures"
-          className="flex h-8 w-8 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-[#1a1a1a] hover:text-text-primary"
+          className="flex h-8 w-8 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-dark-concrete hover:text-text-primary"
           aria-label="Back to fixtures"
         >
           <ArrowLeft size={18} />
@@ -322,10 +322,10 @@ function ScenariosSection({ data }: { data: FixtureDetailData }) {
                 {group.scenarios.length === 1 ? '' : 's'})
               </span>
             </h4>
-            <div className="overflow-x-auto rounded-md border border-[#333333]">
+            <div className="overflow-x-auto rounded-md border border-wire">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-[#1a1a1a]">
+                  <tr className="bg-dark-concrete">
                     <th className="px-3 py-2 text-left text-[11px] font-medium uppercase tracking-widest text-text-muted">
                       Slug
                     </th>
@@ -347,7 +347,7 @@ function ScenariosSection({ data }: { data: FixtureDetailData }) {
                   {group.scenarios.map((s) => (
                     <tr
                       key={s.id}
-                      className="border-t border-[#333333]/50"
+                      className="border-t border-wire/50"
                     >
                       <td className="px-3 py-2 font-mono text-xs text-text-secondary">
                         {s.slug}
@@ -424,10 +424,10 @@ function PredictionsSection({ data }: { data: FixtureDetailData }) {
 
   return (
     <SectionCard title="Predictions">
-      <div className="overflow-x-auto rounded-md border border-[#333333]">
+      <div className="overflow-x-auto rounded-md border border-wire">
         <table className="w-full">
           <thead>
-            <tr className="bg-[#1a1a1a]">
+            <tr className="bg-dark-concrete">
               <th className="px-4 py-2.5 text-left text-[11px] font-medium uppercase tracking-widest text-text-muted">
                 Gang
               </th>
@@ -455,7 +455,7 @@ function PredictionsSection({ data }: { data: FixtureDetailData }) {
               return (
                 <tr
                   key={g.gangId}
-                  className="border-t border-[#333333]/50"
+                  className="border-t border-wire/50"
                 >
                   <td className="px-4 py-2.5 text-sm font-medium text-text-primary">
                     {g.gangName}
@@ -471,7 +471,7 @@ function PredictionsSection({ data }: { data: FixtureDetailData }) {
                   </td>
                   <td className="px-4 py-2.5">
                     <div className="flex items-center gap-2">
-                      <div className="h-1.5 w-16 rounded-full bg-[#2e2e2e]">
+                      <div className="h-1.5 w-16 rounded-full bg-light-concrete">
                         <div
                           className="h-full rounded-full bg-bragg-lime"
                           style={{
@@ -506,7 +506,7 @@ function SectionCard({
   children: React.ReactNode
 }) {
   return (
-    <div className="rounded-lg border border-[#333333] bg-[#111111] p-4">
+    <div className="rounded-lg border border-wire bg-concrete-black p-4">
       <h3 className="mb-4 text-sm font-medium uppercase tracking-widest text-text-secondary">
         {title}
       </h3>

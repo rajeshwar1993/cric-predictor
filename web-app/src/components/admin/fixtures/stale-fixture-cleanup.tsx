@@ -66,8 +66,8 @@ function getStaleConfig(staleness: string) {
     STALENESS_CONFIG[staleness] ?? {
       label: staleness,
       color: 'text-text-secondary',
-      bgColor: 'bg-[#1a1a1a]',
-      borderColor: 'border-[#333333]',
+      bgColor: 'bg-dark-concrete',
+      borderColor: 'border-wire',
     }
   )
 }
@@ -210,9 +210,9 @@ export function StaleFixtureCleanup() {
   }
 
   return (
-    <div className="rounded-lg border border-[#333333] bg-[#111111]">
+    <div className="rounded-lg border border-wire bg-concrete-black">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-[#333333] px-4 py-3">
+      <div className="flex items-center justify-between border-b border-wire px-4 py-3">
         <div className="flex items-center gap-2">
           <Wrench size={18} className="text-bragg-lime" />
           <h2 className="text-sm font-semibold text-text-primary">
@@ -243,7 +243,7 @@ export function StaleFixtureCleanup() {
 
       {/* Scan summary */}
       {scanSummary && (
-        <div className="border-b border-[#333333] px-4 py-2">
+        <div className="border-b border-wire px-4 py-2">
           <p className="text-xs text-text-muted">
             Scanned {scanSummary.totalScanned} fixture(s) in{' '}
             {(scanSummary.durationMs / 1000).toFixed(1)}s
@@ -272,7 +272,7 @@ export function StaleFixtureCleanup() {
       )}
 
       {fixtures !== null && fixtures.length > 0 && (
-        <div className="divide-y divide-[#333333]">
+        <div className="divide-y divide-wire">
           {fixtures.map((fixture) => {
             const config = getStaleConfig(fixture.staleness)
             const isFixed = fixResults[fixture.fixtureId] != null
@@ -368,7 +368,7 @@ export function StaleFixtureCleanup() {
 
                 {/* Expanded fix results */}
                 {isExpanded && fixResult && (
-                  <div className="mt-3 rounded-md border border-[#333333] bg-[#0a0a0a] p-3">
+                  <div className="mt-3 rounded-md border border-wire bg-concrete-black p-3">
                     <div className="mb-2 flex items-center gap-3 text-xs text-text-secondary">
                       <span>
                         Resolved: {fixResult.summary.scenariosResolved}

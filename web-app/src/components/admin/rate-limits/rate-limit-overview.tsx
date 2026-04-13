@@ -10,7 +10,7 @@ export function RateLimitOverviewCards({
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
-        <div className="rounded-lg border border-[#333333] bg-[#1a1a1a] p-4">
+        <div className="rounded-lg border border-wire bg-dark-concrete p-4">
           <p className="text-xs font-medium uppercase tracking-wider text-text-muted">
             Total Entries
           </p>
@@ -18,7 +18,7 @@ export function RateLimitOverviewCards({
             {overview.totalEntries.toLocaleString()}
           </p>
         </div>
-        <div className="rounded-lg border border-[#333333] bg-[#1a1a1a] p-4">
+        <div className="rounded-lg border border-wire bg-dark-concrete p-4">
           <p className="text-xs font-medium uppercase tracking-wider text-text-muted">
             Active (Last Hour)
           </p>
@@ -27,7 +27,7 @@ export function RateLimitOverviewCards({
           </p>
         </div>
       </div>
-      <div className="rounded-md border border-[#242424] bg-[#111111] px-4 py-3">
+      <div className="rounded-md border border-mid-concrete bg-concrete-black px-4 py-3">
         <p className="text-xs text-text-muted">
           Rate limiting uses a database-backed sliding window approach. Each
           entry tracks a user action within a time window. Active entries are

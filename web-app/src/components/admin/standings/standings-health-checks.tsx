@@ -35,8 +35,8 @@ export function StandingsHealthChecks({
   }
 
   return (
-    <div className="rounded-lg border border-[#333333] bg-[#1a1a1a]">
-      <div className="flex items-center justify-between border-b border-[#333333] px-4 py-3">
+    <div className="rounded-lg border border-wire bg-dark-concrete">
+      <div className="flex items-center justify-between border-b border-wire px-4 py-3">
         <h3 className="text-sm font-semibold text-text-primary">
           Health Checks
         </h3>
@@ -53,7 +53,7 @@ export function StandingsHealthChecks({
           checks.map((check) => (
             <div
               key={check.name}
-              className="flex items-center justify-between rounded-md border border-[#242424] bg-[#111111] px-4 py-3"
+              className="flex items-center justify-between rounded-md border border-mid-concrete bg-concrete-black px-4 py-3"
             >
               <div>
                 <p className="text-sm font-medium text-text-primary">

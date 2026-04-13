@@ -34,7 +34,7 @@ export function IntegrityDashboard({ initialChecks }: IntegrityDashboardProps) {
   return (
     <div className="space-y-4">
       {/* Summary + action */}
-      <div className="flex items-center justify-between rounded-lg border border-[#333333] bg-[#1a1a1a] px-4 py-3">
+      <div className="flex items-center justify-between rounded-lg border border-wire bg-dark-concrete px-4 py-3">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5">
             <div className="h-2.5 w-2.5 rounded-full bg-green-400" />
@@ -71,7 +71,7 @@ export function IntegrityDashboard({ initialChecks }: IntegrityDashboardProps) {
             <CheckResultCard key={check.name} check={check} />
           ))
         ) : (
-          <div className="rounded-lg border border-[#333333] bg-[#1a1a1a] p-6">
+          <div className="rounded-lg border border-wire bg-dark-concrete p-6">
             <p className="text-sm text-text-muted">
               Click &quot;Run All Checks&quot; to validate data integrity.
             </p>

@@ -13,8 +13,8 @@ export function MetricCard({ label, value, icon: Icon, alert = false, detail }: 
   return (
     <div
       className={cn(
-        'rounded-lg border bg-[#1a1a1a] p-4',
-        alert ? 'border-red-500/50' : 'border-[#333333]',
+        'rounded-lg border bg-dark-concrete p-4',
+        alert ? 'border-red-500/50' : 'border-wire',
       )}
     >
       <div className="flex items-start justify-between">
@@ -35,7 +35,7 @@ export function MetricCard({ label, value, icon: Icon, alert = false, detail }: 
         <div
           className={cn(
             'flex h-9 w-9 shrink-0 items-center justify-center rounded-md',
-            alert ? 'bg-red-500/10 text-red-400' : 'bg-[#242424] text-text-muted',
+            alert ? 'bg-red-500/10 text-red-400' : 'bg-mid-concrete text-text-muted',
           )}
         >
           <Icon size={18} />

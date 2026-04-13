@@ -32,7 +32,7 @@ export default async function ModerationPage() {
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <div className="rounded-lg border border-[#333333] bg-[#1a1a1a] p-4">
+        <div className="rounded-lg border border-wire bg-dark-concrete p-4">
           <p className="text-xs font-medium uppercase tracking-wider text-text-muted">
             Blocked Members
           </p>
@@ -40,7 +40,7 @@ export default async function ModerationPage() {
             {counts.blockedMembers}
           </p>
         </div>
-        <div className="rounded-lg border border-[#333333] bg-[#1a1a1a] p-4">
+        <div className="rounded-lg border border-wire bg-dark-concrete p-4">
           <p className="text-xs font-medium uppercase tracking-wider text-text-muted">
             Deleted Accounts
           </p>
@@ -48,7 +48,7 @@ export default async function ModerationPage() {
             {counts.deletedAccounts}
           </p>
         </div>
-        <div className="rounded-lg border border-[#333333] bg-[#1a1a1a] p-4">
+        <div className="rounded-lg border border-wire bg-dark-concrete p-4">
           <p className="text-xs font-medium uppercase tracking-wider text-text-muted">
             Deleted Gangs
           </p>
@@ -56,7 +56,7 @@ export default async function ModerationPage() {
             {counts.deletedGangs}
           </p>
         </div>
-        <div className="rounded-lg border border-[#333333] bg-[#1a1a1a] p-4">
+        <div className="rounded-lg border border-wire bg-dark-concrete p-4">
           <p className="text-xs font-medium uppercase tracking-wider text-text-muted">
             Pending Requests
           </p>
