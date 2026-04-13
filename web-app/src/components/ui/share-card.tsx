@@ -34,7 +34,7 @@ interface ShareCardProps extends React.ComponentProps<'div'> {
 async function exportShareCard(element: HTMLElement): Promise<Blob> {
   const { default: html2canvas } = await import('html2canvas')
   const canvas = await html2canvas(element, {
-    backgroundColor: '#111111',
+    backgroundColor: '#111111', // concrete-black — hardcoded because html2canvas cannot resolve CSS variables
     scale: 2, // 2x for retina quality
   })
   return new Promise<Blob>((resolve, reject) => {
