@@ -3,6 +3,7 @@ import { ArrowLeft, Check, X } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import type { FixtureDetailData, MatchStatus } from '@/lib/dal/admin/fixtures'
+import { FixtureHealthCheck } from '@/components/admin/fixtures/fixture-health-check'
 
 // ---------------------------------------------------------------------------
 // Status badge config (same as table)
@@ -92,6 +93,9 @@ export function FixtureDetail({ data }: FixtureDetailProps) {
           {statusConfig.label}
         </span>
       </div>
+
+      {/* Health Check */}
+      <FixtureHealthCheck fixtureId={data.id} />
 
       {/* Metadata */}
       <MetadataSection data={data} />
