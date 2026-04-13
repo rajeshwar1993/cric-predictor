@@ -20,7 +20,7 @@ export interface ScenarioGroupProps {
 /**
  * ScenarioGroup — groups scenario cards under a resolution phase heading.
  *
- * Renders a semantic heading (h3) with the phase label and wraps
+ * Renders a phase heading with a lime left accent bar and wraps
  * the child scenario cards in a vertical stack.
  *
  * Phase groups are rendered in canonical order by the parent page.
@@ -30,12 +30,15 @@ export interface ScenarioGroupProps {
 export function ScenarioGroup({ phase, label, children }: ScenarioGroupProps) {
   return (
     <section aria-labelledby={`phase-${phase}`} className="flex flex-col gap-3">
-      <h3
-        id={`phase-${phase}`}
-        className="font-display text-h2 font-bold uppercase tracking-[-0.02em] text-text-primary"
-      >
-        {label}
-      </h3>
+      <div className="flex items-center gap-3">
+        <div className="h-7 w-1 rounded-full bg-bragg-lime" aria-hidden="true" />
+        <h3
+          id={`phase-${phase}`}
+          className="font-display text-h2 font-bold uppercase tracking-[-0.02em] text-text-primary"
+        >
+          {label}
+        </h3>
+      </div>
       <div className="flex flex-col gap-3">{children}</div>
     </section>
   )

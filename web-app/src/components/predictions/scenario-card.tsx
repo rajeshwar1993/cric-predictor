@@ -31,10 +31,8 @@ export interface ScenarioCardProps {
  * ScenarioCard — displays a single prediction scenario within the predict form.
  *
  * Shows the scenario title, point value badge, and a slot for the input picker.
- * When the user has selected an answer, a lime check indicator appears.
- *
- * This component is a server component (no interactivity). The picker children
- * from PRED-002 will be client components.
+ * When the user has selected an answer, a lime left accent and wash background
+ * appear as visual confirmation.
  *
  * @see docs/stories/PRED-001-predict-page.md
  */
@@ -48,8 +46,10 @@ export function ScenarioCard({
   return (
     <div
       className={cn(
-        'rounded-lg border bg-dark-concrete p-4 transition-colors duration-[var(--duration-state)] ease-out',
-        isPicked ? 'border-bragg-lime/30' : 'border-wire',
+        'rounded-lg border bg-dark-concrete p-4 transition-all duration-[var(--duration-state)] ease-out',
+        isPicked
+          ? 'border-bragg-lime/30 border-l-4 border-l-bragg-lime bg-lime-wash'
+          : 'border-wire',
       )}
     >
       {/* Header: Title + Points badge */}
@@ -62,7 +62,7 @@ export function ScenarioCard({
 
         {/* Points badge — stat-block style */}
         <span
-          className="inline-flex shrink-0 items-center gap-1 bg-bragg-lime px-2.5 py-1 font-display text-caption font-bold uppercase tracking-[0.1em] text-text-on-primary"
+          className="inline-flex shrink-0 items-center gap-1 rounded-sm bg-bragg-lime px-2.5 py-1 font-display text-caption font-bold uppercase tracking-[0.1em] text-text-on-primary"
           aria-label={`${points} points`}
         >
           {points} PTS
@@ -74,7 +74,7 @@ export function ScenarioCard({
 
       {/* Picked indicator */}
       {isPicked && (
-        <div className="mt-3 flex items-center gap-1.5 text-bragg-lime">
+        <div className="mt-3 flex items-center gap-1.5 text-bragg-lime motion-safe:animate-pop-in">
           <Check className="size-3.5" aria-hidden="true" />
           <span className="text-caption font-medium uppercase tracking-[0.1em]">
             Picked

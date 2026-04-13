@@ -138,7 +138,7 @@ const MOCK_YES_NO_SCENARIO_ID = '33333333-3333-4333-a333-333333333334'
 const MOCK_RANGE_SCENARIO_ID = '33333333-3333-4333-a333-333333333335'
 
 const MOCK_SCENARIOS = [
-  { id: MOCK_SCENARIO_ID, input_type: 'team_select', options: null },
+  { id: MOCK_SCENARIO_ID, input_type: 'team_pick', options: null },
   {
     id: MOCK_YES_NO_SCENARIO_ID,
     input_type: 'yes_no',
@@ -146,7 +146,7 @@ const MOCK_SCENARIOS = [
   },
   {
     id: MOCK_RANGE_SCENARIO_ID,
-    input_type: 'number_range',
+    input_type: 'range',
     options: ['<30', '30-39', '40-49', '50+'],
   },
 ]
@@ -401,7 +401,7 @@ describe('submitPredictions server action', () => {
 
   // ---- Pick value validation ----
 
-  test('returns error for invalid team_select value', async () => {
+  test('returns error for invalid team_pick value', async () => {
     setupFromMock({
       v2_gang_members: createQueryChain({
         data: { status: 'approved' },
@@ -457,7 +457,7 @@ describe('submitPredictions server action', () => {
     expect(result).toEqual({ success: false, error: 'Must be Yes or No' })
   })
 
-  test('returns error for invalid number_range value', async () => {
+  test('returns error for invalid range value', async () => {
     const rangeScenarioId = MOCK_RANGE_SCENARIO_ID
 
     setupFromMock({
@@ -486,11 +486,11 @@ describe('submitPredictions server action', () => {
     expect(result).toEqual({ success: false, error: 'Invalid range selection' })
   })
 
-  test('returns error for invalid player_select value', async () => {
+  test('returns error for invalid player_pick value', async () => {
     const playerSelectScenarioId = '33333333-3333-4333-a333-333333333336'
     const scenariosWithPlayer = [
       ...MOCK_SCENARIOS,
-      { id: playerSelectScenarioId, input_type: 'player_select', options: null },
+      { id: playerSelectScenarioId, input_type: 'player_pick', options: null },
     ]
 
     setupFromMock({

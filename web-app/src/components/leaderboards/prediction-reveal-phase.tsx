@@ -52,14 +52,13 @@ export function resolveDisplayValue(
   if (value === null || value === '') return null
 
   switch (scenario.inputType) {
-    case 'team_select':
+    case 'team_pick':
       return teamsById[value]?.code ?? value
-    case 'player_select':
+    case 'player_pick':
       return playersById[value]?.name ?? value
     case 'yes_no':
       return value.toLowerCase() === 'yes' ? 'YES' : 'NO'
-    case 'number_range':
-    case 'over_range':
+    case 'range':
       return value
   }
 }

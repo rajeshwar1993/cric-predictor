@@ -28,8 +28,8 @@ export interface TeamPickerProps {
  * TeamPicker — two team buttons side by side for team selection scenarios.
  *
  * Each button shows the team code with team color and the team name below.
- * Selected team has a lime border/highlight. Selection is sticky (tapping the
- * same team again does NOT deselect).
+ * Selected team has a lime border/highlight with pop animation. Selection is
+ * sticky (tapping the same team again does NOT deselect).
  *
  * @see docs/stories/PRED-002-scenario-pickers.md
  */
@@ -56,8 +56,8 @@ export function TeamPicker({
               'flex flex-col items-center rounded-md border-2 p-4 transition-all duration-[var(--duration-state)] ease-out',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bragg-lime focus-visible:ring-offset-2 focus-visible:ring-offset-concrete-black',
               isSelected
-                ? 'border-bragg-lime bg-lime-wash'
-                : 'border-wire bg-dark-concrete hover:border-light-concrete',
+                ? 'border-bragg-lime bg-lime-wash shadow-[4px_4px_0_var(--color-lime-shade)] motion-safe:animate-pop-in'
+                : 'border-wire bg-mid-concrete hover:border-light-concrete hover:bg-light-concrete',
               disabled && 'cursor-not-allowed opacity-50',
             )}
             onClick={() => {
@@ -67,7 +67,7 @@ export function TeamPicker({
             }}
           >
             <span
-              className="font-display text-lg font-bold"
+              className="font-display text-xl font-bold"
               style={{ color: team.color }}
             >
               {team.code}

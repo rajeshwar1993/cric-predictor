@@ -48,7 +48,7 @@ const TOSS_GROUP: ScenarioGroupData = {
       id: 's-toss-winner',
       title: 'Who will win the toss?',
 
-      inputType: 'team_select',
+      inputType: 'team_pick',
       options: null,
       points: 10,
     },
@@ -63,7 +63,7 @@ const POWERPLAY_GROUP: ScenarioGroupData = {
       id: 's-mi-pp-runs',
       title: 'MI powerplay runs?',
 
-      inputType: 'number_range',
+      inputType: 'range',
       options: ['<30', '30-39', '40-49', '50-59', '60+'],
       points: 10,
     },
@@ -71,7 +71,7 @@ const POWERPLAY_GROUP: ScenarioGroupData = {
       id: 's-csk-pp-runs',
       title: 'CSK powerplay runs?',
 
-      inputType: 'number_range',
+      inputType: 'range',
       options: ['<30', '30-39', '40-49', '50-59', '60+'],
       points: 10,
     },
@@ -94,7 +94,7 @@ const MID_MATCH_GROUP: ScenarioGroupData = {
       id: 's-first-wicket-over',
       title: 'First wicket in which over?',
 
-      inputType: 'over_range',
+      inputType: 'range',
       options: ['1-3', '4-6', '7-10', '11-15', '16-20'],
       points: 15,
     },
@@ -109,7 +109,7 @@ const END_GROUP: ScenarioGroupData = {
       id: 's-match-winner',
       title: 'Who will win the match?',
 
-      inputType: 'team_select',
+      inputType: 'team_pick',
       options: null,
       points: 25,
     },
@@ -117,7 +117,7 @@ const END_GROUP: ScenarioGroupData = {
       id: 's-total-runs',
       title: 'Total match runs?',
 
-      inputType: 'number_range',
+      inputType: 'range',
       options: ['<280', '280-319', '320-359', '360-399', '400+'],
       points: 15,
     },
@@ -132,7 +132,7 @@ const POST_MATCH_GROUP: ScenarioGroupData = {
       id: 's-potm',
       title: 'Player of the match?',
 
-      inputType: 'player_select',
+      inputType: 'player_pick',
       options: null,
       points: 20,
     },

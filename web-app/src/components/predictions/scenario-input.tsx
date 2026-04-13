@@ -15,13 +15,13 @@ import { YesNoPicker } from '@/components/predictions/yes-no-picker'
 export interface ScenarioInputProps {
   /** The scenario input type that determines which picker to render */
   inputType: ScenarioInputType
-  /** Range bracket options — required for 'number_range' and 'over_range' input types */
+  /** Range bracket options — required for 'range' input type */
   options?: string[]
-  /** Home team info — required for 'team_select' and 'player_select' */
+  /** Home team info — required for 'team_pick' and 'player_pick' */
   homeTeam: FixtureTeam
-  /** Away team info — required for 'team_select' and 'player_select' */
+  /** Away team info — required for 'team_pick' and 'player_pick' */
   awayTeam: FixtureTeam
-  /** Players grouped by team — required for 'player_select' */
+  /** Players grouped by team — required for 'player_pick' */
   players: { home: MatchPlayer[]; away: MatchPlayer[] }
   /** Currently selected value */
   value: string
@@ -55,7 +55,7 @@ export function ScenarioInput({
   disabled,
 }: ScenarioInputProps) {
   switch (inputType) {
-    case 'team_select':
+    case 'team_pick':
       return (
         <TeamPicker
           homeTeam={homeTeam}
@@ -66,7 +66,7 @@ export function ScenarioInput({
         />
       )
 
-    case 'player_select':
+    case 'player_pick':
       return (
         <PlayerPicker
           players={players}
@@ -78,8 +78,7 @@ export function ScenarioInput({
         />
       )
 
-    case 'number_range':
-    case 'over_range':
+    case 'range':
       return (
         <RangePicker
           options={options ?? []}
