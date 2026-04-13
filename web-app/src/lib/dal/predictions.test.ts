@@ -118,39 +118,36 @@ const SCENARIO_TOSS = {
   id: 'scenario-1',
   fixture_id: 'fixture-1',
   title: 'Who will win the toss?',
-  description: null,
+  slug: 'toss-winner',
   input_type: 'team_select' as const,
   options: null,
   resolution_phase: 'toss' as const,
   correct_answer: null,
-  points_weight: 10,
-  sort_order: 1,
+  points: 10,
 }
 
 const SCENARIO_FIRST_WICKET = {
   id: 'scenario-2',
   fixture_id: 'fixture-1',
   title: 'First wicket in which over?',
-  description: 'Predict the over when the first wicket falls',
+  slug: 'first-wicket-over',
   input_type: 'over_range' as const,
   options: ['1-2', '3-4', '5-6', '7+'],
   resolution_phase: 'first_wicket' as const,
   correct_answer: null,
-  points_weight: 15,
-  sort_order: 2,
+  points: 15,
 }
 
 const SCENARIO_MATCH_END = {
   id: 'scenario-3',
   fixture_id: 'fixture-1',
   title: 'Who will win the match?',
-  description: null,
+  slug: 'match-winner',
   input_type: 'team_select' as const,
   options: null,
   resolution_phase: 'end' as const,
   correct_answer: null,
-  points_weight: 20,
-  sort_order: 10,
+  points: 20,
 }
 
 // ---------------------------------------------------------------------------
@@ -188,25 +185,21 @@ describe('getFixtureScenarios', () => {
       id: 'scenario-1',
       fixtureId: 'fixture-1',
       title: 'Who will win the toss?',
-      description: null,
       inputType: 'team_select',
       options: null,
       resolutionPhase: 'toss',
       correctAnswer: null,
-      pointsWeight: 10,
-      sortOrder: 1,
+      points: 10,
     })
     expect(result[1]).toEqual({
       id: 'scenario-2',
       fixtureId: 'fixture-1',
       title: 'First wicket in which over?',
-      description: 'Predict the over when the first wicket falls',
       inputType: 'over_range',
       options: ['1-2', '3-4', '5-6', '7+'],
       resolutionPhase: 'first_wicket',
       correctAnswer: null,
-      pointsWeight: 15,
-      sortOrder: 2,
+      points: 15,
     })
   })
 
@@ -491,25 +484,21 @@ function mapped(raw: {
   id: string
   fixture_id: string
   title: string
-  description: string | null
   input_type: string
   options: string[] | null
   resolution_phase: string
   correct_answer: string | null
-  points_weight: number
-  sort_order: number
+  points: number
 }): FixtureScenarioRow {
   return {
     id: raw.id,
     fixtureId: raw.fixture_id,
     title: raw.title,
-    description: raw.description,
     inputType: raw.input_type as FixtureScenarioRow['inputType'],
     options: raw.options,
     resolutionPhase: raw.resolution_phase as FixtureScenarioRow['resolutionPhase'],
     correctAnswer: raw.correct_answer,
-    pointsWeight: raw.points_weight,
-    sortOrder: raw.sort_order,
+    points: raw.points,
   }
 }
 

@@ -8,10 +8,8 @@ import { cn } from '@/lib/utils'
 export interface ScenarioCardProps {
   /** Scenario title (e.g., "Who will win the toss?") */
   title: string
-  /** Optional description text below the title */
-  description?: string | null
   /** Point value for this scenario (e.g., 10, 15, 20) */
-  pointsWeight: number
+  points: number
   /** Whether the user has picked an answer for this scenario */
   isPicked: boolean
   /**
@@ -42,8 +40,7 @@ export interface ScenarioCardProps {
  */
 export function ScenarioCard({
   title,
-  description,
-  pointsWeight,
+  points,
   isPicked,
   titleAs: TitleTag = 'h4',
   children,
@@ -61,17 +58,14 @@ export function ScenarioCard({
           <TitleTag className="font-body text-h4 font-semibold text-text-primary">
             {title}
           </TitleTag>
-          {description && (
-            <p className="text-body-sm text-text-muted">{description}</p>
-          )}
         </div>
 
         {/* Points badge — stat-block style */}
         <span
           className="inline-flex shrink-0 items-center gap-1 bg-bragg-lime px-2.5 py-1 font-display text-caption font-bold uppercase tracking-[0.1em] text-text-on-primary"
-          aria-label={`${pointsWeight} points`}
+          aria-label={`${points} points`}
         >
-          {pointsWeight} PTS
+          {points} PTS
         </span>
       </div>
 

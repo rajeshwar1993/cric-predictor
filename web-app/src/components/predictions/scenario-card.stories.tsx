@@ -32,7 +32,7 @@ type Story = StoryObj<typeof meta>
 export const TeamPick: Story = {
   args: {
     title: 'Who will win the toss?',
-    pointsWeight: 10,
+    points: 10,
     isPicked: false,
   },
 }
@@ -41,8 +41,8 @@ export const TeamPick: Story = {
 export const PlayerPick: Story = {
   args: {
     title: 'Who will be the top scorer?',
-    description: 'Select the player you think will score the most runs',
-    pointsWeight: 20,
+
+    points: 20,
     isPicked: false,
   },
 }
@@ -51,8 +51,8 @@ export const PlayerPick: Story = {
 export const Range: Story = {
   args: {
     title: 'Total match runs?',
-    description: 'Predict the total runs scored in the match',
-    pointsWeight: 15,
+
+    points: 15,
     isPicked: false,
   },
 }
@@ -61,7 +61,7 @@ export const Range: Story = {
 export const YesNo: Story = {
   args: {
     title: 'Will there be a fifty scored?',
-    pointsWeight: 10,
+    points: 10,
     isPicked: false,
   },
 }
@@ -70,7 +70,7 @@ export const YesNo: Story = {
 export const Picked: Story = {
   args: {
     title: 'Who will win the toss?',
-    pointsWeight: 10,
+    points: 10,
     isPicked: true,
     children: (
       <div className="rounded-md bg-mid-concrete px-3 py-2 text-body-sm text-text-secondary">
@@ -84,8 +84,8 @@ export const Picked: Story = {
 export const NotPicked: Story = {
   args: {
     title: 'First wicket in which over?',
-    description: 'Predict the over when the first wicket falls',
-    pointsWeight: 15,
+
+    points: 15,
     isPicked: false,
   },
 }
@@ -94,8 +94,8 @@ export const NotPicked: Story = {
 export const WithPoints: Story = {
   args: {
     title: 'Who will win the match?',
-    description: 'The big one — pick the winning team',
-    pointsWeight: 25,
+
+    points: 25,
     isPicked: false,
   },
 }
@@ -104,8 +104,8 @@ export const WithPoints: Story = {
 export const WithPickerPlaceholder: Story = {
   args: {
     title: 'Total match sixes?',
-    description: 'Predict the total sixes hit in the match',
-    pointsWeight: 10,
+
+    points: 10,
     isPicked: false,
     children: (
       <div className="flex gap-2">
@@ -126,7 +126,7 @@ export const WithPickerPlaceholder: Story = {
 export const PreviouslySubmitted: Story = {
   args: {
     title: 'Will there be a super over?',
-    pointsWeight: 30,
+    points: 30,
     isPicked: true,
     children: (
       <div className="rounded-md bg-mid-concrete px-3 py-2 text-body-sm text-text-secondary">

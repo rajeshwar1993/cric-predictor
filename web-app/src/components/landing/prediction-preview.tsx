@@ -4,8 +4,7 @@ import { PageWrapper } from '@/components/layout/page-wrapper'
 interface MockScenario {
   id: string
   title: string
-  description: string
-  pointsWeight: number
+  points: number
   inputLabel: string
 }
 
@@ -13,36 +12,31 @@ const MOCK_SCENARIOS: readonly MockScenario[] = [
   {
     id: 'toss',
     title: 'Who wins the toss?',
-    description: 'Team pick',
-    pointsWeight: 5,
+    points: 5,
     inputLabel: 'CSK vs MI',
   },
   {
     id: 'match',
     title: 'Who wins the match?',
-    description: 'Team pick',
-    pointsWeight: 10,
+    points: 10,
     inputLabel: 'CSK vs MI',
   },
   {
     id: 'top-scorer',
     title: 'Top run scorer?',
-    description: 'Player pick',
-    pointsWeight: 15,
+    points: 15,
     inputLabel: 'Pick a player',
   },
   {
     id: 'csk-score',
     title: 'CSK innings score?',
-    description: 'Range',
-    pointsWeight: 10,
+    points: 10,
     inputLabel: '0-149  ·  150-174  ·  175+',
   },
   {
     id: 'fifty',
     title: 'Will anyone score 50+?',
-    description: 'Yes / No',
-    pointsWeight: 5,
+    points: 5,
     inputLabel: 'Yes  ·  No',
   },
 ] as const
@@ -88,8 +82,7 @@ export function PredictionPreview() {
             <li key={scenario.id}>
               <ScenarioCard
                 title={scenario.title}
-                description={scenario.description}
-                pointsWeight={scenario.pointsWeight}
+                points={scenario.points}
                 isPicked={false}
                 titleAs="h3"
               >

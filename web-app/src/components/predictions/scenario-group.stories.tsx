@@ -37,7 +37,7 @@ export const TossGroup: Story = {
     children: (
       <ScenarioCard
         title="Who will win the toss?"
-        pointsWeight={10}
+        points={10}
         isPicked={false}
       />
     ),
@@ -53,7 +53,7 @@ export const MatchEndGroup: Story = {
       <>
         <ScenarioCard
           title="Who will win the match?"
-          pointsWeight={25}
+          points={25}
           isPicked={true}
         >
           <div className="rounded-md bg-mid-concrete px-3 py-2 text-body-sm text-text-secondary">
@@ -62,18 +62,18 @@ export const MatchEndGroup: Story = {
         </ScenarioCard>
         <ScenarioCard
           title="Total match runs?"
-          description="Predict the combined total of both innings"
-          pointsWeight={15}
+
+          points={15}
           isPicked={false}
         />
         <ScenarioCard
           title="Total match sixes?"
-          pointsWeight={10}
+          points={10}
           isPicked={false}
         />
         <ScenarioCard
           title="Total match wickets?"
-          pointsWeight={10}
+          points={10}
           isPicked={true}
         >
           <div className="rounded-md bg-mid-concrete px-3 py-2 text-body-sm text-text-secondary">
@@ -82,7 +82,7 @@ export const MatchEndGroup: Story = {
         </ScenarioCard>
         <ScenarioCard
           title="Will there be a super over?"
-          pointsWeight={30}
+          points={30}
           isPicked={false}
         />
       </>
@@ -102,7 +102,7 @@ export const AllGroups: Story = {
       <ScenarioGroup phase="toss" label="TOSS">
         <ScenarioCard
           title="Who will win the toss?"
-          pointsWeight={10}
+          points={10}
           isPicked={true}
         >
           <div className="rounded-md bg-mid-concrete px-3 py-2 text-body-sm text-text-secondary">
@@ -114,8 +114,8 @@ export const AllGroups: Story = {
       <ScenarioGroup phase="first_wicket" label="FIRST WICKET">
         <ScenarioCard
           title="First wicket in which over?"
-          description="Predict the over when the first wicket falls"
-          pointsWeight={15}
+
+          points={15}
           isPicked={false}
         />
       </ScenarioGroup>
@@ -123,12 +123,12 @@ export const AllGroups: Story = {
       <ScenarioGroup phase="team_powerplay_end" label="POWERPLAY">
         <ScenarioCard
           title="MI powerplay runs?"
-          pointsWeight={10}
+          points={10}
           isPicked={false}
         />
         <ScenarioCard
           title="CSK powerplay runs?"
-          pointsWeight={10}
+          points={10}
           isPicked={false}
         />
       </ScenarioGroup>
@@ -136,7 +136,7 @@ export const AllGroups: Story = {
       <ScenarioGroup phase="mid_match" label="DURING MATCH">
         <ScenarioCard
           title="Will there be a fifty scored?"
-          pointsWeight={10}
+          points={10}
           isPicked={true}
         >
           <div className="rounded-md bg-mid-concrete px-3 py-2 text-body-sm text-text-secondary">
@@ -148,12 +148,12 @@ export const AllGroups: Story = {
       <ScenarioGroup phase="end" label="MATCH END">
         <ScenarioCard
           title="Who will win the match?"
-          pointsWeight={25}
+          points={25}
           isPicked={false}
         />
         <ScenarioCard
           title="Total match sixes?"
-          pointsWeight={10}
+          points={10}
           isPicked={false}
         />
       </ScenarioGroup>
@@ -161,8 +161,8 @@ export const AllGroups: Story = {
       <ScenarioGroup phase="post_match" label="POST MATCH">
         <ScenarioCard
           title="Player of the match?"
-          description="Select the player you think will be awarded POTM"
-          pointsWeight={20}
+
+          points={20}
           isPicked={false}
         />
       </ScenarioGroup>
@@ -170,7 +170,7 @@ export const AllGroups: Story = {
   ),
 }
 
-/** First wicket group — single scenario with description. */
+/** First wicket group — single scenario. */
 export const FirstWicketGroup: Story = {
   args: {
     phase: 'first_wicket',
@@ -178,8 +178,7 @@ export const FirstWicketGroup: Story = {
     children: (
       <ScenarioCard
         title="First wicket in which over?"
-        description="Predict the over when the first wicket falls"
-        pointsWeight={15}
+        points={15}
         isPicked={false}
       />
     ),
@@ -195,7 +194,7 @@ export const PowerplayGroup: Story = {
       <>
         <ScenarioCard
           title="MI powerplay runs?"
-          pointsWeight={10}
+          points={10}
           isPicked={true}
         >
           <div className="rounded-md bg-mid-concrete px-3 py-2 text-body-sm text-text-secondary">
@@ -204,7 +203,7 @@ export const PowerplayGroup: Story = {
         </ScenarioCard>
         <ScenarioCard
           title="CSK powerplay runs?"
-          pointsWeight={10}
+          points={10}
           isPicked={false}
         />
       </>
