@@ -9,6 +9,7 @@ import {
 import { NavBar } from '@/components/layout/nav-bar'
 import { JoinPageUnauth } from '@/components/gangs/join-page-unauth'
 import { JoinPageAuth } from '@/components/gangs/join-page-auth'
+import { BraggWordmark } from '@/components/ui/bragg-wordmark'
 
 interface JoinPageProps {
   params: Promise<{ code: string }>
@@ -41,20 +42,11 @@ export async function generateMetadata({
       title,
       description,
       url: `/join/${code}`,
-      images: [
-        {
-          url: '/og-image.png',
-          width: 1200,
-          height: 630,
-          alt: title,
-        },
-      ],
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: ['/og-image.png'],
     },
   }
 }
@@ -84,7 +76,7 @@ export default async function JoinPage({ params }: JoinPageProps) {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center px-4 py-12">
         <div className="w-full max-w-[400px] text-center">
-          <h1 className="text-h1 mb-4 text-text-primary">BRAGG</h1>
+          <BraggWordmark as="h1" tone="primary" className="mb-4" />
           <div className="rounded-2xl border border-wire bg-dark-concrete p-6">
             <p className="text-body text-text-secondary">
               This invite link is invalid or the gang no longer exists.

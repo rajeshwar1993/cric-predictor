@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase/server'
 import { CURRENT_TERMS_VERSION, getMajorVersion } from '@/lib/constants'
 import { AcceptTermsForm } from '@/components/auth/accept-terms-form'
+import { BraggWordmark } from '@/components/ui/bragg-wordmark'
 
 export const metadata: Metadata = {
   title: 'Accept updated terms',
@@ -40,7 +41,7 @@ export default async function AcceptTermsPage() {
     <div className="flex min-h-dvh flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-[400px]">
         {/* Logo */}
-        <h1 className="text-h1 mb-2 text-center text-text-primary">BRAGG</h1>
+        <BraggWordmark as="h1" tone="primary" className="mb-2 text-center" />
 
         {/* Subheading */}
         <p className="text-body mb-8 text-center text-text-secondary">

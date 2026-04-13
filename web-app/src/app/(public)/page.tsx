@@ -22,21 +22,12 @@ export const metadata: Metadata = {
     description:
       'The prediction game that settles debates in your group chat.',
     url: '/',
-    images: [
-      {
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'Bragg — Predict Right. Prove It.',
-      },
-    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: LANDING_TITLE,
     description:
       'The prediction game that settles debates in your group chat.',
-    images: ['/og-image.png'],
   },
 }
 

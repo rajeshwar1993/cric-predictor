@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import Link from 'next/link'
+import Image from 'next/image'
 import { NotificationBell } from '@/components/notifications/notification-bell'
 import { UserMenu } from './user-menu'
 
@@ -25,8 +26,10 @@ function NavBarPresentation({
     >
       <Link
         href="/dashboard"
-        className="font-display text-lg font-bold uppercase tracking-tight text-text-primary"
+        className="flex items-center gap-2 font-display text-lg font-bold uppercase tracking-tight text-text-primary"
+        aria-label="Bragg — go to dashboard"
       >
+        <Image src="/logo.png" alt="" width={28} height={28} priority />
         BRAGG
       </Link>
 

@@ -6,6 +6,7 @@ import {
   STORAGE_KEY,
   type PendingInvite,
 } from '@/components/gangs/pending-invite-banner'
+import { BraggWordmark } from '@/components/ui/bragg-wordmark'
 
 interface JoinPageUnauthProps {
   gangName: string
@@ -36,7 +37,7 @@ export function JoinPageUnauth({ gangName, inviteCode }: JoinPageUnauthProps) {
     <div className="flex min-h-dvh flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-[400px]">
         {/* Logo */}
-        <h1 className="text-h1 mb-8 text-center text-text-primary">BRAGG</h1>
+        <BraggWordmark as="h1" tone="primary" className="mb-8 text-center" />
 
         {/* Invite message */}
         <p className="text-body mb-6 text-center text-text-secondary">
