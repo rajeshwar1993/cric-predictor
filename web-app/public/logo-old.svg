@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 96" role="img" aria-label="Bragg">
+  <title>Bragg</title>
+  <!-- Electric Street tokens: concrete-black #111111, bragg-lime #c8e64a -->
+  <rect width="360" height="96" rx="16" fill="#111111" />
+  <text
+    x="50%"
+    y="50%"
+    text-anchor="middle"
+    dominant-baseline="central"
+    font-family="'Space Grotesk', system-ui, sans-serif"
+    font-weight="800"
+    font-size="56"
+    letter-spacing="-2"
+    fill="#c8e64a"
+  >BRAGG</text>
+</svg>
