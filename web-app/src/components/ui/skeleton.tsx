@@ -137,6 +137,27 @@ function ScenarioCardSkeleton({ className, ...props }: React.ComponentProps<'div
   )
 }
 
+function GangCardSkeleton({ className, ...props }: React.ComponentProps<'div'>) {
+  return (
+    <div
+      data-slot="gang-card-skeleton"
+      className={cn(
+        'flex flex-col gap-6 rounded-lg border border-wire border-l-4 border-l-bragg-lime bg-dark-concrete p-6',
+        className
+      )}
+      {...props}
+    >
+      {/* Name + role badge */}
+      <div className="flex items-start justify-between gap-3">
+        <Skeleton variant="heading" className="w-32" />
+        <Skeleton variant="block" className="h-6 w-16 rounded-full" />
+      </div>
+      {/* Member count */}
+      <Skeleton variant="text" className="h-3 w-24" />
+    </div>
+  )
+}
+
 function PageSkeleton({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
@@ -170,6 +191,7 @@ export {
   MatchCardSkeleton,
   LeaderboardRowSkeleton,
   ScenarioCardSkeleton,
+  GangCardSkeleton,
   PageSkeleton,
 }
 export type { SkeletonProps }
