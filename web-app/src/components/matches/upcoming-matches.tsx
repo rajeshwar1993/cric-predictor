@@ -78,14 +78,19 @@ export async function UpcomingMatches({
     <section className="mt-8" aria-label="Upcoming matches">
       <h2 className="text-caption text-text-muted mb-4">UPCOMING MATCHES</h2>
       <div className="flex flex-col gap-4">
-        {fixtures.map((fixture) => (
-          <MatchCard
+        {fixtures.map((fixture, i) => (
+          <div
             key={fixture.id}
-            fixture={fixture}
-            gangId={gangId}
-            hasPredicted={predictedFixtureIds.has(fixture.id)}
-            totalMembers={totalMembers}
-          />
+            className="motion-safe:stagger-item"
+            style={{ '--stagger-index': i } as React.CSSProperties}
+          >
+            <MatchCard
+              fixture={fixture}
+              gangId={gangId}
+              hasPredicted={predictedFixtureIds.has(fixture.id)}
+              totalMembers={totalMembers}
+            />
+          </div>
         ))}
       </div>
     </section>

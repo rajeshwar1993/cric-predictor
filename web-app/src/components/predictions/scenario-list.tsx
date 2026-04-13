@@ -17,10 +17,9 @@ import { ScenarioInput } from '@/components/predictions/scenario-input'
 export interface ScenarioData {
   id: string
   title: string
-  description: string | null
   inputType: ScenarioInputType
   options: Json | null
-  pointsWeight: number
+  points: number
 }
 
 /** A group of scenarios with phase metadata. */
@@ -119,8 +118,7 @@ export function ScenarioList({
               <ScenarioCard
                 key={scenario.id}
                 title={scenario.title}
-                description={scenario.description}
-                pointsWeight={scenario.pointsWeight}
+                points={scenario.points}
                 isPicked={value !== ''}
               >
                 <ScenarioInput

@@ -47,14 +47,19 @@ export function GangsGrid({ gangs }: GangsGridProps) {
         'grid grid-cols-1 gap-4',
         gangs.length > 1 && 'sm:grid-cols-2'
       )}>
-        {gangs.map((gang) => (
-          <GangCard
+        {gangs.map((gang, i) => (
+          <div
             key={gang.id}
-            id={gang.id}
-            name={gang.name}
-            role={gang.role}
-            memberCount={gang.memberCount}
-          />
+            className="motion-safe:stagger-item"
+            style={{ '--stagger-index': i } as React.CSSProperties}
+          >
+            <GangCard
+              id={gang.id}
+              name={gang.name}
+              role={gang.role}
+              memberCount={gang.memberCount}
+            />
+          </div>
         ))}
       </div>
 

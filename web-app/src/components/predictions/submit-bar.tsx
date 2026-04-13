@@ -1,8 +1,14 @@
 'use client'
 
-import { Loader2 } from 'lucide-react'
+import { Check, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+export type SubmitState = 'idle' | 'saving' | 'saved'
 
 // ---------------------------------------------------------------------------
 // Props
@@ -15,8 +21,8 @@ export interface SubmitBarProps {
   totalCount: number
   /** Callback when the submit button is clicked */
   onSubmit: () => void
-  /** Whether a submission is in progress */
-  isSubmitting: boolean
+  /** Current submission state */
+  submitState: SubmitState
   /** Whether the submit button is disabled (e.g., 0 picks) */
   disabled: boolean
 }
@@ -32,13 +38,18 @@ export interface SubmitBarProps {
  * progress counter (e.g. "5/19 picked") and a "Lock Predictions" button
  * that triggers form submission. Slides up with a smooth animation on mount.
  *
+ * Three visual states:
+ *   - `idle`: "Lock Predictions" — ready to submit
+ *   - `saving`: Loader2 spinner + "Saving..." — server action in progress
+ *   - `saved`: Check icon + "Locked!" with pop animation — confirmation
+ *
  * @see docs/stories/PRED-003-prediction-submit.md
  */
 export function SubmitBar({
   pickedCount,
   totalCount,
   onSubmit,
-  isSubmitting,
+  submitState,
   disabled,
 }: SubmitBarProps) {
   return (
@@ -70,17 +81,25 @@ export function SubmitBar({
         {/* Submit button */}
         <Button
           onClick={onSubmit}
-          disabled={disabled || isSubmitting}
-          aria-busy={isSubmitting}
+          disabled={disabled || submitState !== 'idle'}
+          aria-busy={submitState === 'saving'}
+          className={cn(
+            submitState === 'saved' && 'animate-score-pop bg-success text-text-on-primary',
+          )}
         >
-          {isSubmitting ? (
+          {submitState === 'saving' && (
             <>
               <Loader2 className="size-4 animate-spin" aria-hidden="true" />
               Saving...
             </>
-          ) : (
-            'Lock Predictions'
           )}
+          {submitState === 'saved' && (
+            <>
+              <Check className="size-4" aria-hidden="true" />
+              Locked!
+            </>
+          )}
+          {submitState === 'idle' && 'Lock Predictions'}
         </Button>
       </div>
     </div>

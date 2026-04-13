@@ -198,10 +198,9 @@ export default async function PredictPage({ params }: PredictPageProps) {
     scenarios: g.scenarios.map((s) => ({
       id: s.id,
       title: s.title,
-      description: s.description,
       inputType: s.inputType,
       options: s.options,
-      pointsWeight: s.pointsWeight,
+      points: s.points,
     })),
   }))
 

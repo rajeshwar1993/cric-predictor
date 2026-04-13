@@ -201,6 +201,7 @@
   --animate-shimmer: shimmer 1.5s ease-in-out infinite;
   --animate-score-pop: score-pop 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
   --animate-pop-in: pop-in 250ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  --animate-page-enter: page-enter 250ms cubic-bezier(0.23, 1, 0.32, 1) both;
 }
 
 /* --------------------------------------------------------------------------
@@ -270,6 +271,17 @@ body {
   }
 }
 
+@keyframes page-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes rank-reorder {
   0% {
     opacity: 0.6;
@@ -327,5 +339,14 @@ body {
 
   .text-stat {
     @apply font-display text-[28px] leading-[1.1] font-bold tabular-nums;
+  }
+
+  /* Stagger animation for list items.
+   * Set --stagger-index via inline style on each item to control delay.
+   * Usage: className="motion-safe:stagger-item" style={{ '--stagger-index': i }}
+   */
+  .stagger-item {
+    animation: page-enter var(--duration-enter) var(--ease-spring) both;
+    animation-delay: calc(var(--stagger-index, 0) * 60ms);
   }
 }

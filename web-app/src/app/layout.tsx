@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from 'next'
 import { spaceGrotesk, dmSans } from './fonts'
+import { Suspense } from 'react'
 import { PHProvider } from '@/components/analytics/posthog-provider'
 import { WebVitalsReporter } from '@/components/analytics/web-vitals-reporter'
+import { NavigationProgress } from '@/components/layout/navigation-progress'
 import { Toaster } from '@/components/ui/toaster'
 import { env } from '@/lib/env'
 import './globals.css'
@@ -59,6 +61,9 @@ export default function RootLayout({
           Skip to content
         </a>
         <PHProvider>
+          <Suspense fallback={null}>
+            <NavigationProgress />
+          </Suspense>
           <WebVitalsReporter />
           {children}
           <Toaster />

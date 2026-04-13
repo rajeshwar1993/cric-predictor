@@ -39,13 +39,11 @@ export interface FixtureScenarioRow {
   id: string
   fixtureId: string
   title: string
-  description: string | null
   inputType: ScenarioInputType
   options: Json | null
   resolutionPhase: ResolutionPhase
   correctAnswer: string | null
-  pointsWeight: number
-  sortOrder: number
+  points: number
 }
 
 /**
@@ -92,11 +90,11 @@ export async function getFixtureScenarios(
   const { data, error } = await supabase
     .from('v2_fixture_scenarios')
     .select(
-      'id, fixture_id, title, description, input_type, options, resolution_phase, correct_answer, points_weight, sort_order',
+      'id, fixture_id, title, input_type, options, resolution_phase, correct_answer, points, slug',
     )
     .eq('gang_id', gangId)
     .eq('fixture_id', fixtureId)
-    .order('sort_order', { ascending: true })
+    .order('slug', { ascending: true })
 
   if (error) throw error
   if (!data || data.length === 0) return []
@@ -105,13 +103,11 @@ export async function getFixtureScenarios(
     id: row.id,
     fixtureId: row.fixture_id,
     title: row.title,
-    description: row.description,
     inputType: row.input_type,
     options: row.options,
     resolutionPhase: row.resolution_phase,
     correctAnswer: row.correct_answer,
-    pointsWeight: row.points_weight,
-    sortOrder: row.sort_order,
+    points: row.points,
   }))
 }
 
