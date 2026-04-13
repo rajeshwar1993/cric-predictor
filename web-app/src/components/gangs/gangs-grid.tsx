@@ -1,4 +1,5 @@
 import { Users } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { EmptyState } from '@/components/ui/empty-state'
 import { GangCard } from '@/components/gangs/gang-card'
 import { CreateGangForm } from '@/components/gangs/create-gang-form'
@@ -28,7 +29,7 @@ export function GangsGrid({ gangs }: GangsGridProps) {
           headline="No gangs yet"
           description="Create a gang or join one with an invite code to start predicting."
           action={
-            <div className="flex w-full max-w-sm flex-col gap-6">
+            <div className="flex w-full max-w-md flex-col gap-6">
               <CreateGangForm />
               <div className="border-t border-wire pt-4">
                 <JoinGangForm />
@@ -41,8 +42,11 @@ export function GangsGrid({ gangs }: GangsGridProps) {
   }
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div className="flex flex-col gap-12">
+      <div className={cn(
+        'grid grid-cols-1 gap-4',
+        gangs.length > 1 && 'sm:grid-cols-2'
+      )}>
         {gangs.map((gang) => (
           <GangCard
             key={gang.id}
@@ -54,30 +58,35 @@ export function GangsGrid({ gangs }: GangsGridProps) {
         ))}
       </div>
 
-      {/* Create and join gang forms below the grid */}
+      {/* Divider between gang list and action forms */}
+      <div className="border-t border-wire" />
+
+      {/* Create and join gang forms */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-        <section aria-labelledby="create-gang-heading">
+        <section
+          aria-labelledby="create-gang-heading"
+          className="rounded-lg border border-wire bg-dark-concrete p-6 shadow-[4px_4px_0_var(--color-lime-shade)]"
+        >
           <h2
             id="create-gang-heading"
-            className="text-h3 mb-3 text-text-primary"
+            className="text-h2 mb-4 text-text-primary"
           >
             Start a new gang
           </h2>
-          <div className="max-w-sm">
-            <CreateGangForm />
-          </div>
+          <CreateGangForm />
         </section>
 
-        <section aria-labelledby="join-gang-heading">
+        <section
+          aria-labelledby="join-gang-heading"
+          className="rounded-lg border border-wire bg-dark-concrete p-6"
+        >
           <h2
             id="join-gang-heading"
-            className="text-h3 mb-3 text-text-primary"
+            className="text-h2 mb-4 text-text-primary"
           >
             Join a gang
           </h2>
-          <div className="max-w-sm">
-            <JoinGangForm />
-          </div>
+          <JoinGangForm />
         </section>
       </div>
     </div>

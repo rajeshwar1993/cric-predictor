@@ -29,7 +29,7 @@ export function GangCard({ id, name, role, memberCount }: GangCardProps) {
       className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bragg-lime focus-visible:ring-offset-2 focus-visible:ring-offset-concrete-black rounded-lg"
       aria-label={`View ${name} gang`}
     >
-      <Card className="cursor-pointer">
+      <Card className="cursor-pointer border-l-4 border-l-bragg-lime hover:shadow-[4px_4px_0_var(--color-lime-shade)]">
         <div className="flex items-start justify-between gap-3">
           <h3 className="text-h3 text-text-primary">
             {name}
@@ -39,7 +39,7 @@ export function GangCard({ id, name, role, memberCount }: GangCardProps) {
           </Badge>
         </div>
         <p className="text-caption text-text-muted">
-          {memberCount}/20 members
+          <span className="font-display font-bold text-text-secondary">{memberCount}</span>/20 members
         </p>
       </Card>
     </Link>

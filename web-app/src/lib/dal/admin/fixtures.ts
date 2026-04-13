@@ -292,7 +292,7 @@ export async function getFixtureTable(
       .in('id', Array.from(teamIds)),
     supabase
       .from('v2_fixture_scenarios')
-      .select('fixture_id, is_resolved')
+      .select('fixture_id, is_resolved, slug')
       .in('fixture_id', fixtureIds),
     supabase
       .from('v2_predictions')
@@ -305,18 +305,18 @@ export async function getFixtureTable(
     teamMap.set(t.id, { id: t.id, code: t.code, color: t.color })
   }
 
-  // Count scenarios per fixture
+  // Count unique scenarios per fixture (deduplicated by slug across gangs)
   const scenarioCounts = new Map<
     string,
-    { total: number; resolved: number }
+    { slugs: Set<string>; resolvedSlugs: Set<string> }
   >()
   for (const s of scenariosRes.data ?? []) {
     const current = scenarioCounts.get(s.fixture_id) ?? {
-      total: 0,
-      resolved: 0,
+      slugs: new Set<string>(),
+      resolvedSlugs: new Set<string>(),
     }
-    current.total += 1
-    if (s.is_resolved) current.resolved += 1
+    current.slugs.add(s.slug)
+    if (s.is_resolved) current.resolvedSlugs.add(s.slug)
     scenarioCounts.set(s.fixture_id, current)
   }
 
@@ -342,8 +342,8 @@ export async function getFixtureTable(
     preMatchSynced: f.pre_match_synced,
     homeTeam: teamMap.get(f.home_team_id) ?? fallbackTeam,
     awayTeam: teamMap.get(f.away_team_id) ?? fallbackTeam,
-    scenariosTotal: scenarioCounts.get(f.id)?.total ?? 0,
-    scenariosResolved: scenarioCounts.get(f.id)?.resolved ?? 0,
+    scenariosTotal: scenarioCounts.get(f.id)?.slugs.size ?? 0,
+    scenariosResolved: scenarioCounts.get(f.id)?.resolvedSlugs.size ?? 0,
     predictionsCount: predictionCounts.get(f.id) ?? 0,
   }))
 }
