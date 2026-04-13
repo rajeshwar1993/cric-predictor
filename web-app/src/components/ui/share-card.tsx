@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 
@@ -36,6 +37,7 @@ async function exportShareCard(element: HTMLElement): Promise<Blob> {
   const canvas = await html2canvas(element, {
     backgroundColor: '#111111', // concrete-black — hardcoded because html2canvas cannot resolve CSS variables
     scale: 2, // 2x for retina quality
+    useCORS: true, // required to render next/image optimized URLs (/_next/image) without tainting the canvas
   })
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(
@@ -153,11 +155,8 @@ function ShareCard({
         </div>
 
         {/* Logo watermark */}
-        <div
-          className="absolute bottom-4 right-4 font-display text-[48px] font-bold leading-none text-text-primary opacity-20"
-          aria-hidden="true"
-        >
-          B
+        <div className="absolute bottom-4 right-4 opacity-20" aria-hidden="true">
+          <Image src="/logo.png" alt="" width={48} height={48} />
         </div>
       </div>
 

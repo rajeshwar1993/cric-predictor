@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { createServerClient } from '@/lib/supabase/server'
 import { NotificationBell } from '@/components/notifications/notification-bell'
 import { getUnreadCount } from '@/lib/dal/notifications'
@@ -38,8 +39,10 @@ export async function NavBar() {
     >
       <Link
         href="/dashboard"
-        className="font-display text-lg font-bold uppercase tracking-tight text-text-primary"
+        className="flex items-center gap-2 font-display text-lg font-bold uppercase tracking-tight text-text-primary"
+        aria-label="Bragg — go to dashboard"
       >
+        <Image src="/logo.png" alt="" width={28} height={28} priority />
         BRAGG
       </Link>
 
