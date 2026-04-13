@@ -52,12 +52,17 @@ export async function RecentResults({ gangId }: RecentResultsProps) {
     <section className="mt-8" aria-label="Recent results">
       <h2 className="text-caption text-text-muted mb-4">RECENT RESULTS</h2>
       <div className="flex flex-col gap-4">
-        {fixtures.map((fixture) => (
-          <ResultCard
+        {fixtures.map((fixture, i) => (
+          <div
             key={fixture.id}
-            fixture={fixture}
-            gangId={gangId}
-          />
+            className="motion-safe:stagger-item"
+            style={{ '--stagger-index': i } as React.CSSProperties}
+          >
+            <ResultCard
+              fixture={fixture}
+              gangId={gangId}
+            />
+          </div>
         ))}
       </div>
     </section>

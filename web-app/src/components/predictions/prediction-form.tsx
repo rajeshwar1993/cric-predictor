@@ -5,7 +5,7 @@ import type { FixtureTeam } from '@/lib/dal/fixtures'
 import type { MatchPlayer } from '@/lib/dal/predictions'
 import type { ScenarioGroupData } from '@/components/predictions/scenario-list'
 import { ScenarioList } from '@/components/predictions/scenario-list'
-import { SubmitBar } from '@/components/predictions/submit-bar'
+import { SubmitBar, type SubmitState } from '@/components/predictions/submit-bar'
 import { LastSubmittedIndicator } from '@/components/predictions/last-submitted-indicator'
 import { submitPredictions } from '@/lib/actions/predictions'
 import { trackEvent } from '@/lib/analytics/client'
@@ -70,8 +70,9 @@ export function PredictionForm({
   lastSubmittedAt,
   totalScenarios,
 }: PredictionFormProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitState, setSubmitState] = useState<SubmitState>('idle')
   const [submittedAt, setSubmittedAt] = useState<string | null>(lastSubmittedAt)
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Track predictions in a ref to avoid re-rendering ScenarioList on every change
   // while still having access to the latest state for submission.
@@ -116,6 +117,10 @@ export function PredictionForm({
         clearTimeout(debounceTimerRef.current)
         debounceTimerRef.current = null
         pendingPickRef.current = null
+      }
+      if (savedTimerRef.current !== null) {
+        clearTimeout(savedTimerRef.current)
+        savedTimerRef.current = null
       }
     }
   }, [gangId, fixtureId])
@@ -180,19 +185,32 @@ export function PredictionForm({
       return
     }
 
-    setIsSubmitting(true)
+    // Clear any previous saved timer
+    if (savedTimerRef.current) {
+      clearTimeout(savedTimerRef.current)
+      savedTimerRef.current = null
+    }
+
+    setSubmitState('saving')
     try {
       const result = await submitPredictions(gangId, fixtureId, picksArray)
       if (result.success) {
         toast.success('Predictions saved!')
         setSubmittedAt(new Date().toISOString())
+        setSubmitState('saved')
+        // Reset to idle after the confirmation animation
+        savedTimerRef.current = setTimeout(() => {
+          setSubmitState('idle')
+          savedTimerRef.current = null
+        }, 2000)
       } else {
         toast.error(result.error)
+        setSubmitState('idle')
       }
     } catch {
       toast.error('Something went wrong. Please try again.')
+      setSubmitState('idle')
     } finally {
-      setIsSubmitting(false)
       submittingRef.current = false
     }
   }, [gangId, fixtureId])
@@ -222,7 +240,7 @@ export function PredictionForm({
         pickedCount={pickedCount}
         totalCount={totalScenarios}
         onSubmit={handleSubmit}
-        isSubmitting={isSubmitting}
+        submitState={submitState}
         disabled={pickedCount === 0}
       />
     </>

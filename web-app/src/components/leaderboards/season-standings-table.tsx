@@ -63,17 +63,22 @@ export function SeasonStandingsTable({
       <DesktopHeader />
 
       <div className="flex flex-col" role="list">
-        {entries.map((entry) => {
+        {entries.map((entry, i) => {
           const departed = isDeparted(entry.memberStatus)
           const isCurrentUser = entry.userId === currentUserId
 
           return (
-            <StandingsRow
+            <div
               key={entry.userId}
-              entry={entry}
-              isCurrentUser={isCurrentUser}
-              isDeparted={departed}
-            />
+              className="motion-safe:stagger-item"
+              style={{ '--stagger-index': i } as React.CSSProperties}
+            >
+              <StandingsRow
+                entry={entry}
+                isCurrentUser={isCurrentUser}
+                isDeparted={departed}
+              />
+            </div>
           )
         })}
       </div>

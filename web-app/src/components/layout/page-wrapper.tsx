@@ -25,7 +25,7 @@ export function PageWrapper({
   return (
     <div
       className={cn(
-        'mx-auto px-4 pb-[max(34px,env(safe-area-inset-bottom))] md:px-8',
+        'mx-auto px-4 pb-[max(34px,env(safe-area-inset-bottom))] md:px-8 motion-safe:animate-page-enter',
         maxWidth === 'sm' ? 'max-w-[480px]' : 'max-w-[720px]',
         className,
       )}
