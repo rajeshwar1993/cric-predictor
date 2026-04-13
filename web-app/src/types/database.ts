@@ -902,10 +902,9 @@ export type Database = {
       v2_member_role: 'admin' | 'member'
       v2_member_status: 'pending' | 'approved' | 'rejected' | 'removed' | 'left'
       v2_scenario_input_type:
-        | 'team_select'
-        | 'player_select'
-        | 'number_range'
-        | 'over_range'
+        | 'team_pick'
+        | 'player_pick'
+        | 'range'
         | 'yes_no'
       v2_resolution_phase: 'toss' | 'first_wicket' | 'team_powerplay_end' | 'mid_match' | 'team_innings_end' | 'end' | 'post_match'
       v2_notification_type:

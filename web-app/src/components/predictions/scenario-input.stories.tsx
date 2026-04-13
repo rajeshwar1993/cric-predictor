@@ -57,7 +57,7 @@ const meta = {
     ),
   ],
   args: {
-    inputType: 'team_select',
+    inputType: 'team_pick',
     homeTeam: MOCK_HOME_TEAM,
     awayTeam: MOCK_AWAY_TEAM,
     players: MOCK_PLAYERS,
@@ -76,7 +76,7 @@ type Story = StoryObj<typeof meta>
 /** Team select input type. */
 export const TeamSelect: Story = {
   args: {
-    inputType: 'team_select',
+    inputType: 'team_pick',
     value: '',
   },
 }
@@ -84,7 +84,7 @@ export const TeamSelect: Story = {
 /** Player select input type. */
 export const PlayerSelect: Story = {
   args: {
-    inputType: 'player_select',
+    inputType: 'player_pick',
     value: '',
   },
 }
@@ -92,7 +92,7 @@ export const PlayerSelect: Story = {
 /** Number range input type. */
 export const NumberRange: Story = {
   args: {
-    inputType: 'number_range',
+    inputType: 'range',
     options: ['<140', '140-159', '160-179', '180-199', '200+'],
     value: '',
   },
@@ -101,7 +101,7 @@ export const NumberRange: Story = {
 /** Over range input type. */
 export const OverRange: Story = {
   args: {
-    inputType: 'over_range',
+    inputType: 'range',
     options: ['1-6', '7-10', '11-15', '16-20'],
     value: '',
   },
@@ -128,7 +128,7 @@ export const AllTypes: Story = {
         <div>
           <p className="mb-2 text-caption text-text-muted">Team Select</p>
           <ScenarioInput
-            inputType="team_select"
+            inputType="team_pick"
             homeTeam={MOCK_HOME_TEAM}
             awayTeam={MOCK_AWAY_TEAM}
             players={MOCK_PLAYERS}
@@ -139,7 +139,7 @@ export const AllTypes: Story = {
         <div>
           <p className="mb-2 text-caption text-text-muted">Player Select</p>
           <ScenarioInput
-            inputType="player_select"
+            inputType="player_pick"
             homeTeam={MOCK_HOME_TEAM}
             awayTeam={MOCK_AWAY_TEAM}
             players={MOCK_PLAYERS}
@@ -150,7 +150,7 @@ export const AllTypes: Story = {
         <div>
           <p className="mb-2 text-caption text-text-muted">Number Range</p>
           <ScenarioInput
-            inputType="number_range"
+            inputType="range"
             options={['<140', '140-159', '160-179', '180-199', '200+']}
             homeTeam={MOCK_HOME_TEAM}
             awayTeam={MOCK_AWAY_TEAM}

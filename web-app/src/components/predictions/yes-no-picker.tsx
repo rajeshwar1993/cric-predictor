@@ -58,8 +58,8 @@ export function YesNoPicker({
               'rounded-md px-4 py-3 font-body text-sm font-bold uppercase tracking-[0.08em] transition-all duration-[var(--duration-state)] ease-out',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bragg-lime focus-visible:ring-offset-2 focus-visible:ring-offset-concrete-black',
               isSelected
-                ? 'bg-bragg-lime text-text-on-primary shadow-color-block'
-                : 'border border-wire bg-dark-concrete text-text-secondary hover:border-light-concrete',
+                ? 'bg-bragg-lime text-text-on-primary shadow-[4px_4px_0_var(--color-lime-shade)] motion-safe:animate-pop-in'
+                : 'border border-wire bg-mid-concrete text-text-secondary hover:border-light-concrete hover:bg-light-concrete',
               disabled && 'cursor-not-allowed opacity-50',
             )}
             onClick={() => {

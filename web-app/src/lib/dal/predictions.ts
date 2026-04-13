@@ -420,15 +420,15 @@ export async function getMatchPredictions(
   for (const row of predictionRows ?? []) {
     const inputType = scenarioInputTypeById.get(row.scenario_id)
     if (!inputType) continue
-    if (inputType === 'team_select' && row.value) teamIds.add(row.value)
-    if (inputType === 'player_select' && row.value) playerIds.add(row.value)
+    if (inputType === 'team_pick' && row.value) teamIds.add(row.value)
+    if (inputType === 'player_pick' && row.value) playerIds.add(row.value)
   }
 
   // Also resolve correct_answer UUIDs where applicable
   for (const s of scenarios) {
     if (!s.correctAnswer) continue
-    if (s.inputType === 'team_select') teamIds.add(s.correctAnswer)
-    if (s.inputType === 'player_select') playerIds.add(s.correctAnswer)
+    if (s.inputType === 'team_pick') teamIds.add(s.correctAnswer)
+    if (s.inputType === 'player_pick') playerIds.add(s.correctAnswer)
   }
 
   // Step 5a: batch fetch teams

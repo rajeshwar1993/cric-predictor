@@ -252,17 +252,17 @@ export function useMatchPredictions(
         predictionsByScenarioByUser.set(row.scenario_id, scenarioMap)
 
         const inputType = scenarioInputTypeById.get(row.scenario_id)
-        if (inputType === 'team_select' && row.value) teamIds.add(row.value)
-        if (inputType === 'player_select' && row.value) playerIds.add(row.value)
+        if (inputType === 'team_pick' && row.value) teamIds.add(row.value)
+        if (inputType === 'player_pick' && row.value) playerIds.add(row.value)
       }
 
       // Include correct-answer UUIDs for display resolution
       for (const group of phases) {
         for (const scenario of group.scenarios) {
           if (!scenario.correctAnswer) continue
-          if (scenario.inputType === 'team_select') {
+          if (scenario.inputType === 'team_pick') {
             teamIds.add(scenario.correctAnswer)
-          } else if (scenario.inputType === 'player_select') {
+          } else if (scenario.inputType === 'player_pick') {
             playerIds.add(scenario.correctAnswer)
           }
         }

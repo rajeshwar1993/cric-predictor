@@ -74,7 +74,7 @@ function makeScenario(
     id,
     title,
     points: 10,
-    inputType: 'team_select',
+    inputType: 'team_pick',
     correctAnswer: null,
     isResolved: false,
     isVoided: false,
@@ -129,7 +129,7 @@ const EIGHT_MEMBERS: MatchPredictionMember[] = [
 
 const SCENARIO_TOSS = makeScenario('s-toss', 'Who will win the toss?', {
   points: 10,
-  inputType: 'team_select',
+  inputType: 'team_pick',
   correctAnswer: 'team-mi',
   isResolved: true,
 })
@@ -146,7 +146,7 @@ const SCENARIO_FIRST_WICKET = makeScenario(
   'First wicket in which over?',
   {
     points: 15,
-    inputType: 'over_range',
+    inputType: 'range',
     correctAnswer: '3-4',
     isResolved: true,
   },
@@ -154,21 +154,21 @@ const SCENARIO_FIRST_WICKET = makeScenario(
 
 const SCENARIO_POWERPLAY = makeScenario('s-pp', 'Powerplay score?', {
   points: 15,
-  inputType: 'number_range',
+  inputType: 'range',
   correctAnswer: '60-79',
   isResolved: false,
 })
 
 const SCENARIO_MATCH_WINNER = makeScenario('s-mw', 'Match winner?', {
   points: 25,
-  inputType: 'team_select',
+  inputType: 'team_pick',
   correctAnswer: null,
   isResolved: false,
 })
 
 const SCENARIO_MOTM = makeScenario('s-motm', 'Player of the match?', {
   points: 30,
-  inputType: 'player_select',
+  inputType: 'player_pick',
   correctAnswer: null,
   isResolved: false,
 })

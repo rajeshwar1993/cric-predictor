@@ -52,20 +52,19 @@ function validatePickValue(
   playerIds: Set<string>,
 ): string | null {
   switch (inputType) {
-    case 'team_select':
+    case 'team_pick':
       if (value !== homeTeamId && value !== awayTeamId) {
         return 'Invalid team selection'
       }
       break
 
-    case 'player_select':
+    case 'player_pick':
       if (!playerIds.has(value)) {
         return 'Invalid player selection'
       }
       break
 
-    case 'number_range':
-    case 'over_range': {
+    case 'range': {
       const parsedOptions = parseScenarioOptions(options)
       if (parsedOptions.length === 0) {
         return 'Scenario has no valid options'
@@ -248,7 +247,7 @@ export async function submitPredictions(
     // Fetch players for player_select validation
     const hasPlayerSelect = validPicks.some((p) => {
       const scenario = scenarioMap.get(p.scenarioId)
-      return scenario?.inputType === 'player_select'
+      return scenario?.inputType === 'player_pick'
     })
 
     let playerIds = new Set<string>()

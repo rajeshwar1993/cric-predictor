@@ -25,8 +25,8 @@ export interface RangePickerProps {
  * RangePicker — selectable chip row for range/bracket scenarios.
  *
  * Options are rendered as a flex-wrap row of chip buttons. Selected chip has
- * a lime background; unselected chips have a dark surface. Single select only
- * (sticky selection — tapping the same chip does not deselect).
+ * a lime background with offset shadow; unselected chips have a dark surface.
+ * Single select only (sticky selection — tapping the same chip does not deselect).
  *
  * @see docs/stories/PRED-002-scenario-pickers.md
  */
@@ -49,11 +49,11 @@ export function RangePicker({
             aria-label={option}
             disabled={disabled}
             className={cn(
-              'rounded-sm px-4 py-2 font-body text-sm font-bold uppercase tracking-wide transition-all duration-[var(--duration-state)] ease-out',
+              'min-w-[3.5rem] rounded-md px-4 py-2.5 font-body text-sm font-bold uppercase tracking-wide transition-all duration-[var(--duration-state)] ease-out',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bragg-lime focus-visible:ring-offset-2 focus-visible:ring-offset-concrete-black',
               isSelected
-                ? 'bg-bragg-lime text-text-on-primary shadow-color-block'
-                : 'border border-wire bg-dark-concrete text-text-secondary hover:border-light-concrete',
+                ? 'bg-bragg-lime text-text-on-primary shadow-[4px_4px_0_var(--color-lime-shade)] motion-safe:animate-pop-in'
+                : 'border border-wire bg-mid-concrete text-text-secondary hover:border-light-concrete hover:bg-light-concrete',
               disabled && 'cursor-not-allowed opacity-50',
             )}
             onClick={() => {
