@@ -50,6 +50,7 @@
 
   /* --- Component-level Colors (not in core palette but needed by specific components) --- */
   --color-hover-lime: #d4f05a; /* Button primary hover bg */
+  --color-coral-hover: #ff5252; /* Button destructive hover bg */
   --color-bronze: #cd7f32; /* Leaderboard #3 rank text */
 
   /* --- Font Families ---
@@ -162,6 +163,7 @@
 
   /* --- Colors (Component-level) --- */
   --color-hover-lime: #d4f05a;
+  --color-coral-hover: #ff5252;
   --color-bronze: #cd7f32;
 
   /* --- Font Families ---

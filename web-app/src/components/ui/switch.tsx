@@ -23,7 +23,7 @@ function Switch({
     <SwitchPrimitive.Root
       data-slot="switch"
       className={cn(
-        'peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-wire bg-dark-concrete transition-[color,background-color,border-color,box-shadow] duration-[150ms] ease-out outline-none',
+        'peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-wire bg-dark-concrete transition-[color,background-color,border-color,box-shadow] duration-[var(--duration-exit)] ease-out outline-none',
         'focus-visible:ring-[3px] focus-visible:ring-bragg-lime/50 focus-visible:ring-offset-0',
         'disabled:cursor-not-allowed disabled:opacity-50',
         // Color-independent state cue: the border thickness stays the
@@ -40,7 +40,7 @@ function Switch({
       <SwitchPrimitive.Thumb
         data-slot="switch-thumb"
         className={cn(
-          'pointer-events-none block size-4 rounded-full bg-text-primary shadow-[0_2px_4px_rgba(0,0,0,0.3)] ring-0 transition-transform duration-[150ms] ease-out',
+          'pointer-events-none block size-4 rounded-full bg-text-primary shadow-elevation-1 ring-0 transition-transform duration-[var(--duration-exit)] ease-out',
           'translate-x-0.5 data-[state=checked]:translate-x-[22px] data-[state=checked]:bg-text-on-primary',
         )}
       />

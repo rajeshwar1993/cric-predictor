@@ -230,7 +230,7 @@ export function ProfileInfo({
               <button
                 type="button"
                 onClick={enterEditMode}
-                className="-mx-2 -my-1 flex flex-col items-start rounded px-2 py-1 text-left transition-colors duration-[150ms] hover:bg-light-concrete focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-bragg-lime/50"
+                className="-mx-2 -my-1 flex flex-col items-start rounded px-2 py-1 text-left transition-colors duration-[var(--duration-exit)] hover:bg-light-concrete focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-bragg-lime/50"
               >
                 <span className="font-display text-h3 font-bold text-text-primary">
                   {savedName}
@@ -243,7 +243,7 @@ export function ProfileInfo({
                 type="button"
                 onClick={enterEditMode}
                 aria-label="Edit display name"
-                className="flex size-10 shrink-0 items-center justify-center rounded-md text-text-secondary transition-colors duration-[150ms] hover:bg-light-concrete hover:text-text-primary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-bragg-lime/50"
+                className="flex size-10 shrink-0 items-center justify-center rounded-md text-text-secondary transition-colors duration-[var(--duration-exit)] hover:bg-light-concrete hover:text-text-primary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-bragg-lime/50"
               >
                 <Pencil className="size-4" aria-hidden="true" />
               </button>
