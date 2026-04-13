@@ -52,6 +52,12 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${spaceGrotesk.variable} ${dmSans.variable} dark`}>
       <body className="bg-concrete-black text-text-primary font-body antialiased min-h-dvh">
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:rounded-md focus:bg-bragg-lime focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:uppercase focus:tracking-[0.08em] focus:text-text-on-primary focus:shadow-elevation-2 focus:outline-none"
+        >
+          Skip to content
+        </a>
         <PHProvider>
           <WebVitalsReporter />
           {children}

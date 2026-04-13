@@ -53,7 +53,7 @@ export function TeamPicker({
             aria-label={`Select ${team.name}`}
             disabled={disabled}
             className={cn(
-              'flex flex-col items-center rounded-md border-2 p-4 transition-all duration-[180ms] ease-out',
+              'flex flex-col items-center rounded-md border-2 p-4 transition-all duration-[var(--duration-state)] ease-out',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bragg-lime focus-visible:ring-offset-2 focus-visible:ring-offset-concrete-black',
               isSelected
                 ? 'border-bragg-lime bg-lime-wash'

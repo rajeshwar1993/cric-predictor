@@ -11,7 +11,7 @@ export function GangDetailView({ gang }: GangDetailViewProps) {
   return (
     <div className="space-y-6">
       {/* Gang Info */}
-      <div className="rounded-lg border border-[#333333] bg-[#1a1a1a] p-4">
+      <div className="rounded-lg border border-wire bg-dark-concrete p-4">
         <h3 className="mb-3 text-sm font-semibold text-text-primary">
           Gang Info
         </h3>
@@ -44,7 +44,7 @@ export function GangDetailView({ gang }: GangDetailViewProps) {
                   'rounded-full px-2 py-0.5 text-xs font-medium',
                   gang.autoAccept
                     ? 'bg-bragg-lime/10 text-bragg-lime'
-                    : 'bg-[#333333] text-text-muted',
+                    : 'bg-wire text-text-muted',
                 )}
               >
                 {gang.autoAccept ? 'On' : 'Off'}
@@ -70,8 +70,8 @@ export function GangDetailView({ gang }: GangDetailViewProps) {
       </div>
 
       {/* Members */}
-      <div className="rounded-lg border border-[#333333] bg-[#1a1a1a]">
-        <div className="border-b border-[#333333] px-4 py-3">
+      <div className="rounded-lg border border-wire bg-dark-concrete">
+        <div className="border-b border-wire px-4 py-3">
           <h3 className="text-sm font-semibold text-text-primary">
             Members ({gang.members.length})
           </h3>
@@ -80,7 +80,7 @@ export function GangDetailView({ gang }: GangDetailViewProps) {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#333333] text-left text-xs uppercase tracking-wider text-text-muted">
+                <tr className="border-b border-wire text-left text-xs uppercase tracking-wider text-text-muted">
                   <th className="px-4 py-2">Name</th>
                   <th className="px-4 py-2">Email</th>
                   <th className="px-4 py-2">Role</th>
@@ -91,7 +91,7 @@ export function GangDetailView({ gang }: GangDetailViewProps) {
                 {gang.members.map((m) => (
                   <tr
                     key={m.userId}
-                    className="border-b border-[#242424] last:border-b-0"
+                    className="border-b border-mid-concrete last:border-b-0"
                   >
                     <td className="px-4 py-2">
                       <Link
@@ -113,7 +113,7 @@ export function GangDetailView({ gang }: GangDetailViewProps) {
                             ? 'bg-green-400/10 text-green-400'
                             : m.status === 'pending'
                               ? 'bg-yellow-400/10 text-yellow-400'
-                              : 'bg-[#333333] text-text-muted',
+                              : 'bg-wire text-text-muted',
                         )}
                       >
                         {m.status}
@@ -130,8 +130,8 @@ export function GangDetailView({ gang }: GangDetailViewProps) {
       </div>
 
       {/* Season Standings */}
-      <div className="rounded-lg border border-[#333333] bg-[#1a1a1a]">
-        <div className="border-b border-[#333333] px-4 py-3">
+      <div className="rounded-lg border border-wire bg-dark-concrete">
+        <div className="border-b border-wire px-4 py-3">
           <h3 className="text-sm font-semibold text-text-primary">
             Season Standings ({gang.seasonStandings.length})
           </h3>
@@ -140,7 +140,7 @@ export function GangDetailView({ gang }: GangDetailViewProps) {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#333333] text-left text-xs uppercase tracking-wider text-text-muted">
+                <tr className="border-b border-wire text-left text-xs uppercase tracking-wider text-text-muted">
                   <th className="px-4 py-2">Rank</th>
                   <th className="px-4 py-2">Member</th>
                   <th className="px-4 py-2 text-right">Points</th>
@@ -151,7 +151,7 @@ export function GangDetailView({ gang }: GangDetailViewProps) {
                 {gang.seasonStandings.map((s, i) => (
                   <tr
                     key={`${s.userId}-${i}`}
-                    className="border-b border-[#242424] last:border-b-0"
+                    className="border-b border-mid-concrete last:border-b-0"
                   >
                     <td className="px-4 py-2 text-text-secondary">
                       #{s.rank ?? '—'}

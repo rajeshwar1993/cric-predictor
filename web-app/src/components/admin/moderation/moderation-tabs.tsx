@@ -39,7 +39,7 @@ export function ModerationTabs({
   return (
     <div className="space-y-4">
       {/* Tab buttons */}
-      <div className="flex gap-1 rounded-lg border border-[#333333] bg-[#111111] p-1">
+      <div className="flex gap-1 rounded-lg border border-wire bg-concrete-black p-1">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -47,7 +47,7 @@ export function ModerationTabs({
             className={cn(
               'flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors',
               activeTab === tab.id
-                ? 'bg-[#242424] text-bragg-lime'
+                ? 'bg-mid-concrete text-bragg-lime'
                 : 'text-text-secondary hover:text-text-primary',
             )}
           >
@@ -57,7 +57,7 @@ export function ModerationTabs({
                 'rounded-full px-1.5 py-0.5 text-xs',
                 activeTab === tab.id
                   ? 'bg-bragg-lime/10 text-bragg-lime'
-                  : 'bg-[#242424] text-text-muted',
+                  : 'bg-mid-concrete text-text-muted',
               )}
             >
               {tab.count}

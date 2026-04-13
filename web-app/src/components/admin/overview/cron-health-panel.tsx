@@ -47,7 +47,7 @@ const CRON_JOBS: CronJob[] = [
 
 export function CronHealthPanel() {
   return (
-    <div className="rounded-lg border border-[#333333] bg-[#1a1a1a] p-4">
+    <div className="rounded-lg border border-wire bg-dark-concrete p-4">
       <h3 className="text-caption text-text-muted mb-3">Cron Jobs</h3>
       <div className="space-y-3">
         {CRON_JOBS.map((job) => {
@@ -55,15 +55,15 @@ export function CronHealthPanel() {
           return (
             <div
               key={job.name}
-              className="flex items-start gap-3 rounded-md border border-[#242424] bg-[#111111] p-3"
+              className="flex items-start gap-3 rounded-md border border-mid-concrete bg-concrete-black p-3"
             >
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#242424] text-text-muted">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-mid-concrete text-text-muted">
                 <Icon size={16} />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <p className="text-body-sm font-medium text-text-primary">{job.name}</p>
-                  <span className="rounded-full bg-[#242424] px-2 py-0.5 text-xs text-text-muted">
+                  <span className="rounded-full bg-mid-concrete px-2 py-0.5 text-xs text-text-muted">
                     {job.schedule}
                   </span>
                 </div>

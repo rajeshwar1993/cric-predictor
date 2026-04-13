@@ -27,7 +27,7 @@ export function AdminHeader() {
   const segments = pathname.replace('/admin', '').split('/').filter(Boolean)
 
   return (
-    <header className="flex h-14 shrink-0 items-center border-b border-[#333333] bg-[#111111] px-6">
+    <header className="flex h-14 shrink-0 items-center border-b border-wire bg-concrete-black px-6">
       <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm">
         <Link href="/admin/overview" className="text-text-secondary transition-colors hover:text-text-primary">
           Admin

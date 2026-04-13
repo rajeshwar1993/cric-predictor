@@ -5,18 +5,18 @@ import { Slot } from 'radix-ui'
 import { cn } from '@/lib/utils'
 
 const buttonVariants = cva(
-  'inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md font-body text-sm font-bold uppercase tracking-[0.08em] transition-all duration-[150ms] ease-out outline-none focus-visible:ring-[3px] focus-visible:ring-bragg-lime/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-dark-concrete disabled:text-text-muted disabled:shadow-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*=size-])]:size-4',
+  'inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md font-body text-sm font-bold uppercase tracking-[0.08em] transition-all duration-[var(--duration-exit)] ease-out outline-none focus-visible:ring-[3px] focus-visible:ring-bragg-lime/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-dark-concrete disabled:text-text-muted disabled:shadow-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*=size-])]:size-4',
   {
     variants: {
       variant: {
         default:
-          'bg-bragg-lime text-text-on-primary hover:bg-hover-lime hover:shadow-[4px_4px_0_#A8C42A] active:translate-y-0.5 active:shadow-[2px_2px_0_#A8C42A]',
+          'bg-bragg-lime text-text-on-primary hover:bg-hover-lime hover:shadow-[4px_4px_0_var(--color-lime-shade)] active:translate-y-0.5 active:shadow-[2px_2px_0_var(--color-lime-shade)]',
         secondary:
           'bg-mid-concrete text-text-primary border-2 border-wire hover:border-bragg-lime active:translate-y-[1px]',
         ghost:
           'text-text-secondary hover:text-text-primary hover:bg-dark-concrete',
         destructive:
-          'bg-electric-coral text-text-on-primary hover:bg-[#FF5252] active:translate-y-0.5',
+          'bg-electric-coral text-text-on-primary hover:bg-coral-hover active:translate-y-0.5',
       },
       size: {
         default: 'h-12 px-6',

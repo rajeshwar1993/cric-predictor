@@ -44,7 +44,7 @@ export function GangHeader({
         {isAdmin && (
           <Link
             href={`/group/${gang.id}/settings`}
-            className="flex shrink-0 items-center justify-center rounded-md p-2 text-text-secondary transition-colors duration-[180ms] hover:bg-dark-concrete hover:text-text-primary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-bragg-lime/50"
+            className="flex shrink-0 items-center justify-center rounded-md p-2 text-text-secondary transition-colors duration-[var(--duration-state)] hover:bg-dark-concrete hover:text-text-primary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-bragg-lime/50"
             aria-label="Gang settings"
           >
             <Settings className="size-5" aria-hidden="true" />
@@ -68,7 +68,7 @@ export function GangHeader({
       {/* Season Standings link */}
       <Link
         href={`/group/${gang.id}/standings`}
-        className="inline-flex items-center gap-1 text-body-sm font-semibold text-vivid-blue transition-colors duration-[180ms] hover:text-bragg-lime focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-bragg-lime/50 rounded"
+        className="inline-flex items-center gap-1 text-body-sm font-semibold text-vivid-blue transition-colors duration-[var(--duration-state)] hover:text-bragg-lime focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-bragg-lime/50 rounded"
       >
         Season Standings
         <ChevronRight className="size-4" aria-hidden="true" />

@@ -13,8 +13,8 @@ const severityStyles: Record<OperationalAlert['severity'], { border: string; ico
 
 export function AlertBoard({ alerts }: AlertBoardProps) {
   return (
-    <div className="rounded-lg border border-[#333333] bg-[#1a1a1a]">
-      <div className="border-b border-[#333333] px-4 py-3">
+    <div className="rounded-lg border border-wire bg-dark-concrete">
+      <div className="border-b border-wire px-4 py-3">
         <h3 className="text-sm font-semibold text-text-primary">
           Active Alerts ({alerts.length})
         </h3>
@@ -26,7 +26,7 @@ export function AlertBoard({ alerts }: AlertBoardProps) {
             <div
               key={`${alert.source}-${i}`}
               className={cn(
-                'rounded-md border bg-[#111111] px-4 py-3',
+                'rounded-md border bg-concrete-black px-4 py-3',
                 style.border,
               )}
             >

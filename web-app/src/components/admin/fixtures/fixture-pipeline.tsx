@@ -90,7 +90,7 @@ export function FixturePipelineView({ pipeline }: FixturePipelineProps) {
   ]
 
   return (
-    <div className="rounded-lg border border-[#333333] bg-[#111111] p-4">
+    <div className="rounded-lg border border-wire bg-concrete-black p-4">
       <h2 className="mb-4 text-sm font-medium uppercase tracking-widest text-text-secondary">
         Fixture Pipeline
       </h2>
@@ -207,7 +207,7 @@ function FixtureMiniCard({ fixture }: FixtureMiniCardProps) {
   return (
     <Link
       href={`/admin/fixtures/${fixture.id}`}
-      className="block rounded-md border border-[#333333] bg-[#1a1a1a] px-2.5 py-2 transition-colors hover:bg-[#242424]"
+      className="block rounded-md border border-wire bg-dark-concrete px-2.5 py-2 transition-colors hover:bg-mid-concrete"
     >
       <p className="text-[11px] text-text-muted">Match #{fixture.matchNumber}</p>
       <div className="mt-0.5 flex items-center gap-1.5">

@@ -7,7 +7,7 @@ interface GangSizeChartProps {
 export function GangSizeChart({ data }: GangSizeChartProps) {
   if (data.length === 0) {
     return (
-      <div className="rounded-lg border border-[#333333] bg-[#1a1a1a] p-6">
+      <div className="rounded-lg border border-wire bg-dark-concrete p-6">
         <p className="text-sm text-text-muted">No gang size data available.</p>
       </div>
     )
@@ -16,8 +16,8 @@ export function GangSizeChart({ data }: GangSizeChartProps) {
   const maxCount = Math.max(...data.map((d) => d.count), 1)
 
   return (
-    <div className="rounded-lg border border-[#333333] bg-[#1a1a1a]">
-      <div className="border-b border-[#333333] px-4 py-3">
+    <div className="rounded-lg border border-wire bg-dark-concrete">
+      <div className="border-b border-wire px-4 py-3">
         <h3 className="text-sm font-semibold text-text-primary">
           Gang Size Distribution
         </h3>
@@ -32,7 +32,7 @@ export function GangSizeChart({ data }: GangSizeChartProps) {
                 {bracket.bracket}
               </span>
               <div className="flex-1">
-                <div className="h-6 w-full overflow-hidden rounded bg-[#242424]">
+                <div className="h-6 w-full overflow-hidden rounded bg-mid-concrete">
                   <div
                     className="flex h-full items-center rounded bg-bragg-lime/80 px-2 transition-all"
                     style={{ width: `${Math.max(widthPct, bracket.count > 0 ? 5 : 0)}%` }}

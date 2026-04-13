@@ -51,7 +51,7 @@ export function ScenarioCard({
   return (
     <div
       className={cn(
-        'rounded-lg border bg-dark-concrete p-4 transition-colors duration-[180ms] ease-out',
+        'rounded-lg border bg-dark-concrete p-4 transition-colors duration-[var(--duration-state)] ease-out',
         isPicked ? 'border-bragg-lime/30' : 'border-wire',
       )}
     >

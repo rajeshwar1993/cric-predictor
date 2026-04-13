@@ -52,12 +52,12 @@ export function AdminSidebar({ displayName }: AdminSidebarProps) {
   return (
     <aside
       className={cn(
-        'flex h-dvh flex-col border-r border-[#333333] bg-[#111111] transition-[width] duration-200',
+        'flex h-dvh flex-col border-r border-wire bg-concrete-black transition-[width] duration-200',
         collapsed ? 'w-16' : 'w-60',
       )}
     >
       {/* Header */}
-      <div className="flex items-center gap-3 border-b border-[#333333] px-4 py-4">
+      <div className="flex items-center gap-3 border-b border-wire px-4 py-4">
         {!collapsed && (
           <div className="min-w-0 flex-1">
             <p className="truncate font-display text-sm font-bold uppercase tracking-wider text-bragg-lime">
@@ -70,7 +70,7 @@ export function AdminSidebar({ displayName }: AdminSidebarProps) {
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-[#242424] hover:text-text-primary"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-mid-concrete hover:text-text-primary"
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
@@ -93,7 +93,7 @@ export function AdminSidebar({ displayName }: AdminSidebarProps) {
                     'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
                     isActive
                       ? 'bg-bragg-lime/10 font-medium text-bragg-lime'
-                      : 'text-text-secondary hover:bg-[#1a1a1a] hover:text-text-primary',
+                      : 'text-text-secondary hover:bg-dark-concrete hover:text-text-primary',
                     collapsed && 'justify-center px-0',
                   )}
                   title={collapsed ? item.label : undefined}
@@ -108,12 +108,12 @@ export function AdminSidebar({ displayName }: AdminSidebarProps) {
       </nav>
 
       {/* Sign out */}
-      <div className="border-t border-[#333333] px-2 py-3">
+      <div className="border-t border-wire px-2 py-3">
         <form action={async () => { await signOutAction() }}>
           <button
             type="submit"
             className={cn(
-              'flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-text-secondary transition-colors hover:bg-[#1a1a1a] hover:text-text-primary',
+              'flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-text-secondary transition-colors hover:bg-dark-concrete hover:text-text-primary',
               collapsed && 'justify-center px-0',
             )}
             title={collapsed ? 'Sign out' : undefined}

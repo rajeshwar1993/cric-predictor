@@ -49,7 +49,7 @@ export function RangePicker({
             aria-label={option}
             disabled={disabled}
             className={cn(
-              'rounded-sm px-4 py-2 font-body text-sm font-bold uppercase tracking-wide transition-all duration-[180ms] ease-out',
+              'rounded-sm px-4 py-2 font-body text-sm font-bold uppercase tracking-wide transition-all duration-[var(--duration-state)] ease-out',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bragg-lime focus-visible:ring-offset-2 focus-visible:ring-offset-concrete-black',
               isSelected
                 ? 'bg-bragg-lime text-text-on-primary shadow-color-block'
