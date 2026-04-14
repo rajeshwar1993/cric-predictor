@@ -221,7 +221,6 @@ export type Database = {
           is_resolved: boolean
           is_voided: boolean
           points_weight: number
-          sort_order: number
           created_at: string
           updated_at: string
         }
@@ -244,7 +243,6 @@ export type Database = {
           is_resolved?: boolean
           is_voided?: boolean
           points_weight?: number
-          sort_order?: number
           created_at?: string
           updated_at?: string
         }
@@ -267,7 +265,6 @@ export type Database = {
           is_resolved?: boolean
           is_voided?: boolean
           points_weight?: number
-          sort_order?: number
           created_at?: string
           updated_at?: string
         }
