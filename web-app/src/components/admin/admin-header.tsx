@@ -1,8 +1,9 @@
 'use client'
 
-import { usePathname } from 'next/navigation'
+import { useTransition } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, RefreshCw } from 'lucide-react'
 
 const ROUTE_LABELS: Record<string, string> = {
   overview: 'Overview',
@@ -22,9 +23,17 @@ const ROUTE_LABELS: Record<string, string> = {
 
 export function AdminHeader() {
   const pathname = usePathname()
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
 
   // Build breadcrumbs from pathname: /admin/fixtures/abc → ["fixtures", "abc"]
   const segments = pathname.replace('/admin', '').split('/').filter(Boolean)
+
+  function handleRefresh() {
+    startTransition(() => {
+      router.refresh()
+    })
+  }
 
   return (
     <header className="flex h-14 shrink-0 items-center border-b border-wire bg-concrete-black px-6">
@@ -51,6 +60,14 @@ export function AdminHeader() {
           )
         })}
       </nav>
+      <button
+        onClick={handleRefresh}
+        disabled={isPending}
+        aria-label="Refresh page data"
+        className="ml-auto rounded-md p-1.5 text-text-secondary transition-colors hover:bg-dark-concrete hover:text-text-primary disabled:opacity-50"
+      >
+        <RefreshCw size={16} className={isPending ? 'animate-spin' : ''} />
+      </button>
     </header>
   )
 }
