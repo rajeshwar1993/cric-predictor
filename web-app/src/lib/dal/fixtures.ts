@@ -72,7 +72,7 @@ function mapTeam(raw: {
 // ---------------------------------------------------------------------------
 
 /**
- * Fetch the next N upcoming or live fixtures for a gang.
+ * Fetch the next N upcoming fixtures for a gang.
  *
  * Joins home/away team info, fetches the gang's prediction deadline setting,
  * and queries how many members have predicted for each fixture.
@@ -105,7 +105,7 @@ export async function getUpcomingFixtures(
 
   const predictionDeadlineMins = gangSeason.prediction_deadline_mins ?? 45
 
-  // Step 2: Fetch upcoming/live fixtures sorted by start_datetime
+  // Step 2: Fetch upcoming fixtures sorted by start_datetime
   const { data: fixtures, error: fixturesError } = await supabase
     .from('v2_league_season_fixtures')
     .select(
@@ -121,7 +121,7 @@ export async function getUpcomingFixtures(
     )
     .eq('league_id', gangSeason.league_id)
     .eq('season_id', gangSeason.season_id)
-    .in('status', ['upcoming', 'live'])
+    .in('status', ['upcoming'])
     .order('start_datetime', { ascending: true })
     .limit(limit)
 
