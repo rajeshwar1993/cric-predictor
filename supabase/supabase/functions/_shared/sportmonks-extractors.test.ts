@@ -28,7 +28,9 @@ import {
   extractHomeTeamInningsScore,
   extractAwayTeamInningsScore,
   extractForScenario,
+  extractLiveScorecard,
   type ExtractResult,
+  type LiveScorecardData,
 } from './sportmonks-extractors.ts';
 
 // ---------------------------------------------------------------------------
@@ -1082,3 +1084,211 @@ Deno.test('extractForScenario — away_team_powerplay_wickets_lost', async (t) =
 //
 // For detectRunsRowRegressions, we would mock console.warn and verify calls.
 // =============================================================================
+
+// =============================================================================
+// extractLiveScorecard — non-striker identification
+// =============================================================================
+
+Deno.test('extractLiveScorecard — non-striker', async (t) => {
+  await t.step('identifies non-striker when 1 active + 1 undismissed inactive', () => {
+    const fixture = makeFixture({
+      localteam_id: 100,
+      visitorteam_id: 200,
+      status: '1st Innings',
+      runs: [makeRun({ team_id: 100, inning: 1, overs: 10.3, score: 85, wickets: 2 })],
+      batting: [
+        makeBatting({ team_id: 100, scoreboard: 'S1', player_id: 1001, active: false, sort: 1, score: 15, ball: 12, fow_score: 30, fow_balls: 4.2 }),
+        makeBatting({ team_id: 100, scoreboard: 'S1', player_id: 1002, active: false, sort: 2, score: 20, ball: 18, fow_score: 55, fow_balls: 7.1 }),
+        makeBatting({ team_id: 100, scoreboard: 'S1', player_id: 1003, active: true, sort: 3, score: 30, ball: 22, fow_score: 0, fow_balls: 0 }),
+        makeBatting({ team_id: 100, scoreboard: 'S1', player_id: 1004, active: false, sort: 4, score: 15, ball: 10, fow_score: 0, fow_balls: 0 }),
+      ],
+    });
+    const result = extractLiveScorecard(fixture);
+    assert(result !== null);
+    assertStrictEquals(result!.striker_name, '1003');
+    assertStrictEquals(result!.striker_score, '30 (22)');
+    assertStrictEquals(result!.non_striker_name, '1004');
+    assertStrictEquals(result!.non_striker_score, '15 (10)');
+  });
+
+  await t.step('no non-striker when 0 active batsmen (between deliveries)', () => {
+    const fixture = makeFixture({
+      localteam_id: 100,
+      visitorteam_id: 200,
+      status: '1st Innings',
+      runs: [makeRun({ team_id: 100, inning: 1, overs: 10.3, score: 85, wickets: 1 })],
+      batting: [
+        makeBatting({ team_id: 100, scoreboard: 'S1', player_id: 1001, active: false, sort: 1, score: 40, ball: 30, fow_score: 0, fow_balls: 0 }),
+        makeBatting({ team_id: 100, scoreboard: 'S1', player_id: 1002, active: false, sort: 2, score: 35, ball: 25, fow_score: 0, fow_balls: 0 }),
+      ],
+    });
+    const result = extractLiveScorecard(fixture);
+    assert(result !== null);
+    assertStrictEquals(result!.striker_name, null);
+    assertStrictEquals(result!.non_striker_name, null);
+  });
+
+  await t.step('no non-striker when only 1 batting entry exists', () => {
+    const fixture = makeFixture({
+      localteam_id: 100,
+      visitorteam_id: 200,
+      status: '1st Innings',
+      runs: [makeRun({ team_id: 100, inning: 1, overs: 0.3, score: 5, wickets: 0 })],
+      batting: [
+        makeBatting({ team_id: 100, scoreboard: 'S1', player_id: 1001, active: true, sort: 1, score: 5, ball: 3, fow_score: 0, fow_balls: 0 }),
+      ],
+    });
+    const result = extractLiveScorecard(fixture);
+    assert(result !== null);
+    assertStrictEquals(result!.striker_name, '1001');
+    assertStrictEquals(result!.striker_score, '5 (3)');
+    assertStrictEquals(result!.non_striker_name, null);
+    assertStrictEquals(result!.non_striker_score, null);
+  });
+
+  await t.step('picks highest sort among multiple undismissed inactive batsmen', () => {
+    const fixture = makeFixture({
+      localteam_id: 100,
+      visitorteam_id: 200,
+      status: '1st Innings',
+      runs: [makeRun({ team_id: 100, inning: 1, overs: 5.0, score: 40, wickets: 0 })],
+      batting: [
+        makeBatting({ team_id: 100, scoreboard: 'S1', player_id: 1001, active: true, sort: 1, score: 20, ball: 15, fow_score: 0, fow_balls: 0 }),
+        makeBatting({ team_id: 100, scoreboard: 'S1', player_id: 1002, active: false, sort: 2, score: 15, ball: 12, fow_score: 0, fow_balls: 0 }),
+        makeBatting({ team_id: 100, scoreboard: 'S1', player_id: 1003, active: false, sort: 3, score: 5, ball: 3, fow_score: 0, fow_balls: 0 }),
+      ],
+    });
+    const result = extractLiveScorecard(fixture);
+    assert(result !== null);
+    assertStrictEquals(result!.non_striker_name, '1003');
+  });
+
+  await t.step('filters by scoreboard — ignores previous innings batsmen', () => {
+    const fixture = makeFixture({
+      localteam_id: 100,
+      visitorteam_id: 200,
+      status: '2nd Innings',
+      runs: [
+        makeRun({ team_id: 200, inning: 1, overs: 20, score: 180, wickets: 7 }),
+        makeRun({ team_id: 100, inning: 2, overs: 5.0, score: 40, wickets: 0 }),
+      ],
+      batting: [
+        makeBatting({ team_id: 200, scoreboard: 'S1', player_id: 2001, active: false, sort: 1, score: 50, ball: 35, fow_score: 0, fow_balls: 0 }),
+        makeBatting({ team_id: 100, scoreboard: 'S2', player_id: 1001, active: true, sort: 1, score: 25, ball: 18, fow_score: 0, fow_balls: 0 }),
+        makeBatting({ team_id: 100, scoreboard: 'S2', player_id: 1002, active: false, sort: 2, score: 10, ball: 12, fow_score: 0, fow_balls: 0 }),
+      ],
+    });
+    const result = extractLiveScorecard(fixture);
+    assert(result !== null);
+    assertStrictEquals(result!.striker_name, '1001');
+    assertStrictEquals(result!.non_striker_name, '1002');
+  });
+});
+
+// =============================================================================
+// extractLiveScorecard — current partnership
+// =============================================================================
+
+Deno.test('extractLiveScorecard — current partnership', async (t) => {
+  await t.step('partnership with wickets fallen', () => {
+    // Team score: 85, last wicket at 55 → partnership runs = 30
+    // Team overs: 10.3 = 63 balls, last fow at 7.1 = 43 balls → partnership balls = 20
+    const fixture = makeFixture({
+      localteam_id: 100,
+      visitorteam_id: 200,
+      status: '1st Innings',
+      runs: [makeRun({ team_id: 100, inning: 1, overs: 10.3, score: 85, wickets: 2 })],
+      batting: [
+        makeBatting({ team_id: 100, scoreboard: 'S1', player_id: 1001, active: false, sort: 1, score: 15, ball: 12, fow_score: 30, fow_balls: 4.2 }),
+        makeBatting({ team_id: 100, scoreboard: 'S1', player_id: 1002, active: false, sort: 2, score: 20, ball: 18, fow_score: 55, fow_balls: 7.1 }),
+        makeBatting({ team_id: 100, scoreboard: 'S1', player_id: 1003, active: true, sort: 3, score: 30, ball: 22, fow_score: 0, fow_balls: 0 }),
+        makeBatting({ team_id: 100, scoreboard: 'S1', player_id: 1004, active: false, sort: 4, score: 15, ball: 10, fow_score: 0, fow_balls: 0 }),
+      ],
+    });
+    const result = extractLiveScorecard(fixture);
+    assert(result !== null);
+    assertStrictEquals(result!.current_partnership, '30 (20)');
+  });
+
+  await t.step('opening partnership (0 wickets fallen)', () => {
+    // Team score: 40, 0 wickets → partnership = 40 runs
+    // Team overs: 5.0 = 30 balls → partnership balls = 30
+    const fixture = makeFixture({
+      localteam_id: 100,
+      visitorteam_id: 200,
+      status: '1st Innings',
+      runs: [makeRun({ team_id: 100, inning: 1, overs: 5.0, score: 40, wickets: 0 })],
+      batting: [
+        makeBatting({ team_id: 100, scoreboard: 'S1', player_id: 1001, active: true, sort: 1, score: 20, ball: 15, fow_score: 0, fow_balls: 0 }),
+        makeBatting({ team_id: 100, scoreboard: 'S1', player_id: 1002, active: false, sort: 2, score: 15, ball: 12, fow_score: 0, fow_balls: 0 }),
+      ],
+    });
+    const result = extractLiveScorecard(fixture);
+    assert(result !== null);
+    assertStrictEquals(result!.current_partnership, '40 (30)');
+  });
+
+  await t.step('partnership at start of innings (0 score)', () => {
+    const fixture = makeFixture({
+      localteam_id: 100,
+      visitorteam_id: 200,
+      status: '1st Innings',
+      runs: [makeRun({ team_id: 100, inning: 1, overs: 0.0, score: 0, wickets: 0 })],
+      batting: [
+        makeBatting({ team_id: 100, scoreboard: 'S1', player_id: 1001, active: true, sort: 1, score: 0, ball: 0, fow_score: 0, fow_balls: 0 }),
+        makeBatting({ team_id: 100, scoreboard: 'S1', player_id: 1002, active: false, sort: 2, score: 0, ball: 0, fow_score: 0, fow_balls: 0 }),
+      ],
+    });
+    const result = extractLiveScorecard(fixture);
+    assert(result !== null);
+    assertStrictEquals(result!.current_partnership, '0 (0)');
+  });
+
+  await t.step('partnership null when no striker (between deliveries)', () => {
+    const fixture = makeFixture({
+      localteam_id: 100,
+      visitorteam_id: 200,
+      status: '1st Innings',
+      runs: [makeRun({ team_id: 100, inning: 1, overs: 10.3, score: 85, wickets: 1 })],
+      batting: [
+        makeBatting({ team_id: 100, scoreboard: 'S1', player_id: 1001, active: false, sort: 1, score: 40, ball: 30, fow_score: 0, fow_balls: 0 }),
+        makeBatting({ team_id: 100, scoreboard: 'S1', player_id: 1002, active: false, sort: 2, score: 35, ball: 25, fow_score: 0, fow_balls: 0 }),
+      ],
+    });
+    const result = extractLiveScorecard(fixture);
+    assert(result !== null);
+    assertStrictEquals(result!.current_partnership, null);
+  });
+
+  await t.step('partnership null when no batting data', () => {
+    const fixture = makeFixture({
+      localteam_id: 100,
+      visitorteam_id: 200,
+      status: '1st Innings',
+      runs: [makeRun({ team_id: 100, inning: 1, overs: 5.0, score: 40, wickets: 0 })],
+    });
+    const result = extractLiveScorecard(fixture);
+    assert(result !== null);
+    assertStrictEquals(result!.current_partnership, null);
+  });
+
+  await t.step('uses highest fow_score for last wicket', () => {
+    // Team score: 95, last fow at 55 → partnership runs = 40
+    // Team overs: 12.0 = 72 balls, last fow at 7.1 = 43 balls → partnership balls = 29
+    const fixture = makeFixture({
+      localteam_id: 100,
+      visitorteam_id: 200,
+      status: '1st Innings',
+      runs: [makeRun({ team_id: 100, inning: 1, overs: 12.0, score: 95, wickets: 2 })],
+      batting: [
+        makeBatting({ team_id: 100, scoreboard: 'S1', player_id: 1001, active: false, sort: 1, score: 15, ball: 12, fow_score: 30, fow_balls: 4.2 }),
+        makeBatting({ team_id: 100, scoreboard: 'S1', player_id: 1002, active: false, sort: 2, score: 20, ball: 18, fow_score: 55, fow_balls: 7.1 }),
+        makeBatting({ team_id: 100, scoreboard: 'S1', player_id: 1003, active: true, sort: 3, score: 35, ball: 25, fow_score: 0, fow_balls: 0 }),
+        makeBatting({ team_id: 100, scoreboard: 'S1', player_id: 1004, active: false, sort: 4, score: 20, ball: 15, fow_score: 0, fow_balls: 0 }),
+      ],
+    });
+    const result = extractLiveScorecard(fixture);
+    assert(result !== null);
+    assertStrictEquals(result!.current_partnership, '40 (29)');
+  });
+});

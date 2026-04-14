@@ -602,31 +602,62 @@ export function extractLiveScorecard(fixture: SmFixture): LiveScorecardData | nu
     return `${runs.score}/${runs.wickets}`;
   };
 
-  // Find active batsmen (on-strike and non-striker)
+  // Current innings batting entries (filtered by team and scoreboard)
+  const currentScoreboard = 'S' + currentInningsRun.inning;
+  const inningsBatting = fixture.batting
+    ? fixture.batting.filter(
+        (b) => b.team_id === battingTeamApiId && b.scoreboard === currentScoreboard
+      )
+    : [];
+
+  // Find striker and non-striker
   let strikerName: string | null = null;
   let strikerScore: string | null = null;
   let nonStrikerName: string | null = null;
   let nonStrikerScore: string | null = null;
 
-  if (fixture.batting) {
-    // Active batsmen have active=true in the current innings
-    const activeBatsmen = fixture.batting.filter(
-      (b) => b.active && b.team_id === battingTeamApiId
+  // Striker: the single batsman marked active=true by Sportmonks
+  const striker = inningsBatting.find((b) => b.active);
+  if (striker) {
+    strikerName = String(striker.player_id);
+    strikerScore = `${striker.score} (${striker.ball})`;
+
+    // Non-striker: active=false and not dismissed (fow_score === 0 && fow_balls === 0).
+    // Sportmonks only marks one batsman active at a time; the other undismissed
+    // batsman at the crease is the non-striker.
+    // If multiple match (edge case), take highest sort (most recently arrived).
+    const nonStrikerCandidates = inningsBatting.filter(
+      (b) => !b.active && b.fow_score === 0 && b.fow_balls === 0
     );
-
-    // Sort by sort order — first active is typically the striker
-    activeBatsmen.sort((a, b) => a.sort - b.sort);
-
-    if (activeBatsmen.length >= 1) {
-      const striker = activeBatsmen[0];
-      strikerName = String(striker.player_id);
-      strikerScore = `${striker.score} (${striker.ball})`;
-    }
-    if (activeBatsmen.length >= 2) {
-      const nonStriker = activeBatsmen[1];
+    if (nonStrikerCandidates.length > 0) {
+      nonStrikerCandidates.sort((a, b) => b.sort - a.sort);
+      const nonStriker = nonStrikerCandidates[0];
       nonStrikerName = String(nonStriker.player_id);
       nonStrikerScore = `${nonStriker.score} (${nonStriker.ball})`;
     }
+  }
+
+  // Calculate current partnership
+  let currentPartnership: string | null = null;
+  if (strikerName) {
+    // Find the last fall-of-wicket score (highest fow_score among dismissed batsmen)
+    const dismissed = inningsBatting.filter((b) => b.fow_score > 0);
+    let lastFowScore = 0;
+    let lastFowBalls = 0;
+    if (dismissed.length > 0) {
+      dismissed.sort((a, b) => b.fow_score - a.fow_score);
+      lastFowScore = dismissed[0].fow_score;
+      lastFowBalls = dismissed[0].fow_balls;
+    }
+
+    const partnershipRuns = currentInningsRun.score - lastFowScore;
+
+    // Convert overs notation (e.g. 13.3) to total balls
+    const oversToBalls = (overs: number): number =>
+      Math.floor(overs) * 6 + Math.round((overs % 1) * 10);
+
+    const partnershipBalls = oversToBalls(currentInningsRun.overs) - oversToBalls(lastFowBalls);
+    currentPartnership = `${partnershipRuns} (${partnershipBalls})`;
   }
 
   // Find active bowler
@@ -660,7 +691,7 @@ export function extractLiveScorecard(fixture: SmFixture): LiveScorecardData | nu
     non_striker_name: nonStrikerName,
     non_striker_score: nonStrikerScore,
     current_bowler: currentBowler,
-    current_partnership: null, // Would need calculated from batting entries
+    current_partnership: currentPartnership,
   };
 }
 
