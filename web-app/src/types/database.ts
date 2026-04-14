@@ -851,7 +851,7 @@ export type Database = {
       }
       get_gang_by_invite_code: {
         Args: {
-          p_invite_code: string
+          p_code: string
         }
         Returns: {
           id: string

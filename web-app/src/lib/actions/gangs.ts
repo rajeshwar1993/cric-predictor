@@ -149,7 +149,7 @@ export async function joinGangByCode(
   // Look up gang by invite code via RPC (SECURITY DEFINER — bypasses RLS)
   const { data: gangRows, error: rpcError } = await supabase.rpc(
     'get_gang_by_invite_code',
-    { p_invite_code: parsed.data },
+    { p_code: parsed.data },
   )
 
   if (rpcError) {
