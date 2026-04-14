@@ -125,6 +125,7 @@ function mapSmStatusToInternal(smStatus: string): InternalStatus {
 class IdMapper {
   private teamApiToUuid = new Map<string, string>();
   private playerApiToUuid = new Map<string, string>();
+  private playerApiToName = new Map<string, string>();
   private supabase: SupabaseClient;
 
   constructor(supabase: SupabaseClient) {
@@ -163,6 +164,24 @@ class IdMapper {
     if (data) {
       this.playerApiToUuid.set(key, data.id);
       return data.id;
+    }
+    return null;
+  }
+
+  async getPlayerName(apiId: number): Promise<string | null> {
+    const key = String(apiId);
+    const cached = this.playerApiToName.get(key);
+    if (cached) return cached;
+
+    const { data } = await this.supabase
+      .from('v2_players')
+      .select('name')
+      .eq('api_id', key)
+      .single();
+
+    if (data) {
+      this.playerApiToName.set(key, data.name);
+      return data.name;
     }
     return null;
   }
@@ -971,9 +990,38 @@ async function upsertLiveScorecard(
     battingTeamUuid = await idMapper.getTeamUuid(scorecard.batting_team_api_id);
   }
 
-  // The extractor stores player_id as strings in striker/non-striker names.
-  // The frontend will map API IDs to display names on read.
-  // This keeps the cron fast — no extra DB lookups for names.
+  // Resolve player API IDs → display names (cached per run via IdMapper).
+  // Fallback to raw API ID string if player not found in v2_players.
+  let strikerName = scorecard.striker_name;
+  if (strikerName) {
+    const apiId = parseInt(strikerName, 10);
+    if (!isNaN(apiId)) {
+      strikerName = (await idMapper.getPlayerName(apiId)) ?? strikerName;
+    }
+  }
+
+  let nonStrikerName = scorecard.non_striker_name;
+  if (nonStrikerName) {
+    const apiId = parseInt(nonStrikerName, 10);
+    if (!isNaN(apiId)) {
+      nonStrikerName = (await idMapper.getPlayerName(apiId)) ?? nonStrikerName;
+    }
+  }
+
+  // current_bowler format: "player_id: overs-maidens-runs-wickets"
+  let currentBowler = scorecard.current_bowler;
+  if (currentBowler) {
+    const colonIdx = currentBowler.indexOf(':');
+    if (colonIdx > 0) {
+      const apiId = parseInt(currentBowler.substring(0, colonIdx), 10);
+      if (!isNaN(apiId)) {
+        const bowlerName = await idMapper.getPlayerName(apiId);
+        if (bowlerName) {
+          currentBowler = bowlerName + currentBowler.substring(colonIdx);
+        }
+      }
+    }
+  }
 
   const { error: upsertErr } = await supabase
     .from('v2_fixture_live_scores')
@@ -986,11 +1034,11 @@ async function upsertLiveScorecard(
       batting_team_id: battingTeamUuid,
       current_run_rate: scorecard.current_run_rate,
       last_6_balls: scorecard.last_6_balls,
-      striker_name: scorecard.striker_name,
+      striker_name: strikerName,
       striker_score: scorecard.striker_score,
-      non_striker_name: scorecard.non_striker_name,
+      non_striker_name: nonStrikerName,
       non_striker_score: scorecard.non_striker_score,
-      current_bowler: scorecard.current_bowler,
+      current_bowler: currentBowler,
       current_partnership: scorecard.current_partnership,
       last_polled_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
