@@ -132,13 +132,19 @@ function LiveMatchesSectionStory({
   }
 
   return (
-    <section className={cn('mt-8')} aria-label="Live matches">
-      <h2 className="mb-4 flex items-center gap-2 text-caption text-text-muted">
+    <section
+      className={cn(
+        'mt-8 rounded-lg border border-lime-wire bg-lime-wash p-4 shadow-color-block',
+        'motion-safe:animate-[pop-in_250ms_var(--ease-overshoot)]',
+      )}
+      aria-label="Live matches"
+    >
+      <h2 className="mb-4 flex items-center gap-2 text-caption text-bragg-lime">
         <span
-          className="inline-block size-2 animate-pulse rounded-full bg-success"
+          className="inline-block size-2.5 animate-pulse rounded-full bg-success"
           aria-hidden="true"
         />
-        LIVE
+        LIVE NOW
       </h2>
 
       <div className="flex flex-col gap-4">

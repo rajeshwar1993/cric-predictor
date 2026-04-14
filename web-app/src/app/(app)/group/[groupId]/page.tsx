@@ -106,6 +106,12 @@ export default async function GangPage({ params }: GangPageProps) {
         </Suspense>
       )}
 
+      {/* Live Matches — MTCH-002 (promoted above upcoming) */}
+      <LiveMatchesSection
+        gangId={gang.id}
+        initialLiveFixtures={liveFixtures}
+      />
+
       {/* Upcoming Matches — MTCH-001 */}
       <Suspense fallback={<MatchListSkeleton />}>
         <UpcomingMatches
@@ -113,12 +119,6 @@ export default async function GangPage({ params }: GangPageProps) {
           totalMembers={gang.members.filter((m) => m.status === 'approved').length}
         />
       </Suspense>
-
-      {/* Live Matches — MTCH-002 */}
-      <LiveMatchesSection
-        gangId={gang.id}
-        initialLiveFixtures={liveFixtures}
-      />
 
       {/* Recent Results — MTCH-003 */}
       <Suspense fallback={<MatchListSkeleton count={3} />}>

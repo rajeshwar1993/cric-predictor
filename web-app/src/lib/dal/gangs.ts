@@ -131,7 +131,7 @@ export async function getGangByInviteCode(
   const supabase = await createServerClient()
 
   const { data, error } = await supabase.rpc('get_gang_by_invite_code', {
-    p_invite_code: code,
+    p_code: code,
   })
 
   if (error) throw error

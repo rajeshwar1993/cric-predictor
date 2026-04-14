@@ -37,9 +37,9 @@ function isTomorrow(date: Date, now: Date): boolean {
 /**
  * Format a match time for display.
  *
- * - If today:    "Today . 7:30 PM IST"
- * - If tomorrow: "Tomorrow . 7:30 PM IST"
- * - Otherwise:   "Sat, 28 Mar . 7:30 PM IST"
+ * - If today:    "Today . 7:30 PM"
+ * - If tomorrow: "Tomorrow . 7:30 PM"
+ * - Otherwise:   "Sat, 28 Mar . 7:30 PM"
  *
  * The 12h/24h format follows the user's system locale.
  */
@@ -50,7 +50,7 @@ export function formatMatchTime(input: DateInput): string {
   const timeStr = new Intl.DateTimeFormat(undefined, {
     hour: 'numeric',
     minute: '2-digit',
-    timeZoneName: 'short',
+    timeZoneName: 'shortGeneric',
   }).format(date)
 
   if (isSameDay(date, now)) {
@@ -71,17 +71,36 @@ export function formatMatchTime(input: DateInput): string {
 }
 
 /**
- * Format a deadline time — time only with timezone.
+ * Format a deadline time with date context when needed.
  *
- * Example: "6:45 PM IST"
+ * - Same day:  "6:45 PM"
+ * - Tomorrow:  "Tomorrow, 7:30 AM"
+ * - Other day: "Sat 28 Mar, 7:30 AM"
  */
 export function formatDeadline(input: DateInput): string {
   const date = toDate(input)
-  return new Intl.DateTimeFormat(undefined, {
+  const now = new Date()
+
+  const timeStr = new Intl.DateTimeFormat(undefined, {
     hour: 'numeric',
     minute: '2-digit',
-    timeZoneName: 'short',
   }).format(date)
+
+  if (isSameDay(date, now)) {
+    return timeStr
+  }
+
+  if (isTomorrow(date, now)) {
+    return `Tomorrow, ${timeStr}`
+  }
+
+  const dayStr = new Intl.DateTimeFormat(undefined, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  }).format(date)
+
+  return `${dayStr}, ${timeStr}`
 }
 
 /**

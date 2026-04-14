@@ -64,28 +64,27 @@ function cronMeta(key: string): Pick<EdgeFunctionHealth, 'cronKey' | 'scheduleLa
 export async function getOperationalHealth(): Promise<EdgeFunctionHealth[]> {
   const supabase = createServiceRoleClient()
   const healthChecks: EdgeFunctionHealth[] = []
-
-  const STALE_THRESHOLD_HOURS = 6
   const now = new Date()
 
-  // 1. Fixture sync — check last fixture created_at
-  const { data: latestFixture } = await supabase
+  // 1. Fixture sync — use status_changed_at as proxy (sync updates this on
+  //    every non-protected fixture, even when status hasn't changed)
+  const { data: latestFixtureSync } = await supabase
     .from('v2_league_season_fixtures')
-    .select('created_at')
-    .order('created_at', { ascending: false })
+    .select('status_changed_at')
+    .order('status_changed_at', { ascending: false })
     .limit(1)
     .maybeSingle()
 
-  if (latestFixture) {
-    const lastUpdate = new Date(latestFixture.created_at)
+  if (latestFixtureSync) {
+    const lastSync = new Date(latestFixtureSync.status_changed_at)
     const hoursSince =
-      (now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60)
+      (now.getTime() - lastSync.getTime()) / (1000 * 60 * 60)
     healthChecks.push({
       name: 'Fixture Sync',
       description: 'Syncs fixture data from external API',
-      status: hoursSince > STALE_THRESHOLD_HOURS * 24 ? 'stale' : 'healthy',
-      lastActivity: latestFixture.created_at,
-      message: `Last fixture created ${Math.round(hoursSince)}h ago`,
+      status: hoursSince > 30 ? 'stale' : 'healthy', // Daily job — stale after 30h
+      lastActivity: latestFixtureSync.status_changed_at,
+      message: `Last synced ${Math.round(hoursSince)}h ago`,
       ...cronMeta('sync-fixtures'),
     })
   } else {
@@ -99,39 +98,34 @@ export async function getOperationalHealth(): Promise<EdgeFunctionHealth[]> {
     })
   }
 
-  // 2. Pre-match sync — check last pre_match_synced fixture via status_changed_at
-  const { data: latestPreMatch } = await supabase
+  // 2. Pre-match sync — event-driven (only runs for fixtures starting soon).
+  //    Count how many fixtures are pending pre-match sync to show actionable info.
+  const { count: pendingPreMatch } = await supabase
     .from('v2_league_season_fixtures')
-    .select('status_changed_at')
+    .select('*', { count: 'exact', head: true })
+    .eq('pre_match_synced', false)
+    .eq('status', 'upcoming')
+
+  const { count: completedPreMatch } = await supabase
+    .from('v2_league_season_fixtures')
+    .select('*', { count: 'exact', head: true })
     .eq('pre_match_synced', true)
-    .order('status_changed_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
 
-  if (latestPreMatch) {
-    const lastSync = new Date(latestPreMatch.status_changed_at)
-    const hoursSince =
-      (now.getTime() - lastSync.getTime()) / (1000 * 60 * 60)
-    healthChecks.push({
-      name: 'Pre-Match Sync',
-      description: 'Catches last-minute fixture timing changes before match start',
-      status: hoursSince > STALE_THRESHOLD_HOURS ? 'stale' : 'healthy',
-      lastActivity: latestPreMatch.status_changed_at,
-      message: `Last pre-match sync ${Math.round(hoursSince)}h ago`,
-      ...cronMeta('sync-fixtures-pre-match'),
-    })
-  } else {
-    healthChecks.push({
-      name: 'Pre-Match Sync',
-      description: 'Catches last-minute fixture timing changes before match start',
-      status: 'unknown',
-      lastActivity: null,
-      message: 'No pre-match syncs recorded',
-      ...cronMeta('sync-fixtures-pre-match'),
-    })
-  }
+  const pending = pendingPreMatch ?? 0
+  const completed = completedPreMatch ?? 0
+  healthChecks.push({
+    name: 'Pre-Match Sync',
+    description: 'Catches last-minute fixture timing changes before match start',
+    status: completed > 0 || pending === 0 ? 'healthy' : 'unknown',
+    lastActivity: null,
+    message:
+      pending > 0
+        ? `${pending} upcoming fixture(s) awaiting pre-match sync`
+        : `All fixtures synced (${completed} total)`,
+    ...cronMeta('sync-fixtures-pre-match'),
+  })
 
-  // 3. Live poll & resolve — check last_polled_at
+  // 3. Live poll & resolve — check last_polled_at (reliably updated every cycle)
   const { data: latestPoll } = await supabase
     .from('v2_fixture_live_scores')
     .select('last_polled_at')
@@ -140,47 +134,62 @@ export async function getOperationalHealth(): Promise<EdgeFunctionHealth[]> {
     .limit(1)
     .maybeSingle()
 
+  // Also check if any fixtures are currently live
+  const { count: liveFixtureCount } = await supabase
+    .from('v2_league_season_fixtures')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'live')
+
   if (latestPoll?.last_polled_at) {
     const lastPoll = new Date(latestPoll.last_polled_at)
     const hoursSince =
       (now.getTime() - lastPoll.getTime()) / (1000 * 60 * 60)
+    const hasLiveFixtures = (liveFixtureCount ?? 0) > 0
     healthChecks.push({
       name: 'Live Poll & Resolve',
       description: 'Live score polling and progressive scenario resolution',
-      status: hoursSince > STALE_THRESHOLD_HOURS ? 'stale' : 'healthy',
+      // Only stale if there are live fixtures but polling hasn't happened recently
+      status: hasLiveFixtures && hoursSince > 0.1 ? 'stale' : 'healthy',
       lastActivity: latestPoll.last_polled_at,
-      message: `Last polled ${Math.round(hoursSince)}h ago`,
+      message: hasLiveFixtures
+        ? `Polling ${liveFixtureCount} live fixture(s) · last ${Math.round(hoursSince)}h ago`
+        : `Idle — no live fixtures · last polled ${Math.round(hoursSince)}h ago`,
       ...cronMeta('live-poll-resolve-fixtures'),
     })
   } else {
     healthChecks.push({
       name: 'Live Poll & Resolve',
       description: 'Live score polling and progressive scenario resolution',
-      status: 'unknown',
+      status: (liveFixtureCount ?? 0) > 0 ? 'stale' : 'healthy',
       lastActivity: null,
-      message: 'No polling activity recorded',
+      message:
+        (liveFixtureCount ?? 0) > 0
+          ? `${liveFixtureCount} live fixture(s) but no polling recorded`
+          : 'Idle — no live fixtures',
       ...cronMeta('live-poll-resolve-fixtures'),
     })
   }
 
-  // 4. Seed scenarios — check last seeded scenario
+  // 4. Seed scenarios — event-driven (seeds scenarios within 14h of match start).
+  //    Use most recent scenario updated_at as activity indicator.
   const { data: latestScenario } = await supabase
     .from('v2_fixture_scenarios')
-    .select('created_at')
-    .order('created_at', { ascending: false })
+    .select('updated_at')
+    .order('updated_at', { ascending: false })
     .limit(1)
     .maybeSingle()
 
   if (latestScenario) {
-    const lastSeeded = new Date(latestScenario.created_at)
+    const lastActivity = new Date(latestScenario.updated_at)
     const hoursSince =
-      (now.getTime() - lastSeeded.getTime()) / (1000 * 60 * 60)
+      (now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60)
     healthChecks.push({
       name: 'Seed Scenarios',
       description: 'Seeds fixture scenarios for eligible gang/fixture pairs',
-      status: hoursSince > STALE_THRESHOLD_HOURS * 12 ? 'stale' : 'healthy',
-      lastActivity: latestScenario.created_at,
-      message: `Last scenario seeded ${Math.round(hoursSince)}h ago`,
+      // Scenarios are event-driven; only stale if no activity for 24h+
+      status: hoursSince > 24 ? 'stale' : 'healthy',
+      lastActivity: latestScenario.updated_at,
+      message: `Last activity ${Math.round(hoursSince)}h ago`,
       ...cronMeta('seed-scenarios'),
     })
   } else {
@@ -194,7 +203,8 @@ export async function getOperationalHealth(): Promise<EdgeFunctionHealth[]> {
     })
   }
 
-  // 5. Deadline reminders — check last deadline_reminder notification
+  // 5. Deadline reminders — event-driven (only sends when deadlines approach).
+  //    Show last reminder sent, but don't mark stale when nothing is due.
   const { data: latestReminder } = await supabase
     .from('v2_notifications')
     .select('created_at')
@@ -210,18 +220,19 @@ export async function getOperationalHealth(): Promise<EdgeFunctionHealth[]> {
     healthChecks.push({
       name: 'Deadline Reminders',
       description: 'Sends notifications before prediction deadline closes',
-      status: hoursSince > STALE_THRESHOLD_HOURS * 12 ? 'stale' : 'healthy',
+      // Event-driven — only stale if no reminders for 48h (implies missed deadlines)
+      status: hoursSince > 48 ? 'stale' : 'healthy',
       lastActivity: latestReminder.created_at,
-      message: `Last reminder ${Math.round(hoursSince)}h ago`,
+      message: `Last reminder sent ${Math.round(hoursSince)}h ago`,
       ...cronMeta('deadline-reminders'),
     })
   } else {
     healthChecks.push({
       name: 'Deadline Reminders',
       description: 'Sends notifications before prediction deadline closes',
-      status: 'unknown',
+      status: 'healthy',
       lastActivity: null,
-      message: 'No deadline reminders sent yet',
+      message: 'No reminders sent yet — triggers when deadlines approach',
       ...cronMeta('deadline-reminders'),
     })
   }

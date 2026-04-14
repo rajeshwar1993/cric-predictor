@@ -176,7 +176,7 @@ describe('getUpcomingFixtures', () => {
     await getUpcomingFixtures('gang-1')
 
     expect(mockFrom).toHaveBeenCalledWith('v2_league_season_fixtures')
-    expect(mockIn).toHaveBeenCalledWith('status', ['upcoming', 'live'])
+    expect(mockIn).toHaveBeenCalledWith('status', ['upcoming'])
     expect(mockOrder).toHaveBeenCalledWith('start_datetime', { ascending: true })
     expect(mockLimit).toHaveBeenCalledWith(3)
   })
