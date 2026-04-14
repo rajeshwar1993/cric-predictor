@@ -390,7 +390,7 @@ export async function getFixtureDetail(
           'id, gang_id, slug, title, is_resolved, is_voided, correct_answer, resolution_phase',
         )
         .eq('fixture_id', fixtureId)
-        .order('sort_order'),
+        .order('resolution_phase'),
       supabase
         .from('v2_predictions')
         .select('gang_id, user_id')

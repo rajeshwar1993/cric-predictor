@@ -536,7 +536,6 @@ const RAW_SCENARIO_TOSS = {
   correct_answer: 'team-mi',
   is_resolved: true,
   is_voided: false,
-  sort_order: 1,
 }
 
 const RAW_SCENARIO_FIRST_WICKET = {
@@ -551,7 +550,6 @@ const RAW_SCENARIO_FIRST_WICKET = {
   correct_answer: null,
   is_resolved: false,
   is_voided: false,
-  sort_order: 2,
 }
 
 const RAW_SCENARIO_VOIDED = {
@@ -566,7 +564,6 @@ const RAW_SCENARIO_VOIDED = {
   correct_answer: null,
   is_resolved: false,
   is_voided: true,
-  sort_order: 5,
 }
 
 describe('getMatchPredictions', () => {

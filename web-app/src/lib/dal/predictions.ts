@@ -333,11 +333,11 @@ export async function getMatchPredictions(
   const { data: scenarioRows, error: scenariosError } = await supabase
     .from('v2_fixture_scenarios')
     .select(
-      'id, title, input_type, points, resolution_phase, correct_answer, is_resolved, is_voided, sort_order',
+      'id, title, input_type, points, resolution_phase, correct_answer, is_resolved, is_voided',
     )
     .eq('gang_id', gangId)
     .eq('fixture_id', fixtureId)
-    .order('sort_order', { ascending: true })
+    .order('resolution_phase', { ascending: true })
 
   if (scenariosError) throw scenariosError
 
