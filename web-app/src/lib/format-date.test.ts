@@ -28,17 +28,51 @@ describe('formatDate', () => {
 })
 
 describe('formatDeadline', () => {
-  test('returns time with timezone abbreviation', () => {
-    const date = new Date('2026-03-28T13:15:00Z')
-    const result = formatDeadline(date)
-    // Should contain time components and a timezone abbreviation
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  test('returns time only when deadline is today', () => {
+    vi.setSystemTime(new Date(2026, 2, 28, 10, 0, 0))
+
+    // Same day, later
+    const deadline = new Date(2026, 2, 28, 18, 45, 0)
+    const result = formatDeadline(deadline)
+
+    // Should contain time but NOT "Tomorrow" or a date
     expect(result).toMatch(/\d/)
-    // Timezone abbreviation (IST, GMT, EST, etc.)
-    expect(result).toMatch(/[A-Z]{2,}/)
+    expect(result).not.toContain('Tomorrow')
+  })
+
+  test('includes "Tomorrow" when deadline is the next day', () => {
+    vi.setSystemTime(new Date(2026, 2, 28, 18, 0, 0))
+
+    const deadline = new Date(2026, 2, 29, 7, 30, 0)
+    const result = formatDeadline(deadline)
+
+    expect(result).toContain('Tomorrow')
+    expect(result).toMatch(/\d/)
+  })
+
+  test('includes date when deadline is beyond tomorrow', () => {
+    vi.setSystemTime(new Date(2026, 2, 28, 12, 0, 0))
+
+    const deadline = new Date(2026, 2, 30, 7, 30, 0)
+    const result = formatDeadline(deadline)
+
+    expect(result).not.toContain('Tomorrow')
+    expect(result).toMatch(/Mar/)
+    expect(result).toMatch(/\d/)
   })
 
   test('accepts an ISO string', () => {
-    const result = formatDeadline('2026-03-28T13:15:00Z')
+    vi.setSystemTime(new Date(2026, 2, 28, 12, 0, 0))
+
+    const result = formatDeadline('2026-03-28T13:15:00')
     expect(result).toMatch(/\d/)
   })
 })
