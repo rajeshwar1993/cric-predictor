@@ -32,6 +32,18 @@ export interface OperationalAlert {
   message: string
 }
 
+/** Row shape for v2_cron_run_status (not yet in generated DB types) */
+interface CronRunStatus {
+  job_key: string
+  status: string
+  started_at: string
+  completed_at: string
+  duration_ms: number
+  summary: Record<string, unknown> | null
+  error_count: number
+  updated_at: string
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -66,25 +78,29 @@ export async function getOperationalHealth(): Promise<EdgeFunctionHealth[]> {
   const healthChecks: EdgeFunctionHealth[] = []
   const now = new Date()
 
-  // 1. Fixture sync — use status_changed_at as proxy (sync updates this on
-  //    every non-protected fixture, even when status hasn't changed)
-  const { data: latestFixtureSync } = await supabase
-    .from('v2_league_season_fixtures')
-    .select('status_changed_at')
-    .order('status_changed_at', { ascending: false })
-    .limit(1)
+  // 1. Fixture sync — read actual run status from v2_cron_run_status
+  //    (replaces proxy-based status_changed_at which was polluted by live-poll)
+  const { data: syncRunRaw } = await supabase
+    .from('v2_cron_run_status' as 'v2_rate_limits')
+    .select('*')
+    .eq('job_key' as 'user_id', 'sync-fixtures')
     .maybeSingle()
+  const syncRun = syncRunRaw as unknown as CronRunStatus | null
 
-  if (latestFixtureSync) {
-    const lastSync = new Date(latestFixtureSync.status_changed_at)
+  if (syncRun) {
+    const lastRun = new Date(syncRun.completed_at)
     const hoursSince =
-      (now.getTime() - lastSync.getTime()) / (1000 * 60 * 60)
+      (now.getTime() - lastRun.getTime()) / (1000 * 60 * 60)
+    const failed = syncRun.status === 'failed'
+    const runSummary = syncRun.summary as Record<string, number> | null
     healthChecks.push({
       name: 'Fixture Sync',
       description: 'Syncs fixture data from external API',
-      status: hoursSince > 30 ? 'stale' : 'healthy', // Daily job — stale after 30h
-      lastActivity: latestFixtureSync.status_changed_at,
-      message: `Last synced ${Math.round(hoursSince)}h ago`,
+      status: failed ? 'stale' : hoursSince > 30 ? 'stale' : 'healthy',
+      lastActivity: syncRun.completed_at,
+      message: failed
+        ? `Last run failed (${syncRun.error_count} error(s), ${syncRun.duration_ms}ms)`
+        : `Last synced ${Math.round(hoursSince)}h ago (${syncRun.duration_ms}ms, ${runSummary?.fixturesSynced ?? 0} fixtures)`,
       ...cronMeta('sync-fixtures'),
     })
   } else {
@@ -93,7 +109,7 @@ export async function getOperationalHealth(): Promise<EdgeFunctionHealth[]> {
       description: 'Syncs fixture data from external API',
       status: 'unknown',
       lastActivity: null,
-      message: 'No fixtures found',
+      message: 'No run recorded yet',
       ...cronMeta('sync-fixtures'),
     })
   }
