@@ -7,7 +7,7 @@ Instructions for deploying Bragg v2 to STG and PROD environments.
 ## Prerequisites
 
 - [Supabase CLI](https://supabase.com/docs/guides/cli) installed (`supabase --version`)
-- Node.js 20+ (see `web-app-2/.nvmrc`)
+- Node.js 20+ (see `web-app/.nvmrc`)
 - Vercel account with project configured
 - Supabase project created (one per environment)
 
@@ -18,7 +18,7 @@ Instructions for deploying Bragg v2 to STG and PROD environments.
 ### Link the project
 
 ```bash
-supabase link --project-ref <project-ref> --workdir supabase-2
+supabase link --project-ref <project-ref> --workdir supabase
 ```
 
 > The project ref is in Supabase Dashboard → Settings → General.
@@ -57,22 +57,22 @@ ORDER BY tablename;
 Also mark old v1 migration history as reverted:
 
 ```bash
-supabase migration repair --status reverted <version1> <version2> ... --workdir supabase-2
+supabase migration repair --status reverted <version1> <version2> ... --workdir supabase
 ```
 
 ### Push migrations
 
 ```bash
 # Dry run first
-supabase db push --workdir supabase-2 --dry-run
+supabase db push --workdir supabase --dry-run
 
 # Apply
-supabase db push --workdir supabase-2
+supabase db push --workdir supabase
 ```
 
 ### Verify in Supabase Studio
 
-- [ ] 19 tables with `v2_` prefix exist
+- [ ] 21 tables with `v2_` prefix exist
 - [ ] `v2_sports` — 1 row (Cricket)
 - [ ] `v2_leagues` — 1 row (IPL)
 - [ ] `v2_seasons` — 1 row (IPL 2026, is_active=true)
@@ -96,7 +96,7 @@ For local development, also add `http://localhost:3001/auth/callback`.
 After migrations are applied, generate types from the live schema:
 
 ```bash
-cd web-app-2
+cd web-app
 npm run db:types
 ```
 
@@ -129,7 +129,7 @@ Push to the branch connected to Vercel, or trigger a manual deploy.
 
 ## 4. Local Development
 
-Create `web-app-2/.env.local`:
+Create `web-app/.env.local`:
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://<ref>.supabase.co
@@ -140,7 +140,7 @@ NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
 ```
 
 ```bash
-cd web-app-2
+cd web-app
 npm install
 npm run dev    # http://localhost:3001
 ```
@@ -167,6 +167,8 @@ npm run dev    # http://localhost:3001
 
 - [ ] Sign in creates a `v2_profiles` row (check in Supabase Studio)
 - [ ] Completing onboarding updates `display_name`, `date_of_birth`, `onboarding_completed`
+- [ ] `v2_cron_run_status` table exists (created by migration `20260415000001`)
+- [ ] `v2_rate_limits` table exists (created by migration `20260408000015`)
 
 ---
 
@@ -196,6 +198,7 @@ const serviceRoleKey =
 supabase functions deploy sync-fixtures --project-ref <project-ref>
 supabase functions deploy sync-fixtures-pre-match --project-ref <project-ref>
 supabase functions deploy live-poll-resolve-fixtures --project-ref <project-ref>
+supabase functions deploy cleanup-stale-fixtures --project-ref <project-ref>
 ```
 
 ### Configure pg_cron Schedules
@@ -257,11 +260,11 @@ SELECT cron.schedule(
   $$SELECT run_deadline_reminders_cron()$$
 );
 
--- 6. rate-limit-cleanup: Daily at midnight UTC
+-- 6. cleanup-rate-limits: Daily at 3 AM UTC
 SELECT cron.schedule(
-  'rate-limit-cleanup',
-  '0 0 * * *',
-  $$DELETE FROM v2_rate_limits WHERE window_start < now() - INTERVAL '24 hours'$$
+  'cleanup-rate-limits',
+  '0 3 * * *',
+  $$SELECT run_cleanup_rate_limits()$$
 );
 ```
 
@@ -289,6 +292,28 @@ ORDER BY start_time DESC
 LIMIT 20;
 ```
 
+#### Verify cron run logging
+
+After the first cron cycle runs (or after manually triggering from admin panel), verify that all functions log to `v2_cron_run_status`:
+
+```sql
+SELECT job_key, status, duration_ms, error_count,
+       completed_at, summary
+FROM v2_cron_run_status
+ORDER BY job_key;
+```
+
+You should see rows for: `cleanup-rate-limits`, `deadline-reminders`, `live-poll-resolve-fixtures`, `seed-scenarios`, `sync-fixtures`, `sync-fixtures-pre-match`. The admin operations page reads from this table for health status.
+
+### Admin access setup
+
+Migration `20260412000001_admin_role.sql` adds an `is_system_admin` flag to `v2_profiles`. To grant admin access to a user, run in **Supabase Dashboard > SQL Editor**:
+
+```sql
+-- Replace with the user's auth.users id
+UPDATE v2_profiles SET is_system_admin = true WHERE id = '<user-uuid>';
+```
+
 ### Table-level GRANT permissions
 
 Migration `20260407000012_grant_table_permissions.sql` grants `SELECT, INSERT, UPDATE, DELETE` on all public tables to `anon`, `authenticated`, and `service_role`. Without this, even service_role queries fail with "permission denied" (this is separate from RLS). Verify after pushing migrations:
@@ -308,7 +333,7 @@ ORDER BY table_name, grantee;
 Supabase CLI requires timestamp-prefixed migration files:
 
 ```
-supabase-2/supabase/migrations/
+supabase/supabase/migrations/
 ├── 20260406000001_initial_schema.sql
 ├── 20260406000002_rls_policies.sql
 ├── 20260406000003_indexes.sql
@@ -316,10 +341,25 @@ supabase-2/supabase/migrations/
 ├── 20260406000005_seed_data.sql
 ├── 20260406000006_migrate_from_v1.sql
 ├── 20260406000012_delete_account_rpc.sql
-└── 20260407000012_grant_table_permissions.sql
+├── 20260407000007_seed_scenarios_function.sql
+├── 20260407000008_create_gang_rpc.sql
+├── 20260407000009_delete_gang_rpc.sql
+├── 20260407000010_seed_scenarios_cron.sql
+├── 20260407000011_add_fixture_round.sql
+├── 20260407000012_grant_table_permissions.sql
+├── 20260408000013_scenario_resolution_functions.sql
+├── 20260408000014_deadline_reminders_cron.sql
+├── 20260408000015_rate_limits_table.sql
+├── 20260409000016_delete_gang_rpc_auth_uid.sql
+├── 20260410000001_notification_rpcs.sql
+├── 20260411000001_re_resolve_scenario_rpc.sql
+├── 20260412000001_admin_role.sql
+├── 20260414000001_fix_invite_code_rpc_setof.sql
+├── 20260415000001_cron_run_status.sql
+└── 20260415000002_cron_run_status_pg_functions.sql
 ```
 
-New migrations: use `supabase migration new <name> --workdir supabase-2` to auto-generate the timestamp prefix.
+New migrations: use `supabase migration new <name> --workdir supabase` to auto-generate the timestamp prefix.
 
 ---
 
@@ -334,7 +374,7 @@ Old v1 functions with different parameter names conflict with `CREATE OR REPLACE
 ### `Remote migration versions not found`
 Old v1 migration history in the database. Repair with:
 ```bash
-supabase migration repair --status reverted <old-versions> --workdir supabase-2
+supabase migration repair --status reverted <old-versions> --workdir supabase
 ```
 
 ### Migrations show "Remote database is up to date" but tables missing
