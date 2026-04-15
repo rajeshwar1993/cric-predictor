@@ -24,12 +24,12 @@ import {
 import {
   extractForScenario,
   extractLiveScorecard,
-  isMatchFinished,
   mapToBracket,
   type ScenarioSlug,
   type ExtractResult,
   type LiveScorecardData,
 } from '../_shared/sportmonks-extractors.ts';
+import { mapSmStatusToInternal } from '../_shared/status-mapping.ts';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -79,45 +79,7 @@ interface DbLiveScore {
   away_team_score: string | null;
 }
 
-// ---------------------------------------------------------------------------
-// Sportmonks status -> internal status mapping
-// ---------------------------------------------------------------------------
-
-type InternalStatus =
-  | 'upcoming'
-  | 'live'
-  | 'completed'
-  | 'abandoned'
-  | 'no_result';
-
-function mapSmStatusToInternal(smStatus: string): InternalStatus {
-  const lower = smStatus.toLowerCase();
-
-  if (lower === 'ns' || lower === 'not started') {
-    return 'upcoming';
-  }
-  if (
-    lower === '1st innings' ||
-    lower === '2nd innings' ||
-    lower === 'innings break' ||
-    lower === 'stump' ||
-    lower === 'live'
-  ) {
-    return 'live';
-  }
-  if (isMatchFinished(lower)) {
-    return 'completed';
-  }
-  if (lower === 'abandoned' || lower === 'aban' || lower === 'cancl' || lower === 'aborted' || lower === 'cancelled') {
-    return 'abandoned';
-  }
-  if (lower === 'no result' || lower === 'n/r') {
-    return 'no_result';
-  }
-
-  // Default: treat unknown as upcoming (don't break the poll)
-  return 'upcoming';
-}
+// Status mapping imported from '../_shared/status-mapping.ts'
 
 // ---------------------------------------------------------------------------
 // ID Mapping Caches (per run)
@@ -814,7 +776,11 @@ async function processFixture(
   // -----------------------------------------------------------------------
   // Step 7: Check if all scenarios resolved -> mark fixture resolved
   // -----------------------------------------------------------------------
-  if (scenariosResolved > 0) {
+  // BUG-016 fix: Always check when scenarios were resolved this poll, when
+  // the fixture just transitioned to completed (reconciliation may have
+  // resolved the last scenario), or when the fixture is already completed
+  // (handles 0-scenario case and catches up on missed transitions).
+  if (scenariosResolved > 0 || justCompletedThisPoll || currentDbStatus === 'completed') {
     const { data: allResolved } = await supabase.rpc('all_scenarios_resolved', {
       p_fixture_id: dbFixture.id,
     });
