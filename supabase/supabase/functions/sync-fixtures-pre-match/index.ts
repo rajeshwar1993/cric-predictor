@@ -8,6 +8,7 @@
 
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { sportmonksClient } from '../_shared/sportmonks.ts';
+import { logCronRun } from '../_shared/cron-log.ts';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -166,8 +167,11 @@ Deno.serve(async (req: Request) => {
       global: { headers: { Authorization: `Bearer ${serviceRoleKey}` } },
     });
 
+    const handlerStart = Date.now();
     console.log('[sync-pre-match] Starting pre-match delta sync...');
     const summary = await syncPreMatch(supabase);
+
+    await logCronRun(supabase, 'sync-fixtures-pre-match', handlerStart, summary as unknown as Record<string, unknown>, summary.errors.length);
 
     const hasErrors = summary.errors.length > 0;
     if (hasErrors) {

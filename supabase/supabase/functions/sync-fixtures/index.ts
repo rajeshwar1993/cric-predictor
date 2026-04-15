@@ -13,6 +13,7 @@ import {
   SmPlayer,
   SmTeam,
 } from '../_shared/sportmonks.ts';
+import { logCronRun } from '../_shared/cron-log.ts';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -44,26 +45,21 @@ interface DbTeam {
   api_id: string;
 }
 
-interface DbPlayer {
-  id: string;
-  api_id: string;
-}
-
 // ---------------------------------------------------------------------------
 // Sportmonks status → v2_match_status mapping
 // ---------------------------------------------------------------------------
 
-function mapFixtureStatus(smStatus: string): string {
+function mapFixtureStatus(smStatus: string): { status: string; warning: string | null } {
   const lower = smStatus.toLowerCase();
   if (lower === 'finished' || lower === 'won' || lower === 'draw') {
-    return 'completed';
+    return { status: 'completed', warning: null };
   }
   if (
     lower === 'ns' ||
     lower === 'not started' ||
     lower.includes('upcoming')
   ) {
-    return 'upcoming';
+    return { status: 'upcoming', warning: null };
   }
   if (
     lower === '1st innings' ||
@@ -72,15 +68,20 @@ function mapFixtureStatus(smStatus: string): string {
     lower === 'stump' ||
     lower === 'live'
   ) {
-    return 'live';
+    return { status: 'live', warning: null };
   }
   if (lower === 'no result' || lower === 'n/r') {
-    return 'no_result';
+    return { status: 'no_result', warning: null };
   }
   if (lower === 'abandoned' || lower === 'cancl') {
-    return 'abandoned';
+    return { status: 'abandoned', warning: null };
   }
-  return 'upcoming';
+  // Postponed/suspended — map to upcoming (IPL matches get rescheduled)
+  if (lower === 'postp' || lower === 'postponed' || lower === 'suspended' || lower === 'delayed') {
+    return { status: 'upcoming', warning: `Fixture has Sportmonks status "${smStatus}" — mapped to upcoming` };
+  }
+  // Truly unknown — default to upcoming but warn
+  return { status: 'upcoming', warning: `Unknown Sportmonks status "${smStatus}" — defaulted to upcoming` };
 }
 
 // ---------------------------------------------------------------------------
@@ -224,7 +225,8 @@ async function syncFixtures(supabase: SupabaseClient): Promise<SyncSummary> {
       // --- Upsert fixture ---
       const fixtureApiIdStr = String(smFixture.id);
       const existingFixture = fixtureApiMap.get(fixtureApiIdStr);
-      const newStatus = mapFixtureStatus(smFixture.status);
+      const { status: newStatus, warning: statusWarning } = mapFixtureStatus(smFixture.status);
+      if (statusWarning) errors.push(`Fixture ${smFixture.id}: ${statusWarning}`);
       const newStartDatetime = smFixture.starting_at;
       const matchNumber = parseMatchNumber(smFixture.round);
       const venueName = smFixture.venue?.name ?? 'TBD';
@@ -316,63 +318,78 @@ async function syncFixtures(supabase: SupabaseClient): Promise<SyncSummary> {
     }
   }
 
-  // Load existing players (api_id → UUID)
-  const { data: existingPlayers } = await supabase
-    .from('v2_players')
-    .select('id, api_id');
-
-  const playerApiMap = new Map<string, string>();
-  if (existingPlayers) {
-    for (const p of existingPlayers as DbPlayer[]) {
-      playerApiMap.set(p.api_id, p.id);
+  // Phase 1: Fetch all squads in parallel (API calls are the bottleneck)
+  const squadFetches = Array.from(uniqueTeamApiIds).map(async (teamApiId) => {
+    const teamDbId = refreshedTeamMap.get(String(teamApiId));
+    if (!teamDbId) {
+      return { teamApiId, teamDbId: null as string | null, squad: null as SmPlayer[] | null, error: `Team ${teamApiId} not found in DB for squad sync` };
     }
-  }
+    const result = await sportmonksClient.getTeamSquad(teamApiId, seasonApiId);
+    if (!result.success) {
+      return { teamApiId, teamDbId, squad: null as SmPlayer[] | null, error: `Failed to fetch squad for team ${teamApiId}: ${result.error}` };
+    }
+    return { teamApiId, teamDbId, squad: result.data, error: null as string | null };
+  });
 
-  for (const teamApiId of uniqueTeamApiIds) {
+  const squadResults = await Promise.allSettled(squadFetches);
+
+  // Phase 2: Process results sequentially
+  for (const result of squadResults) {
+    if (result.status === 'rejected') {
+      errors.push(`Squad fetch rejected: ${result.reason}`);
+      continue;
+    }
+
+    const { teamApiId, teamDbId, squad, error: fetchError } = result.value;
+    if (fetchError || !teamDbId || !squad) {
+      if (fetchError) errors.push(fetchError);
+      continue;
+    }
+
     try {
-      const teamDbId = refreshedTeamMap.get(String(teamApiId));
-      if (!teamDbId) {
-        errors.push(`Team ${teamApiId} not found in DB for squad sync`);
+      // Batch upsert all players (inserts new, updates existing on api_id conflict)
+      const playerRows = squad.map((p) => ({
+        api_id: String(p.id),
+        name: p.fullname,
+        role: p.position?.name ?? null,
+        batting_style: p.battingstyle ?? null,
+        bowling_style: p.bowlingstyle ?? null,
+        is_active: true,
+      }));
+
+      const { data: upsertedPlayers, error: playerErr } = await supabase
+        .from('v2_players')
+        .upsert(playerRows, { onConflict: 'api_id' })
+        .select('id, api_id');
+
+      if (playerErr || !upsertedPlayers) {
+        errors.push(`Failed to batch upsert players for team ${teamApiId}: ${playerErr?.message ?? 'no data returned'}`);
         continue;
       }
 
-      const squadResult = await sportmonksClient.getTeamSquad(teamApiId, seasonApiId);
-      if (!squadResult.success) {
-        errors.push(`Failed to fetch squad for team ${teamApiId}: ${squadResult.error}`);
-        continue;
-      }
+      playersSynced += upsertedPlayers.length;
 
-      const squad: SmPlayer[] = squadResult.data;
-      const currentPlayerIds: string[] = [];
+      // Batch upsert all team-player links
+      const linkRows = upsertedPlayers.map((p) => ({
+        league_id: activeSeason.league_id,
+        season_id: activeSeason.id,
+        team_id: teamDbId,
+        player_id: p.id,
+      }));
 
-      for (const smPlayer of squad) {
-        const playerId = await upsertPlayer(supabase, smPlayer, playerApiMap);
-        if (playerId) {
-          currentPlayerIds.push(playerId);
+      const { error: linkErr } = await supabase
+        .from('v2_league_season_team_players')
+        .upsert(linkRows, { onConflict: 'season_id,team_id,player_id' });
 
-          // Upsert v2_league_season_team_players
-          const { error: linkErr } = await supabase
-            .from('v2_league_season_team_players')
-            .upsert(
-              {
-                league_id: activeSeason.league_id,
-                season_id: activeSeason.id,
-                team_id: teamDbId,
-                player_id: playerId,
-              },
-              { onConflict: 'season_id,team_id,player_id' }
-            );
-
-          if (linkErr) {
-            errors.push(`Failed to link player ${smPlayer.id} to team ${teamApiId}: ${linkErr.message}`);
-          } else {
-            playersSynced++;
-          }
-        }
+      if (linkErr) {
+        errors.push(`Failed to batch upsert player links for team ${teamApiId}: ${linkErr.message}`);
       }
 
       // Delete stale player-team links (handles mid-season trades)
-      if (currentPlayerIds.length > 0) {
+      // Safeguard: skip if squad is suspiciously small (API glitch protection)
+      const currentPlayerIds = upsertedPlayers.map((p) => p.id);
+      const MIN_SQUAD_SIZE = 11;
+      if (currentPlayerIds.length >= MIN_SQUAD_SIZE) {
         const { error: deleteErr } = await supabase
           .from('v2_league_season_team_players')
           .delete()
@@ -383,6 +400,8 @@ async function syncFixtures(supabase: SupabaseClient): Promise<SyncSummary> {
         if (deleteErr) {
           errors.push(`Failed to clean stale players for team ${teamApiId}: ${deleteErr.message}`);
         }
+      } else if (currentPlayerIds.length > 0) {
+        errors.push(`Skipped stale player cleanup for team ${teamApiId}: squad size ${currentPlayerIds.length} < ${MIN_SQUAD_SIZE} (possible API issue)`);
       }
 
       teamsSynced++;
@@ -461,77 +480,6 @@ async function upsertTeamFromFixture(
 }
 
 // ---------------------------------------------------------------------------
-// Player upsert helper
-// ---------------------------------------------------------------------------
-
-/**
- * Upsert a player into v2_players.
- * Updates role/batting_style/bowling_style on existing players.
- * Returns the DB UUID for the player.
- */
-async function upsertPlayer(
-  supabase: SupabaseClient,
-  smPlayer: SmPlayer,
-  playerApiMap: Map<string, string>
-): Promise<string | null> {
-  const apiIdStr = String(smPlayer.id);
-  const existing = playerApiMap.get(apiIdStr);
-
-  const playerData = {
-    api_id: apiIdStr,
-    name: smPlayer.fullname,
-    role: smPlayer.position?.name ?? null,
-    batting_style: smPlayer.battingstyle ?? null,
-    bowling_style: smPlayer.bowlingstyle ?? null,
-    is_active: true,
-  };
-
-  if (existing) {
-    // Update existing player metadata
-    const { error: updateErr } = await supabase
-      .from('v2_players')
-      .update({
-        name: playerData.name,
-        role: playerData.role,
-        batting_style: playerData.batting_style,
-        bowling_style: playerData.bowling_style,
-      })
-      .eq('id', existing);
-
-    if (updateErr) {
-      console.error(`[sync-fixtures] Failed to update player ${smPlayer.id}: ${updateErr.message}`);
-    }
-    return existing;
-  }
-
-  // Insert new player
-  const { data: inserted, error: insertErr } = await supabase
-    .from('v2_players')
-    .insert(playerData)
-    .select('id')
-    .single();
-
-  if (insertErr) {
-    // Race condition — try fetching
-    const { data: refetch } = await supabase
-      .from('v2_players')
-      .select('id')
-      .eq('api_id', apiIdStr)
-      .single();
-
-    if (refetch) {
-      playerApiMap.set(apiIdStr, refetch.id);
-      return refetch.id;
-    }
-    console.error(`[sync-fixtures] Failed to insert player ${smPlayer.id}: ${insertErr.message}`);
-    return null;
-  }
-
-  playerApiMap.set(apiIdStr, inserted.id);
-  return inserted.id;
-}
-
-// ---------------------------------------------------------------------------
 // Edge Function handler
 // ---------------------------------------------------------------------------
 
@@ -558,8 +506,12 @@ Deno.serve(async (req: Request) => {
       global: { headers: { Authorization: `Bearer ${serviceRoleKey}` } },
     });
 
+    const handlerStart = Date.now();
     console.log('[sync-fixtures] Starting daily fixture sync...');
     const summary = await syncFixtures(supabase);
+
+    // Log run status for admin health check
+    await logCronRun(supabase, 'sync-fixtures', handlerStart, summary as unknown as Record<string, unknown>, summary.errors.length);
 
     const hasErrors = summary.errors.length > 0;
     if (hasErrors) {
