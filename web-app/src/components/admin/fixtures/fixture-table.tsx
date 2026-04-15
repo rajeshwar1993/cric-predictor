@@ -6,6 +6,7 @@ import {
   ArrowUpDown,
   Check,
   ChevronDown,
+  Minus,
   X,
 } from 'lucide-react'
 
@@ -99,9 +100,11 @@ function timeInStatus(statusChangedAt: string): string {
 
 interface FixtureTableProps {
   rows: FixtureTableRow[]
+  selectedIds?: Set<string>
+  onSelectionChange?: (ids: Set<string>) => void
 }
 
-export function FixtureTable({ rows }: FixtureTableProps) {
+export function FixtureTable({ rows, selectedIds, onSelectionChange }: FixtureTableProps) {
   const router = useRouter()
   const [sortField, setSortField] = useState<SortField>('matchNumber')
   const [sortDir, setSortDir] = useState<SortDirection>('asc')
@@ -147,6 +150,48 @@ export function FixtureTable({ rows }: FixtureTableProps) {
       }
     })
   }, [rows, statusFilter, sortField, sortDir])
+
+  const selectionEnabled = selectedIds !== undefined && onSelectionChange !== undefined
+
+  const allFilteredSelected =
+    selectionEnabled &&
+    filteredAndSorted.length > 0 &&
+    filteredAndSorted.every((r) => selectedIds.has(r.id))
+
+  const someFilteredSelected =
+    selectionEnabled &&
+    !allFilteredSelected &&
+    filteredAndSorted.some((r) => selectedIds.has(r.id))
+
+  const handleSelectAll = () => {
+    if (!onSelectionChange) return
+    if (allFilteredSelected) {
+      // Deselect all filtered rows (but keep other selections)
+      const next = new Set(selectedIds)
+      for (const r of filteredAndSorted) {
+        next.delete(r.id)
+      }
+      onSelectionChange(next)
+    } else {
+      // Select all filtered rows
+      const next = new Set(selectedIds)
+      for (const r of filteredAndSorted) {
+        next.add(r.id)
+      }
+      onSelectionChange(next)
+    }
+  }
+
+  const handleSelectRow = (id: string) => {
+    if (!onSelectionChange || !selectedIds) return
+    const next = new Set(selectedIds)
+    if (next.has(id)) {
+      next.delete(id)
+    } else {
+      next.add(id)
+    }
+    onSelectionChange(next)
+  }
 
   return (
     <div className="space-y-3">
@@ -223,6 +268,33 @@ export function FixtureTable({ rows }: FixtureTableProps) {
         <table className="w-full">
           <thead>
             <tr className="bg-dark-concrete">
+              {selectionEnabled && (
+                <th className="w-10 px-3 py-2.5">
+                  <button
+                    onClick={handleSelectAll}
+                    className="flex items-center justify-center"
+                    aria-label={allFilteredSelected ? 'Deselect all' : 'Select all'}
+                  >
+                    <span
+                      className={cn(
+                        'inline-flex h-4 w-4 items-center justify-center rounded border transition-colors',
+                        allFilteredSelected
+                          ? 'border-bragg-lime bg-bragg-lime'
+                          : someFilteredSelected
+                            ? 'border-bragg-lime bg-bragg-lime/30'
+                            : 'border-wire bg-dark-concrete hover:border-text-secondary',
+                      )}
+                    >
+                      {allFilteredSelected && (
+                        <Check size={12} className="text-concrete-black" />
+                      )}
+                      {someFilteredSelected && !allFilteredSelected && (
+                        <Minus size={12} className="text-concrete-black" />
+                      )}
+                    </span>
+                  </button>
+                </th>
+              )}
               <SortableHeader
                 label="Match #"
                 field="matchNumber"
@@ -282,7 +354,7 @@ export function FixtureTable({ rows }: FixtureTableProps) {
             {filteredAndSorted.length === 0 ? (
               <tr>
                 <td
-                  colSpan={11}
+                  colSpan={selectionEnabled ? 12 : 11}
                   className="px-4 py-12 text-center text-sm text-text-muted"
                 >
                   No fixtures found
@@ -293,8 +365,42 @@ export function FixtureTable({ rows }: FixtureTableProps) {
                 <tr
                   key={row.id}
                   onClick={() => router.push(`/admin/fixtures/${row.id}`)}
-                  className="cursor-pointer border-t border-wire bg-concrete-black transition-colors hover:bg-dark-concrete"
+                  className={cn(
+                    'cursor-pointer border-t border-wire transition-colors hover:bg-dark-concrete',
+                    selectionEnabled && selectedIds.has(row.id)
+                      ? 'bg-bragg-lime/5'
+                      : 'bg-concrete-black',
+                  )}
                 >
+                  {selectionEnabled && (
+                    <td className="w-10 px-3 py-2.5">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleSelectRow(row.id)
+                        }}
+                        className="flex items-center justify-center"
+                        aria-label={
+                          selectedIds.has(row.id)
+                            ? `Deselect match ${row.matchNumber}`
+                            : `Select match ${row.matchNumber}`
+                        }
+                      >
+                        <span
+                          className={cn(
+                            'inline-flex h-4 w-4 items-center justify-center rounded border transition-colors',
+                            selectedIds.has(row.id)
+                              ? 'border-bragg-lime bg-bragg-lime'
+                              : 'border-wire bg-dark-concrete hover:border-text-secondary',
+                          )}
+                        >
+                          {selectedIds.has(row.id) && (
+                            <Check size={12} className="text-concrete-black" />
+                          )}
+                        </span>
+                      </button>
+                    </td>
+                  )}
                   <td className="px-4 py-2.5 text-sm font-medium tabular-nums text-text-primary">
                     {row.matchNumber}
                   </td>
