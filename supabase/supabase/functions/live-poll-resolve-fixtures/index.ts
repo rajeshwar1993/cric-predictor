@@ -15,6 +15,7 @@
 // =============================================================================
 
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { logCronRun } from '../_shared/cron-log.ts';
 import {
   sportmonksClient,
   SmFixture,
@@ -1167,8 +1168,11 @@ Deno.serve(async (_req: Request) => {
       global: { headers: { Authorization: `Bearer ${serviceRoleKey}` } },
     });
 
+    const handlerStart = Date.now();
     console.log('[live-poll] Starting live poll and resolve...');
     const summary = await pollAndResolve(supabase);
+
+    await logCronRun(supabase, 'live-poll-resolve-fixtures', handlerStart, summary as unknown as Record<string, unknown>, summary.errorsCount);
 
     const hasErrors = summary.errorsCount > 0;
     if (hasErrors) {
