@@ -108,7 +108,7 @@ function mapSmStatusToInternal(smStatus: string): InternalStatus {
   if (isMatchFinished(lower)) {
     return 'completed';
   }
-  if (lower === 'abandoned' || lower === 'cancl' || lower === 'aborted' || lower === 'cancelled') {
+  if (lower === 'abandoned' || lower === 'aban' || lower === 'cancl' || lower === 'aborted' || lower === 'cancelled') {
     return 'abandoned';
   }
   if (lower === 'no result' || lower === 'n/r') {
