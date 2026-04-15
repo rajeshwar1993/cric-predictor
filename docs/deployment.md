@@ -8,7 +8,7 @@ Instructions for deploying Bragg v2 to STG and PROD environments.
 
 - [Supabase CLI](https://supabase.com/docs/guides/cli) installed (`supabase --version`)
 - Node.js 20+ (see `web-app/.nvmrc`)
-- Vercel account with project configured
+- Vercel account with project configured 
 - Supabase project created (one per environment)
 
 ---
