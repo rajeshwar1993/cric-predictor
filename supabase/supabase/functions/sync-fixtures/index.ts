@@ -73,7 +73,7 @@ function mapFixtureStatus(smStatus: string): { status: string; warning: string |
   if (lower === 'no result' || lower === 'n/r') {
     return { status: 'no_result', warning: null };
   }
-  if (lower === 'abandoned' || lower === 'cancl') {
+  if (lower === 'abandoned' || lower === 'aban' || lower === 'cancl' || lower === 'cancelled' || lower === 'aborted') {
     return { status: 'abandoned', warning: null };
   }
   // Postponed/suspended — map to upcoming (IPL matches get rescheduled)
@@ -264,6 +264,21 @@ async function syncFixtures(supabase: SupabaseClient): Promise<SyncSummary> {
           errors.push(`Failed to update fixture ${smFixture.id}: ${updateErr.message}`);
         } else {
           fixturesSynced++;
+
+          // If transitioning to abandoned/no_result, void all scenarios
+          if (
+            (newStatus === 'abandoned' || newStatus === 'no_result') &&
+            existingFixture.status !== newStatus
+          ) {
+            const { error: voidErr } = await supabase.rpc('void_fixture_scenarios', {
+              p_fixture_id: existingFixture.id,
+            });
+            if (voidErr) {
+              errors.push(`Failed to void scenarios for fixture ${smFixture.id}: ${voidErr.message}`);
+            } else {
+              console.log(`[sync-fixtures] Voided scenarios for abandoned fixture ${smFixture.id}`);
+            }
+          }
         }
       } else {
         // Insert new fixture — use upsert on api_id to handle re-runs
