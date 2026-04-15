@@ -6,6 +6,15 @@ import { LEGAL_DISCLAIMER } from '@/lib/constants'
 export const metadata: Metadata = {
   title: 'Login',
   description: 'Sign in to Bragg with a magic link. No password needed.',
+  openGraph: {
+    title: 'Login | Bragg',
+    description: 'Sign in to Bragg with a magic link. No password needed.',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Login | Bragg',
+    description: 'Sign in to Bragg with a magic link. No password needed.',
+  },
 }
 
 interface LoginPageProps {

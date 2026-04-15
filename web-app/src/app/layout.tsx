@@ -22,11 +22,25 @@ export const metadata: Metadata = {
     locale: 'en_US',
     title: 'Bragg — Predict Right. Prove It.',
     description: DEFAULT_DESCRIPTION,
+    images: [
+      {
+        url: '/opengraph-image',
+        width: 1200,
+        height: 630,
+        alt: 'Bragg — Predict Right. Prove It.',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Bragg — Predict Right. Prove It.',
     description: DEFAULT_DESCRIPTION,
+    images: [
+      {
+        url: '/opengraph-image',
+        alt: 'Bragg — Predict Right. Prove It.',
+      },
+    ],
   },
 }
 
