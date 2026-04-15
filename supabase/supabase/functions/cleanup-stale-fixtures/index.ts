@@ -20,11 +20,11 @@ import {
 } from '../_shared/sportmonks.ts';
 import {
   extractForScenario,
-  isMatchFinished,
   mapToBracket,
   type ScenarioSlug,
   type ExtractResult,
 } from '../_shared/sportmonks-extractors.ts';
+import { mapSmStatusToInternal } from '../_shared/status-mapping.ts';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -114,45 +114,7 @@ interface DbTeam {
   name: string;
 }
 
-// ---------------------------------------------------------------------------
-// Sportmonks status -> internal status mapping
-// (Duplicated from live-poll; Deno cannot import from sibling function dirs)
-// ---------------------------------------------------------------------------
-
-type InternalStatus =
-  | 'upcoming'
-  | 'live'
-  | 'completed'
-  | 'abandoned'
-  | 'no_result';
-
-function mapSmStatusToInternal(smStatus: string): InternalStatus {
-  const lower = smStatus.toLowerCase();
-
-  if (lower === 'ns' || lower === 'not started') {
-    return 'upcoming';
-  }
-  if (
-    lower === '1st innings' ||
-    lower === '2nd innings' ||
-    lower === 'innings break' ||
-    lower === 'stump' ||
-    lower === 'live'
-  ) {
-    return 'live';
-  }
-  if (isMatchFinished(lower)) {
-    return 'completed';
-  }
-  if (lower === 'abandoned' || lower === 'aban' || lower === 'cancl' || lower === 'aborted' || lower === 'cancelled') {
-    return 'abandoned';
-  }
-  if (lower === 'no result' || lower === 'n/r') {
-    return 'no_result';
-  }
-
-  return 'upcoming';
-}
+// Status mapping imported from '../_shared/status-mapping.ts'
 
 // ---------------------------------------------------------------------------
 // ID Mapping Caches (per run)

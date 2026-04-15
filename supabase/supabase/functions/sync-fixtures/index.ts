@@ -14,6 +14,7 @@ import {
   SmTeam,
 } from '../_shared/sportmonks.ts';
 import { logCronRun } from '../_shared/cron-log.ts';
+import { mapSmStatusToInternal } from '../_shared/status-mapping.ts';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -46,42 +47,30 @@ interface DbTeam {
 }
 
 // ---------------------------------------------------------------------------
-// Sportmonks status → v2_match_status mapping
+// Sportmonks status → v2_match_status mapping (delegates to shared module)
 // ---------------------------------------------------------------------------
 
 function mapFixtureStatus(smStatus: string): { status: string; warning: string | null } {
   const lower = smStatus.toLowerCase();
-  if (lower === 'finished' || lower === 'won' || lower === 'draw') {
-    return { status: 'completed', warning: null };
+  const status = mapSmStatusToInternal(smStatus);
+
+  // Generate warnings for ambiguous mappings that the shared mapper handles silently
+  const isPostponed = lower === 'postp' || lower === 'postponed' || lower === 'suspended' || lower === 'delayed';
+  if (isPostponed) {
+    return { status, warning: `Fixture has Sportmonks status "${smStatus}" — mapped to upcoming` };
   }
-  if (
-    lower === 'ns' ||
-    lower === 'not started' ||
-    lower.includes('upcoming')
-  ) {
-    return { status: 'upcoming', warning: null };
+
+  // Warn on truly unknown statuses that defaulted to upcoming
+  const knownStatuses = [
+    'ns', 'not started', '1st innings', '2nd innings', 'innings break',
+    'stump', 'live', 'finished', 'won', 'draw', 'no result', 'n/r',
+    'cancl', 'cancelled', 'aborted',
+  ];
+  if (status === 'upcoming' && !knownStatuses.includes(lower) && !lower.includes('upcoming') && !lower.startsWith('aban')) {
+    return { status, warning: `Unknown Sportmonks status "${smStatus}" — defaulted to upcoming` };
   }
-  if (
-    lower === '1st innings' ||
-    lower === '2nd innings' ||
-    lower === 'innings break' ||
-    lower === 'stump' ||
-    lower === 'live'
-  ) {
-    return { status: 'live', warning: null };
-  }
-  if (lower === 'no result' || lower === 'n/r') {
-    return { status: 'no_result', warning: null };
-  }
-  if (lower === 'abandoned' || lower === 'aban' || lower === 'cancl' || lower === 'cancelled' || lower === 'aborted') {
-    return { status: 'abandoned', warning: null };
-  }
-  // Postponed/suspended — map to upcoming (IPL matches get rescheduled)
-  if (lower === 'postp' || lower === 'postponed' || lower === 'suspended' || lower === 'delayed') {
-    return { status: 'upcoming', warning: `Fixture has Sportmonks status "${smStatus}" — mapped to upcoming` };
-  }
-  // Truly unknown — default to upcoming but warn
-  return { status: 'upcoming', warning: `Unknown Sportmonks status "${smStatus}" — defaulted to upcoming` };
+
+  return { status, warning: null };
 }
 
 // ---------------------------------------------------------------------------
@@ -97,9 +86,11 @@ function parseMatchNumber(round: string): number {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Check if a status should NOT be overwritten by the sync */
+/** Check if a status should NOT be overwritten by the sync.
+ *  BUG-017 fix: `live` removed — daily sync must be able to transition
+ *  stuck `live` fixtures to abandoned/no_result/completed. */
 function isProtectedStatus(status: string): boolean {
-  return ['live', 'completed', 'resolved'].includes(status);
+  return ['completed', 'resolved'].includes(status);
 }
 
 // ---------------------------------------------------------------------------
