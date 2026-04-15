@@ -7,7 +7,7 @@ import {
   getFixtureAlerts,
 } from '@/lib/dal/admin/fixtures'
 import { FixturePipelineView } from '@/components/admin/fixtures/fixture-pipeline'
-import { FixtureTable } from '@/components/admin/fixtures/fixture-table'
+import { FixtureTableWithActions } from '@/components/admin/fixtures/fixture-table-with-actions'
 import { FixtureAlerts } from '@/components/admin/fixtures/fixture-alerts'
 import { StaleFixtureCleanup } from '@/components/admin/fixtures/stale-fixture-cleanup'
 
@@ -57,7 +57,7 @@ export default async function FixturesPage() {
       <FixturePipelineView pipeline={pipeline} />
 
       {/* Table */}
-      <FixtureTable rows={tableRows} />
+      <FixtureTableWithActions rows={tableRows} />
     </div>
   )
 }
