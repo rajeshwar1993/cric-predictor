@@ -32,6 +32,7 @@ interface ReferenceTabsProps {
   teams: TeamWithPlayerCount[]
   players: PlayerWithTeam[]
   templates: ScenarioTemplate[]
+  seededCounts: Record<string, number>
 }
 
 export function ReferenceTabs({
@@ -41,6 +42,7 @@ export function ReferenceTabs({
   teams,
   players,
   templates,
+  seededCounts,
 }: ReferenceTabsProps) {
   const [activeTab, setActiveTab] = useState<TabId>('sports-leagues')
 
@@ -80,7 +82,11 @@ export function ReferenceTabs({
         />
       )}
       {activeTab === 'templates' && (
-        <ScenarioTemplatesTable templates={templates} />
+        <ScenarioTemplatesTable
+          templates={templates}
+          seededCounts={seededCounts}
+          sports={sports}
+        />
       )}
     </div>
   )

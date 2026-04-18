@@ -218,3 +218,37 @@ export async function getScenarioTemplates(): Promise<ScenarioTemplate[]> {
   if (error) throw error
   return data
 }
+
+/**
+ * Count of seeded v2_fixture_scenarios per template_id.
+ *
+ * Returns a map of `{ [template_id]: count }`. Templates that have never
+ * been seeded will not appear in the map (treat missing keys as 0).
+ */
+export async function getScenarioTemplateSeededCounts(): Promise<
+  Record<string, number>
+> {
+  const supabase = createServiceRoleClient()
+
+  // Group fixture_scenarios by template_id and count rows.
+  // Supabase JS v2 doesn't support GROUP BY natively, so we fetch
+  // template_id for all rows and count in JS. For large tables this
+  // could be expensive — but for admin dashboards the fixture_scenarios
+  // table is manageable and this avoids needing a Postgres function.
+  //
+  // Alternative: use .rpc() with a custom SQL function. For now, we
+  // select only template_id to keep the payload small.
+  const { data, error } = await supabase
+    .from('v2_fixture_scenarios')
+    .select('template_id')
+
+  if (error) throw error
+
+  const counts: Record<string, number> = {}
+  for (const row of data ?? []) {
+    if (row.template_id) {
+      counts[row.template_id] = (counts[row.template_id] ?? 0) + 1
+    }
+  }
+  return counts
+}

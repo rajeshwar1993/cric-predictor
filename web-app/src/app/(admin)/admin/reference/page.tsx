@@ -8,10 +8,11 @@ import {
   getTeamsWithPlayerCount,
   getPlayers,
   getScenarioTemplates,
+  getScenarioTemplateSeededCounts,
 } from '@/lib/dal/admin/reference'
 
 export default async function ReferencePage() {
-  const [sports, leagues, seasons, teams, players, templates] =
+  const [sports, leagues, seasons, teams, players, templates, seededCounts] =
     await Promise.all([
       getSports(),
       getLeagues(),
@@ -19,6 +20,7 @@ export default async function ReferencePage() {
       getTeamsWithPlayerCount(),
       getPlayers(),
       getScenarioTemplates(),
+      getScenarioTemplateSeededCounts(),
     ])
 
   return (
@@ -34,6 +36,7 @@ export default async function ReferencePage() {
         teams={teams}
         players={players}
         templates={templates}
+        seededCounts={seededCounts}
       />
     </div>
   )
