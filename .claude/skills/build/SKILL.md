@@ -193,6 +193,7 @@ Your workflow:
 5. Implement:
    - Follow TDD where applicable.
    - Create Storybook stories (*.stories.tsx) for all UI components (Default + key states).
+   - Add/update E2E tests in web-app/e2e/tests/ for new or changed user flows.
    - Use design system tokens — never hardcode colors, spacing, or typography.
 6. Run verification in order:
    a. cd web-app && npm run lint
@@ -245,6 +246,7 @@ Review steps:
 3. Check against acceptance criteria / plan.
 4. Check all focus areas (correctness, security, performance, edge cases, types, accessibility).
 5. Verify Storybook stories and test coverage.
+6. Verify E2E tests exist for new or changed user flows (web-app/e2e/tests/).
 
 Be thorough but pragmatic. Focus on real bugs and missed requirements.
 ```
