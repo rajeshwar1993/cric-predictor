@@ -85,7 +85,9 @@ Proceed? (y/n)
 
 ## Pipeline
 
-For each work item (single pass in Text/File-Single modes, loop in Batch mode), execute these steps sequentially:
+For each work item (single pass in Text/File-Single modes, loop in Batch mode), execute these steps sequentially.
+
+**No shortcuts:** Always execute every step in order, regardless of how small or simple the change seems. A 3-line fix still gets E2E test updates, build verification, a reviewer pass, and a PRD check. The value of this pipeline is consistency — if you skip steps for "simple" changes, you create the exact gaps this skill exists to prevent. Never implement directly as the orchestrator; always spawn PSE agent(s) for Step 5.
 
 ### Step 1: Resolve Requirements
 
@@ -173,6 +175,20 @@ Implement the following feature: [plan summary].
 Files to read first: [list specific file paths].
 Read docs/PRD.V2.md for relevant business logic, schema, and requirements.
 Follow existing code patterns.
+
+Your workflow:
+1. Read the plan summary and all listed files.
+2. Read existing components in web-app/src/components/ for reuse opportunities.
+3. Implement:
+   - Follow TDD where applicable.
+   - Create Storybook stories (*.stories.tsx) for all UI components (Default + key states).
+   - Add/update E2E tests in web-app/e2e/ for new or changed user flows.
+   - Use design system tokens — never hardcode colors, spacing, or typography.
+4. Run verification in order:
+   a. cd web-app && npm run lint
+   b. cd web-app && npx vitest run
+   c. cd web-app && npm run build
+5. Only declare done when ALL verification steps pass.
 ```
 
 For **File mode**:
