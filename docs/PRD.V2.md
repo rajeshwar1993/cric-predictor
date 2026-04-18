@@ -181,7 +181,7 @@ _(URL paths use `/group/` for legacy compatibility; DB schema and product termin
   - Match cards showing teams, match number, date, time, venue
   - Prediction deadline displayed
   - CTA to predict for each match
-  - Prediction status: shows which members have predicted (for the next match)
+  - Prediction status: shows which members have predicted (for the next match) via "X/Y predicted" count and avatar initial pills (overlapping circles showing member initials, with "+N" overflow for 5+ members)
 - **Live Matches**
   - Live scorecard with scores, overs, batting team (auto-polls for updates)
   - "Stale data" indicator shown if `last_polled_at` is more than 1 minute old
@@ -1050,6 +1050,7 @@ Helper functions (SECURITY DEFINER):
 - `is_gang_admin(gang_id, user_id)` — returns true if the user has `role = 'admin'` in `v2_gang_members` (not based on `v2_gangs.created_by`, which is historical and can be outdated after admin transfer). Also filters out profiles where `is_deleted = true`.
 - `get_gang_by_invite_code(code)` — looks up gang by invite code, bypasses RLS (needed for Join Page before membership)
 - `get_members_who_predicted(gang_id, fixture_id)` — returns user_ids only, no prediction values (visible to all gang members before deadline). Function must internally call `is_gang_member(gang_id, auth.uid())` first and return empty if the caller is not an approved member.
+- `get_fixture_prediction_members(gang_id, fixture_ids[])` — batch version that returns `(fixture_id, user_id, display_name)` for all gang members who have predicted on any of the given fixtures. Bypasses RLS deadline visibility to provide accurate prediction counts and identity pills on match cards. Does not expose prediction content. Validates caller membership via `is_gang_member()`.
 - `prediction_deadline(fixture_id, gang_id)` — computes deadline from `start_datetime` minus `prediction_deadline_mins`, used in prediction RLS policies
 
 #### Reference tables (public read, no user writes)
