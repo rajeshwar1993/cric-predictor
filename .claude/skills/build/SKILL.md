@@ -103,7 +103,7 @@ For each work item (single pass in Text/File-Single modes, loop in Batch mode), 
 
 | Mode | Behavior |
 |------|----------|
-| **Text** | Read the relevant codebase files directly. Produce a structured implementation plan and present it to the user: |
+| **Text** | Read `docs/PRD.V2.md` and the relevant codebase files. Check if this feature already exists in the PRD. Produce a structured implementation plan and present it to the user: |
 | **File** | The work item file IS the plan — PSE plans internally during implementation. Skip to Step 3. |
 
 **Text mode plan format:**
@@ -171,6 +171,7 @@ For **Text mode**:
 Read and follow your instructions in .claude/agents/pse.md.
 Implement the following feature: [plan summary].
 Files to read first: [list specific file paths].
+Read docs/PRD.V2.md for relevant business logic, schema, and requirements.
 Follow existing code patterns.
 ```
 
@@ -291,7 +292,16 @@ Use `fix(...)` prefix for bug fixes, `feat(...)` for features/stories.
 | **File with epic branch** | Merge back to epic: `git checkout [epic-branch] && git merge story/[id] --no-ff -m "Merge story/[id]: [Title]"` |
 | **File without epic branch** | NO auto-merge. Leave on branch. |
 
-### Step 12: Summary
+### Step 12: PRD Update
+
+After committing, check whether the feature/change is already documented in `docs/PRD.V2.md`.
+
+- **If already in the PRD**: No action needed.
+- **If NOT in the PRD** (new feature, new behavior, new schema, new endpoint): Update `docs/PRD.V2.md` to reflect what was built — add the feature to the relevant section, update schema if tables/columns were added, and document any new business logic. Keep the update concise and consistent with the PRD's existing style.
+
+This ensures the PRD remains the single source of truth and stays in sync with the codebase.
+
+### Step 13: Summary
 
 **Text / File (single) summary:**
 ```
