@@ -408,6 +408,12 @@ test.describe('Suite 05: Predictions', () => {
     // Should see success toast
     await expectToastMessage(page, 'Predictions saved!')
 
+    // After 2-second confirmation, should auto-navigate to gang page
+    await page.waitForURL(`**/group/${gangA.id}`, { timeout: 5_000 })
+    expect(page.url()).toContain(`/group/${gangA.id}`)
+    // Should NOT still be on the predict page
+    expect(page.url()).not.toContain('/predict/')
+
     await context.close()
   })
 

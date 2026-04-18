@@ -220,6 +220,7 @@ _(URL paths use `/group/` for legacy compatibility; DB schema and product termin
   - Progress counter (X/total picked)
   - Submit button to save predictions (users can update predictions until the deadline)
   - Error and success feedback
+  - After successful submit: shows "Locked!" confirmation for 2 seconds, then auto-navigates back to the gang page
 - Before prediction window opens: shows message with exact opening time and link back to gang page
 - Predictions disabled when locked (deadline passed or match live)
 - Global Footer
