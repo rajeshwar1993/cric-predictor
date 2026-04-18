@@ -24,28 +24,17 @@ This project has 3 specialized agents in `.claude/agents/`:
 
 ## Workflows
 
-### Build Feature (interactive, single feature)
+### Build (unified development skill)
 
-Use the `build-feature` skill for ad-hoc feature work where requirements are vague or need discussion. It runs 3 phases:
+Use the `/build` skill for all development work — features, stories, bugs, or requirements. It accepts three input types:
 
-1. **Plan**: Refine requirements (optionally with PM agent), read the codebase, produce an implementation plan. User approves.
-2. **Build**: PSE agent implements the feature.
-3. **Review**: Fresh reviewer agent checks for issues.
+- **Text**: A plain-language description (e.g., `/build add match countdown timer`). Interactive mode with PM brainstorming (if vague) and user approval gate before implementation.
+- **File (single)**: A story ID or file path (e.g., `/build FND-001` or `/build docs/bugs/BUG-016.md`). Autonomous mode — PM resolves requirements from docs, PSE implements without approval gates.
+- **File (batch)**: Multiple IDs, a phase, or "all" + epic branch (e.g., `/build epic/v1 phase 1`). Automated pipeline with one upfront confirmation, then hands-free.
 
-For simple changes (bug fixes, small tweaks), skip the skill and work directly.
+**Pipeline** (all modes): Resolve requirements → Plan → Branch → Implement (PSE) → Verify (lint/test/build) → Review (fresh Reviewer) → Fix loop (max 3 cycles) → Commit → Merge (if epic branch).
 
-### Run Stories (automated, story-driven)
-
-Use the `run-stories` skill to implement stories from `docs/stories/` with minimal human intervention. It processes stories sequentially through an automated pipeline:
-
-1. **PM Resolve**: PM agent reads the story file, resolves ambiguities from PRD/architecture/design docs. Only escalates truly unresolvable questions.
-2. **PSE Implement**: PSE agent plans and implements autonomously (no approval gate). Runs build/lint/tests before declaring done.
-3. **Review + Fix Loop**: Fresh reviewer finds issues → PSE fixes → re-review (max 3 cycles).
-4. **Merge**: Story branch merges back to the epic branch.
-
-Branch model: epic branch (provided by user) → `story/[id]` branches → merge back after each story.
-
-Invoke with: `/run-stories [epic-branch] [story-ids | phase N | all]`
+For simple changes (one-line fixes, small tweaks), skip the skill and work directly.
 
 ## Development Rules
 
@@ -91,6 +80,7 @@ When doing any UI or component work:
 
 - Feature branches: `feature/[short-description]`
 - Story branches: `story/[story-id-lowercase]` (e.g., `story/fnd-001`)
+- Bug-fix branches: `fix/[bug-id-or-description]` (e.g., `fix/bug-016`)
 - Design system: `docs/design-systems/electric-street.md`
 - PRD: `docs/PRD.V2.md`
 - Stories: `docs/stories/`
