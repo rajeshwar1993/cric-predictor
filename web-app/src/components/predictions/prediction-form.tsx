@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import type { FixtureTeam } from '@/lib/dal/fixtures'
 import type { MatchPlayer } from '@/lib/dal/predictions'
 import type { ScenarioGroupData } from '@/components/predictions/scenario-list'
@@ -70,6 +71,7 @@ export function PredictionForm({
   lastSubmittedAt,
   totalScenarios,
 }: PredictionFormProps) {
+  const router = useRouter()
   const [submitState, setSubmitState] = useState<SubmitState>('idle')
   const [submittedAt, setSubmittedAt] = useState<string | null>(lastSubmittedAt)
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -198,10 +200,10 @@ export function PredictionForm({
         toast.success('Predictions saved!')
         setSubmittedAt(new Date().toISOString())
         setSubmitState('saved')
-        // Reset to idle after the confirmation animation
+        // Navigate back to gang page after the confirmation animation
         savedTimerRef.current = setTimeout(() => {
-          setSubmitState('idle')
           savedTimerRef.current = null
+          router.push(`/group/${gangId}`)
         }, 2000)
       } else {
         toast.error(result.error)
@@ -213,7 +215,7 @@ export function PredictionForm({
     } finally {
       submittingRef.current = false
     }
-  }, [gangId, fixtureId])
+  }, [gangId, fixtureId, router])
 
   return (
     <>
