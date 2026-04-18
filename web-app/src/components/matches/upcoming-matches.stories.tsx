@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { Calendar } from 'lucide-react'
-import type { UpcomingFixture } from '@/lib/dal/fixtures'
+import type { UpcomingFixture, PredictedMember } from '@/lib/dal/fixtures'
 import { EmptyState } from '@/components/ui/empty-state'
 import { MatchCard } from './match-card'
 
@@ -8,23 +8,25 @@ import { MatchCard } from './match-card'
 // Since UpcomingMatches is an async server component that fetches data,
 // we create a storybook-only presentational wrapper that accepts
 // pre-fetched data. This mirrors the actual rendered output.
+//
+// `hasPredicted` is derived from the `predictedMembers` array, matching
+// the real component's behavior (no separate predictedFixtureIds needed).
 // ---------------------------------------------------------------------------
+
+/** The user ID used in stories to simulate the current logged-in user. */
+const STORY_USER_ID = 'user-current'
 
 interface UpcomingMatchesStoryProps {
   fixtures: UpcomingFixture[]
   gangId: string
   totalMembers: number
-  predictedFixtureIds: string[]
 }
 
 function UpcomingMatchesStory({
   fixtures,
   gangId,
   totalMembers,
-  predictedFixtureIds,
 }: UpcomingMatchesStoryProps) {
-  const predictedSet = new Set(predictedFixtureIds)
-
   if (fixtures.length === 0) {
     return (
       <section className="mt-8" aria-label="Upcoming matches">
@@ -47,7 +49,9 @@ function UpcomingMatchesStory({
             key={fixture.id}
             fixture={fixture}
             gangId={gangId}
-            hasPredicted={predictedSet.has(fixture.id)}
+            hasPredicted={fixture.predictedMembers.some(
+              (m) => m.userId === STORY_USER_ID,
+            )}
             totalMembers={totalMembers}
           />
         ))}
@@ -108,10 +112,33 @@ const TEAM_SRH = {
   logoUrl: null,
 }
 
+const MEMBER_NAMES = [
+  'Rajesh Kumar',
+  'Virat Kohli',
+  'MS Dhoni',
+  'Rohit Sharma',
+  'Jasprit Bumrah',
+  'Rishabh Pant',
+]
+
+function makeMembers(count: number, includeCurrentUser = false): PredictedMember[] {
+  const members: PredictedMember[] = []
+  if (includeCurrentUser) {
+    members.push({ userId: STORY_USER_ID, displayName: 'You' })
+  }
+  for (let i = 0; i < count; i++) {
+    members.push({
+      userId: `user-${i + 1}`,
+      displayName: MEMBER_NAMES[i % MEMBER_NAMES.length] ?? `Member ${i + 1}`,
+    })
+  }
+  return members
+}
+
 function makeFixture(
-  overrides: Partial<UpcomingFixture> & { hoursFromNow?: number } = {},
+  overrides: Partial<UpcomingFixture> & { hoursFromNow?: number; memberCount?: number; includeCurrentUser?: boolean } = {},
 ): UpcomingFixture {
-  const { hoursFromNow = 6, ...rest } = overrides
+  const { hoursFromNow = 6, memberCount = 3, includeCurrentUser = false, ...rest } = overrides
   const startTime = new Date(Date.now() + hoursFromNow * 60 * 60 * 1000)
 
   return {
@@ -123,7 +150,7 @@ function makeFixture(
     venueName: 'Wankhede Stadium, Mumbai',
     status: 'upcoming',
     predictionDeadlineMins: 45,
-    predictedCount: 3,
+    predictedMembers: makeMembers(memberCount, includeCurrentUser),
     homeTeam: TEAM_MI,
     awayTeam: TEAM_CSK,
     ...rest,
@@ -168,7 +195,8 @@ export const Default: Story = {
         homeTeam: TEAM_MI,
         awayTeam: TEAM_CSK,
         venueName: 'Wankhede Stadium, Mumbai',
-        predictedCount: 5,
+        memberCount: 5,
+        includeCurrentUser: true,
       }),
       makeFixture({
         id: 'f-2',
@@ -177,7 +205,7 @@ export const Default: Story = {
         homeTeam: TEAM_RCB,
         awayTeam: TEAM_KKR,
         venueName: 'M. Chinnaswamy Stadium, Bengaluru',
-        predictedCount: 2,
+        memberCount: 2,
       }),
       makeFixture({
         id: 'f-3',
@@ -186,12 +214,11 @@ export const Default: Story = {
         homeTeam: TEAM_DC,
         awayTeam: TEAM_SRH,
         venueName: 'Arun Jaitley Stadium, Delhi',
-        predictedCount: 0,
+        memberCount: 0,
       }),
     ],
     gangId: 'gang-1',
     totalMembers: 8,
-    predictedFixtureIds: ['f-1'],
   },
 }
 
@@ -201,7 +228,6 @@ export const Empty: Story = {
     fixtures: [],
     gangId: 'gang-1',
     totalMembers: 8,
-    predictedFixtureIds: [],
   },
 }
 
@@ -216,11 +242,10 @@ export const OneMatch: Story = {
         homeTeam: TEAM_RCB,
         awayTeam: TEAM_MI,
         venueName: 'M. Chinnaswamy Stadium, Bengaluru',
-        predictedCount: 4,
+        memberCount: 4,
       }),
     ],
     gangId: 'gang-1',
     totalMembers: 10,
-    predictedFixtureIds: [],
   },
 }

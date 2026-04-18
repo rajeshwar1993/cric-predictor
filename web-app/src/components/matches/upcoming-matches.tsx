@@ -25,6 +25,9 @@ interface UpcomingMatchesProps {
  *
  * Shows an empty state when no upcoming matches are available.
  *
+ * `hasPredicted` is derived from the `predictedMembers` array returned by
+ * the DAL — no separate v2_predictions query is needed.
+ *
  * @see docs/stories/MTCH-001-upcoming-matches.md
  */
 export async function UpcomingMatches({
@@ -51,47 +54,31 @@ export async function UpcomingMatches({
     )
   }
 
-  // Check which fixtures the current user has predicted for.
-  // We look at the predicted user IDs that come from the RPC — but since
-  // the DAL doesn't return per-user prediction status, we need a quick check.
-  // For now, we'll query predictions for the current user across all fixture IDs.
-  let predictedFixtureIds = new Set<string>()
-  if (user) {
-    try {
-      const fixtureIds = fixtures.map((f) => f.id)
-      const { data: predictions } = await supabase
-        .from('v2_predictions')
-        .select('fixture_id')
-        .eq('user_id', user.id)
-        .eq('gang_id', gangId)
-        .in('fixture_id', fixtureIds)
-
-      if (predictions) {
-        predictedFixtureIds = new Set(predictions.map((p) => p.fixture_id))
-      }
-    } catch {
-      // Non-critical: if we can't fetch predictions, show as unpredicted
-    }
-  }
-
   return (
     <section className="mt-8" aria-label="Upcoming matches">
       <h2 className="text-caption text-text-muted mb-4">UPCOMING MATCHES</h2>
       <div className="flex flex-col gap-4">
-        {fixtures.map((fixture, i) => (
-          <div
-            key={fixture.id}
-            className="motion-safe:stagger-item"
-            style={{ '--stagger-index': i } as React.CSSProperties}
-          >
-            <MatchCard
-              fixture={fixture}
-              gangId={gangId}
-              hasPredicted={predictedFixtureIds.has(fixture.id)}
-              totalMembers={totalMembers}
-            />
-          </div>
-        ))}
+        {fixtures.map((fixture, i) => {
+          // Derive hasPredicted from the predictedMembers array
+          const hasPredicted = user
+            ? fixture.predictedMembers.some((m) => m.userId === user.id)
+            : false
+
+          return (
+            <div
+              key={fixture.id}
+              className="motion-safe:stagger-item"
+              style={{ '--stagger-index': i } as React.CSSProperties}
+            >
+              <MatchCard
+                fixture={fixture}
+                gangId={gangId}
+                hasPredicted={hasPredicted}
+                totalMembers={totalMembers}
+              />
+            </div>
+          )
+        })}
       </div>
     </section>
   )

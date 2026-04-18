@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { MatchCard } from './match-card'
-import type { UpcomingFixture } from '@/lib/dal/fixtures'
+import type { UpcomingFixture, PredictedMember } from '@/lib/dal/fixtures'
 
 // ---------------------------------------------------------------------------
 // Shared test data
@@ -38,12 +38,37 @@ const TEAM_KKR = {
   logoUrl: null,
 }
 
+// ---------------------------------------------------------------------------
+// Predicted members test data
+// ---------------------------------------------------------------------------
+
+const MEMBER_NAMES = [
+  'Rajesh Kumar',
+  'Virat Kohli',
+  'MS Dhoni',
+  'Rohit Sharma',
+  'Jasprit Bumrah',
+  'Rishabh Pant',
+  'KL Rahul',
+  'Hardik Pandya',
+]
+
+function makeMembers(count: number): PredictedMember[] {
+  return MEMBER_NAMES.slice(0, count).map((name, i) => ({
+    userId: `user-${i + 1}`,
+    displayName: name,
+  }))
+}
+
 /**
  * Helper to create a fixture with sensible defaults.
  * The `hoursFromNow` param controls when the match starts.
+ * `memberCount` controls how many predictedMembers to generate.
  */
-function makeFixture(overrides: Partial<UpcomingFixture> & { hoursFromNow?: number } = {}): UpcomingFixture {
-  const { hoursFromNow = 6, ...rest } = overrides
+function makeFixture(
+  overrides: Partial<UpcomingFixture> & { hoursFromNow?: number; memberCount?: number } = {},
+): UpcomingFixture {
+  const { hoursFromNow = 6, memberCount = 3, ...rest } = overrides
   const startTime = new Date(Date.now() + hoursFromNow * 60 * 60 * 1000)
 
   return {
@@ -55,7 +80,7 @@ function makeFixture(overrides: Partial<UpcomingFixture> & { hoursFromNow?: numb
     venueName: 'Wankhede Stadium, Mumbai',
     status: 'upcoming',
     predictionDeadlineMins: 45,
-    predictedCount: 3,
+    predictedMembers: makeMembers(memberCount),
     homeTeam: TEAM_MI,
     awayTeam: TEAM_CSK,
     ...rest,
@@ -102,7 +127,7 @@ export const Upcoming: Story = {
 /** User has submitted predictions. */
 export const Predicted: Story = {
   args: {
-    fixture: makeFixture({ hoursFromNow: 6, predictedCount: 5 }),
+    fixture: makeFixture({ hoursFromNow: 6, memberCount: 5 }),
     gangId: 'gang-1',
     hasPredicted: true,
     totalMembers: 8,
@@ -122,7 +147,7 @@ export const LockedPreDeadline: Story = {
 /** Deadline passed — predictions locked. */
 export const Locked: Story = {
   args: {
-    fixture: makeFixture({ hoursFromNow: -1, predictedCount: 7 }),
+    fixture: makeFixture({ hoursFromNow: -1, memberCount: 7 }),
     gangId: 'gang-1',
     hasPredicted: true,
     totalMembers: 8,
@@ -135,7 +160,7 @@ export const Live: Story = {
     fixture: makeFixture({
       hoursFromNow: -1,
       status: 'live',
-      predictedCount: 7,
+      memberCount: 7,
     }),
     gangId: 'gang-1',
     hasPredicted: true,
@@ -143,10 +168,10 @@ export const Live: Story = {
   },
 }
 
-/** Shows prediction count — "5/8 predicted". */
+/** Shows prediction count and avatar pills — "5/8 predicted" + 4 pills + "+1". */
 export const WithPredictionCount: Story = {
   args: {
-    fixture: makeFixture({ hoursFromNow: 6, predictedCount: 5 }),
+    fixture: makeFixture({ hoursFromNow: 6, memberCount: 5 }),
     gangId: 'gang-1',
     hasPredicted: false,
     totalMembers: 8,
@@ -182,10 +207,20 @@ export const DifferentTeams: Story = {
       homeTeam: TEAM_RCB,
       awayTeam: TEAM_KKR,
       venueName: 'M. Chinnaswamy Stadium, Bengaluru',
-      predictedCount: 2,
+      memberCount: 2,
     }),
     gangId: 'gang-1',
     hasPredicted: false,
     totalMembers: 12,
+  },
+}
+
+/** Many predictions — shows 4 avatars + "+4" overflow pill. */
+export const WithManyPredictions: Story = {
+  args: {
+    fixture: makeFixture({ hoursFromNow: 6, memberCount: 8 }),
+    gangId: 'gang-1',
+    hasPredicted: false,
+    totalMembers: 10,
   },
 }

@@ -865,6 +865,17 @@ export type Database = {
         }
         Returns: string[]
       }
+      get_fixture_prediction_members: {
+        Args: {
+          p_gang_id: string
+          p_fixture_ids: string[]
+        }
+        Returns: {
+          fixture_id: string
+          user_id: string
+          display_name: string
+        }[]
+      }
       create_join_request_notification: {
         Args: {
           p_admin_user_id: string

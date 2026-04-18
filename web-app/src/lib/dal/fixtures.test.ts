@@ -54,8 +54,8 @@ function chainBuilder(resolvedValue: { data: unknown; error: unknown }) {
 /** The per-test resolved value for the query. */
 let queryResult: { data: unknown; error: unknown }
 
-/** The per-test resolved value for predictions batch query. */
-let predictionsResult: { data: unknown; error: unknown }
+/** The per-test resolved value for the RPC call (get_fixture_prediction_members). */
+let rpcResult: { data: unknown; error: unknown }
 
 /** The per-test resolved value for gang league season query. */
 let gangLeagueSeasonResult: { data: unknown; error: unknown }
@@ -77,14 +77,11 @@ vi.mock('@/lib/supabase/server', () => ({
       if (table === 'v2_gang_fixture_standings') {
         return chainBuilder(standingsResult)
       }
-      if (table === 'v2_predictions') {
-        return chainBuilder(predictionsResult)
-      }
       return chainBuilder(queryResult)
     },
     rpc: (fnName: string, params: unknown) => {
       mockRpc(fnName, params)
-      return chainBuilder({ data: [], error: null })
+      return rpcResult
     },
   })),
 }))
@@ -132,7 +129,7 @@ describe('getUpcomingFixtures', () => {
     _tableCallCount = 0
 
     queryResult = { data: [], error: null }
-    predictionsResult = { data: [], error: null }
+    rpcResult = { data: [], error: null }
     standingsResult = { data: [], error: null }
     gangLeagueSeasonResult = {
       data: {
@@ -181,15 +178,15 @@ describe('getUpcomingFixtures', () => {
     expect(mockLimit).toHaveBeenCalledWith(3)
   })
 
-  test('maps fixture rows to clean interface with team info', async () => {
+  test('maps fixture rows to clean interface with team info and predicted members', async () => {
     queryResult = {
       data: [FIXTURE_1],
       error: null,
     }
-    predictionsResult = {
+    rpcResult = {
       data: [
-        { fixture_id: 'fixture-1', user_id: 'user-1' },
-        { fixture_id: 'fixture-1', user_id: 'user-2' },
+        { fixture_id: 'fixture-1', user_id: 'user-1', display_name: 'Rajesh Kumar' },
+        { fixture_id: 'fixture-1', user_id: 'user-2', display_name: 'Virat Kohli' },
       ],
       error: null,
     }
@@ -205,7 +202,10 @@ describe('getUpcomingFixtures', () => {
         venueName: 'Wankhede Stadium',
         status: 'upcoming',
         predictionDeadlineMins: 45,
-        predictedCount: 2,
+        predictedMembers: [
+          { userId: 'user-1', displayName: 'Rajesh Kumar' },
+          { userId: 'user-2', displayName: 'Virat Kohli' },
+        ],
         homeTeam: {
           id: 'team-mi',
           name: 'Mumbai Indians',
@@ -240,53 +240,57 @@ describe('getUpcomingFixtures', () => {
     )
   })
 
-  test('batch-fetches predictions from v2_predictions for all fixtures', async () => {
+  test('calls get_fixture_prediction_members RPC with gang_id and fixture_ids', async () => {
     queryResult = {
       data: [FIXTURE_1],
       error: null,
     }
-    predictionsResult = {
-      data: [{ fixture_id: 'fixture-1', user_id: 'user-1' }],
+    rpcResult = {
+      data: [{ fixture_id: 'fixture-1', user_id: 'user-1', display_name: 'Rajesh Kumar' }],
       error: null,
     }
 
     await getUpcomingFixtures('gang-1')
 
-    expect(mockFrom).toHaveBeenCalledWith('v2_predictions')
-    expect(mockIn).toHaveBeenCalledWith('fixture_id', ['fixture-1'])
-    expect(mockEq).toHaveBeenCalledWith('gang_id', 'gang-1')
+    expect(mockRpc).toHaveBeenCalledWith('get_fixture_prediction_members', {
+      p_gang_id: 'gang-1',
+      p_fixture_ids: ['fixture-1'],
+    })
   })
 
-  test('counts distinct users per fixture in batch predictions', async () => {
+  test('builds predictedMembers array from RPC response', async () => {
     queryResult = {
       data: [FIXTURE_1],
       error: null,
     }
-    // Same user predicted multiple scenarios for the same fixture — should count as 1
-    predictionsResult = {
+    // RPC returns distinct rows per user (deduplication is handled in the DB function)
+    rpcResult = {
       data: [
-        { fixture_id: 'fixture-1', user_id: 'user-1' },
-        { fixture_id: 'fixture-1', user_id: 'user-1' },
-        { fixture_id: 'fixture-1', user_id: 'user-2' },
+        { fixture_id: 'fixture-1', user_id: 'user-1', display_name: 'Rajesh Kumar' },
+        { fixture_id: 'fixture-1', user_id: 'user-2', display_name: 'MS Dhoni' },
       ],
       error: null,
     }
 
     const result = await getUpcomingFixtures('gang-1')
 
-    expect(result[0]?.predictedCount).toBe(2)
+    expect(result[0]?.predictedMembers).toHaveLength(2)
+    expect(result[0]?.predictedMembers).toEqual([
+      { userId: 'user-1', displayName: 'Rajesh Kumar' },
+      { userId: 'user-2', displayName: 'MS Dhoni' },
+    ])
   })
 
-  test('handles prediction query error gracefully by returning 0 predicted count', async () => {
+  test('handles RPC error gracefully by returning empty predictedMembers', async () => {
     queryResult = {
       data: [FIXTURE_1],
       error: null,
     }
-    predictionsResult = { data: null, error: { message: 'query error', code: '42P01' } }
+    rpcResult = { data: null, error: { message: 'rpc error', code: '42P01' } }
 
     const result = await getUpcomingFixtures('gang-1')
 
-    expect(result[0]?.predictedCount).toBe(0)
+    expect(result[0]?.predictedMembers).toEqual([])
   })
 })
 
@@ -300,7 +304,7 @@ describe('getFixtureWithTeams', () => {
     _tableCallCount = 0
 
     queryResult = { data: null, error: null }
-    predictionsResult = { data: [], error: null }
+    rpcResult = { data: [], error: null }
     standingsResult = { data: [], error: null }
     gangLeagueSeasonResult = { data: null, error: null }
   })
@@ -394,7 +398,7 @@ describe('getLiveFixtures', () => {
     _tableCallCount = 0
 
     queryResult = { data: [], error: null }
-    predictionsResult = { data: [], error: null }
+    rpcResult = { data: [], error: null }
     standingsResult = { data: [], error: null }
     gangLeagueSeasonResult = {
       data: {
@@ -540,7 +544,7 @@ describe('getRecentResults', () => {
     _tableCallCount = 0
 
     queryResult = { data: [], error: null }
-    predictionsResult = { data: [], error: null }
+    rpcResult = { data: [], error: null }
     standingsResult = { data: [], error: null }
     gangLeagueSeasonResult = {
       data: {

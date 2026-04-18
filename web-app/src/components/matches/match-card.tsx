@@ -8,6 +8,7 @@ import {
   getPredictionStatus,
   type PredictionStatus,
 } from './prediction-status-badge'
+import { PredictionAvatars } from './prediction-avatars'
 import { MatchTime } from './match-time'
 import { MatchDeadline } from './match-deadline'
 import { PREDICTION_WINDOW_MS } from '@/lib/constants'
@@ -142,13 +143,14 @@ export function MatchCard({
           </span>
         </div>
 
-        {/* Footer: Deadline, predicted count, CTA */}
+        {/* Footer: Deadline, predicted count, pills, CTA */}
         <div className="flex items-center justify-between gap-2">
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-2">
             <DeadlineDisplay status={status} deadline={deadlineTime} startDatetime={fixture.startDatetime} />
             <span className="text-caption text-text-muted">
-              {fixture.predictedCount}/{totalMembers} predicted
+              {fixture.predictedMembers.length}/{totalMembers} predicted
             </span>
+            <PredictionAvatars members={fixture.predictedMembers} />
           </div>
           <MatchCardCTA status={status} />
         </div>

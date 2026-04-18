@@ -35,13 +35,21 @@ export interface FixtureWithTeams {
 }
 
 /**
+ * A gang member who has submitted predictions for a fixture.
+ */
+export interface PredictedMember {
+  userId: string
+  displayName: string
+}
+
+/**
  * Upcoming fixture with prediction metadata, used by the gang page.
  */
 export interface UpcomingFixture extends FixtureWithTeams {
   /** Minutes before match start when predictions lock (from gang settings) */
   predictionDeadlineMins: number
-  /** Count of gang members who have submitted predictions for this fixture */
-  predictedCount: number
+  /** Members who have submitted predictions for this fixture (bypasses RLS deadline) */
+  predictedMembers: PredictedMember[]
 }
 
 // ---------------------------------------------------------------------------
@@ -128,29 +136,32 @@ export async function getUpcomingFixtures(
   if (fixturesError) throw fixturesError
   if (!fixtures || fixtures.length === 0) return []
 
-  // Step 3: Batch-fetch prediction counts for all fixtures in a single query
+  // Step 3: Batch-fetch prediction members via SECURITY DEFINER RPC
+  // This bypasses RLS deadline restrictions so the count is always accurate.
   const fixtureIds = fixtures.map((f) => f.id)
-  const { data: predictions } = await supabase
-    .from('v2_predictions')
-    .select('fixture_id, user_id')
-    .in('fixture_id', fixtureIds)
-    .eq('gang_id', gangId)
+  const { data: predictionMembers, error: rpcError } = await supabase.rpc(
+    'get_fixture_prediction_members',
+    { p_gang_id: gangId, p_fixture_ids: fixtureIds },
+  )
 
-  // Build a map of fixture_id → count of distinct users who predicted
-  const predictionCountMap = new Map<string, number>()
-  if (predictions) {
-    // Use a Set per fixture to count distinct users
-    const userSets = new Map<string, Set<string>>()
-    for (const row of predictions) {
-      let userSet = userSets.get(row.fixture_id)
-      if (!userSet) {
-        userSet = new Set<string>()
-        userSets.set(row.fixture_id, userSet)
+  if (rpcError) {
+    console.error('[getUpcomingFixtures] RPC get_fixture_prediction_members failed:', rpcError)
+  }
+
+  // Build a map of fixture_id → array of predicted members
+  const predictionMembersMap = new Map<string, PredictedMember[]>()
+  if (predictionMembers) {
+    for (const row of predictionMembers as Array<{
+      fixture_id: string
+      user_id: string
+      display_name: string
+    }>) {
+      let members = predictionMembersMap.get(row.fixture_id)
+      if (!members) {
+        members = []
+        predictionMembersMap.set(row.fixture_id, members)
       }
-      userSet.add(row.user_id)
-    }
-    for (const [fixtureId, userSet] of userSets) {
-      predictionCountMap.set(fixtureId, userSet.size)
+      members.push({ userId: row.user_id, displayName: row.display_name })
     }
   }
 
@@ -182,7 +193,7 @@ export async function getUpcomingFixtures(
       venueName: row.venue_name,
       status: row.status,
       predictionDeadlineMins: predictionDeadlineMins,
-      predictedCount: predictionCountMap.get(row.id) ?? 0,
+      predictedMembers: predictionMembersMap.get(row.id) ?? [],
       homeTeam: mapTeam(homeTeam),
       awayTeam: mapTeam(awayTeam),
     }
