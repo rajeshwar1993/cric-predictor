@@ -235,6 +235,7 @@ _(URL paths use `/group/` for legacy compatibility; DB schema and product termin
   - Ranked list of members: rank, display name, correct/resolved count, predicted count, points
   - Current user highlighted
   - Empty state if no one has predicted
+  - **Leaderboard Share Card**: share icon button on the current user's row (only when fixture status = `resolved`). Generates a branded PNG card showing rank, points, correct predictions, match context, and gang context (name + member count). Other members anonymized. Mobile uses `navigator.share()` with PNG; desktop downloads PNG. Rank-specific copy: #1 = "Top of the table", #2–3 = "On the podium", #4+ = "In the mix". Analytics: `LEADERBOARD_SHARE_TRIGGERED`, `LEADERBOARD_SHARE_COMPLETED`, `LEADERBOARD_SHARE_CANCELLED`.
 - **Prediction Reveal Table**
   - Matrix of all members' predictions per scenario
   - Shows correct/incorrect status per cell
@@ -621,6 +622,7 @@ Both files must be consulted together when building or reviewing UI components. 
   - **Auth:** magic link requested, magic link resent, callback success/failure, onboarding completed, terms accepted, signed out, account deleted, display name updated
   - **Gangs:** created, join requested, invite copied, invite shared, member approved/rejected, member removed, member blocked/unblocked, member left, gang deleted
   - **Predictions:** submitted, pick changed, predict page viewed/revisited
+  - **Leaderboard Share:** share triggered, share completed, share cancelled (payload: gang_id, fixture_id, rank, points, member_count)
   - **Notifications:** bell opened, notification clicked, marked read, all marked read
   - **Performance:** Web Vitals (LCP, INP, CLS), page load time, server action duration
   - **Security:** rate limit hit (user_id, action, count, window) — fires when a user exceeds a per-action rate limit
