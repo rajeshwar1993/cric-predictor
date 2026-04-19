@@ -25,6 +25,8 @@ interface LeaderboardRowProps extends React.ComponentProps<'div'> {
   subtitle?: string
   /** Optional badge rendered next to the display name (e.g. "ADMIN") */
   badge?: React.ReactNode
+  /** Optional trailing content rendered after the score (e.g. share button) */
+  children?: React.ReactNode
 }
 
 /* -------------------------------------------------------------------------- */
@@ -80,6 +82,7 @@ function LeaderboardRow({
   avatar,
   subtitle,
   badge,
+  children,
   className,
   ...props
 }: LeaderboardRowProps) {
@@ -146,6 +149,9 @@ function LeaderboardRow({
       >
         {score}
       </span>
+
+      {/* Trailing content (e.g. share button) */}
+      {children}
     </div>
   )
 }

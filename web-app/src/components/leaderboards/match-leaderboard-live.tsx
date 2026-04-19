@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { useMatchLeaderboard } from '@/hooks/use-match-leaderboard'
 import type { MatchLeaderboardEntry } from '@/lib/dal/leaderboards'
+import type { MatchStatus } from '@/types'
 import { MatchLeaderboard } from './match-leaderboard'
 
 // ---------------------------------------------------------------------------
@@ -20,6 +21,16 @@ export interface MatchLeaderboardLiveProps {
   initialEntries: MatchLeaderboardEntry[]
   /** The current authenticated user's ID */
   currentUserId: string
+  /** Current fixture status — passed to MatchLeaderboard for share button gating */
+  fixtureStatus?: MatchStatus
+  /** Gang name — passed to MatchLeaderboard for the share card */
+  gangName?: string
+  /** Number of approved members in the gang */
+  memberCount?: number
+  /** Match title (e.g., "MI vs CSK") — passed to MatchLeaderboard for the share card */
+  matchTitle?: string
+  /** Match number — passed to MatchLeaderboard for the share card */
+  matchNumber?: number
 }
 
 // ---------------------------------------------------------------------------
@@ -43,6 +54,11 @@ export function MatchLeaderboardLive({
   isLive,
   initialEntries,
   currentUserId,
+  fixtureStatus,
+  gangName,
+  memberCount,
+  matchTitle,
+  matchNumber,
 }: MatchLeaderboardLiveProps) {
   const { data: polledData, isLoading, error } = useMatchLeaderboard(
     gangId,
@@ -78,6 +94,13 @@ export function MatchLeaderboardLive({
         entries={entries}
         currentUserId={currentUserId}
         isLoading={isLive && isLoading && !polledData}
+        fixtureStatus={fixtureStatus}
+        gangName={gangName}
+        memberCount={memberCount}
+        gangId={gangId}
+        fixtureId={fixtureId}
+        matchTitle={matchTitle}
+        matchNumber={matchNumber}
       />
     </>
   )

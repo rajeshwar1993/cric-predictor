@@ -43,6 +43,11 @@ export const ANALYTICS_EVENTS = {
   // Security
   RATE_LIMIT_HIT: 'rate_limit_hit',
 
+  // Leaderboard
+  LEADERBOARD_SHARE_TRIGGERED: 'leaderboard_share_triggered',
+  LEADERBOARD_SHARE_COMPLETED: 'leaderboard_share_completed',
+  LEADERBOARD_SHARE_CANCELLED: 'leaderboard_share_cancelled',
+
   // Errors
   ERROR_LOGGED: 'error_logged',
 } as const

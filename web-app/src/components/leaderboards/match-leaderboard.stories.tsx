@@ -143,3 +143,78 @@ export const Loading: Story = {
     isLoading: true,
   },
 }
+
+/* ------------------------------------------------------------------ */
+/* Share button stories                                                */
+/* ------------------------------------------------------------------ */
+
+const shareProps = {
+  fixtureStatus: 'resolved' as const,
+  gangName: 'The Dugout',
+  memberCount: 8,
+  gangId: 'gang-123',
+  fixtureId: 'fixture-456',
+  matchTitle: 'MI vs CSK',
+  matchNumber: 32,
+}
+
+/** Resolved fixture — share button visible on current user's row */
+export const WithShareButtonResolved: Story = {
+  args: {
+    entries: eightMembers,
+    currentUserId: CURRENT_USER_ID,
+    ...shareProps,
+  },
+}
+
+/** Current user is #1 with share button */
+export const ShareButtonRank1: Story = {
+  args: {
+    entries: [
+      makeEntry({ userId: CURRENT_USER_ID, rank: 1, displayName: 'You', correctCount: 6, pointsEarned: 48 }),
+      makeEntry({ userId: 'user-2', rank: 2, displayName: 'Virat K', correctCount: 5, pointsEarned: 42 }),
+      makeEntry({ userId: 'user-3', rank: 3, displayName: 'MS Dhoni', correctCount: 4, pointsEarned: 36 }),
+    ],
+    currentUserId: CURRENT_USER_ID,
+    ...shareProps,
+  },
+}
+
+/** Live fixture — share button disabled */
+export const ShareButtonDisabledLive: Story = {
+  args: {
+    entries: eightMembers,
+    currentUserId: CURRENT_USER_ID,
+    ...shareProps,
+    fixtureStatus: 'live',
+  },
+}
+
+/** Completed fixture (not yet resolved) — share button disabled */
+export const ShareButtonDisabledCompleted: Story = {
+  args: {
+    entries: eightMembers,
+    currentUserId: CURRENT_USER_ID,
+    ...shareProps,
+    fixtureStatus: 'completed',
+  },
+}
+
+/** Departed members don't get share button, even if they are current user */
+export const DepartedCurrentUser: Story = {
+  args: {
+    entries: [
+      makeEntry({ userId: 'user-1', rank: 1, displayName: 'Rajesh K', correctCount: 6, pointsEarned: 48 }),
+      makeEntry({
+        userId: CURRENT_USER_ID,
+        rank: 2,
+        displayName: 'You',
+        correctCount: 5,
+        pointsEarned: 42,
+        memberStatus: 'left',
+      }),
+    ],
+    currentUserId: CURRENT_USER_ID,
+    ...shareProps,
+  },
+}

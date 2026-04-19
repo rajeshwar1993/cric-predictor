@@ -1,7 +1,9 @@
 import { Trophy } from 'lucide-react'
 import type { MatchLeaderboardEntry } from '@/lib/dal/leaderboards'
+import type { MatchStatus } from '@/types'
 import { isDeparted } from '@/lib/member-status'
 import { LeaderboardRow } from './leaderboard-row'
+import { LeaderboardShareButton } from './leaderboard-share-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { LeaderboardRowSkeleton } from '@/components/ui/skeleton'
 
@@ -16,6 +18,20 @@ export interface MatchLeaderboardProps {
   currentUserId: string
   /** Whether the leaderboard data is currently loading */
   isLoading?: boolean
+  /** Current fixture status — controls share button availability */
+  fixtureStatus?: MatchStatus
+  /** Gang name — used in the share card */
+  gangName?: string
+  /** Number of approved members in the gang */
+  memberCount?: number
+  /** Gang ID — used for analytics */
+  gangId?: string
+  /** Fixture ID — used for analytics */
+  fixtureId?: string
+  /** Match title (e.g., "MI vs CSK") — used in the share card */
+  matchTitle?: string
+  /** Match number — used in the share card */
+  matchNumber?: number
 }
 
 // ---------------------------------------------------------------------------
@@ -34,6 +50,13 @@ export function MatchLeaderboard({
   entries,
   currentUserId,
   isLoading = false,
+  fixtureStatus,
+  gangName,
+  memberCount,
+  gangId,
+  fixtureId,
+  matchTitle,
+  matchNumber,
 }: MatchLeaderboardProps) {
   if (isLoading) {
     return <MatchLeaderboardSkeleton />
@@ -60,8 +83,20 @@ export function MatchLeaderboard({
           const isCurrentUser = entry.userId === currentUserId
           const subtitle = buildSubtitle(entry)
 
+          // Share button: only for current user, not departed, with a valid rank
+          const showShareButton =
+            isCurrentUser &&
+            !departed &&
+            entry.rank !== null &&
+            gangName !== undefined &&
+            memberCount !== undefined &&
+            gangId !== undefined &&
+            fixtureId !== undefined &&
+            matchTitle !== undefined &&
+            matchNumber !== undefined
+
           return (
-            <div key={entry.userId} role="listitem">
+            <div key={entry.userId} role="listitem" className="relative">
               <LeaderboardRow
                 rank={departed ? null : entry.rank}
                 displayName={entry.displayName ?? 'Unknown'}
@@ -70,7 +105,27 @@ export function MatchLeaderboard({
                 isDeparted={departed}
                 avatar={entry.avatarUrl ?? undefined}
                 subtitle={subtitle}
-              />
+              >
+                {showShareButton && (
+                  <LeaderboardShareButton
+                    cardData={{
+                      rank: entry.rank as number,
+                      displayName: entry.displayName ?? 'Unknown',
+                      avatarUrl: entry.avatarUrl ?? undefined,
+                      correctCount: entry.correctCount,
+                      totalScenarios: entry.resolvedCount,
+                      points: entry.pointsEarned,
+                      matchTitle,
+                      matchNumber,
+                      gangName,
+                      memberCount,
+                    }}
+                    gangId={gangId}
+                    fixtureId={fixtureId}
+                    isResolved={fixtureStatus === 'resolved'}
+                  />
+                )}
+              </LeaderboardRow>
             </div>
           )
         })}

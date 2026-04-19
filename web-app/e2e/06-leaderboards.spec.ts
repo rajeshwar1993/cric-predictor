@@ -297,3 +297,23 @@ test('6.11 — recent results shows resolved fixture', async ({ page }) => {
   const recentSection = page.getByRole('region', { name: /recent results/i })
   await expect(recentSection).toBeVisible({ timeout: 15_000 })
 })
+
+// ---------------------------------------------------------------------------
+// 6.12 — Share button visible on current user's row for resolved fixture
+// ---------------------------------------------------------------------------
+
+test('6.12 — share button visible on current user leaderboard row', async ({
+  page,
+}) => {
+  await authenticate(page, 0)
+  await page.goto(`/group/${gangAId}/match/${fixtureXId}`)
+  await waitForPageReady(page)
+
+  // Wait for the leaderboard to render
+  const list = page.getByRole('list', { name: /match standings/i })
+  await expect(list).toBeVisible({ timeout: 15_000 })
+
+  // The share button should be visible on the current user's row
+  const shareButton = page.getByRole('button', { name: /share your ranking/i })
+  await expect(shareButton.first()).toBeVisible({ timeout: 10_000 })
+})

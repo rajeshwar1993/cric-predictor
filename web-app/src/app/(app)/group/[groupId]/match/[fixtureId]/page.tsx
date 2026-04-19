@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase/server'
 import { getFixtureWithTeams } from '@/lib/dal/fixtures'
-import { getMembershipStatus } from '@/lib/dal/gangs'
+import { getMembershipStatus, getGangDetails } from '@/lib/dal/gangs'
 import { getGangLeagueSeason, getMatchPredictions } from '@/lib/dal/predictions'
 import { getMatchLeaderboard } from '@/lib/dal/leaderboards'
 import { PageWrapper } from '@/components/layout/page-wrapper'
@@ -152,14 +152,22 @@ export default async function MatchLeaderboardPage({
   ).toISOString()
 
   // ---------------------------------------------------------------------------
-  // Fetch leaderboard + prediction reveal data (only when locked)
+  // Fetch leaderboard + prediction reveal data (only when locked) + gang details
   // ---------------------------------------------------------------------------
-  const [leaderboardEntries, revealData] = locked
+  const [leaderboardEntries, revealData, gangDetails] = locked
     ? await Promise.all([
         getMatchLeaderboard(groupId, fixtureId),
         getMatchPredictions(groupId, fixtureId),
+        getGangDetails(groupId),
       ])
-    : [[], null]
+    : [[], null, null]
+
+  // Derive gang metadata for the share card
+  const gangName = gangDetails?.name
+  const approvedMemberCount = gangDetails?.members.filter(
+    (m) => m.status === 'approved',
+  ).length ?? 0
+  const matchTitle = `${fixture.homeTeam.code} vs ${fixture.awayTeam.code}`
 
   return (
     <PageWrapper className="py-8">
@@ -183,6 +191,11 @@ export default async function MatchLeaderboardPage({
             isLive={isLive}
             initialEntries={leaderboardEntries}
             currentUserId={user.id}
+            fixtureStatus={fixture.status}
+            gangName={gangName}
+            memberCount={approvedMemberCount}
+            matchTitle={matchTitle}
+            matchNumber={fixture.matchNumber}
           />
 
           {/* Prediction reveal table with live polling wrapper */}
