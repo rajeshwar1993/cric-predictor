@@ -10,7 +10,7 @@
 supabase/supabase/
 ├── config.toml                          # Supabase CLI configuration
 ├── seed.sql                             # Placeholder (actual seeds in migrations)
-├── migrations/                          # 16 ordered SQL migration files
+├── migrations/                          # 24 ordered SQL migration files
 │   ├── 20260406000001_initial_schema.sql
 │   ├── 20260406000002_rls_policies.sql
 │   ├── 20260406000003_indexes.sql
@@ -26,11 +26,24 @@ supabase/supabase/
 │   ├── 20260407000012_grant_table_permissions.sql
 │   ├── 20260408000013_scenario_resolution_functions.sql
 │   ├── 20260408000014_deadline_reminders_cron.sql
-│   └── 20260408000015_rate_limits_table.sql
+│   ├── 20260408000015_rate_limits_table.sql
+│   ├── 20260409000016_delete_gang_rpc_auth_uid.sql
+│   ├── 20260410000001_notification_rpcs.sql
+│   ├── 20260411000001_re_resolve_scenario_rpc.sql
+│   ├── 20260412000001_admin_role.sql
+│   ├── 20260414000001_fix_invite_code_rpc_setof.sql
+│   ├── 20260415000001_cron_run_status.sql
+│   ├── 20260415000002_cron_run_status_pg_functions.sql
+│   └── 20260418000001_get_fixture_prediction_members.sql
 ├── functions/                           # Supabase Edge Functions (Deno)
 │   ├── _shared/
 │   │   ├── sportmonks.ts                # Sportmonks API client
-│   │   └── sportmonks-extractors.ts     # Scenario resolution extractors
+│   │   ├── sportmonks-extractors.ts     # Scenario resolution extractors
+│   │   ├── sportmonks-extractors.test.ts # Extractor unit tests
+│   │   ├── cron-log.ts                  # Shared cron run logger (logCronRun)
+│   │   └── status-mapping.ts            # Sportmonks → internal status mapping
+│   ├── cleanup-stale-fixtures/
+│   │   └── index.ts                     # Admin: identify & fix stale fixtures
 │   ├── live-poll-resolve-fixtures/
 │   │   └── index.ts                     # Live polling + scenario resolution
 │   ├── sync-fixtures/
@@ -114,6 +127,7 @@ supabase/supabase/
 | `onboarding_completed` | BOOLEAN | default `false` |
 | `is_deleted` | BOOLEAN | default `false` |
 | `deleted_at` | TIMESTAMPTZ | nullable |
+| `is_system_admin` | BOOLEAN | NOT NULL, default `false` (added in migration 020) |
 | `created_at` | TIMESTAMPTZ | default `now()` |
 
 **CHECK constraint:** `onboarding_completed = false OR (display_name IS NOT NULL AND date_of_birth IS NOT NULL AND terms_version IS NOT NULL)`
@@ -398,6 +412,21 @@ supabase/supabase/
 **Index:** `idx_v2_rate_limits_window_start` on `(window_start)`
 **Cron cleanup:** Daily at 03:00 UTC, deletes rows older than 24 hours.
 
+### 2.21 `v2_cron_run_status` — Cron job run tracking (added in migration 022)
+
+| Column | Type | Constraints / Default |
+|--------|------|----------------------|
+| `job_key` | TEXT | PK |
+| `status` | TEXT | NOT NULL (`'succeeded'` or `'failed'`) |
+| `started_at` | TIMESTAMPTZ | NOT NULL |
+| `completed_at` | TIMESTAMPTZ | NOT NULL |
+| `duration_ms` | INT | NOT NULL |
+| `summary` | JSONB | nullable, function-specific results |
+| `error_count` | INT | NOT NULL, default `0` |
+| `updated_at` | TIMESTAMPTZ | NOT NULL, default `now()` |
+
+**RLS:** Enabled. No user-facing policies — only service role writes/reads. Edge functions upsert via `logCronRun()` helper; PG cron functions upsert directly.
+
 ---
 
 ## 3. Indexes
@@ -405,6 +434,7 @@ supabase/supabase/
 | Table | Index Name | Columns / Condition |
 |-------|-----------|-------------------|
 | `v2_profiles` | `idx_profiles_email` | `(email)` |
+| `v2_profiles` | `idx_v2_profiles_is_system_admin` | `(is_system_admin) WHERE is_system_admin = true` |
 | `v2_gangs` | `idx_gangs_created_by` | `(created_by)` |
 | `v2_gangs` | `idx_gangs_deleted` | `(is_deleted)` |
 | `v2_gang_members` | `idx_gang_members_status` | `(gang_id, status)` |
@@ -429,7 +459,7 @@ supabase/supabase/
 
 ## 4. RLS Policies
 
-RLS is enabled on all 20 tables. System operations (cron, edge functions) use service role key to bypass RLS.
+RLS is enabled on all 21 tables. System operations (cron, edge functions) use service role key to bypass RLS.
 
 ### 4.1 RLS Helper Functions (SECURITY DEFINER)
 
@@ -437,7 +467,7 @@ RLS is enabled on all 20 tables. System operations (cron, edge functions) use se
 |----------|-----------|---------|
 | `is_gang_member` | `(p_gang_id UUID, p_user_id UUID) → BOOLEAN` | Returns `true` if user is an approved member with non-deleted profile |
 | `is_gang_admin` | `(p_gang_id UUID, p_user_id UUID) → BOOLEAN` | Returns `true` if user has `role='admin'`, `status='approved'`, non-deleted profile |
-| `get_gang_by_invite_code` | `(p_code TEXT) → v2_gangs` | Bypasses RLS to look up gang by invite code (needed before membership) |
+| `get_gang_by_invite_code` | `(p_code TEXT) → SETOF v2_gangs` | Bypasses RLS to look up gang by invite code (needed before membership). Returns SETOF for PostgREST array compatibility (migration 021). |
 | `get_members_who_predicted` | `(p_gang_id UUID, p_fixture_id UUID) → SETOF UUID` | Returns user_ids of members with predictions; verifies caller is approved member |
 | `prediction_deadline` | `(p_fixture_id UUID, p_gang_id UUID) → TIMESTAMPTZ` | Computes deadline: `start_datetime - prediction_deadline_mins` |
 
@@ -567,15 +597,18 @@ RLS is enabled on all 20 tables. System operations (cron, edge functions) use se
   7. Seed scenarios for upcoming fixtures within 14-hour window
   8. Return new `gang_id`
 
-### 6.2 `delete_gang(p_gang_id UUID, p_caller_id UUID) → VOID`
+### 6.2 `delete_gang(p_gang_id UUID) → VOID`
 
 - **Security:** DEFINER
+- **Caller:** Resolved via `auth.uid()` (migration 016 hardened this — previously accepted client-supplied `p_caller_id`)
+- **Grants:** `EXECUTE` to `authenticated`
 - **Logic:**
-  1. Verify caller is gang admin (raises `42501` if not)
-  2. Lock gang row with `FOR UPDATE`
-  3. Verify gang exists and is not deleted (raises `P0001` if not)
-  4. Soft-delete gang (`is_deleted=true`, `deleted_at=now()`)
-  5. Insert `gang_deleted` notifications for all approved members with non-deleted profiles
+  1. Resolve caller via `auth.uid()` (raises `42501 NOT_AUTHENTICATED` if NULL)
+  2. Verify caller is gang admin (raises `42501 NOT_GANG_ADMIN` if not)
+  3. Lock gang row with `FOR UPDATE`
+  4. Verify gang exists and is not deleted (raises `P0001` if not)
+  5. Soft-delete gang (`is_deleted=true`, `deleted_at=now()`)
+  6. Insert `gang_deleted` notifications for all approved members with non-deleted profiles
 
 ### 6.3 `delete_account(p_user_id UUID) → VOID`
 
@@ -603,7 +636,7 @@ RLS is enabled on all 20 tables. System operations (cron, edge functions) use se
 
 - **Security:** DEFINER
 - **Schedule:** Every 30 minutes (pg_cron — currently commented out in migration)
-- **Logic:** Finds all (gang, fixture) pairs where fixture is upcoming and within the 14-hour seeding window, and scenarios haven't been seeded yet. Calls `seed_fixture_scenarios_for_gang()` for each. Per-pair failures don't abort the run.
+- **Logic:** Finds all (gang, fixture) pairs where fixture is upcoming and within the 14-hour seeding window, and scenarios haven't been seeded yet. Calls `seed_fixture_scenarios_for_gang()` for each. Per-pair failures don't abort the run. Logs run status to `v2_cron_run_status` (migration 023).
 - **Returns:** `{pairs_found, pairs_seeded, errors: [...]}`
 
 ### 6.7 `resolve_scenario(p_scenario_id UUID, p_correct_answer TEXT) → VOID`
@@ -630,12 +663,98 @@ RLS is enabled on all 20 tables. System operations (cron, edge functions) use se
 
 - **Security:** DEFINER
 - **Schedule:** Every 15 minutes (pg_cron — currently commented out in migration)
-- **Logic:** Finds (fixture, gang) pairs where the prediction deadline is ~1 hour away (20-minute window: deadline between `now() + 40 min` and `now() + 1h 20min`). For each pair, finds approved non-deleted members who haven't predicted and inserts `deadline_reminder` notifications (deduped via unique partial index).
+- **Logic:** Finds (fixture, gang) pairs where the prediction deadline is ~1 hour away (20-minute window: deadline between `now() + 40 min` and `now() + 1h 20min`). For each pair, finds approved non-deleted members who haven't predicted and inserts `deadline_reminder` notifications (deduped via unique partial index). Logs run status to `v2_cron_run_status` (migration 023).
 - **Returns:** `{reminders_sent, pairs_checked}`
 
 ### 6.12 `generate_invite_code() → TEXT`
 
 - Generates 6-character uppercase alphanumeric string (A-Z, 0-9).
+
+### 6.13 `create_join_request_notification(p_admin_user_id UUID, p_gang_id UUID) → VOID`
+
+- **Security:** DEFINER
+- **Grants:** `EXECUTE` to `authenticated`
+- **Logic:**
+  1. Resolve caller via `auth.uid()` (raises `42501 NOT_AUTHENTICATED` if NULL)
+  2. Verify gang exists and is not soft-deleted
+  3. Verify caller has a membership row (pending or approved) in the gang
+  4. Verify `p_admin_user_id` is an approved admin of the gang
+  5. Resolve requester's display name from `v2_profiles` server-side (prevents injection)
+  6. Insert `join_request` notification for the admin
+
+### 6.14 `create_new_member_notification(p_admin_user_id UUID, p_gang_id UUID) → VOID`
+
+- **Security:** DEFINER
+- **Grants:** `EXECUTE` to `authenticated`
+- **Logic:**
+  1. Resolve caller via `auth.uid()` (raises `42501 NOT_AUTHENTICATED` if NULL)
+  2. Verify gang exists and is not soft-deleted
+  3. Verify caller is an approved member of the gang (`is_gang_member`)
+  4. Verify `p_admin_user_id` is an approved admin of the gang
+  5. Resolve new member's display name from `v2_profiles` server-side
+  6. Insert `new_member` notification for the admin
+
+### 6.15 `create_join_approved_notification(p_user_id UUID, p_gang_id UUID) → VOID`
+
+- **Security:** DEFINER
+- **Grants:** `EXECUTE` to `authenticated`
+- **Logic:**
+  1. Resolve caller via `auth.uid()` (raises `42501 NOT_AUTHENTICATED` if NULL)
+  2. Verify caller is an approved admin of the gang (`is_gang_admin`)
+  3. Verify recipient has a membership row (pending/approved) in the gang
+  4. Resolve gang name from `v2_gangs` server-side
+  5. Insert `join_approved` notification for the user
+
+### 6.16 `create_join_rejected_notification(p_user_id UUID, p_gang_id UUID) → VOID`
+
+- **Security:** DEFINER
+- **Grants:** `EXECUTE` to `authenticated`
+- **Logic:**
+  1. Resolve caller via `auth.uid()` (raises `42501 NOT_AUTHENTICATED` if NULL)
+  2. Verify caller is an approved admin of the gang (`is_gang_admin`)
+  3. Verify recipient has a membership row (pending/approved) in the gang
+  4. Resolve gang name from `v2_gangs` server-side
+  5. Insert `join_rejected` notification for the user
+
+### 6.17 `re_resolve_scenario(p_scenario_id UUID, p_correct_answer TEXT) → TEXT`
+
+- **Security:** DEFINER
+- **Logic:**
+  1. Load scenario — must already be resolved (`is_resolved = true`); raises exception otherwise
+  2. No-op (returns `NULL`) if new answer matches existing `correct_answer`
+  3. Updates `correct_answer` on the scenario (does NOT toggle `is_resolved`)
+  4. Re-scores all predictions: `is_correct = (value = p_correct_answer)`, recalculates `points_earned`
+  5. Explicitly calls `recalculate_full_standings(gang_id, fixture_id)` (the trigger only fires on `is_resolved` false→true transitions)
+  6. Returns the previous `correct_answer` so the caller can log the change
+- **Use case:** Called by `live-poll-resolve-fixtures` and `cleanup-stale-fixtures` when Sportmonks revises stats after initial resolution (e.g., third-umpire review reversals).
+
+### 6.18 `recalculate_full_standings(p_gang_id UUID, p_fixture_id UUID) → VOID`
+
+- **Security:** DEFINER
+- **Logic (4 steps):**
+  1. Update fixture-level stats (`resolved_count`, `correct_count`, `points_earned`) excluding voided scenarios
+  2. Compute fixture-level ranks (points DESC, `last_submitted_at` ASC; left/removed members sorted to bottom)
+  3. Aggregate into season standings (`matches_predicted`, `total_points`, `total_correct`, `total_resolved`, `accuracy_pct`, `points_per_match`)
+  4. Compute season-level ranks (total_points DESC, accuracy_pct DESC, matches_predicted DESC; left/removed to bottom)
+- **Note:** Also called directly by `re_resolve_scenario` since the trigger doesn't fire for re-resolution.
+
+### 6.19 `get_fixture_prediction_members(p_gang_id UUID, p_fixture_ids UUID[]) → TABLE(fixture_id UUID, user_id UUID, display_name TEXT)`
+
+- **Security:** DEFINER (STABLE)
+- **Grants:** `EXECUTE` to `authenticated`
+- **Logic:**
+  1. Validates caller (`auth.uid()`) is an approved member of the gang via `is_gang_member()`. Returns empty set (no exception) if not — prevents leaking gang existence.
+  2. Queries `v2_predictions` joined to `v2_profiles` for the given gang and fixture IDs
+  3. Returns `DISTINCT ON (fixture_id, user_id)` to deduplicate multiple scenario predictions
+  4. Uses `COALESCE(display_name, LEFT(email, 10))` for name fallback
+- **Use case:** Called by the DAL to show "who predicted" pills on match cards. Accepts an array of fixture IDs for batch fetching. Bypasses RLS deadline visibility to provide accurate counts without exposing prediction content.
+
+### 6.20 `run_cleanup_rate_limits() → JSONB`
+
+- **Security:** DEFINER
+- **Logic:** Deletes rate-limit rows older than 24 hours, logs run status to `v2_cron_run_status`.
+- **Returns:** `{rows_deleted}`
+- **Note:** Wraps the previous inline SQL cron with run-status logging (migration 023).
 
 ---
 
@@ -753,6 +872,58 @@ Routes to the appropriate extractor per scenario slug. Returns `{ resolved: true
 
 **Live scorecard extraction:** `extractLiveScorecard(fixture)` returns structured data for `v2_fixture_live_scores` including scores, overs, batting team, active batsmen, current bowler, run rate.
 
+**Helper:** `isMatchFinished(status)` — returns `true` for Sportmonks status strings indicating match completion (`finished`, `won`, `draw`, etc.). Used by both extractors and `status-mapping.ts`.
+
+### 8.6 Shared: `_shared/status-mapping.ts` — Sportmonks Status Mapping
+
+**Exported function:** `mapSmStatusToInternal(smStatus: string) → InternalStatus`
+
+Maps raw Sportmonks fixture status strings to internal `v2_match_status` values. Single source of truth used by `sync-fixtures`, `live-poll-resolve-fixtures`, and `cleanup-stale-fixtures`.
+
+| Sportmonks Status | Internal Status |
+|-------------------|----------------|
+| `NS`, `Not Started` | `upcoming` |
+| `1st Innings`, `2nd Innings`, `Innings Break`, `Stump`, `Live` | `live` |
+| `Finished`, `Won`, `Draw` (via `isMatchFinished`) | `completed` |
+| `Aban*`, `Cancl`, `Cancelled`, `Aborted` | `abandoned` |
+| `No Result`, `N/R` | `no_result` |
+| `Postp`, `Postponed`, `Suspended`, `Delayed` | `upcoming` |
+| Unknown / default | `upcoming` |
+
+### 8.7 Shared: `_shared/cron-log.ts` — Cron Run Logger
+
+**Exported function:** `logCronRun(supabase, jobKey, startTime, summary, errorCount) → Promise<void>`
+
+Upserts a single row per `job_key` into `v2_cron_run_status`. Called at the end of edge function handlers. Failures to log are caught and logged to console, never thrown (non-blocking).
+
+### 8.8 `cleanup-stale-fixtures` — Admin: Identify & fix stale fixtures
+
+- **Trigger:** Manual (invoked from admin panel)
+- **Purpose:** Identifies fixtures stuck in incorrect states and optionally runs the full resolution pipeline to fix them.
+
+**Two modes (selected via request body `{ mode: "identify" | "fix", fixtureId?: string }`):**
+
+**Identify mode:**
+1. Queries potentially stale fixtures: all `live` fixtures, `completed` older than 3h, `upcoming` past their start time by 3h+
+2. For each: fetches current status from Sportmonks via `mapSmStatusToInternal`
+3. Counts unresolved scenarios per fixture
+4. Classifies staleness: `db_live_sm_finished`, `db_live_sm_abandoned`, `db_completed_unresolved`, `db_upcoming_overdue`, `db_live_sm_live`
+5. Returns diagnostic list with `fixable` flag per fixture
+6. **Read-only — never modifies data**
+
+**Fix mode (requires `fixtureId`):**
+1. Loads fixture from DB, fetches fresh data from Sportmonks
+2. **If abandoned/no_result:** updates status, calls `void_fixture_scenarios()` RPC
+3. **If still live/upcoming per Sportmonks:** returns no-action response
+4. **If completed:**
+   - Phase 1: Resolves unresolved scenarios using extractors + `resolve_scenario()` RPC. Powerplay snapshot scenarios without captured data are individually voided.
+   - Phase 2: Reconciles already-resolved scenarios against fresh Sportmonks data via `re_resolve_scenario()` RPC (catches stat reversals)
+   - Phase 3: If all resolved → `mark_fixture_resolved()` + `results_available` notifications
+
+**Error handling:** Returns HTTP 207 if any action produced errors, 200 on clean success.
+
+**Writes to:** `v2_league_season_fixtures` (status), `v2_fixture_results`, `v2_fixture_scenarios` (void), `v2_notifications`, plus indirect writes via RPCs.
+
 ---
 
 ## 9. Seed Data
@@ -837,7 +1008,10 @@ Migration `20260406000006_migrate_from_v1.sql` handles the one-time data migrati
 | `live-poll-resolve-fixtures` | Every 15 sec | Edge Function | Active (manual pg_cron setup required) |
 | `seed-scenarios` | Every 30 min | Postgres function (`run_seed_scenarios_cron`) | **Commented out** in migration |
 | `deadline-reminders` | Every 15 min | Postgres function (`run_deadline_reminders_cron`) | **Commented out** in migration |
-| `cleanup-rate-limits` | Daily 03:00 UTC | SQL (`DELETE FROM v2_rate_limits WHERE window_start < now() - interval '24 hours'`) | **Active** |
+| `cleanup-rate-limits` | Daily 03:00 UTC | Postgres function (`run_cleanup_rate_limits`) | **Active** |
+| `cleanup-stale-fixtures` | Manual (admin) | Edge Function | Active (invoked on demand) |
+
+All PG cron functions (`run_seed_scenarios_cron`, `run_deadline_reminders_cron`, `run_cleanup_rate_limits`) log their run status to `v2_cron_run_status`. Edge functions use the `logCronRun()` shared helper for the same purpose.
 
 ---
 
@@ -885,3 +1059,7 @@ Migration `20260406000006_migrate_from_v1.sql` handles the one-time data migrati
 6. **Invite code collision handling:** `create_gang` retries up to 5 times on unique constraint violations.
 7. **Idempotent operations:** All cron functions and resolution functions are idempotent — safe to re-run without side effects.
 8. **Team-based filtering:** Team-specific scenarios filter by `team_id`, not inning number, because home team doesn't always bat first.
+9. **auth.uid()-based RPCs:** All user-facing SECURITY DEFINER RPCs resolve the caller via `auth.uid()` — never trust client-supplied user IDs. Notification RPCs resolve display names and gang names server-side to prevent copy injection.
+10. **Re-resolution support:** `re_resolve_scenario` handles Sportmonks stat reversals after initial resolution. It explicitly calls `recalculate_full_standings()` since the trigger only fires on `is_resolved` transitions.
+11. **Cron observability:** All cron functions (PG and Edge) write run status to `v2_cron_run_status` — single row per job, upserted on each run. Provides admin visibility without log aggregation.
+12. **Stale fixture recovery:** `cleanup-stale-fixtures` edge function provides a manual admin escape hatch for fixtures that get stuck due to API outages, missed live polls, or edge cases. Operates in read-only (identify) or write (fix) mode.
